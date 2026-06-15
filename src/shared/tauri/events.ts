@@ -5,6 +5,7 @@ import type {
   LyricsResult,
   MpState,
   PlayerCommand,
+  UpdateProgress,
 } from './types'
 
 /**
@@ -38,6 +39,7 @@ export interface AppEvents {
   'bloom-window-focus': boolean
   'bloom-window-minimized': boolean
   'bloom-set-maximized': boolean
+  'bloom-update-progress': UpdateProgress
 }
 
 export type AppEventName = keyof AppEvents

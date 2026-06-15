@@ -23,6 +23,22 @@ export interface AppSettings {
   discord_btn2_url: string
 }
 
+// ---------------- Обновления (updater.check_update / download_update) ----------------
+export interface UpdateInfo {
+  available: boolean
+  current: string
+  latest: string
+  notes: string
+  download_url: string
+  asset_name: string
+}
+
+export interface UpdateProgress {
+  downloaded: number
+  total: number
+  percent: number
+}
+
 // ---------------- MpState (miniplayer + tray-popup) ----------------
 export interface MpState {
   title: string

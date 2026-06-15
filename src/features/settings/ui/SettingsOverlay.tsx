@@ -13,7 +13,6 @@ import { DataSection } from './sections/DataSection'
 import { TelemetrySection } from './sections/TelemetrySection'
 import { AudioSection } from './sections/AudioSection'
 import { CustomizationSection, BackgroundSection } from '@features/customization'
-import { AboutSection } from './sections/AboutSection'
 import { ScClientIdCard } from '@features/soundcloud'
 import { GeniusTokenCard } from '@features/lyrics'
 import { LastfmSection } from '@features/lastfm'
@@ -99,8 +98,6 @@ export const SettingsOverlay = () => {
     yandex: <YandexSection />,
     // Телеметрия
     'tele-storage': <TelemetrySection />,
-    // Прочее
-    about: <AboutSection />,
   }
 
   return createPortal(

@@ -62,5 +62,5 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Bloom ${{ github.ref_name }}'
           releaseBody: 'Релиз Bloom. Установщики во вложениях ниже.'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false

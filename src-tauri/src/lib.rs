@@ -16,6 +16,7 @@ mod pipe;
 mod smtc;
 mod thumb_toolbar;
 mod tray;
+mod updater;
 mod window_chrome;
 mod yandex;
 
@@ -88,6 +89,10 @@ pub fn run() {
             commands::getminimize_to_tray,
             commands::setdiscordrpc,
             commands::getdiscordrpc,
+            updater::app_version,
+            updater::check_update,
+            updater::download_update,
+            updater::install_update,
             commands::set_discord_settings,
             commands::get_discord_settings,
             commands::setchangetitlebar,

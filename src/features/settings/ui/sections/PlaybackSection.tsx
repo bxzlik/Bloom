@@ -1,6 +1,7 @@
 import { useSettingsStore } from '../../model'
 import { TeleToggleRow } from '../controls/TeleToggleRow'
 import { resetSettings, hardReset } from '../../lib/reset'
+import { AboutBlock } from './AboutBlock'
 
 /**
  * Секция «Воспроизведение» — флаги AppSettings + Windows autostart.
@@ -124,6 +125,9 @@ export const PlaybackSection = () => {
           <button className="btn btg" style={{ flexShrink: 0, fontSize: 11, padding: '4px 10px', color: '#e03030', borderColor: 'rgba(224,48,48,.4)' }} onClick={onHardReset}>Сбросить всё</button>
         </div>
       </div>
+
+      {/* «О приложении» + проверка обновлений (свой заголовок s-cat-label внутри). */}
+      <AboutBlock />
     </div>
   )
 }

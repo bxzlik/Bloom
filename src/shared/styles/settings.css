@@ -188,13 +188,13 @@
 /* Settings: sc cards with toggle rows → transparent wrapper, each row becomes its own card */
 /* sc-keep class marks cards that must stay grouped (equalizer, crossfade, etc.) */
 .s-section .sc:has(>.sr):not(.sc-keep){background:none!important;padding:0!important;display:flex;flex-direction:column;gap:8px}
-.s-section .sc:has(>.sr):not(.sc-keep)>h3{font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:13px 2px 12px;margin:6px 0 2px;border-top:1px solid rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.03)}
+.s-section .sc:has(>.sr):not(.sc-keep)>h3{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:13px 2px 12px;margin:6px 0 2px;border-top:1px solid rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.03)}
 .s-section .sc:has(>.sr):not(.sc-keep)>.sc-title{display:none}
 .s-section .sc:has(>.sr):not(.sc-keep)>.sc-desc{display:none}
 .s-section .sc:has(>.sr):not(.sc-keep)>.sr{background:var(--card-solid,var(--card));border-radius:var(--radius);padding:14px 16px!important;border-top:none!important;border-bottom:none!important}
 /* sc wrappers around tele-toggle-row (system section) → transparent */
 .s-section .sc:has(>.tele-toggle-row):not(.sc-keep){background:none!important;padding:0!important;display:flex;flex-direction:column;gap:8px}
-.s-section .sc:has(>.tele-toggle-row):not(.sc-keep)>h3{font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:13px 2px 12px;margin:6px 0 2px;border-top:1px solid rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.03)}
+.s-section .sc:has(>.tele-toggle-row):not(.sc-keep)>h3{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:13px 2px 12px;margin:6px 0 2px;border-top:1px solid rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.03)}
 .s-section .sc:has(>.tele-toggle-row):not(.sc-keep)>.tele-toggle-row{margin-top:0!important}
 .s-section .tele-toggle-row{border:none!important}
 
@@ -335,13 +335,13 @@
 .sc-track-loading{opacity:.55;pointer-events:none}
 .sc-track-loading .sc-track-play{background:rgba(255,255,255,.08)!important}
 .sc{background:var(--card-solid,var(--card));border:none;border-radius:var(--radius);padding:16px}
-.sc h3{font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:0 0 12px;margin:0 0 12px;border-bottom:1px solid rgba(255,255,255,.03);display:flex;align-items:center;gap:6px}
+.sc h3{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:0 0 12px;margin:0 0 12px;border-bottom:1px solid rgba(255,255,255,.03);display:flex;align-items:center;gap:6px}
 .sr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;gap:10px}
 .sr+.sr{border-top:1px solid rgba(255,255,255,.05)}
 .sr:last-child{border-bottom:none;padding-bottom:0}
 .sr:first-child{padding-top:0}
 /* ===== NEW SETTINGS DESIGN ===== */
-.s-cat-label{font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:13px 2px 12px;margin:6px 0 2px;border-top:1px solid rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.03)}
+.s-cat-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:13px 2px 12px;margin:6px 0 2px;border-top:1px solid rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.03)}
 .sc-title{font-size:13.5px;font-weight:700;color:var(--text)}
 .sc-desc{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
 .s-opt-row{display:flex;gap:8px;margin-top:12px}
