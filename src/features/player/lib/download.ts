@@ -1,0 +1,118 @@
+/**
+ * Скачивание текущего трека / обложки.
+ *
+ * Нативную часть выполняют Tauri-команды `sc_download` / `local_download` /
+ * `cover_download` (src-tauri/commands.rs); о ходе сообщает событие
+ * `bloom-download-state` (state: downloading|done|cancelled|error).
+ *
+ * Три ветки:
+ *  - SC-трек (`_sc`): резолвим progressive (mp3) CDN-URL и отдаём в Rust
+ *    (HttpClient качает без CORS + SaveFileDialog). HLS-only → скачать нельзя.
+ *  - локальный файл (`_localPath`): Rust копирует файл через SaveFileDialog.
+ *  - загруженный трек (blob/IDB url): браузерный `<a download>`.
+ */
+import { invoke, onAppEvent } from '@shared/tauri'
+import { toast } from '@shared/ui'
+import type { Track } from '@entities/track'
+import { apiFetch, type ScMedia } from '@features/soundcloud'
+
+const sanitize = (s: string): string => s.replace(/[\\/:*?"<>|]/g, '_')
+
+const trackFileBase = (t: Track): string =>
+  sanitize((t.artist ? t.artist + ' - ' : '') + t.name)
+
+// ── мост состояния скачивания (единый слушатель события) ────────────────────
+// Один слушатель события + текущий контекст (что качаем).
+type DlCtx = { kind: 'track' | 'cover'; name: string }
+let _ctx: DlCtx | null = null
+let _listenerReady: Promise<void> | null = null
+
+const ensureListener = (): Promise<void> => {
+  if (_listenerReady) return _listenerReady
+  _listenerReady = onAppEvent('bloom-download-state', ({ state, message }) => {
+    if (!_ctx) return
+    const cover = _ctx.kind === 'cover'
+    if (state === 'downloading') toast(cover ? 'Скачивание обложки…' : 'Скачивание…')
+    else if (state === 'done') toast(cover ? '✓ Обложка сохранена' : '✓ Сохранено: ' + _ctx.name)
+    else if (state === 'cancelled') {
+      /* пользователь отменил диалог — молчим */
+    } else if (state === 'error') toast('Ошибка скачивания: ' + (message || ''))
+  }).then(() => undefined)
+  return _listenerReady
+}
+
+// ── SC: получить progressive CDN-URL ────────────────────────────────────────
+const getProgressiveUrl = async (media: ScMedia | null): Promise<string> => {
+  if (!media || !media.transcodings || !media.transcodings.length) throw new Error('Нет данных потока')
+  const prog = media.transcodings.find((tc) => tc.format?.protocol === 'progressive')
+  if (!prog) throw new Error('Трек доступен только в HLS — скачивание невозможно')
+  const data = await apiFetch(prog.url)
+  if (!data || !data.url) throw new Error('SC не вернул CDN ссылку')
+  return data.url
+}
+
+const resolveScMedia = async (permalink: string): Promise<ScMedia> => {
+  const data = await apiFetch('https://api-v2.soundcloud.com/resolve?url=' + encodeURIComponent(permalink))
+  return data?.media as ScMedia
+}
+
+/** Скачать текущий трек (3 ветки источника). */
+export const downloadTrack = async (t: Track | null): Promise<void> => {
+  if (!t) return
+  await ensureListener()
+
+  // SC-трек: progressive URL → Rust HttpClient (виртуальный origin → 403 на CORS).
+  if (t._sc) {
+    _ctx = { kind: 'track', name: t.name }
+    toast('Получение ссылки…')
+    try {
+      const media = (t.scMedia as ScMedia | undefined) ?? (await resolveScMedia(t.scPermalink || ''))
+      const cdnUrl = await getProgressiveUrl(media)
+      await invoke('sc_download', {
+        url: cdnUrl,
+        filename: trackFileBase(t),
+        coverUrl: t.cover || null,
+        title: t.name || '',
+        artist: t.artist || '',
+      })
+    } catch (e) {
+      toast('Ошибка SC: ' + (e instanceof Error ? e.message : String(e)))
+    }
+    return
+  }
+
+  // Локальный файл — Rust копирует через SaveFileDialog.
+  if (t._localPath) {
+    _ctx = { kind: 'track', name: t.name }
+    await invoke('local_download', { localPath: t._localPath, filename: trackFileBase(t) })
+    return
+  }
+
+  // Загруженный трек — браузерный download blob/IDB url.
+  if (t.url) {
+    const a = document.createElement('a')
+    a.href = t.url
+    a.download = t.name + '.mp3'
+    a.click()
+    return
+  }
+  toast('Скачивание недоступно для этого трека')
+}
+
+/** Скачать обложку текущего трека (coverOverride перекрывает обложку трека). */
+export const downloadCover = async (
+  t: Track | null,
+  coverOverride: string | null,
+): Promise<void> => {
+  if (!t) return
+  const coverSrc = coverOverride || t.cover || null
+  if (!coverSrc) return
+  await ensureListener()
+  _ctx = { kind: 'cover', name: t.name }
+  const filename = trackFileBase(t)
+  if (coverSrc.startsWith('data:')) {
+    await invoke('cover_download', { dataUrl: coverSrc, url: null, filename })
+  } else {
+    await invoke('cover_download', { dataUrl: null, url: coverSrc, filename })
+  }
+}

@@ -1,0 +1,147 @@
+/* Панель эквалайзера (#eqPanel). Подключается в main.tsx после overrides. */
+
+#eqPanel {
+  position: fixed;
+  z-index: 99999;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg2, #1e1e1e);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  user-select: none;
+  -webkit-user-select: none;
+}
+#eqPanel.open {
+  display: flex;
+}
+
+.eq-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.eq-presets::-webkit-scrollbar {
+  height: 0;
+}
+.eq-add,
+.eq-chip,
+.eq-add-edit {
+  flex-shrink: 0;
+}
+.eq-add,
+.eq-chip {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text2);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: 0.14s;
+  white-space: nowrap;
+}
+
+/* Инлайн-ввод имени пресета (вместо "+") */
+.eq-add-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.eq-name-input {
+  width: 110px;
+  font-size: 11.5px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 5px 9px;
+  outline: none;
+  font-family: var(--font);
+}
+.eq-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  background: var(--accent);
+  color: var(--accent-text, #111);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.14s;
+}
+.eq-confirm:hover {
+  opacity: 0.85;
+}
+.eq-add {
+  padding: 5px 9px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+.eq-add:hover,
+.eq-chip:hover {
+  background: var(--hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text);
+}
+.eq-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text, #fff);
+}
+
+/* Кастомный пресет: чип + крестик удаления (по наведению) */
+.eq-chip-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.eq-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  border-radius: 4px;
+  transition: 0.14s;
+}
+.eq-chip-custom:hover .eq-chip-x {
+  width: 14px;
+  opacity: 0.6;
+  margin-right: -2px;
+}
+.eq-chip-x:hover {
+  opacity: 1 !important;
+  color: #e03030;
+}
+
+.eq-curve {
+  display: block;
+  width: 100%;
+  touch-action: none;
+}
+.eq-curve circle {
+  transition: r 0.1s;
+}
+.eq-curve circle:hover {
+  r: 7;
+}
+
+.eq-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 10px;
+  color: var(--muted);
+}

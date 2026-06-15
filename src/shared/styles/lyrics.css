@@ -1,0 +1,45 @@
+/* ===== LYRICS PANEL ===== */
+.lyrics-btn{background:none;border:none;color:var(--text2);cursor:pointer;width:40px;height:40px;border-radius:calc(var(--radius)*.7);display:flex;align-items:center;justify-content:center;transition:.15s;position:relative;flex-shrink:0}
+.lyrics-btn:hover,.lyrics-btn.lyr-active{color:var(--accent);background:rgba(var(--accent-rgb),.1)}
+.lyrics-panel{position:absolute;inset:0;background:rgba(15,15,15,.96);display:flex;flex-direction:column;z-index:10;transition:opacity .25s ease,transform .25s ease;border-radius:inherit}
+.lyrics-panel.lyr-hidden{opacity:0;pointer-events:none;transform:scale(.97)}
+.lyrics-panel.lyr-visible{opacity:1;pointer-events:all;transform:scale(1)}
+.lyrics-close{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:.15s;z-index:1;flex-shrink:0}
+.lyrics-close:hover{background:rgba(255,255,255,.2);color:#fff}
+.lyrics-source-badge{display:none}
+.lyrics-content{flex:1;overflow-y:auto;padding:36px 14px 16px;scroll-behavior:smooth;scrollbar-width:none}
+.lyrics-content::-webkit-scrollbar{display:none}
+.lyrics-line{font-size:13px;line-height:1.75;color:rgba(255,255,255,.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
+.lyrics-line.lyr-past{color:rgba(255,255,255,.15)}
+.lyrics-line.lyr-upcoming{color:rgba(255,255,255,.45)}
+.lyrics-line.lyr-active{color:#fff;font-size:15px;font-weight:700;cursor:default}
+.lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.6);font-size:13px}
+.lyrics-status{color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:0 10px;line-height:1.6}
+/* ===== KARAOKE (per-word) ===== */
+.lyrics-line .kw{transition:color .14s ease,opacity .14s ease;display:inline}
+.lyrics-line.lyr-active .kw{color:rgba(255,255,255,.32)}
+.lyrics-line.lyr-active .kw.kw-on{color:#fff}
+#bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-active .kw{color:rgba(255,255,255,.32)}
+#bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-active .kw.kw-on{color:#fff}
+/* ===== LYRICS IN QUEUE ===== */
+.lq-content::-webkit-scrollbar{display:none}
+.lq-content .lyrics-line{font-size:13px;line-height:1.75;color:rgba(255,255,255,.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
+.lq-content .lyrics-line.lyr-past{color:rgba(255,255,255,.15)}
+.lq-content .lyrics-line.lyr-upcoming{color:rgba(255,255,255,.45)}
+.lq-content .lyrics-line.lyr-active{color:#fff;font-size:15px;font-weight:700;cursor:default}
+.lq-content .lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.6);font-size:13px}
+.lq-content .lyrics-status{color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:20px 10px;line-height:1.6}
+/* lyrics queue block inherits queue sizing rules */
+#playerContent:not(.queue-right):not(.queue-left) #lyricsQueueBlock{flex:1 1 0;min-height:0}
+#playerContent.queue-right #lyricsQueueBlock,
+#playerContent.queue-left #lyricsQueueBlock{width:320px;flex-shrink:0;flex:none}
+.vol-sl::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer}
+#bloom-dl-popup,#bloom-src-popup{position:absolute;z-index:100000;width:fit-content;transform-origin:top left}
+#bloom-dl-popup.open,#bloom-src-popup.open{animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
+#bloom-dl-popup.closing,#bloom-src-popup.closing{animation:libMenuOut .14s ease-in forwards}
+.bloom-dl-inner{background:var(--bg2,#1e1e1e);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:190px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+.bloom-dl-inner button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;background:none;border:none;border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;text-align:left;white-space:nowrap;font-family:var(--font);transition:background .12s}
+.bloom-dl-inner button:hover{background:var(--hover,rgba(255,255,255,.07))}
+.bloom-dl-inner button:disabled{opacity:.35;cursor:default;pointer-events:none}
+.qp-list{overflow-y:auto;flex:1;padding:5px;scrollbar-width:none}
+.qp-list::-webkit-scrollbar{display:none}

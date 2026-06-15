@@ -1,0 +1,269 @@
+/* Намеренные отклонения от базовых стилей (shared/styles/*.css через index.css).
+   Файл загружается ПОСЛЕ index.css (см. main.tsx), поэтому переопределяет.
+   Все правила здесь — осознанные решения по запросу пользователя. */
+
+/* Дефолтный --bg: #0a0a0a ( был #0f0f0f) — цвет фона страницы.
+   Дефолтный --block-color: #0a0a0a — цвет блоков-контейнеров.
+   Оба переменные ПОЛНОСТЬЮ независимы (литеральные значения, не var-ref):
+     - пикер фона страницы правит только --bg
+     - пикер цвета блоков правит только --block-color
+   TBD: --block-opacity (глобальная прозрачность блоков) — добавим когда
+     дойдём до пикера, реализация через `color-mix(in srgb, var(--block-color)
+     calc(...% * var(--block-opacity)), transparent)` чтобы влияло только на
+     background, а не на контент блока. */
+:root {
+  --bg: #0a0a0a;
+  --block-color: #0a0a0a;
+  /* main.css использует var(--hover) для hover-фона .lib-item, .ci
+     и других. Дефолт — subtle подсветка 5% белым. */
+  --hover: rgba(255, 255, 255, 0.05);
+  /* --card / --card-solid используются модалками и ctx-меню через
+     `color-mix(in srgb, var(--card-solid, var(--card)) 40%, #000 60%)`.
+     В задаются через JS-настройки. Дефолт — равны цвету блоков,
+     чтобы модалки были непрозрачные и однотонные. */
+  --card: var(--block-color);
+  --card-solid: var(--block-color);
+
+  /* `--block-bg` (фон карточек главной/grid-обзора библиотеки:
+     .lib-grid-sys-card-*, .home-stats-bar, .home-games-card, #peditModal…) в
+     задавался JS из applyBlockBg. Без него все они падали на фолбэк
+     #2a2a2a (светло-серый, не совпадал с фоном). Алиасим к цвету блоков — карточки
+     сливаются с фоном (поверх лежат их градиенты ::before). */
+  --block-bg: var(--block-color);
+
+  /* Семантические токены сущностей/UI (`entities/*` карточки, player-UI,
+     SearchPage) писались под `--color-*`, но в main-палитре их не было —
+     карточки рендерились без фона/цвета. Алиасим к легаси-палитре (root.css),
+     чтобы один и тот же компонент темился и в main, и в mini окнах.
+     useThemeSettings может перебить --color-accent/-text/-bg2 инлайном при
+     наличии bloom_settings — это ожидаемо (пользовательская кастомизация). */
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent2);
+  --color-accent-text: var(--accent-text);
+  --color-text: var(--text);
+  --color-text-2: var(--text2);
+  --color-text-muted: var(--text2);
+  --color-muted: var(--muted);
+  --color-bg2: var(--bg2);
+  /* surface — subtle hover-подсветка (как .lib-item:hover); elevated — плашка. */
+  --color-surface: var(--hover);
+  --color-surface-elevated: var(--card);
+
+  /* Легаси-правила (sp-*, sc-*) местами используют var(--fg) без фолбэка —
+     в root.css его нет (есть --text). Алиасим, чтобы не было «бесцветного» текста. */
+  --fg: var(--text);
+}
+
+/* Body — использовать var(--bg) вместо #000 из main.css.
+   Без этого блоки выглядят чуть светлее окружающего body, создавая
+   визуальный «контур» вокруг них. */
+body {
+  background: var(--bg) !important;
+}
+
+/* Блоки-контейнеры библиотеки — цвет через отдельную переменную --block-color
+   (по умолчанию = var(--bg), но настройка цвета блоков сможет её переопределить
+   независимо от фона страницы).
+   Сайдбар (#sidebarEl) и main (#mainEl) тоже красятся цветом блоков — со
+   старого applyBlockBg() (`SB.style.background=v; MN.style.background=v;`).
+   Без этого сайдбар/контент прозрачны и показывают var(--bg), а не блок-цвет. */
+.sidebar,
+.main,
+.lib-block,
+.lib-block-search,
+.lib-block-btns,
+.lib-block-pl,
+.lib-block-combined,
+.lib-block-folders,
+.lib-content-head,
+.lib-tracklist,
+.player-section,
+#playerContent > .sl-bottom,
+#playerQueueBlock,
+#lyricsQueueBlock,
+#grpLyricsBlock,
+.home-continue-card,
+.home-quick-card,
+.home-stats-bar,
+.home-games-card,
+.home-tod,
+.home-btn-secondary {
+  background: var(--block-color) !important;
+}
+
+/* Скрытие очереди — через CSS-класс на #playerContent, а НЕ размонтированием
+   <QueueBlock/>. В applyHideQueue ставил inline `display:none`, не
+   убирая DOM. В bloom держим QueueBlock всегда смонтированным (он мемоизирован),
+   а тогл «скрыть очередь» / «текст вместо очереди» лишь меняет класс родителя —
+   список не пересоздаётся, тогл не лагает. !important перебивает инлайновый
+   display:flex на #playerQueueBlock. См. [[feedback_app_root_rerender]]. */
+#playerContent.queue-hidden #playerQueueBlock,
+#playerContent.lyrics-in-queue #playerQueueBlock {
+  display: none !important;
+}
+
+/* В большом плеере (style-large) ♥/+ живут в нижнем баре (.sl-bottom-info) и
+   это ЕДИНСТВЕННАЯ их копия (отдельного #mainCovBtnsWrap в large нет). Поэтому
+   настройка «кнопки на обложке в плеер» (.app.cov-btns-in-bar скрывает все
+   .cov-fav/.cov-add) НЕ должна их прятать здесь. Перебиваем тем же !important. */
+.app.cov-btns-in-bar #playerContent.style-large > .sl-bottom .sl-bottom-info .cov-fav,
+.app.cov-btns-in-bar #playerContent.style-large > .sl-bottom .sl-bottom-info .cov-add {
+  display: flex !important;
+}
+
+/* Настройки applyBlockBg:
+   - модалка настроек = СПЛОШНОЙ цвет блоков ( `sm.style.background=
+     rgb(block)`, а не color-mix как у прочих модалок stats/share);
+   - карточки .sc / .sc-keep>.sr = слегка осветлённый оттенок блока (там
+     `--card-solid` выводился из яркости блока). Осветляем адаптивно через
+     color-mix с var(--text): белый для тёмных тем → светлее, тёмный для Light →
+     темнее. Скоупим на #settingsOverlay, чтобы НЕ трогать глобальный --card
+     остального приложения (там --card темится отдельно / из палитры пресета). */
+#settingsOverlay .settings-modal {
+  background: var(--block-color);
+}
+#settingsOverlay {
+  --card-solid: color-mix(in srgb, var(--block-color), var(--text) 7%);
+  --card: var(--card-solid);
+}
+
+/* Карточки Все треки / Любимые / История — прозрачный фон.
+   В старом CSS получают `background: var(--block-bg, #2a2a2a)` (тёмно-серая
+   плашка), у пользователя в проде эта плашка не видна — только цветной
+   радиальный градиент через ::before. */
+.lib-item-sys {
+  background: transparent !important;
+}
+
+/* Единая ЗАМЕТНАЯ полупрозрачная подсветка пунктов библиотеки (плейлисты, папки,
+   системные «Все треки/Любимые/История»).
+   Покрывает три бага разом:
+     1) системные пункты в «классике» не подсвечивались вообще — `.lib-item-sys`
+        получал `background:transparent!important` (тут выше +), который гасил
+        и hover, и `.active`;
+     2) то же повторял glass-режим: `body.glass-mode .lib-item-sys{…!important}`
+        (специфичность 0,2,1) перебивал прежние `.lib-item-sys:hover` (0,2,0);
+     3) активный пункт был еле виден ( `.active` == 5%, как hover).
+   Решение: скоупим под `.lib-sidebar` → специфичность (0,3,0) бьёт и, и
+   glass-правило; значения делаем заметнее (hover 6%, active 12%), оставаясь
+   полупрозрачными (сквозь стекло видно). Правило `.lib-item.active` ловит и
+   системные пункты — у них тоже есть класс `.lib-item`. */
+.lib-sidebar .lib-item:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+.lib-sidebar .lib-item.active {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Play-кнопка в пунктах sidebar (.lib-item-play) — убираем color-change на
+   :hover. Сама кнопка появляется на hover родителя .lib-item, но при наведении
+   на саму кнопку цвет фона не меняется. */
+.lib-item-play:hover {
+  background: #fff !important;
+}
+
+/* Кнопки .cc плеера (страница #playerContent + нижний #miniPlayer) — hover как у
+   дизлайка/текста (.lyrics-btn): акцентная полупрозрачная подсветка + акцентный
+   цвет иконки. Без этого каждая поверхность красила бы hover по-своему (страница
+   — 5% белого, бар — 10% белого), и кнопки выглядели бы по-разному. Дизлайк/
+   текст и так на .lyrics-btn — их не трогаем, они уже эталон.
+   BigPicture (#bigPicOverlay .bp-ctrl .cc) намеренно НЕ трогаем: его кнопки лежат
+   поверх размытой обложки, там оставляем нейтральную белую подсветку. */
+.cc:hover {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+#miniPlayer .cc:hover {
+  background: rgba(var(--accent-rgb), 0.1) !important;
+  color: var(--accent) !important;
+}
+/* Активный тогл в баре (очередь/текст/повтор/перемешать) — акцентный цвет как на
+   странице плеера ( `.cc.on{color:var(--accent)}`), а не белый. */
+#miniPlayer .cc.on {
+  color: var(--accent);
+}
+
+/* Детальный вид (артист/альбом/плейлист) — скроллбар скрыт полностью
+   (scrollbar-width:none). */
+.sp-detail-view::-webkit-scrollbar { display: none; }
+
+/* Артист-карточки поиска — видимая hover-подсветка.
+   Legacy `.sp-artist-card:hover{background:var(--card)}`, но в bloom
+   --card == --block-color == --bg, поэтому подсветка была невидимой → тинт --hover.
+   Трек/альбом/плейлист-карточки фон НЕ получают — у них только play-бейдж
+   (.sp-tc-play на hover),. */
+.sp-artist-card:hover { background: var(--hover); }
+
+/* Недавнее (.sp-recent-item) — hover-подсветка. Legacy hover = var(--card),
+   а в bloom --card == --bg → было невидимо. */
+.sp-recent-item:hover { background: var(--hover); }
+/* Фон иконки недавнего: var(--card) == --bg (невидим) → видимый тинт. */
+.sp-recent-item-icon { background: var(--hover); }
+
+/* BigPicture: очередь полностью прозрачна (фон — размытая обложка), со
+   старого bp-q-wrap. Перебивает block-color + инлайн рамку/блюр QueueBlock
+   (2 id + !important > всё). */
+#bigPicOverlay #playerQueueBlock {
+  background: transparent !important;
+  border: none !important;
+  backdrop-filter: none !important;
+}
+
+/* BigPicture: выравнивание заголовка/артиста/текста песни следует настройке
+   titleAlign (по умолчанию center). Легаси bp-lyr был всегда text-align:left и
+   bp-title/artist всегда center — здесь делаем как в плеере (следует настройке).
+   Заголовок (+ бейдж площадки рядом) — flex-ряд .bp-title-row, позиция группы
+   через justify-content; артист/текст — через text-align. */
+#bigPicOverlay .bp-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+#bigPicOverlay .bp-title-row .bp-title-wrap { width: auto; min-width: 0; max-width: 100%; }
+#bigPicOverlay .bp-inner.bp-align-left .bp-title-row { justify-content: flex-start; }
+#bigPicOverlay .bp-inner.bp-align-right .bp-title-row { justify-content: flex-end; }
+#bigPicOverlay .bp-inner.bp-align-left .bp-artist,
+#bigPicOverlay .bp-inner.bp-align-left .bp-lyr-scroll .lyrics-line,
+#bigPicOverlay .bp-inner.bp-align-left .bp-lyr-scroll .lyrics-status { text-align: left; }
+#bigPicOverlay .bp-inner.bp-align-center .bp-lyr-scroll .lyrics-line,
+#bigPicOverlay .bp-inner.bp-align-center .bp-lyr-scroll .lyrics-status { text-align: center; }
+#bigPicOverlay .bp-inner.bp-align-right .bp-artist,
+#bigPicOverlay .bp-inner.bp-align-right .bp-lyr-scroll .lyrics-line,
+#bigPicOverlay .bp-inner.bp-align-right .bp-lyr-scroll .lyrics-status { text-align: right; }
+/* Чтобы лево/право реально сдвигали артиста — бокс на всю ширину (иначе
+   align-items:center у .bp-info ужимает его до контента и центрирует). */
+#bigPicOverlay .bp-inner.bp-align-left .bp-artist,
+#bigPicOverlay .bp-inner.bp-align-right .bp-artist { width: 100%; }
+
+/* Обложка нижнего бара (#mpCover): ховер-затемнение + глиф «развернуть» —
+   аффорданс «открыть на весь экран» (BigPicture), как у .ps-cover на странице
+   плеера ( main.css .ps-cover::after). Добавление поверх по просьбе. */
+#mpCover::after {
+  content: '⤢';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background .18s, color .18s;
+  border-radius: inherit;
+  pointer-events: none;
+}
+#mpCover:hover::after {
+  background: rgba(0, 0, 0, .45);
+  color: rgba(255, 255, 255, .85);
+}
+
+/* Модалка игр: оконный тайтлбар (#winTitlebar, z-index:1001) остаётся видимым и
+   перетаскиваемым поверх затемнения — как у прочих модалок (#settingsOverlay
+   z990, #statsModalOverlay z992). В #gamesOverlay был z-index:9100
+   и накрывал тайтлбар; опускаем в тот же ряд, что и остальные модалки. */
+#gamesOverlay {
+  z-index: 992;
+}

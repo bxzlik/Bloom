@@ -1,0 +1,6 @@
+export { GamesModal } from './ui/GamesModal'
+export { GamepadIcon } from './ui/GamepadIcon'
+export { useGamesStore } from './model/gamesStore'
+export { useTamaBootstrap } from './model/tamaBootstrap'
+export { GAMES_LIST } from './model/gamesList'
+export type { GameDef } from './model/gamesList'

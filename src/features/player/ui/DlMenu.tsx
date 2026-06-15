@@ -1,0 +1,125 @@
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
+import { usePopupOpenAnimation } from '@shared/hooks'
+import type { Track } from '@entities/track'
+import { downloadTrack, downloadCover } from '../lib/download'
+
+/**
+ * Меню скачивания «трек / обложка» — `showDlMenu`.
+ * Анкорится над кнопкой `#dlMenuBtn` (как SpeedPicker), рендер через портал в
+ * body. Open-анимация — тот же `usePopupOpenAnimation` (WAAPI scale 0.94→1), что
+ * и у SpeedPicker, ради единообразия попапов в ряду транспорта ( CSS
+ * `libMenuIn` от класса `.open` гасится хуком).
+ */
+const iconTr = (
+  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+)
+const iconIm = (
+  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <path d="m21 15-5-5L5 21" />
+  </svg>
+)
+
+export const DlMenu = ({
+  open,
+  onClose,
+  anchorRef,
+  track,
+  coverOverride,
+}: {
+  open: boolean
+  onClose: () => void
+  anchorRef: RefObject<HTMLElement | null>
+  track: Track | null
+  coverOverride: string | null
+}) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const hasCover = !!(coverOverride || track?.cover)
+
+  // Позиционирование по центру над анкором, flip вниз при нехватке места —
+  // showDlMenu.
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null)
+      return
+    }
+    const btn = anchorRef.current
+    const p = ref.current
+    if (!btn || !p) return
+    const r = btn.getBoundingClientRect()
+    const mw = p.offsetWidth || 190
+    let left = r.left + r.width / 2 - mw / 2
+    left = Math.max(8, Math.min(left, window.innerWidth - mw - 8))
+    const top = r.top - 4 < 60 ? r.bottom + 6 : r.top - p.offsetHeight - 6
+    setPos({ left, top })
+  }, [open, anchorRef])
+
+  // Open-анимация (та же, что у SpeedPicker / .ctx) — гасит CSS libMenuIn.
+  usePopupOpenAnimation(ref, pos)
+
+  // Click outside / Escape.
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (ref.current?.contains(t)) return
+      if (anchorRef.current?.contains(t)) return
+      onClose()
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open, onClose, anchorRef])
+
+  if (!open) return null
+
+  return createPortal(
+    <div
+      ref={ref}
+      id="bloom-dl-popup"
+      className={pos ? 'open' : ''}
+      style={{
+        left: pos?.left ?? -9999,
+        top: pos?.top ?? -9999,
+        visibility: pos ? 'visible' : 'hidden',
+        transformOrigin: 'top center',
+      }}
+    >
+      <div className="bloom-dl-inner">
+        <button
+          type="button"
+          onClick={() => {
+            onClose()
+            void downloadTrack(track)
+          }}
+        >
+          {iconTr} Скачать трек
+        </button>
+        <button
+          type="button"
+          disabled={!hasCover}
+          onClick={() => {
+            onClose()
+            void downloadCover(track, coverOverride)
+          }}
+        >
+          {iconIm} Скачать обложку
+        </button>
+      </div>
+    </div>,
+    document.body,
+  )
+}

@@ -1,0 +1,40 @@
+/* Точка входа стилей main-окна — агрегатор тематических CSS из этой папки.
+   Порядок @import = порядок каскада, на него опираются ties по специфичности — НЕ менять.
+   Намеренные отклонения живут в overrides-main.css (грузится ПОСЛЕ, см. main.tsx). */
+
+/* палитра: @import шрифтов (обязан идти ПЕРВЫМ), @font-face, :root */
+@import './root.css';
+
+/* основной массив селекторов, разбит по темам */
+@import './base.css';
+@import './player.css';
+@import './lyrics.css';
+@import './queue.css';
+@import './library.css';
+@import './big-picture.css';
+@import './audio-theme.css';
+@import './settings.css';
+@import './sliders-telemetry.css';
+@import './modals.css';
+@import './search-misc.css';
+@import './home.css';
+@import './track-modals.css';
+@import './stats-windows.css';
+@import './soundcloud-system.css';
+
+/* отдельные блоки */
+@import './onboarding-search.css';
+@import './merge-playlists.css';
+@import './quick-wheel.css';
+
+/* все @keyframes (порядок не важен) */
+@import './animations.css';
+
+/* #root — обёртка React-рендера. Прозрачная flex-обёртка, чтобы .app (flex:1)
+   получил высоту от body. */
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}

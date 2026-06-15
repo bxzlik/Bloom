@@ -1,0 +1,187 @@
+/* ===== PLAYLIST / FOLDER DRAG & DROP ===== */
+.lib-item.pl-dragging{opacity:.35;background:var(--hover)!important}
+.lib-item.pl-drag-over{background:rgba(var(--accent-rgb),.12)!important;outline:1.5px solid rgba(var(--accent-rgb),.35);border-radius:calc(var(--radius)*0.55)}
+.pl-drag-handle{display:none}
+.ro-ghost-lib{position:fixed;pointer-events:none;z-index:9999;opacity:.92;background:var(--card-solid,var(--card));border-radius:var(--radius);box-shadow:0 16px 48px rgba(0,0,0,.85),0 4px 16px rgba(0,0,0,.6);left:0;top:0;min-width:200px;transition:none!important;will-change:transform}
+/* ===== PLAYLIST CONTEXT MENU ===== */
+#plCtxMenuHeader{display:flex;align-items:center;gap:10px;padding:10px 12px 11px;border-bottom:1px solid var(--border);margin-bottom:3px;pointer-events:none}
+#plCtxMenuHeaderCov{width:40px;height:40px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#plCtxMenuHeaderCov img{width:100%;height:100%;object-fit:cover}
+#plCtxMenuHeaderName{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:125px;line-height:1.3}
+#plCtxMenuHeaderSub{font-size:11px;color:var(--text2);margin-top:2px}
+#plCtxMenu,#folderCtxMenu,#artistCtxMenu{position:fixed;z-index:8000;background:color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*.9);padding:5px;min-width:185px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none;backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px)}
+#plCtxMenu.open,#folderCtxMenu.open,#artistCtxMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
+.lib-pin-dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:1.5px solid var(--bg);pointer-events:none;z-index:1}
+#libGridOverview .lib-pin-dot{width:12px;height:12px;border-width:2px}
+.plctx-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:calc(var(--radius)*.5);font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;transition:background .1s,box-shadow .1s;white-space:nowrap}
+.plctx-item:hover{background:var(--hover);box-shadow:inset 2.5px 0 0 var(--accent)}
+.plctx-item:hover .ci-icon{background:rgba(255,255,255,.11)}
+.plctx-item.danger{color:#e03030}
+.plctx-item.danger .ci-icon{background:rgba(224,48,48,.12)}
+.plctx-item.danger:hover{background:rgba(224,48,48,.08);box-shadow:inset 2.5px 0 0 #e03030;color:#e03030}
+.plctx-item.danger:hover .ci-icon{background:rgba(224,48,48,.18)}
+.plctx-sep{height:1px;background:var(--border);margin:4px 3px;opacity:.65}
+#plMenu{position:fixed;background:color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:8000;min-width:210px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);display:none}
+#plMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
+#plMenuHeader{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:10px 12px 11px;margin:0 0 4px;border-radius:calc(var(--radius)*0.7);pointer-events:none}
+/* Размытая обложка фоном шапки + затемняющий градиент поверх для читаемости. */
+#plMenuHeader::before{content:'';position:absolute;inset:0;z-index:0;background-image:var(--cx-cover,none);background-size:cover;background-position:center;filter:blur(20px) saturate(1.4) brightness(.6);transform:scale(1.5)}
+#plMenuHeader::after{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.6))}
+#plMenuHeader>*{position:relative;z-index:1}
+/* Системные разделы без обложки — фон собственным цветом (как в сайдбаре). */
+#plMenuHeader.sys-all{background:linear-gradient(135deg,rgb(26,79,160),rgb(13,38,78))}
+#plMenuHeader.sys-fav{background:linear-gradient(135deg,rgb(192,20,78),rgb(92,10,38))}
+#plMenuHeader.sys-hist{background:linear-gradient(135deg,rgb(184,134,11),rgb(88,64,5))}
+/* Квадрат иконки — те же градиенты, что у иконок в сайдбаре. */
+#plMenuHeader.sys-all #plMenuHeaderCov{background:linear-gradient(135deg,#1a3a4a,#0d2535)}
+#plMenuHeader.sys-fav #plMenuHeaderCov{background:linear-gradient(135deg,#c0144e,#7a0030)}
+#plMenuHeader.sys-hist #plMenuHeaderCov{background:rgba(255,180,0,.15)}
+#plMenuHeader.sys-hist #plMenuHeaderCov svg{color:#ffb400}
+#plMenuHeader.sys-all #plMenuHeaderCov svg,#plMenuHeader.sys-fav #plMenuHeaderCov svg{color:#fff}
+#plMenuHeader[class*="sys-"] #plMenuHeaderCov{box-shadow:0 2px 10px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.14)}
+#plMenuHeaderCov{width:46px;height:46px;border-radius:calc(var(--radius)*0.65);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+#plMenuHeaderCov img{width:100%;height:100%;object-fit:cover}
+#plMenuHeaderName{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+#plMenuHeaderSub{font-size:11px;color:rgba(255,255,255,.8);margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.ci.sort-active .ci-icon{background:rgba(var(--accent-rgb,255,255,255),.18)!important;color:var(--accent)}
+.ci.sort-active{color:var(--accent)}
+#plMenuPage1,#plMenuPage2{animation-fill-mode:forwards}
+#plMenuPage2{display:none}
+#plMenuPage2.active{display:block;animation:plPageIn .15s ease}
+.pl-menu-back{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 10px;border-top:1px solid var(--border);margin-top:4px;font-size:12px;color:var(--text2);cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:background .1s,color .1s}
+.pl-menu-back:hover{background:var(--hover);color:var(--text)}
+.pl-sort-group{margin-bottom:2px}
+.lib-content{flex:1;display:flex;flex-direction:column;overflow:hidden;margin:10px 10px 10px 6px;gap:8px}
+.lib-content-head{padding:16px;flex-shrink:0;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75)}
+.lib-content-hero{display:flex;align-items:center;gap:14px}
+.lib-hero-btns{display:flex;gap:7px;align-items:center;flex-shrink:0}
+.lib-hero-icon{width:110px;height:110px;border-radius:calc(var(--radius) * 0.85);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.lib-hero-icon.off-icon{background:linear-gradient(135deg,#1a3a4a,#0d2535)}
+.lib-hero-icon.fav-icon{background:linear-gradient(135deg,#c0144e,#7a0030)}
+.lib-hero-name{font-size:20px;font-weight:800}
+.lib-hero-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.btn-play-all{display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--radius);background:#fff;color:#000;border:none;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
+.btn-play-all:hover{background:var(--accent2)}
+.btn-icon{width:32px;height:32px;border-radius:calc(var(--radius) * 0.7);background:none;border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
+.btn-icon:hover{border-color:var(--text2);color:var(--text)}
+.lib-tracklist{flex:1;overflow-y:auto;padding:8px 12px 80px;scrollbar-width:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75)}
+.lib-tracklist::-webkit-scrollbar{display:none}
+.lib-album-hdr{display:flex;align-items:center;gap:12px;padding:16px 8px 7px;margin-top:2px}
+.lib-album-hdr-cov{width:50px;height:50px;border-radius:calc(var(--radius)*.7);background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.07)}
+.lib-album-hdr-cov img{width:100%;height:100%;object-fit:cover}
+.lib-album-hdr-info{flex:1;min-width:0}
+.lib-album-hdr-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-album-hdr-meta{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-album-hdr-play{width:28px;height:28px;border-radius:50%;background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:.15s;padding:0}
+.lib-album-hdr:hover .lib-album-hdr-play{opacity:1}
+.lib-album-hdr-play:hover{filter:brightness(1.15)}
+.lib-album-gap{height:10px;border-bottom:1px solid rgba(255,255,255,.05);margin:0 4px 6px}
+.lib-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;background:var(--accent);color:var(--accent-text);border:none;cursor:pointer;transition:.15s;font-family:var(--font);width:100%;box-sizing:border-box;text-align:center}
+.lib-upload-btn:hover{background:var(--accent2)}
+.lib-block-folders{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
+
+#libGridOverview{display:none;padding:8px 12px 80px;overflow-y:auto;scrollbar-width:none;flex:1}
+#libGridOverview::-webkit-scrollbar{display:none}
+#libGridOverview.active{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start}
+.lib-grid-card{border-radius:var(--radius);cursor:pointer;transition:.15s;position:relative;background:var(--block-color,var(--hover))}
+.lib-grid-card:hover{transform:translateY(-2px)}
+.lib-grid-card .sp-tc-cover{border-radius:var(--radius)}
+.lib-grid-card:hover .sp-tc-play{opacity:1}
+.lib-grid-card:hover .sp-tc-play-btn{transform:scale(1)}
+.lib-grid-card .sp-tc-info{padding:10px 10px 12px}
+.lib-grid-card .sp-tc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-grid-card .sp-tc-artist{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.lib-grid-card-folder .sp-tc-cover{background:rgba(var(--accent-rgb),.1)}
+.lib-grid-card-artist .sp-tc-cover{border-radius:50%}
+.lib-grid-card-artist .sp-tc-play{border-radius:50%}
+#libGridOverview .home-pl-card{width:100%}
+#libGridOverview .hpc-cover{width:100%;height:auto;aspect-ratio:1}
+.lib-grid-section{grid-column:1/-1;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;padding:6px 2px 2px;margin-top:4px}
+.lib-grid-sys-row{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.lib-grid-sys-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s;min-height:78px}
+.lib-grid-sys-card:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,var(--wb2))}
+.lib-grid-sys-card-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.lib-grid-sys-card-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-grid-sys-card-sub{font-size:11px;color:var(--text2)}
+.lib-grid-sys-card-icon{flex-shrink:0;margin-left:12px;opacity:.8}
+.lib-grid-sys-card-all,.lib-grid-sys-card-fav,.lib-grid-sys-card-hist{flex-direction:column;justify-content:space-between;align-items:flex-start;isolation:isolate;overflow:hidden;position:relative}
+.lib-grid-sys-card-all{background:var(--block-bg,#2a2a2a)}
+.lib-grid-sys-card-all::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#1a5fb4 0%,transparent 100%);pointer-events:none;z-index:0}
+.lib-grid-sys-card-all .lib-grid-sys-card-icon,.lib-grid-sys-card-all .lib-grid-sys-card-info{position:relative;z-index:1}
+.lib-grid-sys-card-all .lib-grid-sys-card-icon{margin-left:0;opacity:1}
+.lib-grid-sys-card-all .lib-grid-sys-card-name{font-size:13px;font-weight:800;color:#fff}
+.lib-grid-sys-card-all .lib-grid-sys-card-sub{font-size:10.5px;color:rgba(255,255,255,.45)}
+.lib-grid-sys-card-all:hover{background:var(--block-bg,#2a2a2a);filter:brightness(1.15)}
+.lib-grid-sys-card-fav{background:var(--block-bg,#2a2a2a)}
+.lib-grid-sys-card-fav::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#c0144e 0%,transparent 100%);pointer-events:none;z-index:0}
+.lib-grid-sys-card-hist{background:var(--block-bg,#2a2a2a)}
+.lib-grid-sys-card-hist::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#b8860b 0%,transparent 100%);pointer-events:none;z-index:0}
+.lib-grid-sys-card-fav .lib-grid-sys-card-icon,.lib-grid-sys-card-fav .lib-grid-sys-card-info,.lib-grid-sys-card-hist .lib-grid-sys-card-icon,.lib-grid-sys-card-hist .lib-grid-sys-card-info{position:relative;z-index:1}
+.lib-grid-sys-card-fav .lib-grid-sys-card-icon,.lib-grid-sys-card-hist .lib-grid-sys-card-icon{margin-left:0;opacity:1}
+.lib-grid-sys-card-fav .lib-grid-sys-card-name,.lib-grid-sys-card-hist .lib-grid-sys-card-name{font-size:13px;font-weight:800;color:#fff}
+.lib-grid-sys-card-fav .lib-grid-sys-card-sub,.lib-grid-sys-card-hist .lib-grid-sys-card-sub{font-size:10.5px;color:rgba(255,255,255,.45)}
+.lib-grid-sys-card-fav:hover,.lib-grid-sys-card-hist:hover{background:var(--block-bg,#2a2a2a);filter:brightness(1.15)}
+/* Видимостью #libBackToGrid в bloom управляет условный рендер React
+   (показан только в grid-виде вне обзора). Жёсткий display:none тут перекрывал
+   бы его и кнопка «назад» никогда не появлялась. */
+.folder-settings-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.folder-settings-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:calc(var(--radius)*.7)}
+.folder-settings-path{flex:1;font-size:11.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-family:monospace}
+.folder-settings-del{width:24px;height:24px;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s;padding:0}
+.folder-settings-del:hover{color:#e03030;background:rgba(224,48,48,.12)}
+.folder-settings-scan{font-size:11px;color:var(--text2);background:var(--hover);border:none;border-radius:calc(var(--radius)*.6);padding:4px 10px;cursor:pointer;transition:.12s;font-family:var(--font)}
+.folder-settings-scan:hover{color:var(--text);background:rgba(255,255,255,.1)}
+.folder-add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;background:transparent;color:var(--text2);border:1px solid var(--border);cursor:pointer;transition:.15s;font-family:var(--font);width:100%;box-sizing:border-box;justify-content:center}
+.folder-add-btn:hover{background:var(--hover);color:var(--text);border-color:rgba(255,255,255,.15)}
+/* content-visibility:auto — нативная виртуализация: браузер пропускает layout/paint
+   строк вне вьюпорта (контейнер скроллит), но узлы остаются в DOM (drag-reorder и
+   выделение работают по querySelectorAll). contain-intrinsic-size резервирует высоту
+   строки (63px без margin), чтобы скролл-позиции были корректны. */
+.tr{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:calc(var(--radius) * 0.7);cursor:pointer;transition:.15s;margin-bottom:5px;border:1px solid rgba(255,255,255,var(--wb));min-height:63px;content-visibility:auto;contain-intrinsic-size:auto 63px}
+.tr:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,var(--wb2))}
+.tr.playing{background:rgba(var(--accent-rgb),.08);border-color:rgba(var(--accent-rgb),calc(var(--wb)*4))}
+.tr.playing .trn{color:var(--accent)}
+.trcov{position:relative;width: 45px;height: 45px;;border-radius:calc(var(--radius) * 0.6);background:var(--hover);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:12px}
+.trcov img{width:100%;height:100%;object-fit:cover}
+
+/* Бейдж площадки поверх обложки (нижний-правый угол), прячется при наведении на
+   обложку. Работает в строках треков (.trcov) и карточках (.sp-tc-cover). */
+.cov-badge{position:absolute;right:3px;bottom:3px;z-index:6;pointer-events:none;line-height:0;opacity:1;transition:opacity .15s ease}
+/* На крупных обложках-карточках бейдж больше и с большим отступом от угла. */
+.sp-tc-cover .cov-badge,.hpc-cover .cov-badge{right:6px;bottom:6px}
+.trcov:hover .cov-badge,.sp-tc-cover:hover .cov-badge,.sp-track-card:hover .cov-badge,.sp-am-track-card:hover .cov-badge,#mpCover:hover .cov-badge,.home-pl-card:hover .cov-badge,.lib-sidebar .lib-item:hover .cov-badge,.sp-recent-item:hover .cov-badge{opacity:0}
+.trcov-loading{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:5;border-radius:calc(var(--radius) * 0.5);pointer-events:none;animation:coverLoadFadeIn .2s ease}
+.trcov-loading .sc-spinner{width:16px;height:16px;border-width:2px;margin:0}
+.tri{flex:1;min-width:0}
+.trn{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tra{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.tra-link{cursor:pointer;transition:color .1s}
+.tra-link:hover{color:var(--text);text-decoration:underline}
+/* Яндекс-артист: тот же вид, что .tra-link, но без глобального .tra-link
+   capture-хендлера (он бы увёл на SC-артиста для результатов поиска). */
+.ym-tra-link{cursor:pointer;transition:color .1s}
+.ym-tra-link:hover{color:var(--text);text-decoration:underline}
+.tra-sep{color:var(--text2)}
+.tri:hover .trn,.tri:hover .tra{overflow:visible;text-overflow:clip}
+.trd{font-size:11px;color:var(--text2);flex-shrink:0;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600}
+.trac{display:flex;gap:2px;opacity:0;transition:.15s;flex-shrink:0}
+.tr:hover .trac{opacity:1}
+.lib-sidebar.lib-sb-compact .lib-icon{display:none}
+/* В компактном сайдбаре обложка скрыта — прячем и бейдж площадки, иначе он
+   позиционируется относительно схлопнутого контейнера и висит мусором. */
+.lib-sidebar.lib-sb-compact .lib-item .cov-badge{display:none}
+.lib-sidebar.lib-sb-compact .lib-item{padding:4px 10px;margin-bottom:2px;gap:6px}
+.lib-sidebar.lib-sb-compact .lib-item-play{display:none!important}
+.lib-sidebar.lib-sb-compact .lib-item>div:first-child{display:none}
+.lib-sidebar.lib-sb-compact .lib-pin-dot{display:none}
+.lib-sidebar.lib-sb-compact .lib-item[data-pinned]::before{content:'';width:6px;height:6px;min-width:6px;border-radius:50%;background:var(--accent);align-self:center;flex-shrink:0}
+.ib{width:25px;height:25px;border-radius:calc(var(--radius) * 0.55);background:transparent;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-size:12px}
+.ib:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.ib.fav{color:#e03030}
+.ib-rmq:hover{color:#e03030!important;background:rgba(224,48,48,.1)!important}
+.bars{display:flex;gap:2px;align-items:center;height:14px}
+.bars span{width:3px;height:8px;border-radius:2px;background:var(--accent);animation:npBar 0.8s ease-in-out infinite alternate;animation-fill-mode:backwards}
+.bars span:nth-child(2){animation-delay:.2s;height:12px}
+.bars span:nth-child(3){animation-delay:.4s;height:6px}
+body.audio-paused .bars span{animation-play-state:paused;opacity:.5}
+body.bars-hidden .tr-playing-overlay .bars span{animation-play-state:paused!important}

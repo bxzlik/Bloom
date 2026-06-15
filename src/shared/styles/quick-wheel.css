@@ -1,0 +1,16 @@
+/* z-index ниже #winTitlebar (1001) — как у модалок (settingsOverlay 990 и т.п.),
+   чтобы тайтлбар оставался видимым/кликабельным поверх оверлея ( было
+   9999 и колесо перекрывало тайтлбар). */
+#quick-wheel{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.52);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+#quick-wheel.qw-open{display:flex}
+#qw-wrap{position:relative;width:420px;height:420px;flex-shrink:0}
+#qw-svg{position:absolute;inset:0;width:100%;height:100%}
+#qw-labels{position:absolute;inset:0;pointer-events:none}
+.qw-sector{fill:rgba(255,255,255,.06);stroke:rgba(255,255,255,.11);stroke-width:.8;transition:fill .1s,stroke .1s;pointer-events:all;cursor:pointer}
+.qw-sector.qw-active{fill:rgba(var(--accent-rgb),.22);stroke:rgba(var(--accent-rgb),.5)}
+.qw-icon-wrap{position:absolute;display:flex;flex-direction:column;align-items:center;gap:5px;transform:translate(-50%,-50%);pointer-events:none;color:rgba(255,255,255,.55);transition:color .1s}
+.qw-icon-wrap svg{display:block}
+.qw-icon-wrap .qw-lbl{font-size:9px;font-family:var(--font);font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.qw-icon-wrap.qw-active{color:var(--accent)}
+#qw-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:88px;height:88px;border-radius:50%;background:rgba(18,18,18,.96);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;z-index:2;transition:background .15s;font-family:inherit}
+#qw-center:hover{background:rgba(30,30,30,.98)}

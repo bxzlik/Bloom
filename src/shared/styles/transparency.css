@@ -1,0 +1,95 @@
+/* Прозрачность / стекло (категория ПРОЗРАЧНОСТЬ раздела «Интерфейс»).
+   Включается классом `glass-mode` на <body> (его ставит transparencyStore).
+   Загружается ПОСЛЕ overrides-main.css — перебивает `var(--block-color)!important`.
+
+   Логика с легаси _glassOuter/_glassInner:
+     - ВНЕШНИЕ контейнеры (sidebar/main/правые панели/мини-плеер) получают
+       backdrop-filter (blur+brightness) + полупрозрачный фон цвета блоков;
+     - ВНУТРЕННИЕ блоки становятся transparent, чтобы сквозь них просвечивало
+       стекло родителя.
+   Значения берутся из CSS-переменных, которые ставит стор:
+     --glass-block-bg  rgba цвета блоков с альфой blockOpacity
+     --glass-filter    blur(Npx) brightness(M) */
+
+/* ── Внешние контейнеры: стекло + полупрозрачный фон ───────────────────────── */
+body.glass-mode .sidebar,
+body.glass-mode .main,
+body.glass-mode #grpLyricsBlock {
+  background: var(--glass-block-bg) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  -webkit-backdrop-filter: var(--glass-filter) !important;
+}
+
+/* Очередь в глобальной правой панели — внешний контейнер (в легаси был отдельный
+   #grpQueueBlock). В bloom GRP переиспользует тот же QueueBlock (#playerQueueBlock),
+   поэтому стекло вешаем ТОЛЬКО на копию внутри #globalRightPanel; копия на странице
+   плеера остаётся внутренним (прозрачным) блоком ниже. */
+body.glass-mode #globalRightPanel #playerQueueBlock {
+  background: var(--glass-block-bg) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  -webkit-backdrop-filter: var(--glass-filter) !important;
+}
+
+/* Мини-плеер — стекло только при фоне «Тема». */
+body.glass-mode.mp-bg-theme #miniPlayer {
+  background: var(--glass-block-bg) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  -webkit-backdrop-filter: var(--glass-filter) !important;
+}
+
+/* Детальный вид артиста/альбома/плейлиста (.sp-detail-view) — ОВЕРЛЕЙ
+   `position:absolute; inset:0` поверх активной страницы внутри .main. В стекле он
+   сам прозрачен (просвечивает стекло .main → обои), НО прозрачность убирает только
+   фоны, а контент (обложки/текст) нижней страницы оставался видимым сквозь него.
+   Поэтому, пока оверлей открыт (класс `detail-open` на body, ставит DetailView),
+   гасим страницу под ним — остаётся только стекло .main за оверлеем. Гасим через
+   `opacity` с переходом В ТАКТ появлению оверлея (spDvIn .2s), а НЕ мгновенным
+   `visibility:hidden` — иначе контент пропадал рывком до того, как оверлей проявится. */
+body.glass-mode #mainEl > .page {
+  transition: opacity 0.2s ease;
+}
+body.glass-mode.detail-open #mainEl > .page {
+  opacity: 0 !important;
+}
+
+/* ── Внутренние блоки: прозрачны, родительское стекло просвечивает ─────────── */
+body.glass-mode .sp-detail-view,
+body.glass-mode .player-section,
+body.glass-mode #playerQueueBlock,
+body.glass-mode #lyricsQueueBlock,
+body.glass-mode #playerContent > .sl-bottom,
+body.glass-mode .lib-block,
+body.glass-mode .lib-block-search,
+body.glass-mode .lib-block-btns,
+body.glass-mode .lib-block-pl,
+body.glass-mode .lib-block-combined,
+body.glass-mode .lib-block-folders,
+body.glass-mode .lib-content-head,
+body.glass-mode .lib-tracklist,
+body.glass-mode .home-btn-secondary,
+body.glass-mode .home-quick-card,
+body.glass-mode .home-games-card,
+body.glass-mode .home-stats-bar,
+body.glass-mode .home-tod,
+body.glass-mode .home-continue-card,
+body.glass-mode .lib-grid-sys-card,
+body.glass-mode .lib-item-sys,
+body.glass-mode .home-section,
+body.glass-mode .home-nowplaying,
+body.glass-mode .sp-inp-wrap,
+body.glass-mode .sc-uni-section,
+body.glass-mode .sp-track-grid,
+body.glass-mode .sp-pl-grid,
+body.glass-mode .sp-artist-grid,
+body.glass-mode .sp-recent-list,
+body.glass-mode .sp-recent-item,
+body.glass-mode .sp-am-section,
+body.glass-mode .sp-am-tracks-grid,
+body.glass-mode .sp-am-track-card {
+  background: transparent !important;
+}
+
+/* Подсказка движку (плавнее перерисовка стекла при скролле). */
+body.glass-mode .sc {
+  will-change: backdrop-filter;
+}

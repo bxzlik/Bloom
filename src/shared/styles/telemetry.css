@@ -1,0 +1,188 @@
+/* Телеметрия — «Хранилище» (новый дизайн, не tele-*).
+   Подключается в main.tsx после overrides-main.css. */
+
+/* Бар «занято места» под крупным числом в карточке */
+.tele-storage-bar {
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.tele-storage-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.tele-storage-sub {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* Шапка блока «Управление данными приложения» */
+.tele-data-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 22px 0 10px;
+}
+.tele-data-head-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+.tele-clear-all {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e03030;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 4px;
+  border-radius: 6px;
+  transition: 0.15s;
+}
+.tele-clear-all:hover {
+  background: rgba(224, 48, 48, 0.1);
+}
+
+/* Строка данных (иконка + название/мета + дропдаун + корзина) */
+.tele-data-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-solid, var(--card));
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.8);
+  padding: 11px 14px;
+  transition: 0.15s;
+}
+.tele-data-row + .tele-data-row {
+  margin-top: 6px;
+}
+.tele-data-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: calc(var(--radius) * 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent);
+}
+.tele-data-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.tele-data-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tele-data-meta {
+  font-size: 11px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* TTL-дропдаун */
+.tele-ttl {
+  position: relative;
+  flex-shrink: 0;
+}
+.tele-ttl-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.5);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.tele-ttl-btn:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--hover);
+}
+.tele-ttl-btn svg {
+  opacity: 0.6;
+}
+.tele-ttl-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  min-width: 150px;
+  background: #1c1c1c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+}
+.tele-ttl-opt {
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 7px 10px;
+  border-radius: 6px;
+  transition: 0.12s;
+}
+.tele-ttl-opt:hover {
+  background: var(--hover);
+}
+.tele-ttl-opt.active {
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Корзина */
+.tele-trash {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.tele-trash:hover {
+  color: #e03030;
+  background: rgba(224, 48, 48, 0.1);
+}
+.tele-trash:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tele-trash:disabled:hover {
+  color: var(--muted);
+  background: none;
+}

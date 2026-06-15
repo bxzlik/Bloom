@@ -1,0 +1,806 @@
+import { useEffect, useMemo, useRef, useState, type WheelEvent as ReactWheelEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { createPortal } from 'react-dom'
+import { useFavStore, useLibStore } from '@features/library'
+import { trackRegistry, CoverSourceBadge, ArtistLinks } from '@entities/track'
+import { useNavStore } from '@app/navigationStore'
+import { usePlayerStore } from '../model/store'
+import { useQueueStore } from '../model/queueStore'
+import { useGrpStore } from '../model/grpStore'
+import { useBigPicStore } from '../model/bigPicStore'
+import { usePlayerViewStore, extractMpBgColor, useOptStore } from '@features/settings'
+import {
+  togglePlay,
+  prevTr,
+  nextTr,
+  seek,
+  seekLive,
+  setVol,
+  toggleMuteMain,
+  toggleShuffleMain,
+  cycleRepeatMain,
+  toggleCurFav,
+} from '../api/play'
+import { audioEngine } from '../lib/audioEngine'
+import { MarqueeTitle } from './MarqueeTitle'
+
+/**
+ * Нижний #miniPlayer в main окне — (≈2897-2960).
+ *
+ * 3 равные колонки:
+ *   LEFT  : cover 44×44 + title/artist + fav
+ *   CENTER: repeat | prev | PLAY 48 | next | shuffle
+ *   RIGHT : current/duration + volume + queue/lyrics/big-pic
+ *
+ * Прогресс — 2px полоска поверху, клик = seek.
+ *
+ * Скрыт пока нет трека (curId=null) ИЛИ открыта страница плеера.
+ *
+ * Отложено: bg-progress mode (#mpBgProgress), volume popup для left/right
+ * playerbar mode, big-pic, ring shape для cover.
+ */
+export const PlayerBar = () => {
+  const curId = useQueueStore((s) => s.curId)
+  const page = useNavStore((s) => s.page)
+
+  const title = usePlayerStore((s) => s.title)
+  const artist = usePlayerStore((s) => s.artist)
+  const artworkRaw = usePlayerStore((s) => s.artwork)
+  const coverOverride = usePlayerStore((s) => s.coverOverride)
+  const frozenCover = useOptStore((s) => s.frozenCover)
+  // Кастомная обложка + заморозка GIF (оптимизация) перекрывают обложку трека.
+  const artwork = frozenCover ?? coverOverride ?? artworkRaw
+  const playing = usePlayerStore((s) => s.playing)
+  const volume = usePlayerStore((s) => s.volume)
+  const shuffle = usePlayerStore((s) => s.shuffle)
+  const repeat = usePlayerStore((s) => s.repeat)
+  const isFav = useFavStore((s) => (curId ? s.favs.has(curId) : false))
+  const curTrack =
+    useLibStore((s) => (curId ? s.tracks.find((t) => t.id === curId) ?? null : null)) ??
+    (curId ? trackRegistry.get(curId) ?? null : null)
+
+  // Настройки бара (раздел «Плеер» → Мини-плеер): вкл/выкл, фон, форма обложки.
+  const mpEnabled = usePlayerViewStore((s) => s.mpEnabled)
+  const mpBgMode = usePlayerViewStore((s) => s.mpBgMode)
+  const mpCoverShape = usePlayerViewStore((s) => s.mpCoverShape)
+  // В режиме «Фоном» весь бар = прогресс-бар → клик по нему перематывает
+  // (линия #mpBarBg при этом обычно скрыта). Кнопки/обложку/название пропускаем.
+  const mpBgProgress = usePlayerViewStore((s) => s.mpProgress.bg)
+  const onBarClickSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!mpBgProgress) return
+    if ((e.target as HTMLElement).closest('button, input, a, [data-nav], .tra-link')) return
+    const dur = usePlayerStore.getState().duration
+    if (!dur) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    seek(frac * dur)
+  }
+
+  // Зеркало fav в playerStore (если library favStore изменился вне плеера).
+  useEffect(() => {
+    usePlayerStore.setState({ fav: isFav })
+  }, [isFav])
+
+  // Фон «цвет обложки» — извлекаем тёмный доминант.
+  const [coverColor, setCoverColor] = useState<string | null>(null)
+  useEffect(() => {
+    if (mpBgMode !== 'coverColor' || !artwork) {
+      setCoverColor(null)
+      return
+    }
+    let cancelled = false
+    void extractMpBgColor(artwork).then((hex) => {
+      if (!cancelled) setCoverColor(hex)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [mpBgMode, artwork])
+
+  const goNav = useNavStore((s) => s.goNav)
+
+  // Глобальная правая панель (очередь/текст). Хуки ДО early-return ниже.
+  const grpOpen = useGrpStore((s) => s.open)
+  const grpMode = useGrpStore((s) => s.mode)
+  const openGrp = useGrpStore((s) => s.openPanel)
+
+  // Скрываем bar когда нет трека, открыт page-player, или бар выключен (preset off).
+  const visible = !!curId && page !== 'player' && mpEnabled
+  if (!visible) {
+    return (
+      <div
+        id="miniPlayer"
+        style={{
+          display: 'none',
+          height: 72,
+          flexShrink: 0,
+          borderRadius: 'var(--radius)',
+          border: '1px solid rgba(255,255,255,var(--wb))',
+          backdropFilter: 'blur(12px)',
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      />
+    )
+  }
+
+  const onWheelVol = (e: ReactWheelEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const cur = usePlayerStore.getState().volume
+    setVol(Math.min(100, Math.max(0, cur + (e.deltaY < 0 ? 1 : -1))))
+  }
+
+  // Классы фона/формы.
+  const mpClass = [mpCoverShape === 'round' ? 'mp-cover-round' : '', mpBgMode === 'cover' ? 'mp-bg-cover' : '']
+    .filter(Boolean)
+    .join(' ')
+
+  return (
+    <div
+      id="miniPlayer"
+      className={mpClass || undefined}
+      onClick={onBarClickSeek}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: 72,
+        flexShrink: 0,
+        borderRadius: 'var(--radius)',
+        border: '1px solid rgba(255,255,255,var(--wb))',
+        backdropFilter: 'blur(12px)',
+        overflow: 'hidden',
+        position: 'relative',
+        // Фон «цвет обложки».
+        backgroundColor: mpBgMode === 'coverColor' && coverColor ? coverColor : undefined,
+        // В режиме «Фоном» курсор-указатель намекает на кликабельную перемотку.
+        cursor: mpBgProgress ? 'pointer' : undefined,
+      }}
+    >
+      {/* Фон «обложка» — слой картинки под содержимым. */}
+      {mpBgMode === 'cover' && artwork && (
+        <div id="mpBgImgLayer">
+          <img src={artwork} alt="" style={{ filter: 'brightness(0.38) saturate(0.7)' }} />
+        </div>
+      )}
+      {/* Прогресс-бар (линия 2px / фон-заливка) + drag/click-seek + wheel-seek.
+          Изолирован в подкомпонент: тик timeupdate перерисовывает только его,
+          а не весь PlayerBar (иначе при игре лагали бы тогглы/интеракции). */}
+      <MpProgress />
+
+      <div
+        className="mp-inner"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          height: '100%',
+          padding: '0 16px',
+          width: '100%',
+          // Контент над фон-слоями (#mpBgProgress / #mpBgImgLayer), mp-bg-cover.
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        {/* LEFT — cover + title + fav */}
+        <div
+          className="mp-left"
+          style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}
+        >
+          <div
+            id="mpCoverWrap"
+            style={{ position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            {/* Кольцо прогресса вокруг обложки. */}
+            <MpCircleRing />
+            <div
+              id="mpCover"
+              data-nav
+              onClick={() => useBigPicStore.getState().openBig()}
+              style={{
+                position: 'relative',
+                width: 44,
+                height: 44,
+                borderRadius: 'calc(var(--radius) * 0.55)',
+                background: 'var(--card)',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--muted)',
+                flexShrink: 0,
+                cursor: 'pointer',
+              }}
+            >
+              {artwork ? (
+                <img src={artwork} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <NoteSvg size={16} />
+              )}
+              {curTrack && <CoverSourceBadge track={curTrack} />}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+            <div
+              style={{
+                minWidth: 0,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div
+                data-nav
+                onClick={() => goNav('player')}
+                style={{ minWidth: 0, cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 5 }}
+              >
+                {/* Marquee названия бара: прокрутка
+                    когда текст шире контейнера, пауза на hover. */}
+                <span style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <MarqueeTitle
+                    text={title || 'Не выбрано'}
+                    wrapClass="mp-title-wrap"
+                    textClass="mp-title"
+                    scrollingClass="mp-scrolling"
+                    offsetVar="--mp-off"
+                    style={{ maxWidth: '100%' }}
+                  />
+                </span>
+              </div>
+              <div
+                id="mpArtist"
+                style={{
+                  fontSize: 11,
+                  color: 'var(--text2)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  marginTop: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                  <ArtistLinks artist={artist} scId={curTrack?.artistScId} permalink={curTrack?.artistPermalink} artistId={curTrack?.artistId} provider={curTrack?.artistProvider} />
+                </span>
+              </div>
+            </div>
+            <button
+              id="mpFav"
+              onClick={toggleCurFav}
+              aria-label={isFav ? 'Убрать из «Любимое»' : 'В «Любимое»'}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 'calc(var(--radius) * 0.7)',
+                background: 'none',
+                border: 'none',
+                color: isFav ? '#e03030' : 'var(--text2)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: '.15s',
+                flexShrink: 0,
+              }}
+            >
+              <HeartSvg size={14} filled={isFav} />
+            </button>
+          </div>
+        </div>
+
+        {/* CENTER — repeat, prev, PLAY, next, shuffle */}
+        <div
+          className="mp-center"
+          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0 }}
+        >
+          <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label="Повтор" style={{ position: 'relative' }}>
+            <RepeatSvg size={15} />
+            {repeat === 2 && <RepeatOneBadge />}
+          </button>
+          <button className="cc" onClick={prevTr} aria-label="Предыдущий">
+            <PrevSvg size={17} />
+          </button>
+          <button className="cc-play" onClick={togglePlay} aria-label={playing ? 'Пауза' : 'Воспроизвести'}>
+            {playing ? <PauseSvg size={15} /> : <PlaySvg size={15} />}
+          </button>
+          <button className="cc" onClick={nextTr} aria-label="Следующий">
+            <NextSvg size={17} />
+          </button>
+          <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label="Перемешать">
+            <ShuffleSvg size={15} />
+          </button>
+        </div>
+
+        {/* RIGHT — time + volume + queue/lyrics/big-pic */}
+        <div
+          className="mp-right"
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 10,
+            minWidth: 0,
+          }}
+        >
+          <MpTime />
+          <Volume volume={volume} onWheel={onWheelVol} />
+          {/* Очередь / Текст — открывают глобальную правую панель (#globalRightPanel).
+              Повторный клик по активному режиму — закрыть. */}
+          <button
+            className={`cc${grpOpen && grpMode === 'queue' ? ' on' : ''}`}
+            aria-label="Очередь"
+            style={{ flexShrink: 0 }}
+            onClick={() => openGrp('queue')}
+          >
+            <QueueSvg size={15} />
+          </button>
+          <button
+            className={`cc${grpOpen && grpMode === 'lyrics' ? ' on' : ''}`}
+            aria-label="Текст песни"
+            style={{ flexShrink: 0 }}
+            onClick={() => openGrp('lyrics')}
+          >
+            <LyricsSvg size={15} />
+          </button>
+          {/* Big picture — полноэкранный режим обложки (#bigPicOverlay). */}
+          <button
+            className="cc"
+            aria-label="Big picture"
+            style={{ flexShrink: 0 }}
+            onClick={() => useBigPicStore.getState().openBig()}
+          >
+            <BigPicSvg size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────
+
+const fmt = (sec: number): string => {
+  if (!Number.isFinite(sec) || sec <= 0) return '0:00'
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+/**
+ * Прогресс-полоса (2px) нижнего бара. Подписана на position/duration ВНУТРИ,
+ * поэтому тик timeupdate перерисовывает только её, не весь PlayerBar.
+ */
+const MpProgress = () => {
+  const position = usePlayerStore((s) => s.position)
+  const duration = usePlayerStore((s) => s.duration)
+  const showLine = usePlayerViewStore((s) => s.mpProgress.line)
+  const showBg = usePlayerViewStore((s) => s.mpProgress.bg)
+  const [dragFrac, setDragFrac] = useState<number | null>(null)
+  const pct =
+    dragFrac != null ? dragFrac * 100 : duration > 0 ? Math.min(100, (position / duration) * 100) : 0
+  const seekAtPointer = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!duration) return
+    const r = e.currentTarget.getBoundingClientRect()
+    const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
+    setDragFrac(frac)
+    seekLive(frac * duration) // live-seek без IPC-пуша (пуш — на отпускании)
+  }
+  const onBarPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!duration) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    seekAtPointer(e)
+  }
+  const onBarPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) seekAtPointer(e)
+  }
+  const endBarDrag = () => {
+    if (dragFrac != null && duration) seek(dragFrac * duration)
+    setDragFrac(null)
+  }
+  const onProgWheel = (e: ReactWheelEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const d = audioEngine.duration
+    if (!d) return
+    const t = Math.max(0, Math.min(d, audioEngine.currentTime + (e.deltaY < 0 ? 1 : -1)))
+    seek(t)
+  }
+  return (
+    <>
+      {/* Фон-заливка прогресса, под содержимым бара. */}
+      {showBg && (
+        <div
+          id="mpBgProgress"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            height: '100%',
+            width: `${pct}%`,
+            background: 'rgba(var(--accent-rgb),0.18)',
+            pointerEvents: 'none',
+            zIndex: 0,
+            transition: dragFrac != null ? 'none' : 'width .08s linear',
+          }}
+        />
+      )}
+      {/* Линия-прогресс поверху (2px) + seek. */}
+      {showLine && (
+        <div
+          id="mpBarBg"
+          onPointerDown={onBarPointerDown}
+          onPointerMove={onBarPointerMove}
+          onPointerUp={endBarDrag}
+          onPointerCancel={endBarDrag}
+          onWheel={onProgWheel}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            background: 'rgba(255,255,255,0.12)',
+            cursor: 'pointer',
+            touchAction: 'none',
+            zIndex: 2,
+          }}
+        >
+          <div
+            id="mpBarFill"
+            style={{
+              height: '100%',
+              width: `${pct}%`,
+              background: 'rgba(255,255,255,0.75)',
+              pointerEvents: 'none',
+              transition: dragFrac != null ? 'none' : 'width .08s linear',
+            }}
+          />
+        </div>
+      )}
+    </>
+  )
+}
+
+/**
+ * Кольцо прогресса вокруг обложки. Форма зависит от mpCoverShape (круг/скруг.квадрат).
+ * Подписано на position внутри (лист) — тик перерисовывает только кольцо.
+ */
+const MpCircleRing = () => {
+  const position = usePlayerStore((s) => s.position)
+  const duration = usePlayerStore((s) => s.duration)
+  const show = usePlayerViewStore((s) => s.mpProgress.circle)
+  const round = usePlayerViewStore((s) => s.mpCoverShape === 'round')
+  // Форма (path/perimeter) зависит только от round + --radius (не от позиции).
+  const shape = useMemo(() => {
+    if (round) return { perim: 144.51, d: null as string | null }
+    const cssR = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius')) || 14
+    const r = Math.min(Math.round(cssR * 0.55 + 4), 24)
+    const perim = 4 * (48 - 2 * r) + 2 * Math.PI * r
+    const d = `M 26 2 H ${50 - r} Q 50 2 50 ${2 + r} V ${50 - r} Q 50 50 ${50 - r} 50 H ${2 + r} Q 2 50 2 ${50 - r} V ${2 + r} Q 2 2 ${2 + r} 2 H 26`
+    return { perim, d }
+  }, [round])
+  if (!show) return null
+  const pct = duration > 0 ? Math.min(100, (position / duration) * 100) : 0
+  const offset = shape.perim - (pct / 100) * shape.perim
+  return (
+    <svg
+      id="mpCircleRing"
+      width="52"
+      height="52"
+      viewBox="0 0 52 52"
+      style={{ position: 'absolute', top: -4, left: -4, pointerEvents: 'none' }}
+    >
+      {shape.d ? (
+        <>
+          <path d={shape.d} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d={shape.d}
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={shape.perim}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset .08s linear' }}
+          />
+        </>
+      ) : (
+        <>
+          <circle cx="26" cy="26" r="23" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2.5} />
+          <circle
+            cx="26"
+            cy="26"
+            r="23"
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeDasharray={shape.perim}
+            strokeDashoffset={offset}
+            transform="rotate(-90 26 26)"
+            style={{ transition: 'stroke-dashoffset .08s linear' }}
+          />
+        </>
+      )}
+    </svg>
+  )
+}
+
+/** Время трека (current / duration). Подписано на position/duration внутри. */
+const MpTime = () => {
+  const position = usePlayerStore((s) => s.position)
+  const duration = usePlayerStore((s) => s.duration)
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 3,
+        fontSize: 11,
+        color: 'var(--text2)',
+        flexShrink: 0,
+        fontVariantNumeric: 'tabular-nums',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span style={{ color: 'var(--text)' }}>{fmt(position)}</span>
+      <span style={{ opacity: 0.4 }}>/</span>
+      <span>{fmt(duration)}</span>
+    </div>
+  )
+}
+
+
+const Volume = ({ volume, onWheel }: { volume: number; onWheel: (e: ReactWheelEvent<HTMLDivElement>) => void }) => {
+  const sliderRef = useRef<HTMLInputElement>(null)
+  // В боковом (вертикальном) баре горизонтальный слайдер неудобен → клик по
+  // иконке открывает вертикальный поп-ап громкости.
+  const barPos = usePlayerViewStore((s) => s.playerBarPos)
+  const vertical = barPos === 'left' || barPos === 'right'
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [popupOpen, setPopupOpen] = useState(false)
+  useEffect(() => {
+    const sl = sliderRef.current
+    if (!sl) return
+    const pct = volume
+    sl.style.background = `linear-gradient(to right,rgba(255,255,255,0.8) 0%,rgba(255,255,255,0.8) ${pct}%,rgba(255,255,255,0.2) ${pct}%,rgba(255,255,255,0.2) 100%)`
+  }, [volume])
+  // Поп-ап закрывается при переходе в горизонтальный бар.
+  useEffect(() => {
+    if (!vertical) setPopupOpen(false)
+  }, [vertical])
+  return (
+    <div className="ps-vol" onWheel={onWheel} style={{ flex: 0, position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <button
+        ref={btnRef}
+        className="cc"
+        onClick={() => (vertical ? setPopupOpen((v) => !v) : toggleMuteMain())}
+        aria-label={vertical ? 'Громкость' : 'Mute'}
+      >
+        <VolSvg size={15} v={volume} />
+      </button>
+      {!vertical && (
+        <input
+          ref={sliderRef}
+          type="range"
+          className="vol-sl"
+          min={0}
+          max={100}
+          value={volume}
+          onChange={(e) => setVol(Number(e.target.value))}
+        />
+      )}
+      {popupOpen && <VertVolPopup volume={volume} anchorRef={btnRef} onClose={() => setPopupOpen(false)} />}
+    </div>
+  )
+}
+
+/**
+ * Вертикальный поп-ап громкости бокового бара. Fixed-портал у
+ * кнопки, drag/click/колесо по дорожке = громкость, закрытие по клику снаружи.
+ */
+const VertVolPopup = ({
+  volume,
+  anchorRef,
+  onClose,
+}: {
+  volume: number
+  anchorRef: React.RefObject<HTMLButtonElement | null>
+  onClose: () => void
+}) => {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+
+  // Позиционирование у кнопки (слева от колонки; works для left и right).
+  useEffect(() => {
+    const btn = anchorRef.current
+    if (!btn) return
+    const r = btn.getBoundingClientRect()
+    const pw = 60
+    const ph = 168
+    let left = r.left - pw - 8
+    if (left < 8) left = r.right + 8
+    let top = r.top + r.height / 2 - ph / 2
+    if (top < 8) top = 8
+    if (top + ph > window.innerHeight - 8) top = window.innerHeight - ph - 8
+    setPos({ left, top })
+  }, [anchorRef])
+
+  // Закрытие по клику снаружи.
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (popupRef.current?.contains(t) || anchorRef.current?.contains(t)) return
+      onClose()
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [anchorRef, onClose])
+
+  const volFromY = (clientY: number): number => {
+    const tr = trackRef.current
+    if (!tr) return volume
+    const r = tr.getBoundingClientRect()
+    const pct = 1 - (clientY - r.top) / r.height
+    return Math.round(Math.min(1, Math.max(0, pct)) * 100)
+  }
+  const onTrackDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setVol(volFromY(e.clientY))
+  }
+  const onTrackMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) setVol(volFromY(e.clientY))
+  }
+  const onTrackWheel = (e: ReactWheelEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setVol(Math.min(100, Math.max(0, volume + (e.deltaY < 0 ? 5 : -5))))
+  }
+
+  return createPortal(
+    <div
+      ref={popupRef}
+      style={{
+        display: 'flex',
+        position: 'fixed',
+        left: pos?.left ?? -9999,
+        top: pos?.top ?? -9999,
+        border: '1px solid rgba(255,255,255,.12)',
+        borderRadius: 10,
+        padding: '10px 8px',
+        zIndex: 9500,
+        alignItems: 'center',
+        flexDirection: 'column',
+        gap: 6,
+        boxShadow: '0 8px 32px rgba(0,0,0,.8)',
+        background: 'var(--block-color, #141414)',
+        isolation: 'isolate',
+      }}
+    >
+      <span style={{ fontSize: 10, color: 'var(--text2)' }}>{Math.round(volume)}%</span>
+      <div
+        ref={trackRef}
+        onPointerDown={onTrackDown}
+        onPointerMove={onTrackMove}
+        onWheel={onTrackWheel}
+        style={{ width: 4, height: 120, background: 'rgba(255,255,255,.15)', borderRadius: 2, position: 'relative', cursor: 'pointer', touchAction: 'none' }}
+      >
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--accent)', borderRadius: 2, height: `${Math.round(volume)}%`, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 12, height: 12, background: 'var(--accent)', borderRadius: '50%', bottom: `calc(${Math.round(volume)}% - 6px)`, pointerEvents: 'none' }} />
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+// ── SVG icons (inline) ─────────────────────────────────────
+
+const NoteSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+  </svg>
+)
+const HeartSvg = ({ size, filled }: { size: number; filled: boolean }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
+    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+  </svg>
+)
+const PrevSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <polygon points="19 20 9 12 19 4 19 20" /><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth={2} />
+  </svg>
+)
+const NextSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <polygon points="5 4 15 12 5 20 5 4" /><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth={2} />
+  </svg>
+)
+const PlaySvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
+  </svg>
+)
+const PauseSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
+  </svg>
+)
+const ShuffleSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+    <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" strokeLinecap="round" />
+    <path d="m18 2 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2 6h1.9c1.5 0 2.9.9 3.5 2.2" strokeLinecap="round" />
+    <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.7l-.5-.8" strokeLinecap="round" />
+    <path d="m18 14 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+const RepeatSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+    <polyline points="17 1 21 5 17 9" />
+    <path d="M3 11V9a4 4 0 014-4h14" />
+    <polyline points="7 23 3 19 7 15" />
+    <path d="M21 13v2a4 4 0 01-4 4H3" />
+  </svg>
+)
+const RepeatOneBadge = () => (
+  <span
+    style={{
+      position: 'absolute',
+      top: -2,
+      right: -2,
+      background: 'var(--accent)',
+      borderRadius: '50%',
+      width: 9,
+      height: 9,
+      fontSize: 6,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'var(--accent-text)',
+      fontWeight: 700,
+    }}
+  >
+    1
+  </span>
+)
+const VolSvg = ({ size, v }: { size: number; v: number }) => {
+  if (v === 0) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
+        <line x1="23" y1="9" x2="17" y2="15" strokeWidth={1.8} />
+        <line x1="17" y1="9" x2="23" y2="15" strokeWidth={1.8} />
+      </svg>
+    )
+  }
+  if (v < 50) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
+        <path d="M15.54 8.46a5 5 0 010 7.07" />
+      </svg>
+    )
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
+      <path d="M15.54 8.46a5 5 0 010 7.07" />
+      <path d="M19.07 4.93a10 10 0 010 14.14" />
+    </svg>
+  )
+}
+const QueueSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+    <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="15" y2="18" /><circle cx="20" cy="18" r="2" />
+  </svg>
+)
+const LyricsSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+    <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="11" y2="18" />
+  </svg>
+)
+const BigPicSvg = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3H5a2 2 0 00-2 2v3" /><path d="M21 8V5a2 2 0 00-2-2h-3" /><path d="M3 16v3a2 2 0 002 2h3" /><path d="M16 21h3a2 2 0 002-2v-3" />
+  </svg>
+)

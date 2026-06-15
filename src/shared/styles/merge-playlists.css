@@ -1,0 +1,61 @@
+    #mergePlOverlay{position:fixed;inset:0;z-index:992;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s}
+    #mergePlOverlay.open{opacity:1;pointer-events:all}
+    #mergePlOverlay .mpl-modal{background:color-mix(in srgb,var(--card-solid,var(--card)) 40%,#000 60%);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);width:520px;max-width:94vw;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden;transform:scale(.91) translateY(24px);will-change:transform;transition:.32s cubic-bezier(.34,1.38,.64,1)}
+    #mergePlOverlay.open .mpl-modal{transform:scale(1) translateY(0)}
+    #mergePlOverlay .mpl-hero{position:relative;padding:18px 20px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:14px;overflow:hidden}
+    #mergePlOverlay .mpl-cstack{width:64px;height:64px;flex-shrink:0;position:relative}
+    #mergePlOverlay .mpl-cstack .mpl-cov{position:absolute;width:46px;height:46px;border-radius:calc(var(--radius)*.55);background:var(--hover);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid var(--card-solid,var(--card));box-shadow:0 4px 14px rgba(0,0,0,.45);transition:.25s cubic-bezier(.4,0,.2,1)}
+    #mergePlOverlay .mpl-cstack .mpl-cov img{width:100%;height:100%;object-fit:cover}
+    #mergePlOverlay .mpl-cstack .mpl-cov:nth-child(1){top:0;left:0;z-index:3}
+    #mergePlOverlay .mpl-cstack .mpl-cov:nth-child(2){top:6px;left:10px;z-index:2;opacity:.85}
+    #mergePlOverlay .mpl-cstack .mpl-cov:nth-child(3){top:12px;left:18px;z-index:1;opacity:.65}
+    #mergePlOverlay .mpl-htitle{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.4px;display:flex;align-items:center;gap:6px;margin-bottom:6px}
+    #mergePlOverlay .mpl-name-input{width:100%;background:transparent;border:none;color:var(--text);padding:0;font-size:18px;font-weight:800;outline:none;font-family:var(--font);box-sizing:border-box;letter-spacing:-.2px}
+    #mergePlOverlay .mpl-name-input::placeholder{color:var(--text2)}
+    #mergePlOverlay .mpl-stats{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+    #mergePlOverlay .mpl-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;background:var(--bg2);border:1px solid var(--border);border-radius:99px;font-size:11px;font-weight:600;color:var(--text2)}
+    #mergePlOverlay .mpl-chip b{color:var(--text);font-weight:700}
+    #mergePlOverlay .mpl-chip.accent{background:rgba(var(--accent-rgb),.12);border-color:rgba(var(--accent-rgb),.3);color:var(--accent)}
+    #mergePlOverlay .mpl-chip.accent b{color:var(--accent)}
+    #mergePlOverlay .mpl-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:calc(var(--radius)*.5);background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;z-index:2}
+    #mergePlOverlay .mpl-close:hover{background:rgba(255,255,255,.08);color:var(--text)}
+    #mergePlOverlay .mpl-body{flex:1;overflow-y:auto;padding:14px 18px 4px;display:flex;flex-direction:column;gap:14px}
+    #mergePlOverlay .mpl-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+    #mergePlOverlay .mpl-source{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(var(--accent-rgb),.08);border:1px solid rgba(var(--accent-rgb),.25);border-radius:calc(var(--radius)*.7)}
+    #mergePlOverlay .mpl-source .mpl-src-icon{width:38px;height:38px;border-radius:calc(var(--radius)*.5);background:var(--hover);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+    #mergePlOverlay .mpl-source .mpl-src-icon img{width:100%;height:100%;object-fit:cover}
+    #mergePlOverlay .mpl-src-badge{margin-left:auto;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:rgba(var(--accent-rgb),.2);color:var(--accent);text-transform:uppercase;letter-spacing:.8px}
+    #mergePlOverlay .mpl-search{position:relative;margin-bottom:8px}
+    #mergePlOverlay .mpl-search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5;pointer-events:none}
+    #mergePlOverlay .mpl-search input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:calc(var(--radius)*.55);color:var(--text);padding:7px 10px 7px 30px;font-size:12.5px;outline:none;transition:.15s;font-family:var(--font);box-sizing:border-box}
+    #mergePlOverlay .mpl-search input:focus{border-color:var(--accent)}
+    #mergePlOverlay .mpl-list{display:flex;flex-direction:column;gap:3px;max-height:220px;overflow-y:auto;padding-right:2px}
+    #mergePlOverlay .mpl-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:calc(var(--radius)*.55);cursor:pointer;transition:.13s;border:1.5px solid transparent;user-select:none}
+    #mergePlOverlay .mpl-item:hover{background:var(--hover)}
+    #mergePlOverlay .mpl-item.sel{background:rgba(var(--accent-rgb),.1);border-color:rgba(var(--accent-rgb),.35)}
+    #mergePlOverlay .mpl-item-cov{width:34px;height:34px;border-radius:calc(var(--radius)*.45);background:var(--hover);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+    #mergePlOverlay .mpl-item-cov img{width:100%;height:100%;object-fit:cover}
+    #mergePlOverlay .mpl-item-info{min-width:0;flex:1}
+    #mergePlOverlay .mpl-item-name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #mergePlOverlay .mpl-item-sub{font-size:10.5px;color:var(--text2)}
+    #mergePlOverlay .mpl-item-check{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.13s;color:var(--accent-text)}
+    #mergePlOverlay .mpl-item.sel .mpl-item-check{background:var(--accent);border-color:var(--accent)}
+    #mergePlOverlay .mpl-empty{padding:24px 12px;text-align:center;font-size:12px;color:var(--text2)}
+    #mergePlOverlay .mpl-opts{display:flex;flex-direction:column;gap:2px;background:var(--bg2);border:1px solid var(--border);border-radius:calc(var(--radius)*.6);padding:4px}
+    #mergePlOverlay .mpl-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(var(--radius)*.45);cursor:pointer;transition:.13s;user-select:none}
+    #mergePlOverlay .mpl-opt:hover{background:var(--hover)}
+    #mergePlOverlay .mpl-opt-info{flex:1;min-width:0}
+    #mergePlOverlay .mpl-opt-title{font-size:12.5px;font-weight:600}
+    #mergePlOverlay .mpl-opt-sub{font-size:10.5px;color:var(--text2);margin-top:1px}
+    #mergePlOverlay .mpl-toggle{width:32px;height:18px;border-radius:99px;background:var(--border);position:relative;transition:.18s;flex-shrink:0}
+    #mergePlOverlay .mpl-toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+    #mergePlOverlay .mpl-opt.on .mpl-toggle{background:var(--accent)}
+    #mergePlOverlay .mpl-opt.on .mpl-toggle::after{left:16px}
+    #mergePlOverlay .mpl-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
+    #mergePlOverlay .mpl-foot-hint{font-size:11px;color:var(--text2);flex:1}
+    #mergePlOverlay .mpl-btn{padding:8px 16px;border-radius:calc(var(--radius)*.6);font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;border:none}
+    #mergePlOverlay .mpl-btn.ghost{background:none;border:1px solid var(--border);color:var(--text2);font-weight:600}
+    #mergePlOverlay .mpl-btn.ghost:hover{color:var(--text);border-color:var(--text2)}
+    #mergePlOverlay .mpl-btn.primary{background:var(--accent);color:var(--accent-text)}
+    #mergePlOverlay .mpl-btn.primary:hover{filter:brightness(1.1)}
+    #mergePlOverlay .mpl-btn.primary[disabled]{opacity:.4;pointer-events:none}
