@@ -272,10 +272,27 @@ pub fn now_playing(
     repeat: Option<i32>,
     source: Option<String>,
 ) -> Result<(), String> {
-    tracing::info!(
-        "now_playing: '{title}' — '{artist}' playing={playing} artwork={}",
-        artwork.as_deref().map(|s| &s[..s.len().min(60)]).unwrap_or("")
-    );
+    // `now_playing` пушится с фронта ~раз в секунду на позиционных тиках. Логируем
+    // только при смене значимых полей (трек/состояние/обложка), иначе лог
+    // заваливается одинаковыми строками всё время воспроизведения.
+    {
+        static LAST_LOGGED: OnceCell<Mutex<Option<(String, String, bool, String)>>> =
+            OnceCell::new();
+        let key = (
+            title.clone(),
+            artist.clone(),
+            playing,
+            artwork.clone().unwrap_or_default(),
+        );
+        let mut last = LAST_LOGGED.get_or_init(|| Mutex::new(None)).lock();
+        if last.as_ref() != Some(&key) {
+            tracing::info!(
+                "now_playing: '{title}' — '{artist}' playing={playing} artwork={}",
+                artwork.as_deref().map(|s| &s[..s.len().min(60)]).unwrap_or("")
+            );
+            *last = Some(key);
+        }
+    }
     let settings = config::load_app_settings().unwrap_or_default();
 
     // Оконный тайтл + HTML-тайтлбар через emit.
@@ -1004,6 +1021,82 @@ pub async fn import_playlist_file(app: AppHandle) -> Result<Option<String>, Stri
         Some(path) => std::fs::read_to_string(&path).map(Some).map_err(|e| e.to_string()),
         None => Ok(None),
     }
+}
+
+/// Экспорт логов: склеивает ротированный `bloom.log.1` (старое) и текущий
+/// `bloom.log` (новое) в один файл и предлагает сохранить через диалог.
+/// Возвращает `true`, если файл сохранён, `false` — если пользователь отменил.
+#[tauri::command]
+pub async fn export_logs(app: AppHandle) -> Result<bool, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let combined = read_combined_logs()?;
+    if combined.is_empty() {
+        return Err("Лог пуст или недоступен".into());
+    }
+
+    let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
+    let default_name = format!("bloom-logs-{stamp}.log");
+
+    let (tx, rx) = std::sync::mpsc::channel::<Option<PathBuf>>();
+    app.dialog()
+        .file()
+        .set_title("Сохранить логи")
+        .set_file_name(&default_name)
+        .add_filter("Лог", &["log", "txt"])
+        .add_filter("Все файлы", &["*"])
+        .save_file(move |path| { let _ = tx.send(path.and_then(|p| p.into_path().ok())); });
+
+    match rx.recv().ok().flatten() {
+        Some(path) => std::fs::write(&path, combined.as_bytes()).map(|_| true).map_err(|e| e.to_string()),
+        None => Ok(false),
+    }
+}
+
+/// Собрать содержимое логов (`bloom.log.1` + `bloom.log`, старое→новое).
+fn read_combined_logs() -> Result<String, String> {
+    let dir = config::local_appdata_dir().map_err(|e| e.to_string())?;
+    let mut combined = String::new();
+    for name in ["bloom.log.1", "bloom.log"] {
+        if let Ok(content) = std::fs::read_to_string(dir.join(name)) {
+            combined.push_str(&content);
+        }
+    }
+    Ok(combined)
+}
+
+/// Прочитать логи для просмотра в приложении. Возвращает «хвост» — последние
+/// ~256 КБ, чтобы не тащить мегабайты в webview (полный объём — через `export_logs`).
+#[tauri::command]
+pub async fn read_logs() -> Result<String, String> {
+    const MAX: usize = 256 * 1024;
+    let combined = read_combined_logs()?;
+    if combined.len() <= MAX {
+        return Ok(combined);
+    }
+    // Сдвигаем точку среза до ближайшей валидной границы UTF-8 (в логах есть
+    // кириллица), затем — до начала следующей строки, чтобы не рвать на полуслове.
+    let mut cut = combined.len() - MAX;
+    while cut < combined.len() && !combined.is_char_boundary(cut) {
+        cut += 1;
+    }
+    let tail = &combined[cut..];
+    let start = tail.find('\n').map(|i| i + 1).unwrap_or(0);
+    Ok(format!("…(показаны последние записи)\n{}", &tail[start..]))
+}
+
+/// Очистить логи: усечь текущий `bloom.log` и удалить ротированный `bloom.log.1`.
+#[tauri::command]
+pub async fn clear_logs() -> Result<(), String> {
+    let dir = config::local_appdata_dir().map_err(|e| e.to_string())?;
+    // Текущий файл занят активным writer'ом — не удаляем, а усекаем до нуля.
+    std::fs::write(dir.join("bloom.log"), b"").map_err(|e| e.to_string())?;
+    let rotated = dir.join("bloom.log.1");
+    if rotated.exists() {
+        let _ = std::fs::remove_file(rotated);
+    }
+    tracing::info!("logs cleared by user");
+    Ok(())
 }
 
 // ============================ Яндекс.Музыка ============================

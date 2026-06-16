@@ -293,20 +293,29 @@ export const ViewSection = () => {
 
       <div className="s-cat-label">ЭФФЕКТЫ</div>
       {/* Визуализатор. Загрузка фото-фона (vizPhoto) отложена. */}
-      <div className="sc viz-block" id="vizBlock">
-        <div className="viz-block-top">
-          <div className="viz-block-info">
-            <div className="viz-block-icon" id="vizBlockIcon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polyline points="22 8 22 16" /><polyline points="18 10 18 14" /><polyline points="14 4 14 20" /><polyline points="10 8 10 16" /><polyline points="6 11 6 13" /><polyline points="2 10 2 14" /></svg>
-            </div>
-            <div>
-              <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>Визуализатор</div>
-              <div className="ssub">анимация волн под музыку</div>
-            </div>
+      <div className="sc">
+        <div className="sr">
+          <div>
+            <div className="sl2">Визуализатор</div>
+            <div className="ssub">показывать эффекты визуализации аудио</div>
           </div>
           <Toggle checked={p.vizEnabled} onChange={(v) => p.set('vizEnabled', v)} />
         </div>
       </div>
+      {p.vizEnabled && (
+        <div className="sc">
+          <div className="viz-type-row">
+            <OptBtn active={p.vizType === 'wave'} onClick={() => p.set('vizType', 'wave')}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M2 12c2 0 2-6 4-6s2 12 4 12 2-12 4-12 2 12 4 12 2-6 4-6" /></svg>
+              Волна
+            </OptBtn>
+            <OptBtn active={p.vizType === 'bars'} onClick={() => p.set('vizType', 'bars')}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polyline points="4 14 4 18" /><polyline points="9 6 9 18" /><polyline points="14 10 14 18" /><polyline points="20 4 20 18" /></svg>
+              Столбцы
+            </OptBtn>
+          </div>
+        </div>
+      )}
 
       <div className="sc">
         <h3>Дополнительные эффекты</h3>

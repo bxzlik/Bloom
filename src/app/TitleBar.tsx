@@ -19,6 +19,14 @@ export const TitleBar = () => {
   // ( _updateTitlebarLabel('search','artist'|'album'|'playlist')).
   const detailKind = useDetailStore((s) => s.stack[s.stack.length - 1]?.kind ?? null)
   const titlebarLabel = useUiPrefsStore((s) => s.titlebarLabel)
+  const tbLogo = useUiPrefsStore((s) => s.tbLogo)
+  const tbVersion = useUiPrefsStore((s) => s.tbVersion)
+  const tbMin = useUiPrefsStore((s) => s.tbMin)
+  const tbMax = useUiPrefsStore((s) => s.tbMax)
+  const tbPin = useUiPrefsStore((s) => s.tbPin)
+  const tbClose = useUiPrefsStore((s) => s.tbClose)
+  const tbPinned = useUiPrefsStore((s) => s.tbPinned)
+  const setPref = useUiPrefsStore((s) => s.set)
   const [maximized, setMaximized] = useState(false)
 
   useEffect(() => {
@@ -35,6 +43,9 @@ export const TitleBar = () => {
   const onMin = () => getCurrentWindow().minimize()
   const onMaxRestore = () => getCurrentWindow().toggleMaximize()
   const onClose = () => getCurrentWindow().close()
+  // Закрепление окна поверх остальных — стор сам применяет always-on-top и
+  // persist'ит состояние (применяется и на следующем запуске).
+  const onTogglePin = () => setPref('tbPinned', !tbPinned)
 
   // Детальный вид — глобальный оверлей (может быть открыт на любой странице),
   // поэтому метка артиста/альбома/плейлиста показывается независимо от page.
@@ -44,10 +55,11 @@ export const TitleBar = () => {
 
   return (
     <div id="winTitlebar" data-tauri-drag-region>
-      <span className="win-icon" />
+      {tbLogo && <span className="win-icon" />}
       <span className="win-title" id="winTitleText">
         Bloom
       </span>
+      {tbVersion && <span className="win-ver">v{__APP_VERSION__}</span>}
       <div id="winTitleCenter" style={titlebarLabel ? undefined : { display: 'none' }}>
         <Icon />
         <span id="wtcLabel" className="wtc-label">
@@ -55,39 +67,60 @@ export const TitleBar = () => {
         </span>
       </div>
       <div className="win-btns">
-        <button
-          className="win-btn win-minimize"
-          id="winMinBtn"
-          onClick={onMin}
-          aria-label="Свернуть"
-        >
-          <svg width="10" height="1" viewBox="0 0 10 1">
-            <rect width="10" height="1" fill="currentColor" />
-          </svg>
-        </button>
-        <button
-          className="win-btn win-maxrestore"
-          id="winMaxBtn"
-          onClick={onMaxRestore}
-          aria-label={maximized ? 'Восстановить' : 'Развернуть'}
-        >
-          {maximized ? (
-            // Restore icon — (__bloomSetMaximized): квадрат + L-подложка.
-            <svg id="winMaxIcon" width="10" height="10" viewBox="0 0 10 10">
-              <path d="M3 3h6v6H3zM5 1h6v6" fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" />
+        {tbPin && (
+          <button
+            className={`win-btn win-pin${tbPinned ? ' on' : ''}`}
+            id="winPinBtn"
+            onClick={onTogglePin}
+            aria-label={tbPinned ? 'Открепить окно' : 'Закрепить окно поверх'}
+            aria-pressed={tbPinned}
+          >
+            {/* Канцелярская кнопка (pin) */}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 17v5" />
+              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
             </svg>
-          ) : (
-            <svg id="winMaxIcon" width="10" height="10" viewBox="0 0 10 10">
-              <rect x=".5" y=".5" width="9" height="9" rx="1" fill="none" stroke="currentColor" />
+          </button>
+        )}
+        {tbMin && (
+          <button
+            className="win-btn win-minimize"
+            id="winMinBtn"
+            onClick={onMin}
+            aria-label="Свернуть"
+          >
+            <svg width="10" height="1" viewBox="0 0 10 1">
+              <rect width="10" height="1" fill="currentColor" />
             </svg>
-          )}
-        </button>
-        <button className="win-btn win-close" onClick={onClose} aria-label="Закрыть">
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth={1.2} />
-            <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth={1.2} />
-          </svg>
-        </button>
+          </button>
+        )}
+        {tbMax && (
+          <button
+            className="win-btn win-maxrestore"
+            id="winMaxBtn"
+            onClick={onMaxRestore}
+            aria-label={maximized ? 'Восстановить' : 'Развернуть'}
+          >
+            {maximized ? (
+              // Restore icon — (__bloomSetMaximized): квадрат + L-подложка.
+              <svg id="winMaxIcon" width="10" height="10" viewBox="0 0 10 10">
+                <path d="M3 3h6v6H3zM5 1h6v6" fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg id="winMaxIcon" width="10" height="10" viewBox="0 0 10 10">
+                <rect x=".5" y=".5" width="9" height="9" rx="1" fill="none" stroke="currentColor" />
+              </svg>
+            )}
+          </button>
+        )}
+        {tbClose && (
+          <button className="win-btn win-close" onClick={onClose} aria-label="Закрыть">
+            <svg width="10" height="10" viewBox="0 0 10 10">
+              <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth={1.2} />
+              <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth={1.2} />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   )

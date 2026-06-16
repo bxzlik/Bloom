@@ -9,7 +9,6 @@ import { PlaybackSection } from './sections/PlaybackSection'
 import { HotkeysSection } from './sections/HotkeysSection'
 import { DiscordSection } from './sections/DiscordSection'
 import { OptimizationSection } from './sections/OptimizationSection'
-import { DataSection } from './sections/DataSection'
 import { TelemetrySection } from './sections/TelemetrySection'
 import { AudioSection } from './sections/AudioSection'
 import { CustomizationSection, BackgroundSection } from '@features/customization'
@@ -80,16 +79,19 @@ export const SettingsOverlay = () => {
     efficiency: <OptimizationSection />,
     audio: <AudioSection />,
     hotkeys: <HotkeysSection />,
-    data: <DataSection />,
     // Оформление
     view: <ViewSection />,
     interface: <InterfaceSection />,
     background: <BackgroundSection />,
     medialib: <CustomizationSection />,
     // Интеграции
-    apikeys: (
-      <div className="s-section active" id="ssec-apikeys">
+    soundcloud: (
+      <div className="s-section active" id="ssec-soundcloud">
         <ScClientIdCard />
+      </div>
+    ),
+    genius: (
+      <div className="s-section active" id="ssec-genius">
         <GeniusTokenCard />
       </div>
     ),

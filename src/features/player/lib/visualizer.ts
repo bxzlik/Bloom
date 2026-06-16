@@ -4,15 +4,24 @@
  * общего аудио-графа (`audioGraph`) — он же обслуживает нормализацию/кроссфейд,
  * т.к. `createMediaElementSource` можно звать на элемент лишь ОДИН раз.
  *
+ * Два вида (`vizType` в playerViewStore):
+ *   - bars — спектр столбцами (зеркально от центра, скруглённые, с бликом).
+ *   - wave — плавная симметричная волна (осциллограф-подобная) с ярким центром.
+ *
  * ВАЖНО (CORS): граф маршрутизирует ВЕСЬ звук через WebAudio. Если ресурс
  * кросс-доменный без CORS-заголовков (элемент грузился без crossOrigin),
  * узел отдаёт тишину → звук пропадёт. audioEngine ставит crossOrigin='anonymous'
  * для http(s) (SC CDN отдаёт CORS), для blob/local — нет.
  */
 import { ensureAudioGraph, resumeAudioGraph, getAnalyserNode } from './audioGraph'
+import { usePlayerViewStore } from '@/features/settings/model/playerViewStore'
 
 let raf = 0
 let canvasEl: HTMLCanvasElement | null = null
+// Временное сглаживание (lerp кадр-к-кадру) — устраняет «дёрганье» спектра.
+// Размер подстраивается под число точек активного вида; сброс при смене вида.
+let smooth: Float32Array | null = null
+let smoothMode = ''
 
 /** Зарегистрировать (или снять) канвас визуализатора. */
 export const vizSetCanvas = (c: HTMLCanvasElement | null): void => {
@@ -35,6 +44,94 @@ const accentRgb = (): string => {
   return '136,136,136'
 }
 
+/** Буфер сглаживания нужного размера (сброс при смене вида/размера). */
+const ensureSmooth = (mode: string, n: number): Float32Array => {
+  if (!smooth || smooth.length !== n || smoothMode !== mode) {
+    smooth = new Float32Array(n)
+    smoothMode = mode
+  }
+  return smooth
+}
+
+/** Столбцы спектра: от пола вверх, скруглённый верх, градиент. */
+const drawBars = (ctx: CanvasRenderingContext2D, W: number, H: number, dpr: number, data: Uint8Array, ar: string): void => {
+  const bufLen = data.length
+  const bars = 64
+  const gap = 2 * dpr
+  const bw = Math.max(1, (W - (bars - 1) * gap) / bars)
+  const buf = ensureSmooth('bars', bars)
+  const r = Math.max(0, Math.min(bw / 2, 3 * dpr))
+  const grad = ctx.createLinearGradient(0, H, 0, 0)
+  grad.addColorStop(0, `rgba(${ar},0.95)`)
+  grad.addColorStop(1, `rgba(${ar},0.4)`)
+  ctx.fillStyle = grad
+  for (let i = 0; i < bars; i++) {
+    const idx = Math.floor((i / bars) * bufLen * 0.7)
+    // Лёгкое усиление верхов, чтобы спектр не «заваливался» влево.
+    const raw = (data[idx]! / 255) * (0.75 + 0.45 * (i / bars))
+    // Сглаживание: быстрый подъём, плавное падение.
+    const prev = buf[i]!
+    const v = raw > prev ? raw : prev + (raw - prev) * 0.32
+    buf[i] = v
+    const h = Math.max(2 * dpr, Math.min(1, v) * H * 0.94)
+    const x = i * (bw + gap)
+    ctx.beginPath()
+    if (ctx.roundRect) ctx.roundRect(x, H - h, bw, h, [r, r, 0, 0])
+    else ctx.rect(x, H - h, bw, h)
+    ctx.fill()
+  }
+}
+
+/** Волна: плавная огибающая спектра, залитая до пола + яркий контур сверху. */
+const drawWave = (ctx: CanvasRenderingContext2D, W: number, H: number, dpr: number, data: Uint8Array, ar: string): void => {
+  const bufLen = data.length
+  const pts = 72
+  const buf = ensureSmooth('wave', pts)
+  const ys: number[] = new Array(pts)
+  for (let i = 0; i < pts; i++) {
+    const idx = Math.floor((i / pts) * bufLen * 0.62)
+    const raw = (data[idx]! / 255) * (0.7 + 0.5 * (i / pts))
+    const prev = buf[i]!
+    const v = raw > prev ? prev + (raw - prev) * 0.5 : prev + (raw - prev) * 0.22
+    buf[i] = v
+    // y верхней линии: больше громкость → меньше y (выше заливка от пола).
+    ys[i] = H - Math.max(2 * dpr, Math.min(1, v) * H * 0.94)
+  }
+
+  const px = (i: number): number => (i / (pts - 1)) * W
+
+  // Плавная верхняя огибающая через quadratic-кривые по средним точкам.
+  const traceTop = (): void => {
+    ctx.moveTo(0, ys[0]!)
+    for (let i = 0; i < pts - 1; i++) {
+      const xc = (px(i) + px(i + 1)) / 2
+      const yc = (ys[i]! + ys[i + 1]!) / 2
+      ctx.quadraticCurveTo(px(i), ys[i]!, xc, yc)
+    }
+    ctx.lineTo(W, ys[pts - 1]!)
+  }
+
+  // Заливка от линии вниз до пола.
+  const grad = ctx.createLinearGradient(0, 0, 0, H)
+  grad.addColorStop(0, `rgba(${ar},0.6)`)
+  grad.addColorStop(1, `rgba(${ar},0.12)`)
+  ctx.fillStyle = grad
+  ctx.beginPath()
+  traceTop()
+  ctx.lineTo(W, H)
+  ctx.lineTo(0, H)
+  ctx.closePath()
+  ctx.fill()
+
+  // Яркий контур по верхней линии.
+  ctx.lineWidth = 1.8 * dpr
+  ctx.strokeStyle = `rgba(${ar},0.95)`
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  traceTop()
+  ctx.stroke()
+}
+
 const draw = (): void => {
   const canvas = canvasEl
   const analyser = getAnalyserNode()
@@ -55,26 +152,12 @@ const draw = (): void => {
   if (!ctx) return
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   const ar = accentRgb()
-  const bufLen = analyser.frequencyBinCount
-  const data = new Uint8Array(bufLen)
+  const data = new Uint8Array(analyser.frequencyBinCount)
   analyser.getByteFrequencyData(data)
-  const bars = 60
-  const gap = 2 * dpr
-  const bw = Math.max(1, (canvas.width - (bars - 1) * gap) / bars)
-  const grad = ctx.createLinearGradient(0, canvas.height, 0, 0)
-  grad.addColorStop(0, `rgba(${ar},0.8)`)
-  grad.addColorStop(1, `rgba(${ar},0.27)`)
-  ctx.fillStyle = grad
-  for (let i = 0; i < bars; i++) {
-    const idx = Math.floor((i / bars) * bufLen * 0.7)
-    const v = data[idx]! / 255
-    const h = Math.max(2 * dpr, v * canvas.height * 0.92)
-    const x = i * (bw + gap)
-    const r = Math.max(0, Math.min(bw / 2, 3 * dpr))
-    ctx.beginPath()
-    if (ctx.roundRect) ctx.roundRect(x, canvas.height - h, bw, h, r)
-    else ctx.rect(x, canvas.height - h, bw, h)
-    ctx.fill()
+  if (usePlayerViewStore.getState().vizType === 'wave') {
+    drawWave(ctx, canvas.width, canvas.height, dpr, data, ar)
+  } else {
+    drawBars(ctx, canvas.width, canvas.height, dpr, data, ar)
   }
 }
 
@@ -92,6 +175,8 @@ export const vizStop = (): void => {
     cancelAnimationFrame(raf)
     raf = 0
   }
+  smooth = null
+  smoothMode = ''
   const c = canvasEl
   if (c) {
     const ctx = c.getContext('2d')

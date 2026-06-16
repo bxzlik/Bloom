@@ -39,6 +39,8 @@ import {
   useTransparencyBootstrap,
   useOptBootstrap,
   useTelemetryBootstrap,
+  useUpdateBootstrap,
+  UpdateBanner,
 } from '@features/settings'
 
 /**
@@ -91,6 +93,7 @@ export const App = () => {
   useAudioEffects()
   useTrackRowMarquee()
   useTamaBootstrap()
+  useUpdateBootstrap()
 
   // Клик по артисту в miniplayer/tray → Rust `tray_open_artist` показывает главное
   // окно и шлёт `bloom-open-artist`. Открываем страницу артиста — с веткой
@@ -373,6 +376,9 @@ export const App = () => {
 
       {/* Глобальный императивный toast (для движка «Волны» и др. не-React кода) */}
       <GlobalToast />
+
+      {/* Уведомление о доступной новой версии (авто-проверка при старте) */}
+      <UpdateBanner />
     </>
   )
 }

@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import waveApi, { getWaveSource, setWaveSource } from '@/wave'
 import { useYmAuthStore } from '@features/yandex'
+import { usePopupOpenAnimation } from '@shared/hooks'
 import { ScLogo, YmLogo } from '@entities/track'
 import { DislikesModal } from './DislikesModal'
 
@@ -17,16 +19,44 @@ import { DislikesModal } from './DislikesModal'
 export const WaveCard = () => {
   const [loading, setLoading] = useState(false)
   const [dislikesOpen, setDislikesOpen] = useState(false)
-  const [srcOpen, setSrcOpen] = useState(false)
+  // Координаты открытого попапа (fixed) или null = закрыт. Попап рендерится
+  // порталом в body — иначе его перекрывают блоки главной ниже (он заперт в
+  // стек-контексте .hwb-top, z-index:1).
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null)
+  const tuneBtnRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const ymAuthed = useYmAuthStore((s) => s.authed)
   const [source, setSource] = useState<'sc' | 'ym'>(getWaveSource())
   // Разлогинились → источник 'ym' уже не валиден, показываем как 'sc'.
   const effSource = ymAuthed ? source : 'sc'
 
+  usePopupOpenAnimation(menuRef, menuPos)
+
+  const toggleMenu = () => {
+    if (menuPos) {
+      setMenuPos(null)
+      return
+    }
+    const r = tuneBtnRef.current?.getBoundingClientRect()
+    if (!r) return
+    setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
+  }
+
+  // Закрытие при ресайзе/скролле — координаты fixed-попапа становятся неверными.
+  useLayoutEffect(() => {
+    if (!menuPos) return
+    const close = () => setMenuPos(null)
+    window.addEventListener('resize', close)
+    window.addEventListener('scroll', close, true)
+    return () => {
+      window.removeEventListener('resize', close)
+      window.removeEventListener('scroll', close, true)
+    }
+  }, [menuPos])
+
   const pickSource = (s: 'sc' | 'ym') => {
     setWaveSource(s)
     setSource(s)
-    setSrcOpen(false)
   }
 
   const start = async () => {
@@ -74,118 +104,16 @@ export const WaveCard = () => {
           <div className="hwb-spinner" aria-hidden="true" />
         </button>
         <div className="hwb-title">Моя волна</div>
-        {ymAuthed && (
-          <div
-            className="hwb-wsrc"
-            style={{ position: 'relative', marginLeft: 'auto', flexShrink: 0 }}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setSrcOpen((o) => !o)
-              }}
-              aria-label="Выбор площадки"
-              aria-haspopup="listbox"
-              aria-expanded={srcOpen}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'rgba(255,255,255,.07)',
-                border: '1px solid var(--border)',
-                borderRadius: 'calc(var(--radius)*.6)',
-                padding: '7px 10px',
-                color: 'var(--text)',
-                cursor: 'pointer',
-                transition: '.15s',
-              }}
-            >
-              {effSource === 'sc' ? <ScLogo size={15} /> : <YmLogo size={14} />}
-              <svg
-                width={12}
-                height={12}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ transform: srcOpen ? 'rotate(180deg)' : 'none', transition: '.15s' }}
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-            {srcOpen && (
-              <>
-                {/* клик мимо — закрыть */}
-                <div
-                  onClick={() => setSrcOpen(false)}
-                  style={{ position: 'fixed', inset: 0, zIndex: 10 }}
-                />
-                <div
-                  role="listbox"
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 6px)',
-                    right: 0,
-                    zIndex: 11,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 2,
-                    minWidth: 168,
-                    padding: 5,
-                    background: 'color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%)',
-                    border: '1px solid rgba(255,255,255,.07)',
-                    borderRadius: 'calc(var(--radius)*.7)',
-                    boxShadow: '0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5)',
-                    backdropFilter: 'blur(32px)',
-                    WebkitBackdropFilter: 'blur(32px)',
-                  }}
-                >
-                  {(['sc', 'ym'] as const).map((s) => (
-                    <button
-                      key={s}
-                      role="option"
-                      aria-selected={effSource === s}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        pickSource(s)
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 9,
-                        border: 'none',
-                        background: effSource === s ? 'var(--accent)' : 'none',
-                        // На акцентном фоне — контрастный токен (--accent-text тёмный,
-                        // когда акцент светлый), иначе текст сливается с фоном.
-                        color: effSource === s ? 'var(--accent-text, #fff)' : 'var(--text)',
-                        padding: '8px 10px',
-                        borderRadius: 'calc(var(--radius)*.5)',
-                        cursor: 'pointer',
-                        transition: '.15s',
-                        fontFamily: 'var(--font)',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        textAlign: 'left',
-                      }}
-                    >
-                      {s === 'sc' ? <ScLogo size={15} /> : <YmLogo size={14} />}
-                      <span>{s === 'sc' ? 'SoundCloud' : 'Яндекс.Музыка'}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
         <button
+          ref={tuneBtnRef}
           className="hwb-tune"
-          onClick={() => setDislikesOpen(true)}
-          aria-label="Настроить волну (дизлайки)"
-          // дропдаун уже прижат вправо через marginLeft:auto — кнопка дизлайков
-          // встаёт вплотную к нему (gap бара), иначе сама прижимается вправо.
-          style={ymAuthed ? { marginLeft: 0 } : undefined}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleMenu()
+          }}
+          aria-label="Настройки волны"
+          aria-haspopup="menu"
+          aria-expanded={menuPos !== null}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <line x1="4" y1="6" x2="14" y2="6" /><line x1="4" y1="12" x2="10" y2="12" /><line x1="4" y1="18" x2="18" y2="18" />
@@ -194,6 +122,133 @@ export const WaveCard = () => {
         </button>
       </div>
       <DislikesModal open={dislikesOpen} onClose={() => setDislikesOpen(false)} />
+      {menuPos &&
+        createPortal(
+          <>
+            {/* клик мимо — закрыть */}
+            <div
+              onClick={() => setMenuPos(null)}
+              style={{ position: 'fixed', inset: 0, zIndex: 8000 }}
+            />
+            <div
+              ref={menuRef}
+              role="menu"
+              style={{
+                position: 'fixed',
+                top: menuPos.top,
+                right: menuPos.right,
+                zIndex: 8001,
+                transformOrigin: 'top right',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                minWidth: 220,
+                padding: 10,
+                background: 'color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%)',
+                border: '1px solid rgba(255,255,255,.07)',
+                borderRadius: 'calc(var(--radius)*.7)',
+                boxShadow: '0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04)',
+                backdropFilter: 'blur(32px)',
+                WebkitBackdropFilter: 'blur(32px)',
+              }}
+            >
+              {ymAuthed && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: '.04em',
+                      textTransform: 'uppercase',
+                      color: 'var(--text2)',
+                      padding: '0 2px',
+                    }}
+                  >
+                    Площадка
+                  </div>
+                  {/* Простой выбор: сегменты, а не вложенный дропдаун. */}
+                  <div
+                    role="radiogroup"
+                    aria-label="Выбор площадки"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 4,
+                      padding: 3,
+                      background: 'rgba(255,255,255,.05)',
+                      borderRadius: 'calc(var(--radius)*.6)',
+                    }}
+                  >
+                    {(['sc', 'ym'] as const).map((s) => (
+                      <button
+                        key={s}
+                        role="radio"
+                        aria-checked={effSource === s}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          pickSource(s)
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 7,
+                          border: 'none',
+                          background: effSource === s ? 'var(--accent)' : 'none',
+                          // На акцентном фоне — контрастный токен (--accent-text тёмный,
+                          // когда акцент светлый), иначе текст сливается с фоном.
+                          color: effSource === s ? 'var(--accent-text, #fff)' : 'var(--text)',
+                          padding: '8px 8px',
+                          borderRadius: 'calc(var(--radius)*.45)',
+                          cursor: 'pointer',
+                          transition: '.15s',
+                          fontFamily: 'var(--font)',
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {s === 'sc' ? <ScLogo size={15} /> : <YmLogo size={14} />}
+                        <span>{s === 'sc' ? 'SoundCloud' : 'Яндекс'}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button
+                role="menuitem"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuPos(null)
+                  setDislikesOpen(true)
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 9,
+                  width: '100%',
+                  border: 'none',
+                  background: 'rgba(255,255,255,.05)',
+                  color: 'var(--text)',
+                  padding: '10px 12px',
+                  borderRadius: 'calc(var(--radius)*.5)',
+                  cursor: 'pointer',
+                  transition: '.15s',
+                  fontFamily: 'var(--font)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textAlign: 'left',
+                }}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z" />
+                  <path d="M22 2h-4v13" />
+                </svg>
+                <span>Дизлайки</span>
+              </button>
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   )
 }

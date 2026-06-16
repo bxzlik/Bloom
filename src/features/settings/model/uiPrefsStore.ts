@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { invoke } from '@shared/tauri'
 
 /**
@@ -32,8 +33,24 @@ export interface UiPrefs {
   /** Вид библиотеки: список (сайдбар) или сетка карточек. */
   libView: LibView
   navIndicator: boolean
+  /** Название текущей вкладки по центру тайтлбара (`#winTitleCenter`). */
   titlebarLabel: boolean
   navFloatBtn: boolean
+  // ── Элементы тайтлбара (что показывать на панели окна) ──
+  /** Логотип Bloom слева (`.win-icon`). */
+  tbLogo: boolean
+  /** Версия приложения рядом с названием. */
+  tbVersion: boolean
+  /** Кнопка «Свернуть». */
+  tbMin: boolean
+  /** Кнопка «Развернуть/Восстановить». */
+  tbMax: boolean
+  /** Кнопка «Закрепить окно поверх остальных». */
+  tbPin: boolean
+  /** Кнопка «Закрыть». */
+  tbClose: boolean
+  /** Текущее состояние закрепления окна (always-on-top), применяется на старте. */
+  tbPinned: boolean
   /** 0..6. */
   borderAlpha: number
   /** Полноэкранный зум (webview), % 70..130. */
@@ -51,6 +68,13 @@ const DEFAULTS: UiPrefs = {
   navIndicator: true,
   titlebarLabel: true,
   navFloatBtn: true,
+  tbLogo: true,
+  tbVersion: true,
+  tbMin: true,
+  tbMax: true,
+  tbPin: true,
+  tbClose: true,
+  tbPinned: false,
   borderAlpha: 6,
   fullZoom: 100,
   winZoom: 100,
@@ -71,6 +95,13 @@ const load = (): UiPrefs => {
       navIndicator: p.navIndicator !== false,
       titlebarLabel: p.titlebarLabel !== false,
       navFloatBtn: p.navFloatBtn !== false,
+      tbLogo: p.tbLogo !== false,
+      tbVersion: p.tbVersion !== false,
+      tbMin: p.tbMin !== false,
+      tbMax: p.tbMax !== false,
+      tbPin: p.tbPin !== false,
+      tbClose: p.tbClose !== false,
+      tbPinned: !!p.tbPinned,
       borderAlpha: typeof p.borderAlpha === 'number' ? p.borderAlpha : 6,
       fullZoom: typeof p.fullZoom === 'number' ? p.fullZoom : 100,
       winZoom: typeof p.winZoom === 'number' ? p.winZoom : 100,
@@ -94,6 +125,10 @@ const applyFullZoom = (pct: number): void => {
 const applyWinZoom = (pct: number): void => {
   void invoke('setwinzoom', { zoom: pct / 100 }).catch(() => {})
 }
+/** Закрепление окна поверх остальных (always-on-top). */
+const applyPinned = (on: boolean): void => {
+  getCurrentWindow().setAlwaysOnTop(on).catch(() => {})
+}
 
 interface UiPrefsState extends UiPrefs {
   set: <K extends keyof UiPrefs>(key: K, value: UiPrefs[K]) => void
@@ -113,6 +148,13 @@ const persist = (s: UiPrefs): void => {
         navIndicator: s.navIndicator,
         titlebarLabel: s.titlebarLabel,
         navFloatBtn: s.navFloatBtn,
+        tbLogo: s.tbLogo,
+        tbVersion: s.tbVersion,
+        tbMin: s.tbMin,
+        tbMax: s.tbMax,
+        tbPin: s.tbPin,
+        tbClose: s.tbClose,
+        tbPinned: s.tbPinned,
         borderAlpha: s.borderAlpha,
         fullZoom: s.fullZoom,
         winZoom: s.winZoom,
@@ -132,6 +174,7 @@ export const useUiPrefsStore = create<UiPrefsState>((set, get) => ({
     if (key === 'borderAlpha') applyBorderAlpha(s.borderAlpha)
     else if (key === 'fullZoom') applyFullZoom(s.fullZoom)
     else if (key === 'winZoom') applyWinZoom(s.winZoom)
+    else if (key === 'tbPinned') applyPinned(s.tbPinned)
   },
   reset: () => {
     set({ ...DEFAULTS })
@@ -139,6 +182,7 @@ export const useUiPrefsStore = create<UiPrefsState>((set, get) => ({
     applyBorderAlpha(DEFAULTS.borderAlpha)
     applyFullZoom(DEFAULTS.fullZoom)
     applyWinZoom(DEFAULTS.winZoom)
+    applyPinned(DEFAULTS.tbPinned)
   },
 }))
 
@@ -168,5 +212,6 @@ export const useUiPrefsBootstrap = (): void => {
     applyBorderAlpha(s.borderAlpha)
     if (s.fullZoom !== 100) applyFullZoom(s.fullZoom)
     if (s.winZoom !== 100) applyWinZoom(s.winZoom)
+    if (s.tbPinned) applyPinned(true)
   }, [])
 }

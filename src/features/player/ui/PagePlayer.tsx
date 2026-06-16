@@ -798,7 +798,19 @@ const VizBlock = () => {
   }, [vizEnabled, playing, vizPhoto, vizPaused])
   const visible = vizEnabled || !!vizPhoto
   return (
-    <div id="vizWrap" style={{ position: 'relative', height: 54, margin: '2px 0', display: visible ? undefined : 'none' }}>
+    <div
+      id="vizWrap"
+      style={{
+        position: 'relative',
+        height: 54,
+        margin: '2px 0',
+        display: visible ? undefined : 'none',
+        border: '1px solid rgba(255,255,255,var(--wb))',
+        borderRadius: 'calc(var(--radius) * 0.55)',
+        background: 'var(--block-bg)',
+        overflow: 'hidden',
+      }}
+    >
       {vizPhoto ? (
         <img
           id="vizPhotoEl"

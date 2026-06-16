@@ -91,7 +91,7 @@ export const HotkeysSection = () => {
   return (
     <div className="s-section active" id="ssec-hotkeys">
       <div className="sc">
-        <h3>Общие</h3>
+        <h3>Горячие клавиши</h3>
         <TeleToggleRow
           icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">

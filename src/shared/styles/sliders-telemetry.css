@@ -50,7 +50,7 @@ body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glas
 .tele-toggle-icon{width:40px;height:40px;border-radius:calc(var(--radius)*0.6);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(var(--accent-rgb),.18);color:var(--accent)}
 .tele-toggle-info{flex:1;min-width:0}
 .tele-toggle-title{font-size:13px;font-weight:600}
-.tele-toggle-sub{font-size:10.5px;color:var(--muted);margin-top:2px}
+.tele-toggle-sub{font-size:10.5px;color:var(--text2);margin-top:2px}
 .tele-sw{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
 .tele-sw input{opacity:0;width:0;height:0;position:absolute}
 .tele-sw-track{position:absolute;inset:0;border-radius:12px;background:var(--border);cursor:pointer;transition:.2s}
@@ -60,7 +60,7 @@ body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glas
 .tele-clean-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius)*0.8);padding:12px 14px;transition:.15s;cursor:default}
 .tele-clean-row:hover{border-color:rgba(255,255,255,.12);background:var(--hover)}
 .tele-clean-title{font-size:13px;font-weight:600}
-.tele-clean-sub{font-size:10.5px;color:var(--muted);margin-top:2px}
+.tele-clean-sub{font-size:10.5px;color:var(--text2);margin-top:2px}
 
 /* Optimization effect cards */
 .opt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
@@ -81,7 +81,7 @@ body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glas
 #bgl.opt-frozen{animation:none!important;transition:none!important}
 .ps-cover.opt-hidden{opacity:0;pointer-events:none;transition:opacity .2s}
 .sl2{font-size:12.5px}
-.ssub{font-size:10.5px;color:var(--muted);margin-top:1px}
+.ssub{font-size:10.5px;color:var(--text2);margin-top:1px}
 .cin{width:30px;height:30px;border-radius:calc(var(--radius) * 0.4);border:2px solid var(--border);cursor:pointer;padding:2px;background:none}
 .cin-swatch{width:30px;height:30px;border-radius:calc(var(--radius)*0.4);border:2px solid var(--border);cursor:pointer;padding:0;transition:.15s;flex-shrink:0}
 .cin-swatch:hover{border-color:rgba(255,255,255,.25)}

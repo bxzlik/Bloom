@@ -1,93 +1,29 @@
-import { useEffect, useRef, useState } from 'react'
-import { invoke, onAppEvent } from '@shared/tauri'
-import type { UpdateInfo, UnlistenFn } from '@shared/tauri'
+import { useEffect } from 'react'
+import { useUpdateStore } from '../../model/updateStore'
 
 /**
  * «О приложении» + проверка обновлений (в самом низу секции «Система»).
  *
  * Заголовок — стандартный `s-cat-label` (как в других настройках: подпись с
- * линиями сверху/снизу). Клик по логотипу запускает проверку.
+ * линиями сверху/снизу). Клик по логотипу запускает ручную проверку.
  *
- * Обновления — лёгкий вариант: Rust сверяется с GitHub Releases
- * (updater.check_update), качает NSIS-установщик (download_update, прогресс
- * через `bloom-update-progress`) и запускает его (install_update).
- *
- * Поведение проверки:
- *   - Авто-проверка при монтировании: если апдейт есть — показываем строку
- *     статуса; если нет (или ошибка сети) — молчим (phase='idle').
- *   - Клик по логотипу — ручная проверка: показываем результат всегда.
+ * Состояние обновлений живёт в общем `useUpdateStore` — тот же стор питает
+ * глобальный баннер-уведомление (App). Авто-проверка делается один раз при
+ * старте приложения (`useUpdateBootstrap`); здесь — только ручная по клику.
  */
 
-type Phase = 'idle' | 'checking' | 'uptodate' | 'available' | 'downloading' | 'error'
-
 export const AboutBlock = () => {
-  const [version, setVersion] = useState('')
-  const [phase, setPhase] = useState<Phase>('idle')
-  const [info, setInfo] = useState<UpdateInfo | null>(null)
-  const [percent, setPercent] = useState(0)
-  const [error, setError] = useState('')
-  const unlisten = useRef<UnlistenFn | null>(null)
+  const version = useUpdateStore((s) => s.version)
+  const phase = useUpdateStore((s) => s.phase)
+  const info = useUpdateStore((s) => s.info)
+  const percent = useUpdateStore((s) => s.percent)
+  const error = useUpdateStore((s) => s.error)
+  const check = useUpdateStore((s) => s.check)
+  const downloadInstall = useUpdateStore((s) => s.downloadInstall)
 
-  // manual=true → показываем итог даже без апдейта; авто-проверка молчит.
-  const check = async (manual: boolean) => {
-    if (manual) {
-      setPhase('checking')
-      setError('')
-    }
-    try {
-      const res = await invoke<UpdateInfo>('check_update')
-      setInfo(res)
-      if (res.available) setPhase('available')
-      else if (manual) setPhase('uptodate')
-      else setPhase('idle')
-    } catch (e) {
-      if (manual) {
-        setError(String(e))
-        setPhase('error')
-      }
-    }
-  }
-
-  const downloadInstall = async () => {
-    if (!info) return
-    if (!info.download_url) {
-      setError('В релизе не найден установщик (.exe)')
-      setPhase('error')
-      return
-    }
-    setPhase('downloading')
-    setPercent(0)
-    setError('')
-    try {
-      const path = await invoke<string>('download_update', {
-        url: info.download_url,
-        assetName: info.asset_name,
-      })
-      // Запустит установщик и закроет приложение — дальше код обычно не идёт.
-      await invoke('install_update', { path })
-    } catch (e) {
-      setError(String(e))
-      setPhase('error')
-    }
-  }
-
+  // На случай, если секция открыта до завершения стартового init() — он идемпотентен.
   useEffect(() => {
-    let alive = true
-    void invoke<string>('app_version')
-      .then((v) => alive && setVersion(v))
-      .catch(() => {})
-    void onAppEvent('bloom-update-progress', (p) => {
-      if (alive) setPercent(p.percent)
-    }).then((un) => {
-      if (alive) unlisten.current = un
-      else un()
-    })
-    void check(false)
-    return () => {
-      alive = false
-      unlisten.current?.()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void useUpdateStore.getState().init()
   }, [])
 
   const statusText =

@@ -91,8 +91,8 @@ body.bars-hidden .hwb-wave{animation-play-state:paused}
 .home-card:hover .hc-cover{}
 .hc-cover{width:140px;height:140px;border-radius:var(--radius);background:var(--card);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.15s;margin-bottom:8px;position:relative}
 .hc-cover img{width:100%;height:100%;object-fit:cover}
-.hc-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:.15s;border-radius:var(--radius)}
-.hc-play-overlay .hc-play-btn{width:48px;height:48px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);transform:scale(.8);transition:.15s}
+.hc-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;border-radius:var(--radius)}
+.hc-play-overlay .hc-play-btn{width:44%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;transform:scale(.85);transition:transform .28s cubic-bezier(.22,1,.36,1);will-change:transform}
 .home-card:hover .hc-play-overlay{opacity:1}
 .home-card:hover .hc-play-btn{transform:scale(1)}
 .hc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -106,8 +106,8 @@ body.bars-hidden .hwb-wave{animation-play-state:paused}
 .hpc-cover{width:140px;height:140px;border-radius:var(--radius);background:var(--card);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.15s;margin-bottom:7px;position:relative}
 .hpc-cover img{width:100%;height:100%;object-fit:cover}
 .hpc-cover.fav-cover{background:linear-gradient(135deg,#c0144e,#7a0030)}
-.hpc-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:.15s;border-radius:var(--radius)}
-.hpc-play-overlay .hpc-play-btn{width:48px;height:48px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);transform:scale(.8);transition:.15s}
+.hpc-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;border-radius:var(--radius)}
+.hpc-play-overlay .hpc-play-btn{width:44%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;transform:scale(.85);transition:transform .28s cubic-bezier(.22,1,.36,1);will-change:transform}
 .home-pl-card:hover .hpc-play-overlay{opacity:1}
 .home-pl-card:hover .hpc-play-btn{transform:scale(1)}
 .hpc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}

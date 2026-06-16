@@ -49,7 +49,7 @@ const NoteSvg = () => (
 const PlayOverlay = () => (
   <div className="hpc-play-overlay">
     <div className="hpc-play-btn">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="#111" style={{ marginLeft: 2 }}>
+      <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1" strokeLinejoin="round" style={{ marginLeft: 2 }}>
         <path d="M7.5 4.5C7.5 3.4 8.7 2.7 9.6 3.3l11 7.5c.9.5.9 1.9 0 2.4l-11 7.5C8.7 21.3 7.5 20.6 7.5 19.5V4.5z" />
       </svg>
     </div>

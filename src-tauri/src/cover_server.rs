@@ -14,12 +14,17 @@ use tiny_http::{Header, Response, Server, StatusCode};
 struct ImageState {
     bytes: Option<Vec<u8>>,
     mime: String,
+    /// Источник текущей обложки (http-URL или data:-URL). Нужен для дедупликации:
+    /// `now_playing` пушится ~раз в секунду на позиционных тиках, и без этого мы
+    /// бы перекачивали ту же картинку каждую секунду.
+    source: Option<String>,
 }
 
 static STATE: Lazy<RwLock<ImageState>> = Lazy::new(|| {
     RwLock::new(ImageState {
         bytes: None,
         mime: "image/jpeg".into(),
+        source: None,
     })
 });
 static PORT: AtomicU16 = AtomicU16::new(0);
@@ -76,7 +81,9 @@ fn serve_loop(server: Server) {
 }
 
 pub fn clear_cover() {
-    STATE.write().bytes = None;
+    let mut st = STATE.write();
+    st.bytes = None;
+    st.source = None;
 }
 
 pub fn current_bytes() -> Option<Vec<u8>> {
@@ -86,6 +93,11 @@ pub fn current_bytes() -> Option<Vec<u8>> {
 pub fn set_cover_from_data_url(data_url: &str) {
     if !data_url.starts_with("data:") {
         clear_cover();
+        return;
+    }
+    // Та же обложка уже загружена — `now_playing` дёргается раз в секунду на
+    // позиционных тиках, повторно декодировать тот же data:-URL незачем.
+    if STATE.read().source.as_deref() == Some(data_url) {
         return;
     }
     let comma = match data_url.find(',') {
@@ -114,6 +126,7 @@ pub fn set_cover_from_data_url(data_url: &str) {
             let mut st = STATE.write();
             st.mime = mime.into();
             st.bytes = Some(bytes);
+            st.source = Some(data_url.to_string());
             tracing::info!("CoverServer: cover set ({} KB, {mime})", len / 1024);
         }
         Err(e) => {
@@ -129,6 +142,16 @@ pub fn fetch_cover_async(url: String) {
         clear_cover();
         return;
     }
+    // Та же обложка уже загружена/качается — не перекачиваем по сети на каждом
+    // позиционном тике `now_playing` (~раз в секунду). source выставляем сразу,
+    // ещё до завершения запроса, чтобы параллельные тики не запустили дубль-загрузку.
+    {
+        let mut st = STATE.write();
+        if st.source.as_deref() == Some(url.as_str()) {
+            return;
+        }
+        st.source = Some(url.clone());
+    }
     tauri::async_runtime::spawn(async move {
         let client = match reqwest::Client::builder()
             .timeout(Duration::from_secs(15))
@@ -141,6 +164,7 @@ pub fn fetch_cover_async(url: String) {
             Ok(c) => c,
             Err(e) => {
                 tracing::warn!("CoverServer.fetch: client build: {e}");
+                STATE.write().source = None; // позволить повтор на следующем тике
                 return;
             }
         };
@@ -158,17 +182,20 @@ pub fn fetch_cover_async(url: String) {
             Ok(r) => r,
             Err(e) => {
                 tracing::warn!("CoverServer.fetch send: {e}");
+                STATE.write().source = None;
                 return;
             }
         };
         if !resp.status().is_success() {
             tracing::warn!("CoverServer.fetch: status {}", resp.status());
+            STATE.write().source = None;
             return;
         }
         let bytes = match resp.bytes().await {
             Ok(b) => b.to_vec(),
             Err(e) => {
                 tracing::warn!("CoverServer.fetch bytes: {e}");
+                STATE.write().source = None;
                 return;
             }
         };

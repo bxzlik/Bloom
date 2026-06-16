@@ -28,6 +28,8 @@ export type TitleAlign = 'left' | 'center' | 'right'
 export type PlayerStyle = 'standard' | 'vinyl' | 'large'
 /** Тип слайдера прогресса/громкости. */
 export type SliderType = 'default' | 'thin' | 'ios' | 'wave'
+/** Вид визуализатора: волна (осциллограф) / столбцы (спектр). */
+export type VizType = 'wave' | 'bars'
 /** Положение блока очереди в плеере. */
 export type QueuePos = 'left' | 'bottom' | 'right'
 /** Позиция нижнего бара мини-плеера. */
@@ -60,6 +62,8 @@ export interface PlayerViewPrefs {
   showNextTrack: boolean
   /** Визуализатор (анимация волн под музыку, toggleViz). */
   vizEnabled: boolean
+  /** Вид визуализатора (волна / столбцы). */
+  vizType: VizType
   /** Позиция нижнего бара. */
   playerBarPos: PlayerBarPos
   /** Нижний бар включён (preset 'off' → false, toggleMiniPlayer). */
@@ -81,6 +85,7 @@ const DEFAULTS: PlayerViewPrefs = {
   lyricsInQueue: false,
   showNextTrack: false,
   vizEnabled: false,
+  vizType: 'bars',
   playerBarPos: 'bottom',
   mpEnabled: true,
   mpBgMode: 'theme',
@@ -134,6 +139,7 @@ const load = (): PlayerViewPrefs => {
       lyricsInQueue: !!p.lyricsInQueue,
       showNextTrack: !!p.showNextTrack,
       vizEnabled: !!p.vizEnabled,
+      vizType: p.vizType === 'wave' ? 'wave' : 'bars',
       playerBarPos:
         p.playerBarPos === 'top' || p.playerBarPos === 'left' || p.playerBarPos === 'right' ? p.playerBarPos : 'bottom',
       mpEnabled: p.mpEnabled !== false,
@@ -166,6 +172,7 @@ const persist = (s: PlayerViewPrefs): void => {
         lyricsInQueue: s.lyricsInQueue,
         showNextTrack: s.showNextTrack,
         vizEnabled: s.vizEnabled,
+        vizType: s.vizType,
         playerBarPos: s.playerBarPos,
         mpEnabled: s.mpEnabled,
         mpBgMode: s.mpBgMode,

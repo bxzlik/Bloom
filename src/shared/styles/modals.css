@@ -1,3 +1,9 @@
+/* ===== LOGS VIEWER MODAL ===== */
+.logs-backdrop{position:fixed;top:32px;left:0;right:0;bottom:0;z-index:992;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .22s}
+.logs-backdrop.open{opacity:1;pointer-events:all}
+.logs-modal{background:var(--block-bg,var(--card-solid,var(--card)));border:1px solid rgba(255,255,255,.09);border-radius:var(--radius);width:min(900px,100%);height:min(640px,100%);display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.95);overflow:hidden;transform:scale(.9) translateY(20px);will-change:transform;transition:.3s cubic-bezier(.34,1.38,.64,1)}
+.logs-backdrop.open .logs-modal{transform:scale(1) translateY(0)}
+
 /* ===== PROFILE EDIT MODAL ===== */
 #peditBackdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
 #peditBackdrop.open{opacity:1;pointer-events:all}
