@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import type { Playlist } from '../model'
 import { useMergeStore, usePlaylistStore, useLibStore } from '../model'
 import { toast } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 
 /**
@@ -21,6 +22,7 @@ const PlCov = ({ pl, size }: { pl: Playlist; size: number }) =>
   pl.cover ? <img src={pl.cover} alt="" /> : <PlIcon size={size} />
 
 export const MergeModal = () => {
+  const t = useT()
   const srcId = useMergeStore((s) => s.srcId)
   const close = useMergeStore((s) => s.close)
   const playlists = usePlaylistStore((s) => s.playlists)
@@ -120,7 +122,7 @@ export const MergeModal = () => {
     }
     close()
     selectPlaylist(newPl.id)
-    toast(`Создан плейлист «${finalName}» — ${mergedTrs.length} треков`)
+    toast(t('lib.merge.toast.created', { name: finalName, n: mergedTrs.length }))
   }
 
   const coverStack = [src, ...selPls].slice(0, 3)
@@ -138,7 +140,7 @@ export const MergeModal = () => {
     >
       <div className="mpl-modal">
         <div className="mpl-hero">
-          <button className="mpl-close" onClick={close} aria-label="Закрыть">
+          <button className="mpl-close" onClick={close} aria-label={t('common.close')}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -153,12 +155,12 @@ export const MergeModal = () => {
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
                 <circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M13 6h3a2 2 0 0 1 2 2v7" /><line x1="6" y1="9" x2="6" y2="21" />
               </svg>
-              Объединение плейлистов
+              {t('lib.merge.title')}
             </div>
             <input
               className="mpl-name-input"
               type="text"
-              placeholder="Название нового плейлиста"
+              placeholder={t('lib.merge.namePlaceholder')}
               maxLength={80}
               value={nameValue}
               onChange={(e) => {
@@ -167,10 +169,10 @@ export const MergeModal = () => {
               }}
             />
             <div className="mpl-stats" id="mergePlStats">
-              <span className="mpl-chip accent"><b>{stats.finalCount}</b> треков</span>
-              <span className="mpl-chip"><b>{selPls.length + 1}</b> плейлистов</span>
+              <span className="mpl-chip accent"><b>{stats.finalCount}</b> {t('lib.merge.tracksSuffix')}</span>
+              <span className="mpl-chip"><b>{selPls.length + 1}</b> {t('lib.merge.playlistsSuffix')}</span>
               {stats.dups > 0 && (
-                <span className="mpl-chip"><b>{stats.dups}</b> {dedup ? 'дублей убрано' : 'дублей'}</span>
+                <span className="mpl-chip"><b>{stats.dups}</b> {dedup ? t('lib.merge.dupsRemoved') : t('lib.merge.dups')}</span>
               )}
             </div>
           </div>
@@ -178,12 +180,12 @@ export const MergeModal = () => {
 
         <div className="mpl-body">
           <div>
-            <div className="mpl-section-title">Источник</div>
+            <div className="mpl-section-title">{t('lib.merge.source')}</div>
             <div className="mpl-source">
               <div className="mpl-src-icon"><PlCov pl={src} size={16} /></div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{src.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--text2)' }}>{src.trs.length} треков</div>
+                <div style={{ fontSize: 11, color: 'var(--text2)' }}>{t('search.tracksCount', { n: src.trs.length })}</div>
               </div>
               <div className="mpl-src-badge">A</div>
             </div>
@@ -191,18 +193,18 @@ export const MergeModal = () => {
 
           <div>
             <div className="mpl-section-title">
-              <span>Добавить плейлисты</span>
-              <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{sel.size} выбрано</span>
+              <span>{t('lib.merge.addPlaylists')}</span>
+              <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{t('lib.addModal.selected', { n: sel.size })}</span>
             </div>
             <div className="mpl-search">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
-              <input type="text" placeholder="Поиск по плейлистам..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input type="text" placeholder={t('lib.merge.searchPlaylists')} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <div className="mpl-list">
               {others.length === 0 ? (
-                <div className="mpl-empty">Ничего не найдено</div>
+                <div className="mpl-empty">{t('lib.merge.nothingFound')}</div>
               ) : (
                 others.map((p) => {
                   const isSel = sel.has(p.id)
@@ -211,7 +213,7 @@ export const MergeModal = () => {
                       <div className="mpl-item-cov"><PlCov pl={p} size={14} /></div>
                       <div className="mpl-item-info">
                         <div className="mpl-item-name">{p.name}</div>
-                        <div className="mpl-item-sub">{p.trs.length} треков</div>
+                        <div className="mpl-item-sub">{t('search.tracksCount', { n: p.trs.length })}</div>
                       </div>
                       <div className="mpl-item-check">
                         {isSel && (
@@ -228,19 +230,19 @@ export const MergeModal = () => {
           </div>
 
           <div>
-            <div className="mpl-section-title">Параметры</div>
+            <div className="mpl-section-title">{t('lib.merge.params')}</div>
             <div className="mpl-opts">
               <div className={`mpl-opt${dedup ? ' on' : ''}`} onClick={() => setDedup((v) => !v)}>
                 <div className="mpl-opt-info">
-                  <div className="mpl-opt-title">Убрать дубликаты</div>
-                  <div className="mpl-opt-sub">Каждый трек добавится только один раз</div>
+                  <div className="mpl-opt-title">{t('lib.merge.dedup')}</div>
+                  <div className="mpl-opt-sub">{t('lib.merge.dedup.sub')}</div>
                 </div>
                 <div className="mpl-toggle" />
               </div>
               <div className={`mpl-opt${del ? ' on' : ''}`} onClick={() => setDel((v) => !v)}>
                 <div className="mpl-opt-info">
-                  <div className="mpl-opt-title">Удалить исходные</div>
-                  <div className="mpl-opt-sub">Источник и выбранные плейлисты будут удалены</div>
+                  <div className="mpl-opt-title">{t('lib.merge.delSource')}</div>
+                  <div className="mpl-opt-sub">{t('lib.merge.delSource.sub')}</div>
                 </div>
                 <div className="mpl-toggle" />
               </div>
@@ -251,13 +253,13 @@ export const MergeModal = () => {
         <div className="mpl-foot">
           <div className="mpl-foot-hint">
             {!sel.size
-              ? 'Выберите хотя бы один плейлист'
+              ? t('lib.merge.hint.selectOne')
               : del
-                ? `Будет создан 1 плейлист, удалено ${sel.size + 1}`
-                : 'Будет создан новый плейлист'}
+                ? t('lib.merge.hint.willCreateDelete', { n: sel.size + 1 })
+                : t('lib.merge.hint.willCreate')}
           </div>
-          <button className="mpl-btn ghost" onClick={close}>Отмена</button>
-          <button className="mpl-btn primary" onClick={doMerge} disabled={!sel.size}>Объединить</button>
+          <button className="mpl-btn ghost" onClick={close}>{t('common.cancel')}</button>
+          <button className="mpl-btn primary" onClick={doMerge} disabled={!sel.size}>{t('lib.merge.merge')}</button>
         </div>
       </div>
     </div>,

@@ -1,6 +1,7 @@
 import { useQueueStore } from '@features/player/model/queueStore'
 import { useLibStore } from '@features/library/model/store'
 import { toast } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import waveApi from '@/wave'
 import { useDislikesStore } from '../model/dislikesStore'
 
@@ -11,6 +12,7 @@ import { useDislikesStore } from '../model/dislikesStore'
  * пометка, по которой волна больше не предложит трек.
  */
 export const DislikeButton = () => {
+  const t = useT()
   const curId = useQueueStore((s) => s.curId)
   const scDisliked = useDislikesStore((s) => (curId ? s.entries.some((e) => e.id === curId) : false))
   const libDisliked = useLibStore((s) =>
@@ -20,11 +22,11 @@ export const DislikeButton = () => {
 
   const onClick = () => {
     if (!curId) {
-      toast('Нет текущего трека')
+      toast(t('wave.toast.noTrack'))
       return
     }
     waveApi.feedback({ action: disliked ? 'undislike' : 'dislike', trackId: curId })
-    toast(disliked ? 'Дизлайк снят' : 'Дизлайк — больше не предложу в волне')
+    toast(disliked ? t('wave.toast.removed') : t('wave.toast.added'))
   }
 
   return (
@@ -32,7 +34,7 @@ export const DislikeButton = () => {
       className={`lyrics-btn${disliked ? ' lyr-active' : ''}`}
       id="dislikeBtn"
       onClick={onClick}
-      aria-label={disliked ? 'Снять дизлайк' : 'Дизлайк'}
+      aria-label={disliked ? t('wave.unlike') : t('wave.dislike')}
     >
       <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
         <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z" />

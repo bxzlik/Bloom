@@ -1,4 +1,5 @@
 import { gameToast } from '../lib/gameToast'
+import { t, useI18nStore, type TranslationKey } from '@shared/i18n'
 
 /**
  * Состояние и движок «Тамагочи».
@@ -32,35 +33,50 @@ export interface TamaState {
 export interface TamaAchievement {
   id: string
   icon: string
-  name: string
-  desc: string
+  nameKey: TranslationKey
+  descKey: TranslationKey
   check: (s: TamaState) => boolean
 }
 
-export const TAMA_MOODS: Record<TamaMoodKey, { char: string; label: string; css: string }> = {
-  dancing: { char: 'ノ(◕ヮ◕)ノ', label: 'Танцует! 🎵', css: 'mood-dancing' },
-  happy: { char: '(＾▽＾)', label: 'Доволен~', css: 'mood-happy' },
-  hungry: { char: '(>_<)', label: 'Голодный!!', css: 'mood-hungry' },
-  sad: { char: '(T▽T)', label: 'Грустит...', css: 'mood-sad' },
-  sleepy: { char: '(-.-)zzZ', label: 'Дрыхнет...', css: 'mood-sleepy' },
+export const TAMA_MOODS: Record<TamaMoodKey, { char: string; labelKey: TranslationKey; css: string }> = {
+  dancing: { char: 'ノ(◕ヮ◕)ノ', labelKey: 'games.mood.dancing', css: 'mood-dancing' },
+  happy: { char: '(＾▽＾)', labelKey: 'games.mood.happy', css: 'mood-happy' },
+  hungry: { char: '(>_<)', labelKey: 'games.mood.hungry', css: 'mood-hungry' },
+  sad: { char: '(T▽T)', labelKey: 'games.mood.sad', css: 'mood-sad' },
+  sleepy: { char: '(-.-)zzZ', labelKey: 'games.mood.sleepy', css: 'mood-sleepy' },
 }
 
 export const TAMA_ACHIEVEMENTS: TamaAchievement[] = [
-  { id: 'born', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.5 2 5 6.5 5 11a7 7 0 0 0 14 0c0-4.5-3.5-9-7-9z"/></svg>', name: 'Рождение', desc: 'Завести питомца', check: () => true },
-  { id: 'fed10', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>', name: 'Хорошо кормят', desc: 'Покормить 10 раз', check: (s) => (s.totalFed || 0) >= 10 },
-  { id: 'pet20', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>', name: 'Любимчик', desc: 'Погладить 20 раз', check: (s) => (s.totalPets || 0) >= 20 },
-  { id: 'songs50', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>', name: 'Меломан', desc: 'Послушать 50 треков вместе', check: (s) => (s.songsListened || 0) >= 50 },
-  { id: 'day1', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>', name: 'День рождения', desc: 'Питомцу исполнился 1 день', check: (s) => tamaAgeHours(s) >= 24 },
-  { id: 'week1', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>', name: 'Неделя', desc: 'Питомцу 7 дней', check: (s) => tamaAgeHours(s) >= 168 },
+  { id: 'born', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.5 2 5 6.5 5 11a7 7 0 0 0 14 0c0-4.5-3.5-9-7-9z"/></svg>', nameKey: 'games.tama.ach.born.name', descKey: 'games.tama.ach.born.desc', check: () => true },
+  { id: 'fed10', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>', nameKey: 'games.tama.ach.fed10.name', descKey: 'games.tama.ach.fed10.desc', check: (s) => (s.totalFed || 0) >= 10 },
+  { id: 'pet20', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>', nameKey: 'games.tama.ach.pet20.name', descKey: 'games.tama.ach.pet20.desc', check: (s) => (s.totalPets || 0) >= 20 },
+  { id: 'songs50', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>', nameKey: 'games.tama.ach.songs50.name', descKey: 'games.tama.ach.songs50.desc', check: (s) => (s.songsListened || 0) >= 50 },
+  { id: 'day1', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>', nameKey: 'games.tama.ach.day1.name', descKey: 'games.tama.ach.day1.desc', check: (s) => tamaAgeHours(s) >= 24 },
+  { id: 'week1', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>', nameKey: 'games.tama.ach.week1.name', descKey: 'games.tama.ach.week1.desc', check: (s) => tamaAgeHours(s) >= 168 },
 ]
 
-export const TAMA_PHRASES: Record<string, string[]> = {
+const TAMA_PHRASES_RU: Record<string, string[]> = {
   dancing: ['Крутой трек! 🔥', 'Я обожаю эту песню!', 'Погромче! 🎶', 'Врываемся!'],
   happy: ['Мне хорошо 😊', 'Всё отлично!', 'Рад тебя видеть!', 'Хороший день~'],
   sleepy: ['Хочу спать... 💤', 'Уааааа...', 'Тихо, пожалуйста...'],
   hungry: ['Хочу есть! 🍖', 'ПОКОРМИ МЕНЯ', 'Голодно (>_<)', 'Желудок урчит...'],
   sad: ['Мне плохо...', 'Побудь со мной', 'Включи музыку...', 'Скучно :('],
   pet: ['Спасибо! ♡', 'Ещё! Ещё!', 'Хи-хи ~', 'Мурр~', 'Тепло!'],
+}
+
+const TAMA_PHRASES_EN: Record<string, string[]> = {
+  dancing: ['Cool track! 🔥', 'I love this song!', 'Louder! 🎶', 'Here we go!'],
+  happy: ['I feel good 😊', 'All great!', 'Nice to see you!', 'Good day~'],
+  sleepy: ['Wanna sleep... 💤', 'Yaaawn...', 'Quiet, please...'],
+  hungry: ['I wanna eat! 🍖', 'FEED ME', 'Hungry (>_<)', 'Tummy rumbling...'],
+  sad: ['I feel down...', 'Stay with me', 'Play some music...', 'Bored :('],
+  pet: ['Thanks! ♡', 'More! More!', 'Hee-hee ~', 'Purr~', 'Warm!'],
+}
+
+/** Фразы питомца для текущей локали. */
+export const tamaPhrases = (mood: string): string[] => {
+  const set = useI18nStore.getState().locale === 'ru' ? TAMA_PHRASES_RU : TAMA_PHRASES_EN
+  return set[mood] || set['happy']!
 }
 
 const LS_KEY = 'bloom_tama'
@@ -90,7 +106,7 @@ export function loadTama(): TamaState {
   if (!s.totalPets) s.totalPets = 0
   if (!s.songsListened) s.songsListened = 0
   if (!s.achievements) s.achievements = {}
-  if (!s.name) s.name = 'Малыш'
+  if (!s.name) s.name = t('games.tama.defaultName')
   if (!s.lastUpdate) s.lastUpdate = now
   const minPassed = Math.min((now - s.lastUpdate) / 60000, 480)
   if (minPassed > 0) {
@@ -141,7 +157,7 @@ export function checkTamaAchievements(): void {
     if (!s.achievements[a.id] && a.check(s)) {
       s.achievements[a.id] = true
       changed = true
-      gameToast('tama', 'Достижение питомца: ' + a.name)
+      gameToast('tama', t('games.tama.achUnlocked') + t(a.nameKey))
     }
   })
   if (changed) saveTama()

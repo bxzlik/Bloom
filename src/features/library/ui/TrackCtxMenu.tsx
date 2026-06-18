@@ -14,9 +14,11 @@ import {
   playNextInQueue,
   removeFromQueue,
   useQueueStore,
+  downloadTrack,
 } from '@features/player'
 import waveApi from '@/wave'
 import { useShareStore } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import { useFavStore, useLibStore, usePlaylistStore, useTrackInfoStore } from '../model'
 import { deleteUploadedTrack, saveTrackToLibrary } from '../lib'
 
@@ -47,6 +49,7 @@ export const TrackCtxMenu = ({
   onCreatePlaylistForTrack,
   onEditTags,
 }: TrackCtxMenuProps) => {
+  const t = useT()
   const menuRef = useRef<HTMLDivElement>(null)
   const flyoutRef = useRef<HTMLDivElement>(null)
   const addItemRef = useRef<HTMLDivElement>(null)
@@ -239,7 +242,7 @@ export const TrackCtxMenu = ({
               <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
             </svg>
           </span>{' '}
-          Воспроизвести
+          {t('player.aria.play')}
         </div>
 
         {inLib && onEditTags && (
@@ -257,7 +260,7 @@ export const TrackCtxMenu = ({
               <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </span>{' '}
-          Редактировать теги
+          {t('lib.ctx.editTags')}
         </div>
         )}
 
@@ -276,7 +279,7 @@ export const TrackCtxMenu = ({
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </span>{' '}
-          Инфо о треке
+          {t('lib.ctx.trackInfo')}
         </div>
 
         <div className="cx-sep" id="cxSep1" />
@@ -302,7 +305,7 @@ export const TrackCtxMenu = ({
               <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
             </svg>
           </span>{' '}
-          {isFav ? 'Убрать из любимого' : 'В любимое'}
+          {isFav ? t('lib.ctx.favRemove') : t('lib.ctx.favAdd')}
         </div>
 
         <div
@@ -331,7 +334,7 @@ export const TrackCtxMenu = ({
               <circle cx="18" cy="16" r="3" />
             </svg>
           </span>{' '}
-          В плейлист
+          {t('lib.ctx.toPlaylist')}
           <svg
             width="10"
             height="10"
@@ -370,7 +373,7 @@ export const TrackCtxMenu = ({
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
               </svg>
             </span>{' '}
-            Поделиться
+            {t('lib.ctx.share')}
           </div>
         )}
 
@@ -393,7 +396,28 @@ export const TrackCtxMenu = ({
                 <rect x="19.6" y="10" width="2.6" height="4" rx="1.3" />
               </svg>
             </span>{' '}
-            Волна по треку
+            {t('lib.ctx.waveByTrack')}
+          </div>
+        )}
+
+        {/* cxdl — «Скачать», только для треков площадок (SC/Yandex). */}
+        {(track._sc || track._ym) && (
+          <div
+            className="ci"
+            id="cxdl"
+            onClick={() => {
+              onClose()
+              void downloadTrack(track)
+            }}
+          >
+            <span className="ci-icon">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </span>{' '}
+            {t('lib.ctx.download')}
           </div>
         )}
 
@@ -413,7 +437,7 @@ export const TrackCtxMenu = ({
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </span>{' '}
-          В очередь
+          {t('lib.ctx.toQueue')}
         </div>
 
         <div
@@ -430,7 +454,7 @@ export const TrackCtxMenu = ({
               <polyline points="6 17 11 12 6 7" />
             </svg>
           </span>{' '}
-          Играть следующим
+          {t('lib.ctx.playNext')}
         </div>
 
         {(inCurrentPl || isInQueue || isDeletable) && <div className="cx-sep" />}
@@ -458,7 +482,7 @@ export const TrackCtxMenu = ({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </span>{' '}
-            Убрать из плейлиста
+            {t('lib.ctx.removeFromPl')}
           </div>
         )}
 
@@ -477,7 +501,7 @@ export const TrackCtxMenu = ({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </span>{' '}
-            Убрать из очереди
+            {t('player.aria.removeFromQueue')}
           </div>
         )}
 
@@ -487,7 +511,7 @@ export const TrackCtxMenu = ({
             id="cxdel"
             onClick={() => {
               onClose()
-              if (!confirm('Удалить трек?')) return
+              if (!confirm(t('lib.ctx.confirmDelete'))) return
               void deleteUploadedTrack(track.id)
             }}
           >
@@ -507,7 +531,7 @@ export const TrackCtxMenu = ({
                 <path d="M9 6V4h6v2" />
               </svg>
             </span>{' '}
-            Удалить трек
+            {t('lib.ctx.deleteTrack')}
           </div>
         )}
       </div>
@@ -545,7 +569,7 @@ export const TrackCtxMenu = ({
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
                 </span>{' '}
-                В библиотеку
+                {t('lib.ctx.toLibrary')}
               </div>
               <div className="cx-sep" />
             </>
@@ -572,7 +596,7 @@ export const TrackCtxMenu = ({
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </span>{' '}
-              Создать плейлист
+              {t('lib.ctx.createPlaylist')}
             </div>
           ) : (
             <>
@@ -626,7 +650,7 @@ export const TrackCtxMenu = ({
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                 </span>{' '}
-                Новый плейлист
+                {t('player.add.newPlaylist')}
               </div>
             </>
           )}

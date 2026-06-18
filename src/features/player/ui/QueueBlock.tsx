@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { useSortable } from '@shared/lib/useSortable'
+import { useT, type TFunc } from '@shared/i18n'
 import {
   useLibStore,
   usePlaylistStore,
@@ -44,6 +45,7 @@ const QueueBlockImpl = ({
   headerExtra,
   similarIcon,
 }: { headerExtra?: ReactNode; similarIcon?: boolean } = {}) => {
+  const t = useT()
   const queue = useQueueStore((s) => s.queue)
   const curId = useQueueStore((s) => s.curId)
   const source = useQueueStore((s) => s.source)
@@ -151,7 +153,7 @@ const QueueBlockImpl = ({
       >
         {items.length === 0 && (
           <div className="empty" style={{ padding: '28px 0', textAlign: 'center' }}>
-            <p style={{ fontSize: 13, color: 'var(--muted)' }}>Очередь пуста</p>
+            <p style={{ fontSize: 13, color: 'var(--muted)' }}>{t('player.queueEmpty')}</p>
           </div>
         )}
         {items.map(({ id, track }) => {
@@ -233,12 +235,12 @@ export const QueueBlock = memo(QueueBlockImpl)
 
 // ── HEADER ────────────────────────────────────────────────────────────────
 
-const sourceLabel = (s: PlaySource): string => {
+const sourceLabel = (s: PlaySource, t: TFunc): string => {
   if (!s) return '—'
   switch (s.kind) {
-    case 'lib-all': return 'Все треки'
-    case 'lib-fav': return 'Любимые'
-    case 'lib-history': return 'История'
+    case 'lib-all': return t('player.queueTitle.all')
+    case 'lib-fav': return t('player.queueTitle.fav')
+    case 'lib-history': return t('player.queueTitle.history')
     case 'playlist': return s.name
     case 'folder': return s.name
     case 'sc': return s.label
@@ -371,7 +373,9 @@ const QueueHeader = ({
   onClear: () => void
   headerExtra?: ReactNode
   similarIcon?: boolean
-}) => (
+}) => {
+  const t = useT()
+  return (
   <div
     style={{
       padding: '10px 16px 6px',
@@ -402,7 +406,7 @@ const QueueHeader = ({
           lineHeight: 1,
         }}
       >
-        {sourceLabel(source)}
+        {sourceLabel(source, t)}
       </span>
       {shuffle && (
         <span
@@ -489,10 +493,12 @@ const QueueHeader = ({
       {headerExtra}
     </div>
   </div>
-)
+  )
+}
 
 /** «Похожие на очередь» (волна). icon=true — компактная иконка (узкая панель). */
 const SimilarButton = ({ icon }: { icon?: boolean }) => {
+  const t = useT()
   const eq = (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
       <rect x="2" y="9" width="2.6" height="6" rx="1.3" />
@@ -533,7 +539,7 @@ const SimilarButton = ({ icon }: { icon?: boolean }) => {
       }}
     >
       {eq}
-      {!icon && 'Похожие'}
+      {!icon && t('player.similar')}
     </button>
   )
 }
@@ -568,6 +574,7 @@ const QueueRow = ({
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
   onRemove: (e: ReactMouseEvent<HTMLButtonElement>) => void
 }) => {
+  const t = useT()
   const isFav = useFavStore((s) => s.favs.has(id))
   const toggleFav = useFavStore((s) => s.toggleFav)
   const isLoading = useQueueStore((s) => s.loadingId === id)
@@ -623,7 +630,7 @@ const QueueRow = ({
         <button
           className={`ib${isFav ? ' fav' : ''}`}
           type="button"
-          aria-label={isFav ? 'Убрать из «Любимого»' : 'В «Любимое»'}
+          aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
           onClick={(e) => {
             e.stopPropagation()
             if (!track) return
@@ -639,7 +646,7 @@ const QueueRow = ({
         <button
           className="ib"
           type="button"
-          aria-label="Добавить"
+          aria-label={t('player.aria.add')}
           onClick={(e) => onAddClick(e, id)}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
@@ -650,7 +657,7 @@ const QueueRow = ({
         <button
           className="ib ib-rmq"
           type="button"
-          aria-label="Убрать из очереди"
+          aria-label={t('player.aria.removeFromQueue')}
           onClick={(e) => {
             e.stopPropagation()
             onRemove(e)

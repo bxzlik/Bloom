@@ -15,6 +15,7 @@ import { playFromSource, AddPopup } from '@features/player'
 import { getProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
 import { toast } from '@shared/ui'
+import { useT, useLocale, t as tt, type TranslationKey } from '@shared/i18n'
 import {
   TrackCtxMenu,
   NewPlaylistModal,
@@ -103,15 +104,18 @@ const TrackCard = ({
   </div>
 )
 
-const ArtistCard = ({ artist, onOpen }: { artist: Artist; onOpen: () => void }) => (
+const ArtistCard = ({ artist, onOpen }: { artist: Artist; onOpen: () => void }) => {
+  const t = useT()
+  return (
   <div className="sp-artist-card" onClick={onOpen} style={{ cursor: 'pointer' }}>
     <div className="sp-ac-av">
       <Cover src={artist.avatar} placeholder={<PhArtist />} />
     </div>
     <div className="sp-ac-name">{artist.name}</div>
-    <div className="sp-ac-sub">Артист</div>
+    <div className="sp-ac-sub">{t('search.kind.artist')}</div>
   </div>
-)
+  )
+}
 
 const PlaylistCard = ({ playlist, onOpen }: { playlist: Playlist; onOpen: () => void }) => (
   <div className="sp-track-card" onClick={onOpen} style={{ cursor: 'pointer' }}>
@@ -142,6 +146,7 @@ const TrackListRow = ({
   onCtxMenu: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>) => void
 }) => {
+  const tr = useT()
   const isFav = useFavStore((s) => s.favs.has(track.id))
   const toggleFav = useFavStore((s) => s.toggleFav)
   const inLib = useLibStore((s) => s.tracks.some((t) => t.id === track.id))
@@ -168,12 +173,12 @@ const TrackListRow = ({
         </div>
       </div>
       <div className="trac">
-        <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label="В «Любимое»">
+        <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label={tr('player.aria.favAdd')}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
           </svg>
         </button>
-        <button className="ib" onClick={onAddClick} aria-label="Добавить">
+        <button className="ib" onClick={onAddClick} aria-label={tr('player.aria.add')}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
@@ -185,10 +190,10 @@ const TrackListRow = ({
 }
 
 /* ── Табы-категории (.sp-filter-tabs) spFilterTabs ──────── */
-const TABS: { id: SearchTab; label: string; icon: ReactNode }[] = [
+const TABS: { id: SearchTab; labelKey: TranslationKey; icon: ReactNode }[] = [
   {
     id: 'all',
-    label: 'Все',
+    labelKey: 'search.tab.all',
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
         <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
@@ -197,7 +202,7 @@ const TABS: { id: SearchTab; label: string; icon: ReactNode }[] = [
   },
   {
     id: 'tracks',
-    label: 'Треки',
+    labelKey: 'search.tab.tracks',
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
         <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
@@ -206,7 +211,7 @@ const TABS: { id: SearchTab; label: string; icon: ReactNode }[] = [
   },
   {
     id: 'artists',
-    label: 'Артисты',
+    labelKey: 'search.tab.artists',
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
@@ -215,7 +220,7 @@ const TABS: { id: SearchTab; label: string; icon: ReactNode }[] = [
   },
   {
     id: 'playlists',
-    label: 'Плейлисты',
+    labelKey: 'search.tab.playlists',
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
         <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
@@ -225,7 +230,7 @@ const TABS: { id: SearchTab; label: string; icon: ReactNode }[] = [
   },
   {
     id: 'albums',
-    label: 'Альбомы',
+    labelKey: 'search.tab.albums',
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
         <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" />
@@ -234,21 +239,24 @@ const TABS: { id: SearchTab; label: string; icon: ReactNode }[] = [
   },
 ]
 
-const FilterTabs = ({ tab, onTab }: { tab: SearchTab; onTab: (t: SearchTab) => void }) => (
+const FilterTabs = ({ tab, onTab }: { tab: SearchTab; onTab: (t: SearchTab) => void }) => {
+  const tr = useT()
+  return (
   <div className="sp-filter-tabs" id="spFilterTabs">
-    {TABS.map((t) => (
+    {TABS.map((it) => (
       <button
-        key={t.id}
-        className={cn('sp-filter-btn', tab === t.id && 'active')}
-        data-filter={t.id}
-        onClick={() => onTab(t.id)}
+        key={it.id}
+        className={cn('sp-filter-btn', tab === it.id && 'active')}
+        data-filter={it.id}
+        onClick={() => onTab(it.id)}
       >
-        {t.icon}
-        {t.label}
+        {it.icon}
+        {tr(it.labelKey)}
       </button>
     ))}
   </div>
-)
+  )
+}
 
 /* ── Дропдаун выбора источника ────────────────── */
 const LibLogo = () => (
@@ -280,9 +288,10 @@ const sourceIcon = (id: string, accentText = false): ReactNode => {
   return id === 'local' ? <LibLogo /> : <AllLogo />
 }
 const sourceLabel = (id: string, providerLabel?: string): string =>
-  id === 'all' ? 'Все источники' : providerLabel ?? id
+  id === 'all' ? tt('search.allSources') : providerLabel ?? id
 
 const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: string) => void }) => {
+  useLocale()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const providers = getProviders()
@@ -376,7 +385,7 @@ const RecentDel = () => (
 )
 /** Подзаголовок недавнего по типу. */
 const recentKindLabel = (kind: string): string =>
-  kind === 'artist' ? 'Артист' : kind === 'album' ? 'Альбом' : kind === 'track' ? 'Трек' : 'Плейлист'
+  kind === 'artist' ? tt('search.kind.artist') : kind === 'album' ? tt('search.kind.album') : kind === 'track' ? tt('search.kind.track') : tt('search.kind.playlist')
 /** Плейсхолдер-иконка недавнего по типу. */
 const RecentKindIcon = ({ kind }: { kind: string }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ opacity: 0.5 }}>
@@ -419,13 +428,15 @@ const RecentPanel = ({
   onRemoveSearch: (q: string) => void
   onClearItems: () => void
   onClearSearches: () => void
-}) => (
+}) => {
+  const t = useT()
+  return (
   <div className="sp-recent">
     {items.length > 0 && (
       <div style={{ marginBottom: 22 }}>
         <div className="sp-recent-hdr">
-          <span className="sp-recent-hdr-title">Недавно открытые</span>
-          <button className="sp-recent-clear" onClick={onClearItems}>Очистить</button>
+          <span className="sp-recent-hdr-title">{t('search.recentOpened')}</span>
+          <button className="sp-recent-clear" onClick={onClearItems}>{t('common.clear')}</button>
         </div>
         <div className="sp-recent-list">
           {items.map((it) => (
@@ -469,8 +480,8 @@ const RecentPanel = ({
     {searches.length > 0 && (
       <div>
         <div className="sp-recent-hdr">
-          <span className="sp-recent-hdr-title">Недавние запросы</span>
-          <button className="sp-recent-clear" onClick={onClearSearches}>Очистить</button>
+          <span className="sp-recent-hdr-title">{t('search.recentQueries')}</span>
+          <button className="sp-recent-clear" onClick={onClearSearches}>{t('common.clear')}</button>
         </div>
         <div className="sp-recent-list">
           {searches.map((q) => (
@@ -494,7 +505,8 @@ const RecentPanel = ({
       </div>
     )}
   </div>
-)
+  )
+}
 
 /* ── Мета-фильтры треков (.sp-dd дропдауны) ───────────────────────────── */
 type DdOption = { id: string; label: string }
@@ -555,22 +567,22 @@ const SpDropdown = ({
   )
 }
 
-const DUR_OPTS: DdOption[] = [
-  { id: 'all', label: 'Любая' },
-  { id: 'short', label: '< 3 мин' },
-  { id: 'mid', label: '3 – 7 мин' },
-  { id: 'long', label: '7+ мин' },
+const DUR_OPTS: { id: string; labelKey: TranslationKey }[] = [
+  { id: 'all', labelKey: 'search.opt.anyF' },
+  { id: 'short', labelKey: 'search.dur.short' },
+  { id: 'mid', labelKey: 'search.dur.mid' },
+  { id: 'long', labelKey: 'search.dur.long' },
 ]
-const YEAR_OPTS: DdOption[] = [
-  { id: 'all', label: 'Любой' },
+const YEAR_OPTS: { id: string; labelKey?: TranslationKey; label?: string }[] = [
+  { id: 'all', labelKey: 'search.opt.any' },
   { id: 'new', label: '2020+' },
-  { id: '2010', label: '2010-е' },
-  { id: '2000', label: '2000-е' },
-  { id: 'old', label: 'до 2000' },
+  { id: '2010', labelKey: 'search.year.2010s' },
+  { id: '2000', labelKey: 'search.year.2000s' },
+  { id: 'old', labelKey: 'search.year.old' },
 ]
-const SORT_OPTS: DdOption[] = [
-  { id: 'relevance', label: 'По релевантности' },
-  { id: 'new', label: 'Сначала новые' },
+const SORT_OPTS: { id: string; labelKey: TranslationKey }[] = [
+  { id: 'relevance', labelKey: 'search.sort.relevance' },
+  { id: 'new', labelKey: 'search.sort.new' },
 ]
 
 const IcoClock = () => (
@@ -610,6 +622,7 @@ const ProfileView = ({
   onLikesAsPlaylist: () => void
   onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
 }) => {
+  const t = useT()
   const { artist, playlists, likes } = profile
   const [likesShown, setLikesShown] = useState(30) // «показать ещё» лайки (+30)
   const av = artist.avatar ?? null
@@ -644,7 +657,7 @@ const ProfileView = ({
             </div>
             {(artist.fullName || followers) && (
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)' }}>
-                {[artist.fullName, followers ? `${followers} подписчиков` : null].filter(Boolean).join(' · ')}
+                {[artist.fullName, followers ? t('search.followers', { n: followers }) : null].filter(Boolean).join(' · ')}
               </div>
             )}
             {artist.description && (
@@ -658,7 +671,7 @@ const ProfileView = ({
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: '#fff', color: '#111', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', fontFamily: 'inherit' }}
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
-                Треки
+                {t('search.tab.tracks')}
               </button>
               {/* «Профиль» — применить ник/аватар SoundCloud к аккаунту
 . */}
@@ -667,7 +680,7 @@ const ProfileView = ({
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.18)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                Профиль
+                {t('search.profile')}
               </button>
             </div>
           </div>
@@ -678,12 +691,12 @@ const ProfileView = ({
       {playlists.length > 0 && (
         <>
           <div className="sc-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 16, fontWeight: 700 }}>Плейлисты · {playlists.length}</span>
+            <span style={{ fontSize: 16, fontWeight: 700 }}>{t('search.tab.playlists')} · {playlists.length}</span>
             <button
               onClick={onImportPlaylists}
               style={{ background: 'rgba(255,255,255,.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
             >
-              Импорт всех
+              {t('search.importAll')}
             </button>
           </div>
           <div className="sp-pl-grid">
@@ -698,19 +711,19 @@ const ProfileView = ({
       {likes.length > 0 && (
         <>
           <div className="sc-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '16px 0 4px' }}>
-            <span style={{ fontSize: 16, fontWeight: 700 }}>Лайки · {likes.length}</span>
+            <span style={{ fontSize: 16, fontWeight: 700 }}>{t('search.likes')} · {likes.length}</span>
             <div style={{ display: 'flex', gap: 5 }}>
               <button
                 onClick={onImportLikes}
                 style={{ background: 'var(--accent)', border: 'none', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--accent-text,#fff)', fontSize: 10.5, fontWeight: 700, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
               >
-                Импорт всех
+                {t('search.importAll')}
               </button>
               <button
                 onClick={onLikesAsPlaylist}
                 style={{ background: 'rgba(255,255,255,.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
               >
-                Как плейлист
+                {t('search.asPlaylist')}
               </button>
             </div>
           </div>
@@ -736,7 +749,7 @@ const ProfileView = ({
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)',
               }}
             >
-              Показать ещё
+              {t('search.showMore')}
             </button>
           )}
         </>
@@ -758,6 +771,8 @@ export interface SearchPageProps {
  * персистится в библиотеку (saveTrackToLibrary).
  */
 export const SearchPage = ({ active }: SearchPageProps) => {
+  const t = useT()
+  useLocale()
   const query = useSearchStore((s) => s.query)
   const submitted = useSearchStore((s) => s.submitted)
   const results = useSearchStore((s) => s.results)
@@ -815,7 +830,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
         id: p.id,
         title: p.title,
         cover: p.cover ?? null,
-        subtitle: `${p.trackCount ?? 0} треков`,
+        subtitle: t('search.tracksCount', { n: p.trackCount ?? 0 }),
         round: false,
       },
       p.ownerName, // автор/владелец → «{owner} · Плейлист/Альбом»
@@ -829,7 +844,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
       name,
       ...(avatar ? { avatar } : {}),
     })
-    toast(`Профиль SoundCloud применён: ${name}`)
+    toast(t('search.toast.scApplied', { name }))
   }
 
   // ── Импорт из профиля ──
@@ -839,22 +854,22 @@ export const SearchPage = ({ active }: SearchPageProps) => {
     profile.likes.forEach((t) => {
       if (saveTrackToLibrary(t)) added++
     })
-    toast(added ? `Добавлено треков: ${added}` : 'Все треки уже в библиотеке')
+    toast(added ? t('search.toast.added', { n: added }) : t('search.toast.allInLib'))
   }
   const likesAsPlaylist = () => {
     if (!profile || !profile.likes.length) return
     // scLikes = SC user-id (из entity id `sc_artist_<id>`) — для «Обновить треки».
     const scLikes = profile.artist.id.replace(/^sc_artist_/, '') || undefined
-    const pl = createPl(`${profile.artist.name} — лайки`, undefined, profile.artist.avatar ?? undefined, {
+    const pl = createPl(t('search.likesName', { name: profile.artist.name }), undefined, profile.artist.avatar ?? undefined, {
       scLikes,
     })
     profile.likes.forEach((t) => saveTrackToLibrary(t))
     reorderPlTracks(pl.id, profile.likes.map((t) => t.id))
-    toast(`Плейлист создан (${profile.likes.length} треков)`)
+    toast(t('search.toast.plCreated', { n: profile.likes.length }))
   }
   const importPlaylists = async () => {
     if (!profile || !profile.playlists.length) return
-    toast('Импортируем плейлисты…')
+    toast(t('search.toast.importing'))
     let ok = 0
     for (const p of profile.playlists) {
       try {
@@ -869,7 +884,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
         /* пропускаем неудачный плейлист */
       }
     }
-    toast(ok ? `Импортировано плейлистов: ${ok}` : 'Не удалось импортировать')
+    toast(ok ? t('search.toast.importedPl', { n: ok }) : t('search.toast.importFail'))
   }
 
   const { artists, playlists, albums, tracks } = results
@@ -993,7 +1008,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const filteredTracks = tracks.filter((t) => passDur(t) && passYear(t) && passGenre(t))
   // Опции жанра — уникальные основные жанры из выдачи.
   const genreOptions: DdOption[] = [
-    { id: 'all', label: 'Любой' },
+    { id: 'all', label: t('search.opt.any') },
     ...Array.from(new Set(tracks.map(trackGenre).filter(Boolean)))
       .slice(0, 12)
       .map((g) => ({ id: g, label: g })),
@@ -1029,7 +1044,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
               value={query}
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Поиск или вставь ссылку…"
+              placeholder={t('search.placeholder')}
               autoComplete="off"
               spellCheck={false}
             />
@@ -1053,13 +1068,13 @@ export const SearchPage = ({ active }: SearchPageProps) => {
               flexShrink: 0, flexWrap: 'wrap',
             }}
           >
-            <SpDropdown icon={<IcoClock />} label="Длительность" value={durFilter} options={DUR_OPTS} onPick={(v) => setDurFilter(v as never)} />
-            <SpDropdown icon={<IcoCal />} label="Год" value={yearFilter} options={YEAR_OPTS} onPick={(v) => setYearFilter(v as never)} />
-            <SpDropdown icon={<IcoSort />} label="Сортировка" value={sortOrder} options={SORT_OPTS} onPick={(v) => setSortOrder(v as never)} />
+            <SpDropdown icon={<IcoClock />} label={t('search.dd.duration')} value={durFilter} options={DUR_OPTS.map((o) => ({ id: o.id, label: t(o.labelKey) }))} onPick={(v) => setDurFilter(v as never)} />
+            <SpDropdown icon={<IcoCal />} label={t('lib.ti.year')} value={yearFilter} options={YEAR_OPTS.map((o) => ({ id: o.id, label: o.labelKey ? t(o.labelKey) : o.label! }))} onPick={(v) => setYearFilter(v as never)} />
+            <SpDropdown icon={<IcoSort />} label={t('lib.plmenu.sort')} value={sortOrder} options={SORT_OPTS.map((o) => ({ id: o.id, label: t(o.labelKey) }))} onPick={(v) => setSortOrder(v as never)} />
             {genreOptions.length > 1 && (
               <SpDropdown
                 icon={<IcoGenre />}
-                label="Жанр"
+                label={t('search.dd.genre')}
                 value={genreFilter ?? 'all'}
                 options={genreOptions}
                 onPick={(v) => setGenreFilter(v === 'all' ? null : v)}
@@ -1076,7 +1091,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
             {loading && (
               <div className="sc-status">
                 <div className="sc-spinner" />
-                Ищем…
+                {t('search.searching')}
               </div>
             )}
 
@@ -1127,21 +1142,21 @@ export const SearchPage = ({ active }: SearchPageProps) => {
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, opacity: 0.5 }}>
-                  Найди что-нибудь
+                  {t('search.findSomething')}
                 </div>
-                <div style={{ fontSize: 12, opacity: 0.3 }}>Треки, артисты, плейлисты</div>
+                <div style={{ fontSize: 12, opacity: 0.3 }}>{t('search.hint')}</div>
               </div>
             )}
 
             {showNotFound && (
-              <div className="sc-status">Ничего не найдено по запросу «{submitted}»</div>
+              <div className="sc-status">{t('search.noResultsFor', { q: submitted })}</div>
             )}
 
             {showResults && (
               <>
                 {showTracks && (
                   <div className="sc-uni-section" data-sp-section="tracks">
-                    <div className="sp-sec-title">Треки</div>
+                    <div className="sp-sec-title">{t('search.tab.tracks')}</div>
                     <div className="sp-track-grid" id="spTrackGrid">
                       {/* Вкладка «Треки» → строки списка (.tr); «Все» → лента карточек. */}
                       {tab === 'tracks'
@@ -1176,7 +1191,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
                               <polyline points="9 18 15 12 9 6" />
                             </svg>
                           )}
-                          Ещё
+                          {t('common.more')}
                         </button>
                       )}
                     </div>
@@ -1185,7 +1200,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
                 {showArtists && (
                   <div className="sc-uni-section" data-sp-section="artists">
-                    <div className="sp-sec-title">Артисты</div>
+                    <div className="sp-sec-title">{t('search.tab.artists')}</div>
                     <div className="sp-artist-grid">
                       {artists.map((a) => (
                         <ArtistCard key={a.id} artist={a} onOpen={() => openArtist(a)} />
@@ -1196,7 +1211,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
                 {showPlaylists && (
                   <div className="sc-uni-section" data-sp-section="playlists">
-                    <div className="sp-sec-title">Плейлисты</div>
+                    <div className="sp-sec-title">{t('search.tab.playlists')}</div>
                     <div className="sp-pl-grid">
                       {playlists.map((p) => (
                         <PlaylistCard key={p.id} playlist={p} onOpen={() => openPlaylist(p, 'playlist')} />
@@ -1207,7 +1222,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
                 {showAlbums && (
                   <div className="sc-uni-section" data-sp-section="albums">
-                    <div className="sp-sec-title">Альбомы</div>
+                    <div className="sp-sec-title">{t('search.tab.albums')}</div>
                     <div className="sp-pl-grid">
                       {albums.map((p) => (
                         <PlaylistCard key={p.id} playlist={p} onOpen={() => openPlaylist(p, 'album')} />

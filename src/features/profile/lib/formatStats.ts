@@ -1,3 +1,5 @@
+import { useI18nStore } from '@shared/i18n'
+
 /** Парс длительности "м:сс" / "ч:мм:сс" → секунды. _parseDur. */
 export const parseDur = (s: string | undefined): number => {
   if (!s || s === '—') return 0
@@ -10,9 +12,10 @@ export const parseDur = (s: string | undefined): number => {
 
 /** Короткий формат длительности: "Nч Nм" / "N мин". _fmtDurLong. */
 export const fmtDurLong = (secs: number): string => {
-  if (!secs) return '0 мин'
+  const ru = useI18nStore.getState().locale === 'ru'
+  if (!secs) return ru ? '0 мин' : '0 min'
   const h = Math.floor(secs / 3600)
   const m = Math.floor((secs % 3600) / 60)
-  if (h > 0) return `${h}ч ${m}м`
-  return `${m} мин`
+  if (h > 0) return ru ? `${h}ч ${m}м` : `${h}h ${m}m`
+  return ru ? `${m} мин` : `${m} min`
 }

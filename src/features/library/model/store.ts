@@ -114,17 +114,23 @@ export const useLibStore = create<LibState>((set) => ({
         // Новые — наверх (unshift).
         for (const t of batch) map.set(t.id, t)
         for (const t of s.tracks) if (!map.has(t.id)) map.set(t.id, t)
-        // Если есть сохранённый порядок — поднимаем новые id в его начало.
-        // Иначе applyTracksOrder (ниже) отправил бы неизвестные id в КОНЕЦ,
-        // и prepend визуально не сработал бы.
+        // Поднимаем новые id в начало сохранённого порядка и ПЕРСИСТИМ его.
+        // Без этого prepend живёт только в текущей сессии (порядок вставки в
+        // Map), а после рестарта applyTracksOrder отправил бы новые id в КОНЕЦ
+        // (или вернул бы произвольный порядок IDB, если order пуст) — трек
+        // «падал» бы вниз. Если порядка ещё нет — заводим его от текущих треков.
+        //
+        // «Новым» считаем id, которого нет НИ в сторе, НИ в сохранённом порядке.
+        // Это важно для folder_watcher / импорта: на каждом старте они заново
+        // присылают уже известные треки, и без проверки order их порядок
+        // перетасовывался бы при каждом запуске.
         const order = loadTracksOrder()
-        if (order.length) {
-          const existing = new Set(s.tracks.map((t) => t.id))
-          const newIds = batch.map((t) => t.id).filter((id) => !existing.has(id))
-          if (newIds.length) {
-            const newSet = new Set(newIds)
-            saveTracksOrder([...newIds, ...order.filter((id) => !newSet.has(id))])
-          }
+        const known = new Set([...s.tracks.map((t) => t.id), ...order])
+        const newIds = batch.map((t) => t.id).filter((id) => !known.has(id))
+        if (newIds.length) {
+          const newSet = new Set(newIds)
+          const base = order.length ? order : s.tracks.map((t) => t.id)
+          saveTracksOrder([...newIds, ...base.filter((id) => !newSet.has(id))])
         }
       } else {
         for (const t of s.tracks) map.set(t.id, t)

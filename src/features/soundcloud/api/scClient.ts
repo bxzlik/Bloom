@@ -16,6 +16,8 @@ const KNOWN_CLIENT_IDS = [
   'YUKXoArFcqrlQn9tfNHvvyfnDISj04zk',
 ]
 
+import { t as i18nT } from '@shared/i18n'
+
 const PROXIES: ((u: string) => string)[] = [
   (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
   (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
@@ -123,7 +125,7 @@ const getClientId = async (): Promise<string> => {
     clientId = KNOWN_CLIENT_IDS[0]
     return clientId
   }
-  throw new Error('Не удалось получить client_id SoundCloud')
+  throw new Error(i18nT('search.err.scNoClientId'))
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -336,10 +338,10 @@ const resolveUserId = async (idOrUrl: number | string): Promise<number> => {
   if (/^\d+$/.test(idOrUrl)) return parseInt(idOrUrl, 10)
   if (idOrUrl.includes('soundcloud.com')) {
     const user = await apiFetch('https://api-v2.soundcloud.com/resolve?url=' + encodeURIComponent(idOrUrl))
-    if (!user || !user.id) throw new Error('Артист не найден')
+    if (!user || !user.id) throw new Error(i18nT('search.err.artistNotFound'))
     return user.id
   }
-  throw new Error('Не удалось определить артиста')
+  throw new Error(i18nT('search.err.artistUndetermined'))
 }
 
 /** Плейлисты пользователя (для профиля по ссылке). spHandleUrl. */
@@ -658,7 +660,7 @@ export interface ScStream {
  * `getStreamUrl`.
  */
 export const getStreamUrl = async (media: ScMedia | null, retry = false): Promise<ScStream> => {
-  if (!media || !media.transcodings || !media.transcodings.length) throw new Error('Нет данных потока')
+  if (!media || !media.transcodings || !media.transcodings.length) throw new Error(i18nT('search.err.noStream'))
   const isDrm = (tc: ScTranscoding) => /encrypted/i.test(tc.format?.protocol || '')
   const prog = media.transcodings.find((t) => t.format?.protocol === 'progressive')
   const hls = media.transcodings.find((t) => t.format?.protocol === 'hls')
@@ -689,7 +691,7 @@ export const getStreamUrl = async (media: ScMedia | null, retry = false): Promis
       lastErr = e
     }
   }
-  if (hasDrm) throw new Error('Трек защищён DRM')
+  if (hasDrm) throw new Error(i18nT('search.err.drm'))
   if (!retry) {
     await new Promise((r) => setTimeout(r, 500))
     return getStreamUrl(media, true)

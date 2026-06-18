@@ -65,3 +65,48 @@
 .theme-card-del:hover{color:#e03030;background:rgba(0,0,0,.85)}
 .theme-section-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px;padding:0 1px}
 .theme-section-label:first-child{margin-top:0}
+
+/* ── Пикер темы (компактный селектор + поповер) ───────────────── */
+.tp{position:relative;display:flex;align-items:center;gap:8px}
+.tp-current{flex:1;display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:calc(var(--radius)*0.55);padding:8px 12px;cursor:pointer;color:var(--text);font-family:var(--font);transition:.15s}
+.tp-current:hover{border-color:rgba(255,255,255,.22)}
+.tp-current-name{font-size:13px;font-weight:600}
+.tp-chev{margin-left:auto;color:var(--text2);flex-shrink:0;transition:transform .2s cubic-bezier(.34,1.25,.64,1)}
+.tp-current.open .tp-chev{transform:rotate(180deg)}
+.tp-add{width:38px;height:38px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border);border-radius:50%;background:transparent;color:var(--text2);cursor:pointer;transition:border-color .15s,color .15s,transform .2s cubic-bezier(.34,1.25,.64,1)}
+.tp-add:hover{border-color:var(--accent);color:var(--accent)}
+.tp-add.open{border-style:solid;border-color:var(--accent);color:var(--accent);transform:rotate(135deg)}
+
+.tp-dots{display:inline-flex;flex-shrink:0}
+.tp-dot{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--block-color)}
+.tp-dot+.tp-dot{margin-left:-6px}
+
+.tp-pop{position:absolute;top:calc(100% + 8px);z-index:8000;width:300px;max-height:340px;overflow-y:auto;background:color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:10px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);transform-origin:top right;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
+/* список — под шевроном (правый край = правый край селектора: +38 кнопка +8 gap) */
+.tp-list{right:46px;left:auto}
+.tp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.tp-card{position:relative;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:calc(var(--radius)*0.5);padding:9px 11px;cursor:pointer;color:var(--text);font-family:var(--font);transition:background .1s,box-shadow .1s,border-color .1s;text-align:left}
+.tp-card:hover{background:var(--hover);border-color:rgba(255,255,255,.22)}
+.tp-card.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tp-card-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-card.active .tp-card-name{color:var(--accent)}
+.tp-card-check{margin-left:auto;color:var(--accent);flex-shrink:0}
+.tp-card-del{position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:4px;background:rgba(0,0,0,.5);color:rgba(255,255,255,.6);font-size:9px;line-height:16px;text-align:center;opacity:0;transition:.15s}
+.tp-card:hover .tp-card-del{opacity:1}
+.tp-card-del:hover{color:#e03030;background:rgba(0,0,0,.8)}
+
+/* ── Создание темы ── */
+.tp-creator{right:0;left:auto;width:280px;display:flex;flex-direction:column;gap:12px}
+.tp-name-input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:calc(var(--radius)*0.55);color:var(--text);padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;transition:.15s}
+.tp-name-input:focus{border-color:var(--accent)}
+.tp-name-input::placeholder{color:var(--muted)}
+.tp-slots{display:flex;flex-direction:column;gap:2px;border-top:1px solid rgba(255,255,255,.07);padding-top:6px}
+.tp-slot{display:flex;align-items:center;padding:7px 2px}
+.tp-slot-label{font-size:13px;font-weight:600;color:var(--text)}
+.tp-swatch{margin-left:auto;width:26px;height:26px;border-radius:50%}
+.tp-foot{display:flex;gap:8px}
+.tp-btn-rand,.tp-btn-save{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 10px;border-radius:calc(var(--radius)*0.55);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap}
+.tp-btn-rand{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--text)}
+.tp-btn-rand:hover{background:var(--hover)}
+.tp-btn-save{background:var(--accent);border:none;color:var(--accent-text)}
+.tp-btn-save:hover{opacity:.85}

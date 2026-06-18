@@ -9,6 +9,7 @@ import {
 import { createPortal } from 'react-dom'
 import { cn } from '@shared/lib/cn'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { useT, useLocale } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { useLibStore, usePlaylistStore } from '../model'
 
@@ -43,6 +44,8 @@ const fmtMSS = (sec: number): string => {
  * на inline-стилях.
  */
 export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalProps) => {
+  const t = useT()
+  const locale = useLocale()
   const tracks = useLibStore((s) => s.tracks)
   const playlist = usePlaylistStore((s) =>
     playlistId ? s.playlists.find((p) => p.id === playlistId) : undefined,
@@ -196,9 +199,11 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
   const n = selected.size
   const totalAvail = available.length
 
-  const chipText = `${n} выбрано`
+  const chipText = t('lib.addModal.selected', { n })
   const availLabel = totalAvail
-    ? `${totalAvail} ${plural(totalAvail, 'трек', 'трека', 'треков')} доступно`
+    ? locale === 'ru'
+      ? `${totalAvail} ${plural(totalAvail, 'трек', 'трека', 'треков')} доступно`
+      : `${totalAvail} ${totalAvail === 1 ? 'track' : 'tracks'} available`
     : ''
   const sumLabel = (() => {
     if (n === 0) return ''
@@ -209,7 +214,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
     }
     return `${n} · ${fmtMSS(sec)}`
   })()
-  const confirmText = n ? `Добавить (${n})` : 'Добавить'
+  const confirmText = n ? t('lib.addModal.addN', { n }) : t('lib.addModal.add')
 
   if (!mounted) return null
 
@@ -250,7 +255,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>Добавить треки в плейлист</div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{t('lib.addModal.title')}</div>
             <span
               id="afsCountChip"
               style={{
@@ -268,7 +273,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
           </div>
           <button
             onClick={onClose}
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
             style={{
               background: 'none',
               border: 'none',
@@ -340,7 +345,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
             <input
               id="afsSearch"
               type="text"
-              placeholder="Поиск трека или артиста..."
+              placeholder={t('lib.searchTrackArtist')}
               value={query}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
               style={{
@@ -475,7 +480,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
               ) : null}
             </span>
             <span id="afsSelAllLbl">
-              {allSelected ? 'Снять выделение' : 'Выбрать всё'}
+              {allSelected ? t('lib.deselectAll') : t('lib.selectAll')}
             </span>
           </button>
           <span id="afsAvailLbl">{availLabel}</span>
@@ -495,7 +500,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                 fontSize: 13,
               }}
             >
-              Все треки уже в плейлисте
+              {t('lib.addModal.allAdded')}
             </div>
           ) : filtered.length === 0 ? (
             <div
@@ -506,7 +511,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                 fontSize: 13,
               }}
             >
-              Ничего не найдено
+              {t('lib.merge.nothingFound')}
             </div>
           ) : (
             filtered.map((t) => (
@@ -540,7 +545,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btg" onClick={onClose}>
-              Отмена
+              {t('common.cancel')}
             </button>
             <button
               className="btn bta"
@@ -573,7 +578,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
             [
               {
                 k: 'name',
-                l: 'По названию',
+                l: t('lib.sort.name'),
                 ico: (
                   <svg
                     width="11"
@@ -592,7 +597,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
               },
               {
                 k: 'artist',
-                l: 'По исполнителю',
+                l: t('lib.sort.artist'),
                 ico: (
                   <svg
                     width="11"
@@ -610,7 +615,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
               },
               {
                 k: 'dur',
-                l: 'По длительности',
+                l: t('lib.sort.dur'),
                 ico: (
                   <svg
                     width="11"
@@ -628,7 +633,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
               },
               {
                 k: 'date',
-                l: 'По дате добавления',
+                l: t('lib.sort.date'),
                 ico: (
                   <svg
                     width="11"

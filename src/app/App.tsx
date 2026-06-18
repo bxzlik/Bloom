@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useThemeSettings, useTrackRowMarquee, useTauriEvent } from '@shared/hooks'
+import { initLocaleAttr } from '@shared/i18n'
 import { TitleBar } from './TitleBar'
 import { Sidebar } from './Sidebar'
 import { HomePage } from './pages/HomePage'
@@ -9,7 +10,7 @@ import { useGlobalHotkeys } from './useGlobalHotkeys'
 import { useFullscreenHotkey } from './useFullscreenHotkey'
 import { useDeepLinkBridge } from './useDeepLinkBridge'
 import { LibPage, TrackInfoModal, DupsModal, MergeModal, MpNewPlaylistHost, DeepLinkModal, useTrackInfoStore, useLibStore } from '@features/library'
-import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects } from '@features/player'
+import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects } from '@features/player'
 import { useQueueStore } from '@features/player/model/queueStore'
 import { trackRegistry } from '@entities/track'
 import { useLyricsBridge } from '@features/lyrics'
@@ -75,6 +76,7 @@ const APP_PREF_CLASSES = [
 
 export const App = () => {
   useThemeSettings()
+  useEffect(initLocaleAttr, [])
   useMainPlayerBridge()
   useLyricsBridge()
   useThemeBootstrap()
@@ -376,6 +378,9 @@ export const App = () => {
 
       {/* Глобальный императивный toast (для движка «Волны» и др. не-React кода) */}
       <GlobalToast />
+
+      {/* Баннер прогресса скачивания плейлиста */}
+      <DownloadBanner />
 
       {/* Уведомление о доступной новой версии (авто-проверка при старте) */}
       <UpdateBanner />

@@ -1,5 +1,6 @@
 import type { Track } from '@entities/track'
 import { toast } from '@shared/ui'
+import { t } from '@shared/i18n'
 import { usePlaylistStore } from '../model/playlistStore'
 import { saveTrackToLibrary } from './saveToLibrary'
 
@@ -34,7 +35,7 @@ export const refreshScPlaylist = async (plId: string): Promise<void> => {
       : null
   if (!pl || !src || !_fetcher) return
 
-  toast(src.kind === 'likes' ? 'Обновляем лайки…' : 'Обновляем плейлист…')
+  toast(src.kind === 'likes' ? t('toast.refreshLikes') : t('toast.refreshPl'))
   try {
     const fresh = await _fetcher(src)
     // Актуальный список треков плейлиста (мог измениться за время запроса).
@@ -53,9 +54,9 @@ export const refreshScPlaylist = async (plId: string): Promise<void> => {
       // Новые — наверх ( `pl.trs = newIds.concat(pl.trs)`).
       usePlaylistStore.getState().reorderPlTracks(plId, [...newIds, ...cur.trs])
     }
-    toast(newIds.length ? `Добавлено новых треков: ${newIds.length}` : 'Новых треков нет')
+    toast(newIds.length ? t('toast.refreshAdded', { n: newIds.length }) : t('toast.refreshNoNew'))
   } catch (e) {
     console.warn('refreshScPlaylist failed', e)
-    toast('Ошибка обновления: ' + (e instanceof Error ? e.message : String(e)))
+    toast(t('toast.refreshError', { msg: e instanceof Error ? e.message : String(e) }))
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
+import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { downloadTrack, downloadCover } from '../lib/download'
 
@@ -39,6 +40,7 @@ export const DlMenu = ({
   track: Track | null
   coverOverride: string | null
 }) => {
+  const t = useT()
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
   const hasCover = !!(coverOverride || track?.cover)
@@ -106,7 +108,7 @@ export const DlMenu = ({
             void downloadTrack(track)
           }}
         >
-          {iconTr} Скачать трек
+          {iconTr} {t('player.dl.track')}
         </button>
         <button
           type="button"
@@ -116,7 +118,7 @@ export const DlMenu = ({
             void downloadCover(track, coverOverride)
           }}
         >
-          {iconIm} Скачать обложку
+          {iconIm} {t('player.dl.cover')}
         </button>
       </div>
     </div>,

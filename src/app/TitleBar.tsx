@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useDetailStore } from '@features/search'
 import { useUiPrefsStore } from '@features/settings'
 import { useNavStore, type PageId } from './navigationStore'
+import { useT, useLocale, t as tt } from '@shared/i18n'
 
 /** Ключ метки тайтлбара: страница ИЛИ открытая детальная сущность. */
 type LabelKey = PageId | 'artist' | 'album' | 'playlist'
@@ -14,6 +15,8 @@ type LabelKey = PageId | 'artist' | 'album' | 'playlist'
  * .win-maxrestore). Tailwind НЕ используется.
  */
 export const TitleBar = () => {
+  const t = useT()
+  useLocale()
   const page = useNavStore((s) => s.page)
   // На странице поиска при открытом детальном виде метка = тип сущности
   // ( _updateTitlebarLabel('search','artist'|'album'|'playlist')).
@@ -72,7 +75,7 @@ export const TitleBar = () => {
             className={`win-btn win-pin${tbPinned ? ' on' : ''}`}
             id="winPinBtn"
             onClick={onTogglePin}
-            aria-label={tbPinned ? 'Открепить окно' : 'Закрепить окно поверх'}
+            aria-label={tbPinned ? t('titlebar.unpinWin') : t('titlebar.pinWin')}
             aria-pressed={tbPinned}
           >
             {/* Канцелярская кнопка (pin) */}
@@ -87,7 +90,7 @@ export const TitleBar = () => {
             className="win-btn win-minimize"
             id="winMinBtn"
             onClick={onMin}
-            aria-label="Свернуть"
+            aria-label={t('titlebar.min')}
           >
             <svg width="10" height="1" viewBox="0 0 10 1">
               <rect width="10" height="1" fill="currentColor" />
@@ -99,7 +102,7 @@ export const TitleBar = () => {
             className="win-btn win-maxrestore"
             id="winMaxBtn"
             onClick={onMaxRestore}
-            aria-label={maximized ? 'Восстановить' : 'Развернуть'}
+            aria-label={maximized ? t('titlebar.restore') : t('titlebar.max')}
           >
             {maximized ? (
               // Restore icon — (__bloomSetMaximized): квадрат + L-подложка.
@@ -114,7 +117,7 @@ export const TitleBar = () => {
           </button>
         )}
         {tbClose && (
-          <button className="win-btn win-close" onClick={onClose} aria-label="Закрыть">
+          <button className="win-btn win-close" onClick={onClose} aria-label={t('common.close')}>
             <svg width="10" height="10" viewBox="0 0 10 10">
               <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth={1.2} />
               <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth={1.2} />
@@ -131,21 +134,21 @@ export const TitleBar = () => {
 const pageLabel = (key: LabelKey): string => {
   switch (key) {
     case 'home':
-      return 'Главная'
+      return tt('nav.home')
     case 'player':
-      return 'Плеер'
+      return tt('settings.nav.player')
     case 'lib':
-      return 'Библиотека'
+      return tt('nav.library')
     case 'search':
-      return 'Поиск'
+      return tt('nav.search')
     case 'account':
-      return 'Профиль'
+      return tt('search.profile')
     case 'artist':
-      return 'Артист'
+      return tt('search.kind.artist')
     case 'album':
-      return 'Альбом'
+      return tt('search.kind.album')
     case 'playlist':
-      return 'Плейлист'
+      return tt('search.kind.playlist')
   }
 }
 

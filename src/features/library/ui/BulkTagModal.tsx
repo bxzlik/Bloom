@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
 import { toast } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useSelectionStore, useLibStore } from '../model'
 import { compressCover, idbUpdateMeta } from '../lib'
@@ -27,6 +28,7 @@ export interface BulkTagModalProps {
  * + idbUpdateMeta для каждого трека (cover хранится в meta как data-URL).
  */
 export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
+  const t = useT()
   const count = useSelectionStore((s) => s.selected.size)
   const [artist, setArtist] = useState('')
   const [album, setAlbum] = useState('')
@@ -112,7 +114,7 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
       }
     }
 
-    toast(`Обновлено ${updated.length} треков`)
+    toast(t('lib.bulk.toast.updated', { n: updated.length }))
     useSelectionStore.getState().clear()
     handleClose()
   }
@@ -142,9 +144,9 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
             >
               <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
             </svg>
-            Массовое редактирование
+            {t('lib.bulk.title')}
           </div>
-          <button className="te-close" onClick={handleClose} aria-label="Закрыть">
+          <button className="te-close" onClick={handleClose} aria-label={t('common.close')}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -154,33 +156,33 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
 
         <div className="bt-body">
           <div className="bt-info" id="bulkTagInfo">
-            Выбрано {count} треков
+            {t('lib.bulk.selected', { n: count })}
           </div>
 
           <div className="te-field">
-            <div className="te-label">Установить исполнителя</div>
+            <div className="te-label">{t('lib.bulk.setArtist')}</div>
             <input
               className="te-input"
               value={artist}
               onChange={(e) => setArtist(e.target.value)}
-              placeholder="Оставь пустым — не менять..."
+              placeholder={t('lib.bulk.placeholderKeep')}
               maxLength={200}
             />
           </div>
 
           <div className="te-field">
-            <div className="te-label">Установить альбом</div>
+            <div className="te-label">{t('lib.bulk.setAlbum')}</div>
             <input
               className="te-input"
               value={album}
               onChange={(e) => setAlbum(e.target.value)}
-              placeholder="Оставь пустым — не менять..."
+              placeholder={t('lib.bulk.placeholderKeep')}
               maxLength={200}
             />
           </div>
 
           <div className="te-field">
-            <div className="te-label">Установить обложку для всех</div>
+            <div className="te-label">{t('lib.bulk.setCover')}</div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <div
                 className="te-cover"
@@ -199,7 +201,7 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
                   </svg>
                 )}
               </div>
-              <span style={{ fontSize: 11.5, color: 'var(--text2)' }}>Выбрать обложку...</span>
+              <span style={{ fontSize: 11.5, color: 'var(--text2)' }}>{t('lib.bulk.chooseCover')}</span>
               <input
                 ref={fileRef}
                 type="file"
@@ -213,10 +215,10 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
 
         <div className="bt-foot">
           <button className="btn btg" onClick={handleClose}>
-            Отмена
+            {t('common.cancel')}
           </button>
           <button className="btn bta" onClick={() => void onSave()}>
-            Применить
+            {t('common.apply')}
           </button>
         </div>
       </div>

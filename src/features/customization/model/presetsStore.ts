@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { toast } from '@shared/ui'
+import { t } from '@shared/i18n'
 import { useCustomizationStore } from './customizationStore'
 
 /**
@@ -57,18 +58,18 @@ export const usePresetsStore = create<PresetsState>((set, get) => ({
     const viz = c.vizUrl
     const cursor = c.cursorUrl
     if (!bg && !cover && !viz && !cursor) {
-      toast('Нет активных настроек — выберите фон, обложку, визуализатор или курсор')
+      toast(t('presets.toast.noActive'))
       return false
     }
     if (get().presets.length >= MAX) {
-      toast(`Достигнут лимит ${MAX} пресетов — удалите старые`)
+      toast(t('presets.toast.limit', { n: MAX }))
       return false
     }
-    const nm = name.trim() || 'Пресет'
+    const nm = name.trim() || t('presets.default')
     const next = [...get().presets, { id: 'pr' + Date.now(), name: nm, bg, cover, viz, cursor, ts: Date.now() }]
     save(next)
     set({ presets: next })
-    toast(`Пресет «${nm}» сохранён!`)
+    toast(t('presets.toast.saved', { name: nm }))
     return true
   },
 
@@ -81,14 +82,14 @@ export const usePresetsStore = create<PresetsState>((set, get) => ({
     if (p.cover) c.setCover(p.cover)
     if (p.viz) c.setViz(p.viz)
     if (p.cursor) c.setCursor(p.cursor)
-    const badges = [p.bg && 'Фон', p.cover && 'Обложка', p.viz && 'Визуал', p.cursor && 'Курсор'].filter(Boolean)
-    toast(`Пресет «${p.name}» применён (${badges.join(', ')})`)
+    const badges = [p.bg && t('settings.custom.badge.bg'), p.cover && t('settings.custom.badge.cover'), p.viz && t('settings.custom.badge.viz'), p.cursor && t('settings.custom.badge.cursor')].filter(Boolean)
+    toast(t('presets.toast.applied', { name: p.name, badges: badges.join(', ') }))
   },
 
   deletePreset: (id) => {
     const next = get().presets.filter((x) => x.id !== id)
     save(next)
     set({ presets: next })
-    toast('Пресет удалён')
+    toast(t('theme.toast.deleted'))
   },
 }))

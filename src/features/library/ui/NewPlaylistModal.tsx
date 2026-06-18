@@ -9,6 +9,7 @@ import {
 import { createPortal } from 'react-dom'
 import { cn } from '@shared/lib/cn'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { useT } from '@shared/i18n'
 import { compressCover } from '../lib/compressCover'
 import { usePlaylistStore } from '../model'
 
@@ -34,6 +35,7 @@ export const NewPlaylistModal = ({
   onCreated,
   editPlaylistId,
 }: NewPlaylistModalProps) => {
+  const t = useT()
   const createPl = usePlaylistStore((s) => s.createPl)
   const renamePl = usePlaylistStore((s) => s.renamePl)
   const setPlDesc = usePlaylistStore((s) => s.setPlDesc)
@@ -160,12 +162,12 @@ export const NewPlaylistModal = ({
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <form onSubmit={onSubmit}>
           <div className="modal-head">
-            <h3 id="mtitle">{isEdit ? 'Изменить плейлист' : 'Новый плейлист'}</h3>
+            <h3 id="mtitle">{isEdit ? t('lib.newpl.editTitle') : t('lib.newpl.newTitle')}</h3>
             <button
               type="button"
               className="modal-x"
               onClick={onClose}
-              aria-label="Закрыть"
+              aria-label={t('common.close')}
             >
               <svg
                 width="14"
@@ -206,11 +208,7 @@ export const NewPlaylistModal = ({
                       <circle cx="8.5" cy="8.5" r="1.5" />
                       <polyline points="21 15 16 10 5 21" />
                     </svg>
-                    <span>
-                      Добавить
-                      <br />
-                      обложку
-                    </span>
+                    <span>{t('lib.newpl.addCover')}</span>
                   </div>
                 )}
                 <input
@@ -228,7 +226,7 @@ export const NewPlaylistModal = ({
                   className="pl-cov-rmv"
                   id="plCoverRmv"
                   onClick={clearCover}
-                  aria-label="Удалить обложку"
+                  aria-label={t('lib.newpl.removeCover')}
                   style={{ display: 'flex' }}
                 >
                   <svg
@@ -250,7 +248,7 @@ export const NewPlaylistModal = ({
 
             <div className="modal-fields">
               <div className="mf-row">
-                <label className="mf-label">Название</label>
+                <label className="mf-label">{t('lib.newpl.name')}</label>
                 <input
                   ref={inputRef}
                   type="text"
@@ -258,19 +256,19 @@ export const NewPlaylistModal = ({
                   id="minp"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Мой плейлист..."
+                  placeholder={t('lib.newpl.namePlaceholder')}
                 />
               </div>
               <div className="mf-row">
                 <label className="mf-label">
-                  Описание <span className="mf-opt">необязательно</span>
+                  {t('lib.newpl.description')} <span className="mf-opt">{t('lib.newpl.optional')}</span>
                 </label>
                 <textarea
                   className="pl-desc-inp"
                   id="plDesc"
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
-                  placeholder="Описание плейлиста..."
+                  placeholder={t('lib.newpl.descPlaceholder')}
                 />
               </div>
             </div>
@@ -278,10 +276,10 @@ export const NewPlaylistModal = ({
 
           <div className="modal-foot">
             <button type="button" className="btn btg" onClick={onClose}>
-              Отмена
+              {t('common.cancel')}
             </button>
             <button type="submit" className="btn bta" id="mok" disabled={!name.trim()}>
-              {isEdit ? 'Сохранить' : 'Создать'}
+              {isEdit ? t('common.save') : t('common.create')}
             </button>
           </div>
         </form>

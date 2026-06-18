@@ -1,4 +1,5 @@
 import { useOptStore, type OptMode, type OptEffects } from '../../model/optStore'
+import { useT, type TranslationKey } from '@shared/i18n'
 
 /**
  * Раздел «Эффективность» (`ssec-unfocus` + `ssec-minimized`) —
@@ -9,6 +10,7 @@ import { useOptStore, type OptMode, type OptEffects } from '../../model/optStore
  * текста) — клик переключает, активен он или деградируется. Движок — optEngine.
  */
 export const OptimizationSection = () => {
+  const t = useT()
   const simplify = useOptStore((s) => s.unfocusSimplify)
   const quality = useOptStore((s) => s.unfocusBlurQuality)
   const strength = useOptStore((s) => s.unfocusBlurStrength)
@@ -23,7 +25,7 @@ export const OptimizationSection = () => {
       <div className="s-section-head">
         <div className="s-section-title">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>{' '}
-          Эффективность
+          {t('settings.nav.efficiency')}
         </div>
       </div>
 
@@ -31,8 +33,8 @@ export const OptimizationSection = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>Упрощение графики</div>
-            <div className="ssub">Снижать качество размытия и эффектов, когда окно не активно</div>
+            <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>{t('settings.efficiency.simplify')}</div>
+            <div className="ssub">{t('settings.efficiency.simplify.sub')}</div>
           </div>
           <Toggle checked={simplify} onChange={setSimplify} />
         </div>
@@ -41,13 +43,13 @@ export const OptimizationSection = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">Качество размытия</div>
-            <div className="ssub">Насколько сильно упрощать стекло в фоне</div>
+            <div className="sl2">{t('settings.efficiency.blurQuality')}</div>
+            <div className="ssub">{t('settings.efficiency.blurQuality.sub')}</div>
           </div>
           <select className="ssel" value={quality} onChange={(e) => setQuality(e.target.value as typeof quality)}>
-            <option value="low">Низкое (Быстро)</option>
-            <option value="medium">Среднее</option>
-            <option value="high">Высокое (Медленно)</option>
+            <option value="low">{t('settings.efficiency.blurQuality.low')}</option>
+            <option value="medium">{t('settings.efficiency.blurQuality.medium')}</option>
+            <option value="high">{t('settings.efficiency.blurQuality.high')}</option>
           </select>
         </div>
       </div>
@@ -55,8 +57,8 @@ export const OptimizationSection = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">Сила размытия</div>
-            <div className="ssub">Настройте интенсивность размытия в анфокусе</div>
+            <div className="sl2">{t('settings.efficiency.blurStrength')}</div>
+            <div className="ssub">{t('settings.efficiency.blurStrength.sub')}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input type="range" className="srange" min={0} max={20} value={strength} onChange={(e) => setStrength(Number(e.target.value))} />
@@ -68,13 +70,13 @@ export const OptimizationSection = () => {
       <OptGrid mode="unfocus" />
 
       {/* ── Свёрнутое состояние ── */}
-      <div className="s-cat-label" style={{ marginTop: 16 }}>Свёрнутое состояние</div>
+      <div className="s-cat-label" style={{ marginTop: 16 }}>{t('settings.efficiency.minimized')}</div>
 
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>Умное высвобождение ресурсов</div>
-            <div className="ssub">Автоматически отключать тяжёлые процессы при сворачивании</div>
+            <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>{t('settings.efficiency.smart')}</div>
+            <div className="ssub">{t('settings.efficiency.smart.sub')}</div>
           </div>
           <Toggle checked={smart} onChange={setSmart} />
         </div>
@@ -86,33 +88,34 @@ export const OptimizationSection = () => {
 }
 
 // ── Грид карточек-эффектов ──────────────────────────────────────────────────
-const EFFECTS: { key: keyof OptEffects; name: string; icon: React.ReactNode }[] = [
-  { key: 'bg', name: 'Динамический фон', icon: <ImgIcon /> },
-  { key: 'bgGif', name: 'Фон', icon: <GifIcon /> },
-  { key: 'covers', name: 'Обложки', icon: <DiscIcon /> },
-  { key: 'visualizers', name: 'Визуализаторы', icon: <BarsIcon /> },
-  { key: 'blur', name: 'Размытие', icon: <BlurIcon /> },
-  { key: 'marquee', name: 'Прокрутка текста', icon: <LinesIcon /> },
+const EFFECTS: { key: keyof OptEffects; nameKey: TranslationKey; icon: React.ReactNode }[] = [
+  { key: 'bg', nameKey: 'settings.efficiency.effect.bg', icon: <ImgIcon /> },
+  { key: 'bgGif', nameKey: 'settings.efficiency.effect.bgGif', icon: <GifIcon /> },
+  { key: 'covers', nameKey: 'settings.efficiency.effect.covers', icon: <DiscIcon /> },
+  { key: 'visualizers', nameKey: 'settings.efficiency.effect.visualizers', icon: <BarsIcon /> },
+  { key: 'blur', nameKey: 'settings.efficiency.effect.blur', icon: <BlurIcon /> },
+  { key: 'marquee', nameKey: 'settings.efficiency.effect.marquee', icon: <LinesIcon /> },
 ]
 
-const DEGRADED: Record<keyof OptEffects, { text: string; cls: string }> = {
-  bg: { text: 'Заморожен', cls: 'frozen' },
-  bgGif: { text: 'Приостановлен', cls: 'stopped' },
-  covers: { text: 'Приостановлены', cls: 'stopped' },
-  visualizers: { text: 'Остановлены', cls: 'stopped' },
-  blur: { text: 'Отключены', cls: 'disabled' },
-  marquee: { text: 'Остановлены', cls: 'stopped' },
+const DEGRADED: Record<keyof OptEffects, { textKey: TranslationKey; cls: string }> = {
+  bg: { textKey: 'settings.efficiency.state.frozen', cls: 'frozen' },
+  bgGif: { textKey: 'settings.efficiency.state.pausedM', cls: 'stopped' },
+  covers: { textKey: 'settings.efficiency.state.pausedPl', cls: 'stopped' },
+  visualizers: { textKey: 'settings.efficiency.state.stopped', cls: 'stopped' },
+  blur: { textKey: 'settings.efficiency.state.disabled', cls: 'disabled' },
+  marquee: { textKey: 'settings.efficiency.state.stopped', cls: 'stopped' },
 }
-const ACTIVE: Record<keyof OptEffects, string> = {
-  bg: 'Активен',
-  bgGif: 'Активен',
-  covers: 'Активны',
-  visualizers: 'Активны',
-  blur: 'Активны',
-  marquee: 'Активны',
+const ACTIVE: Record<keyof OptEffects, TranslationKey> = {
+  bg: 'settings.efficiency.state.activeM',
+  bgGif: 'settings.efficiency.state.activeM',
+  covers: 'settings.efficiency.state.activePl',
+  visualizers: 'settings.efficiency.state.activePl',
+  blur: 'settings.efficiency.state.activePl',
+  marquee: 'settings.efficiency.state.activePl',
 }
 
 const OptGrid = ({ mode }: { mode: OptMode }) => {
+  const t = useT()
   const effects = useOptStore((s) => s.effects[mode])
   const toggle = useOptStore((s) => s.toggleEffect)
   return (
@@ -124,9 +127,9 @@ const OptGrid = ({ mode }: { mode: OptMode }) => {
           <div key={e.key} className={`opt-card${isActive ? ' opt-active' : ''}`} onClick={() => toggle(mode, e.key)}>
             <div className="opt-card-icon">{e.icon}</div>
             <div className="opt-card-info">
-              <div className="opt-card-name">{e.name}</div>
+              <div className="opt-card-name">{t(e.nameKey)}</div>
               <div className={`opt-card-state ${isActive ? 'active' : DEGRADED[e.key].cls}`}>
-                {isActive ? ACTIVE[e.key] : DEGRADED[e.key].text}
+                {isActive ? t(ACTIVE[e.key]) : t(DEGRADED[e.key].textKey)}
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
 import { toast } from '@shared/ui'
+import { t } from '@shared/i18n'
 import { loadItems, saveItems, MEDIA_LIMIT, type MediaItem } from '../lib/mediaIdb'
 
 /**
@@ -41,7 +42,7 @@ export const useMediaLibStore = create<MediaLibState>((set, get) => ({
     let added = 0
     for (const f of arr) {
       if (items.length >= MEDIA_LIMIT) {
-        toast(`Лимит ${MEDIA_LIMIT} файлов`)
+        toast(t('medialib.toast.fileLimit', { n: MEDIA_LIMIT }))
         break
       }
       const data = await new Promise<string | null>((resolve) => {
@@ -57,19 +58,19 @@ export const useMediaLibStore = create<MediaLibState>((set, get) => ({
     if (added > 0) {
       set({ items })
       void saveItems(items)
-      toast(`${added} файл(ов) добавлено`)
+      toast(t('medialib.toast.filesAdded', { n: added }))
     }
   },
 
   addUrl: (url) => {
     const u = url.trim()
     if (!u || !/^https?:\/\/.+/i.test(u)) {
-      toast('Введите корректный URL изображения')
+      toast(t('medialib.toast.badUrl'))
       return
     }
     const items = get().items
     if (items.length >= MEDIA_LIMIT) {
-      toast(`Лимит ${MEDIA_LIMIT} элементов`)
+      toast(t('medialib.toast.itemLimit', { n: MEDIA_LIMIT }))
       return
     }
     const clean = u.split('?')[0]!.toLowerCase()
@@ -80,7 +81,7 @@ export const useMediaLibStore = create<MediaLibState>((set, get) => ({
     ]
     set({ items: next })
     void saveItems(next)
-    toast('Добавлено!')
+    toast(t('medialib.toast.added'))
   },
 
   remove: (id) => {

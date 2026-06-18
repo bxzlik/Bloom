@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { YmLogo } from '@entities/track'
 import { useYmAuthStore, type StatusKind } from '../model/authStore'
+import { useT } from '@shared/i18n'
 
 const STATUS_COLOR: Record<StatusKind, string> = {
   ok: '#4caf50',
@@ -28,6 +29,7 @@ const YmMark = () => (
  * Всё состояние/логика — useYmAuthStore; сеть в Rust (ym_* команды).
  */
 export const YandexSection = () => {
+  const t = useT()
   const authed = useYmAuthStore((s) => s.authed)
   const hasPlus = useYmAuthStore((s) => s.hasPlus)
   const checking = useYmAuthStore((s) => s.checking)
@@ -49,17 +51,17 @@ export const YandexSection = () => {
 
   const plusBadge =
     hasPlus === true
-      ? <><span style={{ color: '#1db954', fontWeight: 700 }}>Яндекс Плюс активен</span> — треки играют напрямую из Яндекса.</>
+      ? <><span style={{ color: '#1db954', fontWeight: 700 }}>{t('settings.ym.plus.active.a')}</span> {t('settings.ym.plus.active.b')}</>
       : hasPlus === false
-        ? <><span style={{ color: 'var(--text2)' }}>Без Плюса</span> — некоторые треки могут быть недоступны для воспроизведения.</>
-        : <span style={{ color: 'var(--text2)' }}>Статус подписки неизвестен.</span>
+        ? <><span style={{ color: 'var(--text2)' }}>{t('settings.ym.plus.none.a')}</span> {t('settings.ym.plus.none.b')}</>
+        : <span style={{ color: 'var(--text2)' }}>{t('settings.ym.plus.unknown')}</span>
 
   return (
     <div className="s-section active" id="ssec-yandex">
       <div className="s-section-head">
         <div className="s-section-title">
           <YmLogo size={15} />{' '}
-          Яндекс.Музыка
+          {t('settings.nav.yandex')}
         </div>
       </div>
 
@@ -70,9 +72,9 @@ export const YandexSection = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
           <YmMark />
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800 }}>Яндекс.Музыка</div>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>{t('settings.nav.yandex')}</div>
             <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-              {checking ? 'Проверяю…' : authed ? '✓ Подключено' : 'Не подключено'}
+              {checking ? t('settings.ym.checking') : authed ? t('settings.ym.connected') : t('settings.ym.notConnected')}
             </div>
           </div>
           {authed && (
@@ -80,7 +82,7 @@ export const YandexSection = () => {
               onClick={() => void logout()}
               style={{ marginLeft: 'auto', background: 'var(--hover)', border: '1px solid var(--border)', color: 'var(--text2)', borderRadius: 8, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}
             >
-              Выйти
+              {t('settings.ym.logout')}
             </button>
           )}
         </div>
@@ -94,7 +96,7 @@ export const YandexSection = () => {
         {!authed && !checking && (
           <>
             <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
-              Войди через Яндекс ID. Откроется страница подтверждения — введи там код.
+              {t('settings.ym.loginHint')}
             </div>
             <button
               onClick={() => void startAuth()}
@@ -105,14 +107,14 @@ export const YandexSection = () => {
                 cursor: connecting ? 'default' : 'pointer', opacity: connecting ? 0.6 : 1, alignSelf: 'flex-start',
               }}
             >
-              Подключить Яндекс.Музыку
+              {t('settings.ym.connect')}
             </button>
 
             {userCode && (
               <div style={{ fontSize: 12, color: 'var(--text2)' }}>
-                Открой{' '}
+                {t('settings.ym.codePrompt.a')}{' '}
                 <b style={{ color: 'var(--text)' }}>{verifyUrl}</b>{' '}
-                и введи код:
+                {t('settings.ym.codePrompt.b')}
                 <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 3, margin: '10px 0', color: 'var(--accent)', userSelect: 'all' }}>
                   {userCode}
                 </div>

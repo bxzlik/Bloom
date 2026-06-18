@@ -246,6 +246,9 @@
 .mlm-toolbar{padding:10px 18px 8px;flex-shrink:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.04)}
 .mlm-add-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:calc(var(--radius)*0.6);font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--accent);color:var(--accent-text);transition:.15s;font-family:var(--font)}
 .mlm-add-btn:hover{opacity:.85}
+/* Compact icon button (library add row) */
+.mlm-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex-shrink:0;border-radius:calc(var(--radius)*0.5);border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;transition:.15s}
+.mlm-icon-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(var(--accent-rgb),.1)}
 /* Filter tabs */
 .mlm-filters{display:flex;gap:4px;margin-right:auto}
 .mlm-filter-btn{padding:4px 11px;border-radius:calc(var(--radius)*0.45);font-size:11px;font-weight:600;cursor:pointer;border:1px solid transparent;background:none;color:var(--muted);transition:.15s;font-family:var(--font)}
@@ -350,6 +353,14 @@
 .s-opt-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
 .s-opt-btn.active,.s-opt-btn.bta{background:rgba(255,255,255,.12)!important;color:var(--text)!important;border:none!important}
 .s-opt-btn.btg{background:rgba(255,255,255,.04)!important;color:var(--text2)!important;border:none!important}
+.s-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 2px}
+.s-lang-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:26px 12px;border-radius:calc(var(--radius)*0.75);background:rgba(255,255,255,.035);border:1.5px solid transparent;color:var(--text2);cursor:pointer;font-family:var(--font);transition:.15s;user-select:none}
+.s-lang-card:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.s-lang-card.active{background:rgba(255,255,255,.06);border-color:var(--accent);color:var(--text)}
+.s-lang-flag{line-height:0}
+.s-flag-svg{width:46px;height:auto;display:block;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.s-lang-name{font-size:14px;font-weight:700}
+.s-lang-badge{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--text2);background:rgba(255,255,255,.08);border-radius:6px;padding:3px 7px;line-height:1}
 .s-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .s-toggle-title{font-size:13.5px;font-weight:700;color:var(--text)}
 .s-toggle-sub{font-size:11px;color:var(--text2);margin-top:2px}

@@ -72,7 +72,7 @@ export const useLibraryBridge = () => {
   }, [setFolders])
 
   useTauriEvent('bloom-folder-list', (paths) => setFolders(paths))
-  useTauriEvent('bloom-folder-tracks', (batch) => addTracks(batch.map(fromLocal)))
+  useTauriEvent('bloom-folder-tracks', (batch) => addTracks(batch.map(fromLocal), { prepend: true }))
   useTauriEvent('bloom-folder-removed', (path) => {
     // Собираем id треков папки ДО удаления, чтобы каскадно почистить ссылки.
     const lp = path.toLowerCase()

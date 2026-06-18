@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { toast } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { openColorPicker } from '@features/settings'
 import {
@@ -49,6 +50,7 @@ const Swatch = ({
 )
 
 export const ProfileEditModal = () => {
+  const t = useT()
   const editOpen = useProfileStore((s) => s.editOpen)
   const closeEdit = useProfileStore((s) => s.closeEdit)
   const setProfile = useProfileStore((s) => s.setProfile)
@@ -140,7 +142,7 @@ export const ProfileEditModal = () => {
       banner: draft.banner,
     })
     closeEdit()
-    toast('Профиль сохранён!')
+    toast(t('profile.toast.saved'))
   }
 
   const setBorderMode = (m: AvaBorderMode) => patch({ avaBorderMode: m })
@@ -159,7 +161,7 @@ export const ProfileEditModal = () => {
     >
       <div id="peditModal">
         <div className="pedit-head">
-          <span className="pedit-head-title">Редактирование профиля</span>
+          <span className="pedit-head-title">{t('profile.edit.title')}</span>
           <button className="pedit-close" onClick={closeEdit}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -177,7 +179,7 @@ export const ProfileEditModal = () => {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                     <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" />
                   </svg>
-                  Изменить обложку
+                  {t('profile.changeCover')}
                   <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onBannerFile} />
                 </label>
               </div>
@@ -220,12 +222,12 @@ export const ProfileEditModal = () => {
                 <input ref={avaInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvaFile} />
               </div>
               <div className="pedit-nick-field">
-                <div className="pedit-nick-label">Никнейм</div>
+                <div className="pedit-nick-label">{t('profile.nick')}</div>
                 <div className="pedit-inp-wrap">
                   <input
                     className="pedit-nick-inp"
                     maxLength={32}
-                    placeholder="Введи никнейм..."
+                    placeholder={t('profile.nickPlaceholder')}
                     style={{ paddingRight: 46 }}
                     value={draft.name}
                     onChange={(e) => patch({ name: e.target.value })}
@@ -237,24 +239,24 @@ export const ProfileEditModal = () => {
 
             {/* Био + статус */}
             <div className="pedit-bio-section">
-              <div className="pedit-bio-label">О себе</div>
+              <div className="pedit-bio-label">{t('profile.about')}</div>
               <div className="pedit-inp-wrap">
                 <textarea
                   className="pedit-bio-inp"
                   maxLength={300}
-                  placeholder="Расскажи о себе..."
+                  placeholder={t('profile.aboutPlaceholder')}
                   style={{ paddingBottom: 22 }}
                   value={draft.bio}
                   onChange={(e) => patch({ bio: e.target.value })}
                 />
                 <span className="pedit-char-count area">{draft.bio.length}/300</span>
               </div>
-              <div className="pedit-bio-label" style={{ marginTop: 8 }}>Статус</div>
+              <div className="pedit-bio-label" style={{ marginTop: 8 }}>{t('profile.status')}</div>
               <div className="pedit-inp-wrap">
                 <input
                   className="pedit-nick-inp"
                   maxLength={80}
-                  placeholder={'"Мой статус..."'}
+                  placeholder={t('profile.statusPlaceholder')}
                   style={{ fontStyle: 'italic', paddingRight: 46 }}
                   value={draft.status}
                   onChange={(e) => patch({ status: e.target.value })}
@@ -265,7 +267,7 @@ export const ProfileEditModal = () => {
 
             {/* Пластинка */}
             <div className="pedit-disc-section">
-              <div className="pedit-bio-label">Пластинка</div>
+              <div className="pedit-bio-label">{t('profile.disc')}</div>
               <div className="pedit-disc-row">
                 {[0, 1, 2, 3, 4, 5].map((i) => (
                   <div
@@ -288,10 +290,10 @@ export const ProfileEditModal = () => {
             <div className="pedit-colors-section">
               <div className="pedit-color-field">
                 <div className="pedit-banner-color-header">
-                  <div className="pedit-bio-label" style={{ margin: 0 }}>Цвет обложки</div>
+                  <div className="pedit-bio-label" style={{ margin: 0 }}>{t('profile.coverColor')}</div>
                   <div className="pedit-mode-toggle">
-                    <button className={`pedit-mode-btn${draft.bannerColorMode === 'solid' ? ' active' : ''}`} onClick={() => setBannerMode('solid')}>Цвет</button>
-                    <button className={`pedit-mode-btn${draft.bannerColorMode === 'gradient' ? ' active' : ''}`} onClick={() => setBannerMode('gradient')}>Градиент</button>
+                    <button className={`pedit-mode-btn${draft.bannerColorMode === 'solid' ? ' active' : ''}`} onClick={() => setBannerMode('solid')}>{t('profile.solid')}</button>
+                    <button className={`pedit-mode-btn${draft.bannerColorMode === 'gradient' ? ' active' : ''}`} onClick={() => setBannerMode('gradient')}>{t('profile.gradient')}</button>
                   </div>
                 </div>
                 <div className="pedit-banner-swatches">
@@ -319,11 +321,11 @@ export const ProfileEditModal = () => {
               </div>
               <div className="pedit-color-field">
                 <div className="pedit-banner-color-header">
-                  <div className="pedit-bio-label" style={{ margin: 0 }}>Обводка</div>
+                  <div className="pedit-bio-label" style={{ margin: 0 }}>{t('profile.border')}</div>
                   <div className="pedit-mode-toggle">
-                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'accent' ? ' active' : ''}`} onClick={() => setBorderMode('accent')}>Акцент</button>
-                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'custom' ? ' active' : ''}`} onClick={() => setBorderMode('custom')}>Цвет</button>
-                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'off' ? ' active' : ''}`} onClick={() => setBorderMode('off')}>Выкл</button>
+                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'accent' ? ' active' : ''}`} onClick={() => setBorderMode('accent')}>{t('settings.interface.libSys.accent')}</button>
+                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'custom' ? ' active' : ''}`} onClick={() => setBorderMode('custom')}>{t('profile.solid')}</button>
+                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'off' ? ' active' : ''}`} onClick={() => setBorderMode('off')}>{t('settings.discord.mode.off')}</button>
                   </div>
                 </div>
                 {draft.avaBorderMode === 'custom' && (
@@ -334,8 +336,8 @@ export const ProfileEditModal = () => {
           </div>
 
           <div className="pedit-foot">
-            <button className="pedit-btn-cancel" onClick={closeEdit}>Отмена</button>
-            <button className="pedit-btn-save" onClick={save}>Сохранить</button>
+            <button className="pedit-btn-cancel" onClick={closeEdit}>{t('common.cancel')}</button>
+            <button className="pedit-btn-save" onClick={save}>{t('common.save')}</button>
           </div>
         </div>
 

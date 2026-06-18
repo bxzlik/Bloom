@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
+import { useT } from '@shared/i18n'
 import { folderAdd, importPlaylistFile } from '../api'
 import { importPlaylistData } from '../lib'
 
@@ -36,6 +37,7 @@ export const LibAddMenu = ({
   onCreatePlaylist,
   onImported,
 }: LibAddMenuProps) => {
+  const t = useT()
   const menuRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
 
@@ -113,7 +115,7 @@ export const LibAddMenu = ({
           <circle cx="6" cy="18" r="3" />
           <circle cx="18" cy="16" r="3" />
         </svg>
-        Создать плейлист
+        {t('player.add.createPlaylist')}
       </button>
       <button
         onClick={() => {
@@ -132,7 +134,7 @@ export const LibAddMenu = ({
         >
           <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
         </svg>
-        Привязать папку
+        {t('lib.linkFolder')}
       </button>
       <button onClick={onImport}>
         <svg
@@ -148,7 +150,7 @@ export const LibAddMenu = ({
           <polyline points="17 8 12 3 7 8" />
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
-        Импорт плейлиста
+        {t('lib.importPlaylist')}
       </button>
     </div>,
     document.body,

@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type WheelEvent as ReactWheelEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { useFavStore, useLibStore } from '@features/library'
+import {
+  useFavStore,
+  useLibStore,
+  usePlaylistStore,
+  saveTrackToLibrary,
+  TrackCtxMenu,
+  NewPlaylistModal,
+  TagEditor,
+} from '@features/library'
+import type { Track } from '@entities/track'
 import { trackRegistry, CoverSourceBadge, ArtistLinks } from '@entities/track'
 import { useNavStore } from '@app/navigationStore'
 import { usePlayerStore } from '../model/store'
@@ -22,6 +31,7 @@ import {
 } from '../api/play'
 import { audioEngine } from '../lib/audioEngine'
 import { MarqueeTitle } from './MarqueeTitle'
+import { useT } from '@shared/i18n'
 
 /**
  * Нижний #miniPlayer в main окне — (≈2897-2960).
@@ -39,6 +49,7 @@ import { MarqueeTitle } from './MarqueeTitle'
  * playerbar mode, big-pic, ring shape для cover.
  */
 export const PlayerBar = () => {
+  const t = useT()
   const curId = useQueueStore((s) => s.curId)
   const page = useNavStore((s) => s.page)
 
@@ -98,6 +109,12 @@ export const PlayerBar = () => {
 
   const goNav = useNavStore((s) => s.goNav)
 
+  const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
+  // Ctx-меню трека по ПКМ на баре (как на обложке page-player).
+  const [ctxPos, setCtxPos] = useState<{ x: number; y: number } | null>(null)
+  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
+  const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
+
   // Глобальная правая панель (очередь/текст). Хуки ДО early-return ниже.
   const grpOpen = useGrpStore((s) => s.open)
   const grpMode = useGrpStore((s) => s.mode)
@@ -134,11 +151,22 @@ export const PlayerBar = () => {
     .filter(Boolean)
     .join(' ')
 
+  const onBarContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!curTrack) return
+    // Пропускаем контролы — у них своё (или дефолтное) поведение не нужно,
+    // но ПКМ по баре/обложке/названию открывает меню трека.
+    if ((e.target as HTMLElement).closest('input, .tra-link')) return
+    e.preventDefault()
+    setCtxPos({ x: e.clientX, y: e.clientY })
+  }
+
   return (
+    <>
     <div
       id="miniPlayer"
       className={mpClass || undefined}
       onClick={onBarClickSeek}
+      onContextMenu={onBarContextMenu}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -235,7 +263,7 @@ export const PlayerBar = () => {
                     когда текст шире контейнера, пауза на hover. */}
                 <span style={{ minWidth: 0, overflow: 'hidden' }}>
                   <MarqueeTitle
-                    text={title || 'Не выбрано'}
+                    text={title || t('player.notSelected')}
                     wrapClass="mp-title-wrap"
                     textClass="mp-title"
                     scrollingClass="mp-scrolling"
@@ -266,7 +294,7 @@ export const PlayerBar = () => {
             <button
               id="mpFav"
               onClick={toggleCurFav}
-              aria-label={isFav ? 'Убрать из «Любимое»' : 'В «Любимое»'}
+              aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
               style={{
                 width: 28,
                 height: 28,
@@ -292,20 +320,20 @@ export const PlayerBar = () => {
           className="mp-center"
           style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0 }}
         >
-          <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label="Повтор" style={{ position: 'relative' }}>
+          <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
             <RepeatSvg size={15} />
             {repeat === 2 && <RepeatOneBadge />}
           </button>
-          <button className="cc" onClick={prevTr} aria-label="Предыдущий">
+          <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
             <PrevSvg size={17} />
           </button>
-          <button className="cc-play" onClick={togglePlay} aria-label={playing ? 'Пауза' : 'Воспроизвести'}>
+          <button className="cc-play" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
             {playing ? <PauseSvg size={15} /> : <PlaySvg size={15} />}
           </button>
-          <button className="cc" onClick={nextTr} aria-label="Следующий">
+          <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
             <NextSvg size={17} />
           </button>
-          <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label="Перемешать">
+          <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
             <ShuffleSvg size={15} />
           </button>
         </div>
@@ -328,7 +356,7 @@ export const PlayerBar = () => {
               Повторный клик по активному режиму — закрыть. */}
           <button
             className={`cc${grpOpen && grpMode === 'queue' ? ' on' : ''}`}
-            aria-label="Очередь"
+            aria-label={t('player.aria.queue')}
             style={{ flexShrink: 0 }}
             onClick={() => openGrp('queue')}
           >
@@ -336,7 +364,7 @@ export const PlayerBar = () => {
           </button>
           <button
             className={`cc${grpOpen && grpMode === 'lyrics' ? ' on' : ''}`}
-            aria-label="Текст песни"
+            aria-label={t('player.lyrics')}
             style={{ flexShrink: 0 }}
             onClick={() => openGrp('lyrics')}
           >
@@ -354,6 +382,29 @@ export const PlayerBar = () => {
         </div>
       </div>
     </div>
+
+      {/* Ctx-меню трека по ПКМ на баре */}
+      <TrackCtxMenu
+        pos={ctxPos}
+        track={curTrack}
+        onClose={() => setCtxPos(null)}
+        onCreatePlaylistForTrack={(id) => setPendingNewPl(id)}
+        onEditTags={(tr) => setTagEditTrack(tr)}
+      />
+      <NewPlaylistModal
+        open={pendingNewPl !== null}
+        onClose={() => setPendingNewPl(null)}
+        onCreated={(plId) => {
+          if (pendingNewPl) {
+            // SC-трек сперва персистим, затем в новый плейлист.
+            if (curTrack && curTrack.id === pendingNewPl) saveTrackToLibrary(curTrack)
+            addTrackToPl(plId, pendingNewPl)
+            setPendingNewPl(null)
+          }
+        }}
+      />
+      <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
+    </>
   )
 }
 
@@ -551,6 +602,7 @@ const MpTime = () => {
 
 
 const Volume = ({ volume, onWheel }: { volume: number; onWheel: (e: ReactWheelEvent<HTMLDivElement>) => void }) => {
+  const t = useT()
   const sliderRef = useRef<HTMLInputElement>(null)
   // В боковом (вертикальном) баре горизонтальный слайдер неудобен → клик по
   // иконке открывает вертикальный поп-ап громкости.
@@ -574,7 +626,7 @@ const Volume = ({ volume, onWheel }: { volume: number; onWheel: (e: ReactWheelEv
         ref={btnRef}
         className="cc"
         onClick={() => (vertical ? setPopupOpen((v) => !v) : toggleMuteMain())}
-        aria-label={vertical ? 'Громкость' : 'Mute'}
+        aria-label={vertical ? t('player.aria.volume') : 'Mute'}
       >
         <VolSvg size={15} v={volume} />
       </button>

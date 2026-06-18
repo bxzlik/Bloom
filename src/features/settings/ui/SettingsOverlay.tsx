@@ -70,7 +70,7 @@ export const SettingsOverlay = () => {
 
   // Маппинг secId → component. Сохраняем имена SM_CATS:
   //   system → PlaybackSection (запуск/трей/окно)
-  //   interface → AppearanceSection (цвета)
+  //   interface → InterfaceSection (тема/цвета/вид/шрифт/прозрачность/язык)
   //   medialib → CustomizationSection (медиа-библиотека: фон/обложка/виз/курсор)
   //   discord → DiscordSection (полная конфигурация Discord RPC + preview)
   const sectionMap: Record<SectionId, ReactNode> = {

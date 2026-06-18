@@ -1,11 +1,12 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { usePlayerStore } from '@features/player'
 import { toast } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import { useGamesStore } from '../../model/gamesStore'
 import {
   TAMA_MOODS,
   TAMA_ACHIEVEMENTS,
-  TAMA_PHRASES,
+  tamaPhrases,
   tamaState,
   loadTama,
   saveTama,
@@ -43,7 +44,7 @@ const STAT_PETS = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" s
 const NOTE_ICON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:4px"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
 
 const randPhrase = (key: string) => {
-  const arr = TAMA_PHRASES[key] || TAMA_PHRASES['happy']!
+  const arr = tamaPhrases(key)
   return arr[Math.floor(Math.random() * arr.length)]!
 }
 
@@ -53,6 +54,7 @@ interface Speech {
 }
 
 export const TamagotchiGame = () => {
+  const t = useT()
   const playing = usePlayerStore((s) => s.playing)
   const [, force] = useReducer((x: number) => x + 1, 0)
   const charRef = useRef<HTMLDivElement>(null)
@@ -137,7 +139,7 @@ export const TamagotchiGame = () => {
     if (!confirm('Сбросить прогресс тамагочи? Питомец начнёт жизнь заново.')) return
     resetTama()
     force()
-    toast('Питомец перерождён!')
+    toast(t('games.tama.reborn'))
   }
 
   // Контролы в шапке модалки (сброс + тумблер уведомлений, ключ 'tama').
@@ -161,9 +163,9 @@ export const TamagotchiGame = () => {
     { label: SVG_SMILE + 'Счастье', val: s.happiness, col: s.happiness < 25 ? '#e03030' : s.happiness < 50 ? '#f59e0b' : 'var(--accent)' },
   ]
   const acts = [
-    { icon: SVG_ACT_FEED, label: 'Покормить', cost: 1, fn: feed },
-    { icon: SVG_ACT_PLAY, label: 'Играть', cost: 3, fn: play },
-    { icon: SVG_ACT_BATH, label: 'Купать', cost: 2, fn: bath },
+    { icon: SVG_ACT_FEED, label: t('games.tama.feed'), cost: 1, fn: feed },
+    { icon: SVG_ACT_PLAY, label: t('games.tama.play'), cost: 3, fn: play },
+    { icon: SVG_ACT_BATH, label: t('games.tama.bath'), cost: 2, fn: bath },
   ]
   const statRows: [string, string | number][] = [
     [STAT_AGE + 'Возраст', ageStr],
@@ -177,11 +179,11 @@ export const TamagotchiGame = () => {
       <div className="s-section-head">
         <div className="s-section-title">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>{' '}
-          Тамагочи
+          {t('games.tama')}
         </div>
         <button className="s-section-reset" onClick={reset}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" /></svg>{' '}
-          Сбросить
+          {t('common.reset')}
         </button>
       </div>
 
@@ -191,7 +193,7 @@ export const TamagotchiGame = () => {
             {m.char}
           </div>
           <div style={{ fontSize: 11, color: 'var(--muted)', minHeight: 16, textAlign: 'center', transition: 'opacity .3s', opacity: speech ? speech.opacity : 1 }}>
-            {speech ? speech.text : m.label}
+            {speech ? speech.text : t(m.labelKey)}
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{s.name}</div>
         </div>
@@ -230,12 +232,12 @@ export const TamagotchiGame = () => {
 
         <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
           <span dangerouslySetInnerHTML={{ __html: NOTE_ICON }} />
-          Еда: <span style={{ fontWeight: 700, color: 'var(--text)' }}>{s.food || 0}</span> — зарабатывай слушая музыку
+          {t('games.tama.foodLabel')} <span style={{ fontWeight: 700, color: 'var(--text)' }}>{s.food || 0}</span> {t('games.tama.foodHint')}
         </div>
       </div>
 
       <div className="sc" style={{ marginTop: 10 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: 'var(--text2)', marginBottom: 8 }}>Статистика</div>
+        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: 'var(--text2)', marginBottom: 8 }}>{t('games.stats')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {statRows.map(([label, val], i) => (
             <div key={i} style={{ padding: '8px 10px', borderRadius: 'calc(var(--radius)*.55)', background: 'rgba(var(--accent-rgb),.06)' }}>
@@ -247,7 +249,7 @@ export const TamagotchiGame = () => {
       </div>
 
       <div className="sc" style={{ marginTop: 10 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: 'var(--text2)', marginBottom: 8 }}>Достижения</div>
+        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: 'var(--text2)', marginBottom: 8 }}>{t('games.achievements')}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {TAMA_ACHIEVEMENTS.map((a) => {
             const got = !!s.achievements[a.id]

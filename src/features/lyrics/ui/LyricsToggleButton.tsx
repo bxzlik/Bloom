@@ -1,10 +1,12 @@
 import { useLyricsStore } from '../model/lyricsStore'
+import { useT } from '@shared/i18n'
 
 /**
  * Кнопка показа/скрытия панели текста (#lyricsToggleBtn).
  *: иконка «список строк», .lyr-active когда панель открыта.
  */
 export const LyricsToggleButton = () => {
+  const t = useT()
   const open = useLyricsStore((s) => s.open)
   const toggle = useLyricsStore((s) => s.toggleOpen)
   return (
@@ -12,7 +14,7 @@ export const LyricsToggleButton = () => {
       className={`lyrics-btn${open ? ' lyr-active' : ''}`}
       id="lyricsToggleBtn"
       onClick={toggle}
-      aria-label="Текст песни"
+      aria-label={t('player.lyrics')}
     >
       <svg
         width={16}

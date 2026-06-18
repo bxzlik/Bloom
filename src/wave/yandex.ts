@@ -7,6 +7,7 @@
 //   • роутинг «SC vs Яндекс» решает источник из localStorage `bloom_wave_source`.
 
 import { host } from "./host";
+import { t as i18nT } from "@shared/i18n";
 import type { Track } from "./types";
 import { toTrack } from "@features/yandex/model/mappers";
 import { ymWaveTracks, ymWaveFeedback, ymIsAuthed, type YmRawTrack } from "@features/yandex/api/ymClient";
@@ -65,7 +66,7 @@ function prefetch(): void {
 /** Старт «Моей волны» Яндекса. Возвращает true, если волна реально пошла. */
 export async function start(): Promise<boolean> {
   if (!(await ymIsAuthed().catch(() => false))) {
-    host.toast("Не авторизован в Яндекс.Музыке (Настройки → Интеграции)", "warn");
+    host.toast(i18nT("wave.toast.ymNoAuth"), "warn");
     return false;
   }
 
@@ -73,12 +74,12 @@ export async function start(): Promise<boolean> {
   try {
     batch = await ymWaveTracks();
   } catch (e) {
-    host.toast("Волна Яндекса: " + ((e as Error)?.message ?? String(e)), "error");
+    host.toast(i18nT("wave.toast.ymError", { msg: (e as Error)?.message ?? String(e) }), "error");
     return false;
   }
   const raws = batch?.tracks ?? [];
   if (!raws.length) {
-    host.toast("Волна Яндекса пуста", "warn");
+    host.toast(i18nT("wave.toast.ymEmpty"), "warn");
     return false;
   }
 

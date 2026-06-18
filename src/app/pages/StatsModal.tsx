@@ -5,6 +5,7 @@ import { useLibStore, useHistoryStore, useActivityStore } from '@features/librar
 import { useSearchStore } from '@features/search'
 import { trackRegistry, type Track } from '@entities/track'
 import { useNavStore } from '../navigationStore'
+import { useT, useLocale, t as tt } from '@shared/i18n'
 
 /**
  * Модалка статистики (#statsModalOverlay / openStatsModal).
@@ -38,6 +39,8 @@ const NoteIcon = ({ size = 13 }: { size?: number }) => (
 )
 
 export const StatsModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+  const t = useT()
+  const loc = useLocale()
   const tracks = useLibStore((s) => s.tracks)
   const entries = useHistoryStore((s) => s.entries)
   const log = useActivityStore((s) => s.log)
@@ -65,7 +68,7 @@ export const StatsModal = ({ open, onClose }: { open: boolean; onClose: () => vo
       if (!t) continue
       totalSec += parseDur(t.dur) * plays
       trackRows.push({ track: t, plays })
-      const a = t.artist || 'Неизвестный'
+      const a = t.artist || tt('common.unknownArtist')
       artistMap.set(a, (artistMap.get(a) || 0) + plays)
     }
 
@@ -162,9 +165,9 @@ export const StatsModal = ({ open, onClose }: { open: boolean; onClose: () => vo
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
-            Статистика
+            {t('stats.title')}
           </div>
-          <button className="stats-modal-close" onClick={onClose} aria-label="Закрыть">
+          <button className="stats-modal-close" onClick={onClose} aria-label={t('common.close')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -177,25 +180,25 @@ export const StatsModal = ({ open, onClose }: { open: boolean; onClose: () => vo
             <div className="sm-hero-card">
               <div className="sm-hero-label">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                Всего времени
+                {t('stats.totalTime')}
               </div>
-              <div className="sm-hero-val">{h}ч {mn}м</div>
+              <div className="sm-hero-val">{loc === 'ru' ? `${h}ч ${mn}м` : `${h}h ${mn}m`}</div>
             </div>
             <div className="sm-hero-card">
-              <div className="sm-hero-label"><NoteIcon size={11} /> Уникальных</div>
+              <div className="sm-hero-label"><NoteIcon size={11} /> {t('stats.unique')}</div>
               <div className="sm-hero-val">{stats.uniqueTracks}</div>
             </div>
             <div className="sm-hero-card">
               <div className="sm-hero-label">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
-                Прослушиваний
+                {t('stats.playsTotal')}
               </div>
               <div className="sm-hero-val">{stats.totalPlays}</div>
             </div>
             <div className="sm-hero-card">
               <div className="sm-hero-label">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
-                Средняя длина
+                {t('stats.avgLength')}
               </div>
               <div className="sm-hero-val">{avgMin}:{String(avgS).padStart(2, '0')}</div>
             </div>
@@ -205,37 +208,37 @@ export const StatsModal = ({ open, onClose }: { open: boolean; onClose: () => vo
           <div className="sm-hero-card sm-record-card">
             <div className="sm-hero-label">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-              Рекорд дня
+              {t('stats.recordDay')}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
               <div className="sm-hero-val">{stats.recordDay}</div>
               <div style={{ fontSize: 12, color: 'var(--text2)' }}>
-                {stats.recordDay > 0 ? `треков · ${stats.recordDateFmt}` : 'нет данных'}
+                {stats.recordDay > 0 ? t('stats.recordTracks', { date: stats.recordDateFmt }) : t('stats.noData')}
               </div>
             </div>
           </div>
 
           {/* Daily averages */}
           <div className="sm-daily-card">
-            <div className="sm-daily-label">В среднем за день</div>
+            <div className="sm-daily-label">{t('stats.avgPerDay')}</div>
             <div className="sm-daily-row">
-              <div className="sm-daily-item"><div className="sm-daily-num">{avgHoursDay}</div><div className="sm-daily-sub">часов/день</div></div>
-              <div className="sm-daily-item"><div className="sm-daily-num">{avgTracksDay}</div><div className="sm-daily-sub">треков/день</div></div>
-              <div className="sm-daily-item"><div className="sm-daily-num">{stats.uniqueArtists}</div><div className="sm-daily-sub">артистов</div></div>
+              <div className="sm-daily-item"><div className="sm-daily-num">{avgHoursDay}</div><div className="sm-daily-sub">{t('stats.hoursDay')}</div></div>
+              <div className="sm-daily-item"><div className="sm-daily-num">{avgTracksDay}</div><div className="sm-daily-sub">{t('stats.tracksDay')}</div></div>
+              <div className="sm-daily-item"><div className="sm-daily-num">{stats.uniqueArtists}</div><div className="sm-daily-sub">{t('stats.artists')}</div></div>
             </div>
           </div>
 
           {/* Tabs */}
           <div className="sm-tabs">
-            <button className={`sm-tab${tab === 'tracks' ? ' active' : ''}`} onClick={() => setTab('tracks')}>Треки</button>
-            <button className={`sm-tab${tab === 'artists' ? ' active' : ''}`} onClick={() => setTab('artists')}>Артисты</button>
+            <button className={`sm-tab${tab === 'tracks' ? ' active' : ''}`} onClick={() => setTab('tracks')}>{t('search.tab.tracks')}</button>
+            <button className={`sm-tab${tab === 'artists' ? ' active' : ''}`} onClick={() => setTab('artists')}>{t('search.tab.artists')}</button>
           </div>
 
           {/* Tracks list */}
           {tab === 'tracks' && (
             <div className="sm-list">
               {stats.topTracks.length === 0 ? (
-                <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>Нет данных</div>
+                <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>{t('stats.noData2')}</div>
               ) : (
                 stats.topTracks.map(({ track: t, plays }, i) => (
                   <div className="sm-track-row" key={t.id}>
@@ -259,14 +262,14 @@ export const StatsModal = ({ open, onClose }: { open: boolean; onClose: () => vo
           {tab === 'artists' && (
             <div className="sm-list">
               {stats.topArtists.length === 0 ? (
-                <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>Нет данных</div>
+                <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>{t('stats.noData2')}</div>
               ) : (
                 stats.topArtists.map(([artist, plays], i) => (
                   <div className="sm-artist-row" style={{ cursor: 'pointer' }} onClick={() => goArtist(artist)} key={artist}>
                     <div className={`sm-row-num${i < 3 ? ' sm-row-num-top' : ''}`}>{i + 1}</div>
                     <div className="sm-artist-name">{artist}</div>
                     <div className="sm-row-count">{plays}</div>
-                    {i < 3 && <div className="sm-top-badge">ТОП</div>}
+                    {i < 3 && <div className="sm-top-badge">{t('stats.top')}</div>}
                   </div>
                 ))
               )}

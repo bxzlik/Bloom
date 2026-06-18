@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { AddPopup } from '@features/player'
+import { useT, useLocale } from '@shared/i18n'
 import {
   useSelectionStore,
   useFavStore,
@@ -28,6 +29,8 @@ export interface SelBarProps {
  *   - ✕ закрыть selection (clear)
  */
 export const SelBar = (_: SelBarProps = {}) => {
+  const t = useT()
+  const locale = useLocale()
   const selMode = useSelectionStore((s) => s.selMode)
   const selected = useSelectionStore((s) => s.selected)
   const selectAll = useSelectionStore((s) => s.selectAll)
@@ -90,7 +93,10 @@ export const SelBar = (_: SelBarProps = {}) => {
   }
   const onDelete = () => {
     const n = selected.size
-    if (!confirm(`Удалить ${n} ${ru(n, ['трек', 'трека', 'треков'])}?`)) return
+    const msg = locale === 'ru'
+      ? `Удалить ${n} ${ru(n, ['трек', 'трека', 'треков'])}?`
+      : `Delete ${n} ${n === 1 ? 'track' : 'tracks'}?`
+    if (!confirm(msg)) return
     selected.forEach((id) => {
       void deleteUploadedTrack(id)
     })
@@ -120,7 +126,7 @@ export const SelBar = (_: SelBarProps = {}) => {
           {allSelected && <polyline points="7 12 11 16 17 8" />}
         </svg>
       </button>
-      <span className="sb-count">Выбрано: {selected.size}</span>
+      <span className="sb-count">{t('lib.sel.selectedCount', { n: selected.size })}</span>
       <div className="sb-sep" />
 
       {/* Теги — массовый редактор (#bulkTagOverlay) */}
@@ -132,7 +138,7 @@ export const SelBar = (_: SelBarProps = {}) => {
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
           <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
         </svg>
-        Теги
+        {t('lib.sel.tags')}
       </button>
       <BulkTagModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
 
@@ -150,7 +156,7 @@ export const SelBar = (_: SelBarProps = {}) => {
           <circle cx="6" cy="18" r="3" />
           <circle cx="18" cy="16" r="3" />
         </svg>
-        В плейлист
+        {t('lib.ctx.toPlaylist')}
       </button>
       <AddPopup
         open={addOpen}
@@ -170,14 +176,14 @@ export const SelBar = (_: SelBarProps = {}) => {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="#e03030" stroke="#e03030" strokeWidth={2}>
             <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
           </svg>{' '}
-          Из любимого
+          {t('lib.sel.unfav')}
         </button>
       ) : (
         <button className="btn bta" onClick={onAddToFav}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={2}>
             <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
           </svg>{' '}
-          В любимые
+          {t('lib.sel.fav')}
         </button>
       )}
 
@@ -189,7 +195,7 @@ export const SelBar = (_: SelBarProps = {}) => {
           style={{ color: '#e03030', borderColor: '#e03030' }}
           onClick={onRemoveFromPl}
         >
-          — Из плейлиста
+          {t('lib.sel.removeFromPl')}
         </button>
       )}
       <button
@@ -197,7 +203,7 @@ export const SelBar = (_: SelBarProps = {}) => {
         style={{ color: '#e03030', borderColor: '#e03030' }}
         onClick={onDelete}
       >
-        Удалить
+        {t('common.delete')}
       </button>
 
       <button className="sb-close" onClick={clear}>

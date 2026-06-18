@@ -1,4 +1,5 @@
 import { LyricsView, useLyricsStore } from '@features/lyrics'
+import { useT } from '@shared/i18n'
 import { useNavStore } from '@app/navigationStore'
 import { useGrpStore } from '../model/grpStore'
 import { QueueBlock } from './QueueBlock'
@@ -37,6 +38,7 @@ export const GlobalRightPanel = () => {
 // ── Lyrics-режим (mirror #grpLyricsBlock) ──────────────────────────────────
 
 const GrpLyrics = ({ onFlip, active }: { onFlip: () => void; active: boolean }) => {
+  const t = useT()
   const source = useLyricsStore((s) => s.source)
   return (
     <div
@@ -76,7 +78,7 @@ const GrpLyrics = ({ onFlip, active }: { onFlip: () => void; active: boolean }) 
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
             <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="11" y2="18" />
           </svg>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Текст песни</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{t('player.lyrics')}</span>
           <span id="grpLyricsSourceBadge" style={{ fontSize: 10, color: 'var(--text2)' }}>
             {source}
           </span>

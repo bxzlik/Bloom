@@ -86,7 +86,7 @@ export const importPlaylistData = (
     toAdd.push({ ...t, url: null })
   }
   if (toAdd.length) {
-    useLibStore.getState().addTracks(toAdd)
+    useLibStore.getState().addTracks(toAdd, { prepend: true })
     // ВАЖНО: персистим meta в IDB, иначе импортированные треки живут только в
     // памяти и пропадают после перезахода (плейлисты ссылались бы на «мёртвые»
     // id). — импорт сохранял треки в БД. Blob не пакуется:

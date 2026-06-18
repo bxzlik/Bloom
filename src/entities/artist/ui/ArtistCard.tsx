@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react'
 import { cn } from '@shared/lib/cn'
+import { useT } from '@shared/i18n'
 import { TrackCover } from '@entities/track'
 import type { Artist } from '../model/types'
 
@@ -18,7 +19,9 @@ export const ArtistCard = ({
   onClick,
   size = 140,
   className,
-}: ArtistCardProps) => (
+}: ArtistCardProps) => {
+  const t = useT()
+  return (
   <div
     onClick={(e) => onClick?.(artist, e)}
     className={cn(
@@ -34,7 +37,7 @@ export const ArtistCard = ({
         {artist.name}
         {artist.verified && (
           <span
-            aria-label="Верифицирован"
+            aria-label={t('artist.verified')}
             className="ml-1 inline-block text-(--color-accent)"
           >
             ✓
@@ -43,4 +46,5 @@ export const ArtistCard = ({
       </div>
     </div>
   </div>
-)
+  )
+}

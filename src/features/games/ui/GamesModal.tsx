@@ -6,6 +6,7 @@ import { GAME_COMPONENTS } from './gameRegistry'
 import { GameNotifToggle } from './GameNotifToggle'
 import { GamepadIcon } from './GamepadIcon'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { useT, useLocale } from '@shared/i18n'
 
 /**
  * Модалка игр (#gamesOverlay).
@@ -22,6 +23,8 @@ import { runEnterAnimation } from '@shared/lib/enterAnimation'
  * перенесён без изменений).
  */
 export const GamesModal = () => {
+  const t = useT()
+  useLocale()
   const open = useGamesStore((s) => s.open)
   const current = useGamesStore((s) => s.current)
   const close = useGamesStore((s) => s.close)
@@ -72,9 +75,9 @@ export const GamesModal = () => {
           <div className="games-modal-head">
             <div className="games-modal-head-title">
               <GamepadIcon size={30} />
-              Игры
+              {t('home.games')}
             </div>
-            <button className="games-modal-close" onClick={close} aria-label="Закрыть">
+            <button className="games-modal-close" onClick={close} aria-label={t('common.close')}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -84,7 +87,7 @@ export const GamesModal = () => {
             {GAMES_LIST.map((g) => (
               <div key={g.id} className="game-tile" onClick={() => openGame(g.id)}>
                 <div className="game-tile-icon">{g.icon}</div>
-                <div className="game-tile-name">{g.label}</div>
+                <div className="game-tile-name">{t(g.labelKey)}</div>
               </div>
             ))}
           </div>
@@ -97,9 +100,9 @@ export const GamesModal = () => {
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
-              Назад
+              {t('common.back')}
             </button>
-            <div className="games-modal-head-title">{game ? game.label : current}</div>
+            <div className="games-modal-head-title">{game ? t(game.labelKey) : current}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifySelf: 'end' }}>
               {controls && (
                 <>
@@ -110,12 +113,12 @@ export const GamesModal = () => {
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
                       <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
                     </svg>
-                    Сбросить
+                    {t('common.reset')}
                   </button>
                   <GameNotifToggle game={controls.notifGame} />
                 </>
               )}
-              <button className="games-modal-close" onClick={close} aria-label="Закрыть">
+              <button className="games-modal-close" onClick={close} aria-label={t('common.close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -127,7 +130,7 @@ export const GamesModal = () => {
               <GameComp />
             ) : (
               <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 13, padding: '40px 0' }}>
-                Скоро
+                {t('settings.custom.ctx.soon')}
               </div>
             )}
           </div>

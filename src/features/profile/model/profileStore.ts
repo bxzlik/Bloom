@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { t } from '@shared/i18n'
 
 /**
  * Профиль пользователя приложения. набора `acc*`-переменных
@@ -37,7 +38,7 @@ export interface ProfileData {
 }
 
 export const PROFILE_DEFAULTS: ProfileData = {
-  name: 'Пользователь',
+  name: t('common.defaultUser'),
   bio: '',
   status: '',
   discIdx: 0,

@@ -1,5 +1,6 @@
 import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useSortable } from '@shared/lib/useSortable'
+import { useT, useLocale, t as tFn } from '@shared/i18n'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
 import {
   useLibStore,
@@ -39,7 +40,7 @@ import { ArtistCtxMenu } from './LibSidebar'
 
 /** Подпись карточки «N тр. · 1ч 2м». */
 const cardSub = (count: number, sec: number): string =>
-  `${count} тр.${sec > 0 ? ' · ' + fmtTotalDur(sec) : ''}`
+  `${tFn('lib.grid.tracks', { n: count })}${sec > 0 ? ' · ' + fmtTotalDur(sec) : ''}`
 
 const NoteSvg = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
@@ -57,6 +58,8 @@ const PlayOverlay = () => (
 )
 
 export const LibGridOverview = () => {
+  const t = useT()
+  useLocale() // ре-рендер при смене языка (cardSub/счётчики читают локаль нереактивно)
   const tracks = useLibStore((s) => s.tracks)
   const folders = useLibStore((s) => s.folders)
   const selectBuiltin = useLibStore((s) => s.selectBuiltin)
@@ -189,7 +192,7 @@ export const LibGridOverview = () => {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
           </div>
           <div className="lib-grid-sys-card-info">
-            <div className="lib-grid-sys-card-name">Все треки</div>
+            <div className="lib-grid-sys-card-name">{t('lib.allTracks')}</div>
             <div className="lib-grid-sys-card-sub">{tracksAndDuration(allCnt, allSec)}</div>
           </div>
         </div>
@@ -198,7 +201,7 @@ export const LibGridOverview = () => {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
           </div>
           <div className="lib-grid-sys-card-info">
-            <div className="lib-grid-sys-card-name">Любимые</div>
+            <div className="lib-grid-sys-card-name">{t('lib.liked')}</div>
             <div className="lib-grid-sys-card-sub">{tracksAndDuration(favCnt, favSec)}</div>
           </div>
         </div>
@@ -207,7 +210,7 @@ export const LibGridOverview = () => {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
           </div>
           <div className="lib-grid-sys-card-info">
-            <div className="lib-grid-sys-card-name">История</div>
+            <div className="lib-grid-sys-card-name">{t('lib.history')}</div>
             <div className="lib-grid-sys-card-sub">{recordsLabel(historyCount)}</div>
           </div>
         </div>
@@ -216,7 +219,7 @@ export const LibGridOverview = () => {
       {/* Заголовок «Моя библиотека» + сорт/добавить */}
       {entries.length > 0 && (
         <div className="lib-grid-section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          Моя библиотека
+          {t('lib.myLibrary')}
           <div style={{ display: 'flex', gap: 2 }}>
             <button ref={sortBtnRef} className="ib" onClick={(e) => { e.stopPropagation(); setSortMenuOpen((v) => !v) }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="9" y2="18" /></svg>
@@ -231,7 +234,7 @@ export const LibGridOverview = () => {
       {/* Карточки */}
       {entries.length === 0 ? (
         <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px 0', color: 'var(--text2)', fontSize: 13 }}>
-          Библиотека пуста
+          {t('lib.libraryEmpty')}
         </div>
       ) : (
         entries.map((entry) => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '@shared/i18n'
 
 /**
  * Canvas-кроппер для аватара (круг) и баннера (прямоугольник по аспекту).
@@ -36,6 +37,7 @@ export const ImageCropper = ({
   onApply: (dataUrl: string) => void
   onBack: () => void
 }) => {
+  const t = useT()
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sliderRef = useRef<HTMLInputElement>(null)
@@ -43,7 +45,7 @@ export const ImageCropper = ({
     img: null, offsetX: 0, offsetY: 0, scale: 1, coverScale: 1,
     dragging: false, lastX: 0, lastY: 0, canvasW: 0, canvasH: 0, frameW: 0, frameH: 0,
   })
-  const [zoomLabel, setZoomLabel] = useState('Масштаб  100%')
+  const [zoomLabel, setZoomLabel] = useState(t('profile.zoom') + '  100%')
 
   const resize = () => {
     const wrap = wrapRef.current
@@ -142,7 +144,7 @@ export const ImageCropper = ({
           slider.max = '300'
           slider.value = '100'
         }
-        setZoomLabel('Масштаб  100%')
+        setZoomLabel(t('profile.zoom') + '  100%')
         draw()
       })
     }
@@ -220,7 +222,7 @@ export const ImageCropper = ({
   const onZoom = (val: string) => {
     const c = crop.current
     c.scale = c.coverScale * (Number(val) / 100)
-    setZoomLabel(`Масштаб  ${Math.round(Number(val))}%`)
+    setZoomLabel(`${t('profile.zoom')}  ${Math.round(Number(val))}%`)
     draw()
   }
 
@@ -267,8 +269,8 @@ export const ImageCropper = ({
           />
         </div>
         <div className="crop-actions">
-          <button className="crop-btn-back" onClick={onBack}>Назад</button>
-          <button className="crop-btn-apply" onClick={apply}>Применить</button>
+          <button className="crop-btn-back" onClick={onBack}>{t('common.back')}</button>
+          <button className="crop-btn-apply" onClick={apply}>{t('common.apply')}</button>
         </div>
       </div>
     </div>

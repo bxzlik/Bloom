@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLibStore } from '@features/library/model/store'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { useT } from '@shared/i18n'
 import waveApi from '@/wave'
 import { useDislikesStore } from '../model/dislikesStore'
 
@@ -20,6 +21,7 @@ interface DislikedItem {
  * Открытие/закрытие — модальная конвенция `.open` (см. [[project-modal-style]]).
  */
 export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+  const t = useT()
   const scEntries = useDislikesStore((s) => s.entries)
   const tracks = useLibStore((s) => s.tracks)
   const [mounted, setMounted] = useState(false)
@@ -80,9 +82,9 @@ export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () =>
               <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z" />
               <path d="M22 2h-4v13" />
             </svg>
-            Дизлайки в волне
+            {t('wave.dislikesTitle')}
           </div>
-          <button className="stats-modal-close" onClick={onClose} aria-label="Закрыть">
+          <button className="stats-modal-close" onClick={onClose} aria-label={t('common.close')}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -91,7 +93,7 @@ export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () =>
         <div className="stats-modal-body" id="dislikesModalBody">
           {items.length === 0 ? (
             <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text2)', fontSize: 13, opacity: 0.6 }}>
-              Нет дизлайкнутых треков
+              {t('wave.noDislikes')}
             </div>
           ) : (
             items.map((t) => (

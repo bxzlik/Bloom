@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
+import { t } from '@shared/i18n'
 
 /**
  * Тема UI — настройки внешнего вида, которые применяются через CSS custom
@@ -79,6 +80,8 @@ export interface ThemeState {
   applyTheme: (id: string) => void
   /** Сохранить текущий вид как пользовательский пресет. */
   saveAsPreset: (name: string) => void
+  /** Создать пользовательский пресет из заданных цветов (фон/блоки/акцент) и применить. */
+  createCustomTheme: (name: string, colors: { bg: string; blockColor: string; accent: string }) => void
   /** Удалить пользовательский пресет. */
   deleteCustomTheme: (id: string) => void
   resetAll: () => void
@@ -350,7 +353,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         const id = 'custom_' + Date.now()
         const theme: ThemePreset = {
           id,
-          name: name.trim() || 'Мой пресет',
+          name: name.trim() || t('theme.myPreset'),
           custom: true,
           bg: s.bg,
           blockColor: s.blockColor,
@@ -363,6 +366,38 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         const customThemes = [...s.customThemes, theme]
         saveCustomThemes(customThemes)
         return { ...persist({ ...s, activeThemeId: id }), customThemes }
+      }),
+    createCustomTheme: (name, colors) =>
+      set((s) => {
+        const id = 'custom_' + Date.now()
+        const theme: ThemePreset = {
+          id,
+          name: name.trim() || t('theme.defaultName'),
+          custom: true,
+          bg: colors.bg,
+          blockColor: colors.blockColor,
+          accent: colors.accent,
+          // Только 3 основных цвета — вторичные тона берём из дефолтов root.css.
+          palette: {},
+          preview: { bg: colors.bg, card: colors.blockColor, accent: colors.accent },
+          radius: s.radius,
+          font: s.fontFamily,
+        }
+        const customThemes = [...s.customThemes, theme]
+        saveCustomThemes(customThemes)
+        return {
+          ...persist({
+            ...s,
+            bg: theme.bg,
+            blockColor: theme.blockColor,
+            accent: theme.accent,
+            accentManual: theme.accent,
+            autoAccent: false,
+            palette: {},
+            activeThemeId: id,
+          }),
+          customThemes,
+        }
       }),
     deleteCustomTheme: (id) =>
       set((s) => {

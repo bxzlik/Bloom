@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
+import { useT, type TranslationKey } from '@shared/i18n'
 import type { LibSidebarSort } from '../lib'
 
 export interface LibSortMenuProps {
@@ -17,11 +18,11 @@ export interface LibSortMenuProps {
   onChange: (next: LibSidebarSort) => void
 }
 
-const OPTIONS: { value: LibSidebarSort; label: string }[] = [
-  { value: 'default', label: 'По умолчанию' },
-  { value: 'name-asc', label: 'По имени A–Z' },
-  { value: 'name-desc', label: 'По имени Z–A' },
-  { value: 'type', label: 'По типу' },
+const OPTIONS: { value: LibSidebarSort; labelKey: TranslationKey }[] = [
+  { value: 'default', labelKey: 'lib.sort.default' },
+  { value: 'name-asc', labelKey: 'lib.sortMenu.nameAsc' },
+  { value: 'name-desc', labelKey: 'lib.sortMenu.nameDesc' },
+  { value: 'type', labelKey: 'lib.sortMenu.type' },
 ]
 
 /**
@@ -35,6 +36,7 @@ export const LibSortMenu = ({
   value,
   onChange,
 }: LibSortMenuProps) => {
+  const t = useT()
   const menuRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
 
@@ -105,7 +107,7 @@ export const LibSortMenu = ({
             >
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            {opt.label}
+            {t(opt.labelKey)}
           </button>
         )
       })}

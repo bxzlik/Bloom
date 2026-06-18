@@ -1,5 +1,6 @@
 import { Fragment, useState, type ReactNode } from 'react'
 import { ScLogo, YmLogo } from '@entities/track'
+import { useT, type TranslationKey } from '@shared/i18n'
 
 /**
  * Идентификаторы секций SM_CATS.
@@ -24,19 +25,29 @@ export type SectionId =
   | 'discord'
   | 'yandex'
 
+interface SectionDef {
+  id: SectionId
+  /** Ключ перевода метки; для брендов (SoundCloud, Last.fm…) — не задаётся. */
+  labelKey?: TranslationKey
+  /** Литеральная метка-бренд (не переводится). */
+  brand?: string
+  icon: ReactNode
+  dot?: boolean
+}
+
 interface GroupDef {
-  label: string
-  sections: { id: SectionId; label: string; icon: ReactNode; dot?: boolean }[]
+  labelKey: TranslationKey
+  sections: SectionDef[]
 }
 
 /** SM_CATS. SVG-иконки скопированы оттуда же. */
 const GROUPS: GroupDef[] = [
   {
-    label: 'Основное',
+    labelKey: 'settings.nav.group.main',
     sections: [
       {
         id: 'system',
-        label: 'Система',
+        labelKey: 'settings.nav.system',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <rect x="2" y="3" width="20" height="14" rx="2" />
@@ -47,7 +58,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'audio',
-        label: 'Аудио',
+        labelKey: 'settings.nav.audio',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <polyline points="22 8 22 16" />
@@ -61,7 +72,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'efficiency',
-        label: 'Эффективность',
+        labelKey: 'settings.nav.efficiency',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
             <path d="M3.34 19a10 10 0 1 1 17.32 0" />
@@ -71,7 +82,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'hotkeys',
-        label: 'Горячие клавиши',
+        labelKey: 'settings.nav.hotkeys',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <rect x="2" y="6" width="20" height="12" rx="2" />
@@ -81,7 +92,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'tele-storage',
-        label: 'Хранилище',
+        labelKey: 'settings.nav.storage',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <ellipse cx="12" cy="5" rx="9" ry="3" />
@@ -93,11 +104,11 @@ const GROUPS: GroupDef[] = [
     ],
   },
   {
-    label: 'Оформление',
+    labelKey: 'settings.nav.group.appearance',
     sections: [
       {
         id: 'view',
-        label: 'Плеер',
+        labelKey: 'settings.nav.player',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <circle cx="12" cy="12" r="10" />
@@ -107,7 +118,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'interface',
-        label: 'Интерфейс',
+        labelKey: 'settings.nav.interface',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -117,7 +128,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'background',
-        label: 'Фон',
+        labelKey: 'settings.nav.background',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -128,7 +139,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'medialib',
-        label: 'Кастомизация',
+        labelKey: 'settings.nav.customization',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <circle cx="12" cy="12" r="3" />
@@ -139,21 +150,21 @@ const GROUPS: GroupDef[] = [
     ],
   },
   {
-    label: 'Интеграции',
+    labelKey: 'settings.nav.group.integrations',
     sections: [
       {
         id: 'soundcloud',
-        label: 'SoundCloud',
+        brand: 'SoundCloud',
         icon: <ScLogo size={13} />,
       },
       {
         id: 'yandex',
-        label: 'Яндекс.Музыка',
+        labelKey: 'settings.nav.yandex',
         icon: <YmLogo size={13} />,
       },
       {
         id: 'lastfm',
-        label: 'Last.fm',
+        brand: 'Last.fm',
         icon: (
           <svg width="14" height="9" viewBox="0 0 220 140" xmlns="http://www.w3.org/2000/svg">
             <path d="M62 110 C28 110 8 88 8 68 C8 44 28 24 62 24 C82 24 96 32 106 44 C116 32 132 24 154 24 C176 24 192 36 198 54 L178 60 C174 48 166 42 154 42 C136 42 124 56 124 68 C124 80 136 94 154 94 C166 94 174 88 178 76 L198 82 C192 100 176 112 154 112 C132 112 116 104 106 92 C96 104 82 110 62 110 Z M62 42 C44 42 28 54 28 68 C28 82 44 94 62 94 C80 94 96 82 96 68 C96 54 80 42 62 42 Z" fill="currentColor" />
@@ -162,7 +173,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'genius',
-        label: 'Genius',
+        brand: 'Genius',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
@@ -171,7 +182,7 @@ const GROUPS: GroupDef[] = [
       },
       {
         id: 'discord',
-        label: 'Discord RPC',
+        brand: 'Discord RPC',
         icon: (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <circle cx="9" cy="12" r="1" />
@@ -194,8 +205,12 @@ export const SettingsNav = ({
   active: SectionId
   onSelect: (id: SectionId) => void
 }) => {
+  const t = useT()
   const [filter, setFilter] = useState('')
   const q = filter.trim().toLowerCase()
+
+  // Метка секции: переводимый ключ либо литеральный бренд.
+  const secLabel = (s: SectionDef): string => (s.labelKey ? t(s.labelKey) : s.brand ?? s.id)
 
   return (
     <div className="settings-modal-nav" id="smNav">
@@ -206,7 +221,7 @@ export const SettingsNav = ({
         </svg>
         <input
           type="text"
-          placeholder="Поиск..."
+          placeholder={t('settings.nav.search')}
           autoComplete="off"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -214,15 +229,15 @@ export const SettingsNav = ({
       </div>
       {GROUPS.map((grp) => {
         const visible = q
-          ? grp.sections.filter((s) => s.label.toLowerCase().includes(q))
+          ? grp.sections.filter((s) => secLabel(s).toLowerCase().includes(q))
           : grp.sections
         if (visible.length === 0) return null
         // Fragment, не <div>! Иначе flex gap:2px на родителе не применяется
         // между sibling-items внутри группы. В старом smBuildNav() тоже
         // вставляет всё плоско в `#smNav` (без wrapper).
         return (
-          <Fragment key={grp.label}>
-            <div className="s-nav-group">{grp.label}</div>
+          <Fragment key={grp.labelKey}>
+            <div className="s-nav-group">{t(grp.labelKey)}</div>
             {visible.map((sec) => (
               <div
                 key={sec.id}
@@ -230,7 +245,7 @@ export const SettingsNav = ({
                 onClick={() => onSelect(sec.id)}
               >
                 <div className="s-nav-icon">{sec.icon}</div>
-                <span>{sec.label}</span>
+                <span>{secLabel(sec)}</span>
                 <div className="s-nav-dot" />
               </div>
             ))}

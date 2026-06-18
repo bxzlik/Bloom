@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 
 import { createPortal } from 'react-dom'
 import { cn } from '@shared/lib/cn'
 import { toast } from '@shared/ui'
+import { useT, useLocale } from '@shared/i18n'
 import { useSortable } from '@shared/lib/useSortable'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
 import { playFromSource } from '@features/player'
@@ -95,6 +96,8 @@ const stopAnd = (fn: () => void) => (e: ReactMouseEvent) => {
  * из localStorage.
  */
 export const LibSidebar = () => {
+  const t = useT()
+  useLocale()
   const mode = useLibStore((s) => s.mode)
   const sbCompact = useLibStore((s) => s.sbCompact)
   const selectBuiltin = useLibStore((s) => s.selectBuiltin)
@@ -124,12 +127,12 @@ export const LibSidebar = () => {
 
   // Тост-фидбек импорта.
   const handleImported = (res: { playlists: number; tracks: number } | null) => {
-    if (!res) return toast('Ошибка: невалидный файл')
-    if (res.playlists === 0) return toast('Плейлисты не найдены')
+    if (!res) return toast(t('settings.system.toast.importInvalid'))
+    if (res.playlists === 0) return toast(t('settings.system.toast.importNoPlaylists'))
     toast(
       res.tracks
-        ? `Импортировано: ${res.playlists} пл., ${res.tracks} тр.`
-        : `Импортировано плейлистов: ${res.playlists}`,
+        ? t('settings.system.toast.importedFull', { pl: res.playlists, tr: res.tracks })
+        : t('settings.system.toast.importedPlaylists', { pl: res.playlists }),
     )
   }
 
@@ -186,7 +189,7 @@ export const LibSidebar = () => {
     <div className={cn('lib-sidebar', sbCompact && 'lib-sb-compact')}>
       {/* ── Системные ─────────────────────────────────────────── */}
       <div className="lib-block">
-        <div className="lib-section-title">Системные</div>
+        <div className="lib-section-title">{t('lib.sidebar.system')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 4px 4px' }}>
           <div
             className={cn(
@@ -212,7 +215,7 @@ export const LibSidebar = () => {
               </svg>
             </div>
             <div className="lib-item-info">
-              <div className="lib-item-name">Все треки</div>
+              <div className="lib-item-name">{t('lib.allTracks')}</div>
               <div className="lib-item-sub" id="libAllSub">
                 {tracksAndDuration(totalTracks, allDurSec)}
               </div>
@@ -248,7 +251,7 @@ export const LibSidebar = () => {
               </svg>
             </div>
             <div className="lib-item-info">
-              <div className="lib-item-name">Любимые</div>
+              <div className="lib-item-name">{t('lib.liked')}</div>
               <div className="lib-item-sub" id="libFavSub">
                 {tracksAndDuration(favCount, favDurSec)}
               </div>
@@ -289,7 +292,7 @@ export const LibSidebar = () => {
               </svg>
             </div>
             <div className="lib-item-info">
-              <div className="lib-item-name">История</div>
+              <div className="lib-item-name">{t('lib.history')}</div>
               <div className="lib-item-sub" id="libHistorySub">
                 {recordsLabel(historyCount)}
               </div>
@@ -304,7 +307,7 @@ export const LibSidebar = () => {
         style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
         <div className="lib-section-title">
-          Моя библиотека
+          {t('lib.myLibrary')}
           <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <button id="libSbCompactBtn" onClick={toggleSbCompact}>
               <svg
@@ -457,6 +460,7 @@ export const ArtistCtxMenu = ({
   ctx: { id: string; x: number; y: number } | null
   onClose: () => void
 }) => {
+  const t = useT()
   const artists = useFollowStore((s) => s.artists)
   const unfollow = useFollowStore((s) => s.unfollow)
   const isPinned = useUnifiedOrderStore((s) => s.isPinned)
@@ -506,7 +510,7 @@ export const ArtistCtxMenu = ({
         <span className="ci-icon">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
         </span>{' '}
-        Открыть
+        {t('common.open')}
       </div>
       <div
         className="ci"
@@ -518,7 +522,7 @@ export const ArtistCtxMenu = ({
         <span className="ci-icon">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14l-1.5-9H6.5L5 17z" /><path d="M9 8V4a3 3 0 0 1 6 0v4" /></svg>
         </span>{' '}
-        {pinned ? 'Открепить' : 'Закрепить'}
+        {pinned ? t('lib.sidebar.unpin') : t('lib.sidebar.pin')}
       </div>
       <div className="cx-sep" />
       <div
@@ -531,7 +535,7 @@ export const ArtistCtxMenu = ({
         <span className="ci-icon">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="17" y1="8" x2="22" y2="13" /><line x1="22" y1="8" x2="17" y2="13" /></svg>
         </span>{' '}
-        Отписаться
+        {t('search.unfollow')}
       </div>
     </div>,
     document.body,
@@ -560,6 +564,8 @@ const UnifiedList = ({
   sortMode: LibSidebarSort
   onContextEntry: (e: CtxEntry | null) => void
 }) => {
+  const t = useT()
+  useLocale()
   const folders = useLibStore((s) => s.folders)
   const mode = useLibStore((s) => s.mode)
   const folderPath = useLibStore((s) => s.folderPath)
@@ -619,7 +625,7 @@ const UnifiedList = ({
           id="libCombinedEmpty"
           style={{ padding: '4px 10px 6px', fontSize: 11, color: 'var(--muted)' }}
         >
-          Нет плейлистов и папок
+          {t('lib.sidebar.empty')}
         </div>
       </>
     )

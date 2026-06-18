@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { useT } from '@shared/i18n'
 import { useLibStore } from '../model'
 import { compressCover, idbUpdateMeta } from '../lib'
 
@@ -26,6 +27,7 @@ export interface TagEditorProps {
  * пере-присылает teги при следующем сканировании).
  */
 export const TagEditor = ({ track, onClose }: TagEditorProps) => {
+  const t = useT()
   const [name, setName] = useState('')
   const [artist, setArtist] = useState('')
   const [album, setAlbum] = useState('')
@@ -85,7 +87,7 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
     const updated: Track = {
       ...track,
       name: name.trim() || track.name,
-      artist: artist.trim() || 'Неизвестный',
+      artist: artist.trim() || t('common.unknownArtist'),
       album: album.trim(),
       genres: genres.trim()
         ? genres
@@ -143,9 +145,9 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
               <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
-            Редактор тегов
+            {t('lib.tag.editorTitle')}
           </div>
-          <button className="te-close" onClick={handleClose} aria-label="Закрыть">
+          <button className="te-close" onClick={handleClose} aria-label={t('common.close')}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -179,45 +181,45 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
               />
             </label>
             <div style={{ fontSize: 9.5, color: 'var(--muted)', textAlign: 'center', marginTop: 6 }}>
-              Обложка
+              {t('lib.tag.cover')}
             </div>
           </div>
 
           <div className="te-fields">
-            <Field label="Название">
+            <Field label={t('lib.tag.title')}>
               <input
                 className="te-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Название трека..."
+                placeholder={t('lib.tag.titlePlaceholder')}
                 maxLength={200}
                 autoFocus
               />
             </Field>
-            <Field label="Исполнитель">
+            <Field label={t('lib.tag.artist')}>
               <input
                 className="te-input"
                 value={artist}
                 onChange={(e) => setArtist(e.target.value)}
-                placeholder="Имя исполнителя..."
+                placeholder={t('lib.tag.artistPlaceholder')}
                 maxLength={200}
               />
             </Field>
-            <Field label="Альбом">
+            <Field label={t('lib.ti.album')}>
               <input
                 className="te-input"
                 value={album}
                 onChange={(e) => setAlbum(e.target.value)}
-                placeholder="Название альбома..."
+                placeholder={t('lib.tag.albumPlaceholder')}
                 maxLength={200}
               />
             </Field>
             <Field
               label={
                 <>
-                  Жанры{' '}
+                  {t('lib.ti.genres')}{' '}
                   <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, opacity: 0.6 }}>
-                    (через запятую)
+                    {t('lib.tag.genresHint')}
                   </span>
                 </>
               }
@@ -231,7 +233,7 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
               />
             </Field>
             <div style={{ display: 'flex', gap: 8 }}>
-              <Field label="Год" style={{ flex: 1 }}>
+              <Field label={t('lib.ti.year')} style={{ flex: 1 }}>
                 <input
                   className="te-input"
                   value={year}
@@ -241,12 +243,12 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
                   style={{ width: '100%' }}
                 />
               </Field>
-              <Field label="Паблишер" style={{ flex: 2 }}>
+              <Field label={t('lib.ti.publisher')} style={{ flex: 2 }}>
                 <input
                   className="te-input"
                   value={publisher}
                   onChange={(e) => setPublisher(e.target.value)}
-                  placeholder="Лейбл / издатель..."
+                  placeholder={t('lib.tag.publisherPlaceholder')}
                   maxLength={200}
                 />
               </Field>
@@ -256,10 +258,10 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
 
         <div className="te-foot">
           <button className="btn btg" onClick={handleClose}>
-            Отмена
+            {t('common.cancel')}
           </button>
           <button className="btn bta" onClick={() => void onSave()}>
-            Сохранить
+            {t('common.save')}
           </button>
         </div>
       </div>

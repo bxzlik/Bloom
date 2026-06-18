@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
+import { useT } from '@shared/i18n'
 import { EQ_LABELS, EQ_MAX_DB, EQ_PRESETS, useEqStore } from '../model/eqStore'
 
 /**
@@ -35,6 +36,7 @@ export const EqPanel = ({
   onClose: () => void
   anchorRef: RefObject<HTMLElement | null>
 }) => {
+  const t = useT()
   const gains = useEqStore((s) => s.gains)
   const activePreset = useEqStore((s) => s.activePreset)
   const custom = useEqStore((s) => s.custom)
@@ -163,7 +165,7 @@ export const EqPanel = ({
               className="eq-name-input"
               autoFocus
               value={draft}
-              placeholder="Название…"
+              placeholder={t('player.eq.namePlaceholder')}
               maxLength={24}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {

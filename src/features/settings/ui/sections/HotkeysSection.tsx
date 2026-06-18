@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from '@shared/ui'
+import { useT, type TranslationKey } from '@shared/i18n'
 import {
   useHotkeysStore,
   modSymbol,
@@ -7,6 +8,21 @@ import {
   type HotkeyMod,
 } from '../../model/hotkeysStore'
 import { TeleToggleRow } from '../controls/TeleToggleRow'
+
+/** Метки действий хоткеев — переводимые (имена в сторе не используются для отображения). */
+const HOTKEY_LABEL_KEYS: Record<HotkeyAction, TranslationKey> = {
+  play: 'settings.hotkeys.action.play',
+  seekBack: 'settings.hotkeys.action.seekBack',
+  seekFwd: 'settings.hotkeys.action.seekFwd',
+  prev: 'settings.hotkeys.action.prev',
+  next: 'settings.hotkeys.action.next',
+  volUp: 'settings.hotkeys.action.volUp',
+  volDown: 'settings.hotkeys.action.volDown',
+  mute: 'settings.hotkeys.action.mute',
+  loop: 'settings.hotkeys.action.loop',
+  shuffle: 'settings.hotkeys.action.shuffle',
+  search: 'settings.hotkeys.action.search',
+}
 
 /**
  * Секция «Горячие клавиши».
@@ -38,6 +54,7 @@ interface Pending {
 }
 
 export const HotkeysSection = () => {
+  const t = useT()
   const enabled = useHotkeysStore((s) => s.enabled)
   const hotkeys = useHotkeysStore((s) => s.hotkeys)
   const capturing = useHotkeysStore((s) => s.capturing)
@@ -74,7 +91,7 @@ export const HotkeysSection = () => {
   const save = (k: HotkeyAction) => {
     if (pending) {
       setHotkey(k, pending)
-      toast('Горячая клавиша обновлена')
+      toast(t('settings.hotkeys.toast.updated'))
     }
     setCapturing(null)
     setPending(null)
@@ -85,13 +102,13 @@ export const HotkeysSection = () => {
   }
   const onResetAll = () => {
     resetAll()
-    toast('Горячие клавиши сброшены')
+    toast(t('settings.hotkeys.toast.reset'))
   }
 
   return (
     <div className="s-section active" id="ssec-hotkeys">
       <div className="sc">
-        <h3>Горячие клавиши</h3>
+        <h3>{t('settings.hotkeys.heading')}</h3>
         <TeleToggleRow
           icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -99,17 +116,17 @@ export const HotkeysSection = () => {
               <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
             </svg>
           }
-          title="Горячие клавиши включены"
-          sub="Управление плеером с клавиатуры (вне полей ввода)"
+          title={t('settings.hotkeys.enabled.title')}
+          sub={t('settings.hotkeys.enabled.sub')}
           checked={enabled}
           onChange={setEnabled}
         />
       </div>
 
       <div className="sc">
-        <h3>Глобальные</h3>
+        <h3>{t('settings.hotkeys.global')}</h3>
         <div className="hk-row">
-          <div className="hk-label">Показать tray-popup</div>
+          <div className="hk-label">{t('settings.hotkeys.showTrayPopup')}</div>
           <div className="hk-badge">
             <span className="hk-key">Win</span>
             <span className="sc-plus">+</span>
@@ -121,13 +138,13 @@ export const HotkeysSection = () => {
       </div>
 
       <div className="sc">
-        <h3>В приложении</h3>
+        <h3>{t('settings.hotkeys.inApp')}</h3>
         {(Object.keys(hotkeys) as HotkeyAction[]).map((k) => {
           const h = hotkeys[k]
           const isCap = capturing === k
           return (
             <div className="hk-row" key={k} style={enabled ? undefined : { opacity: 0.5 }}>
-              <div className="hk-label">{h.label}</div>
+              <div className="hk-label">{t(HOTKEY_LABEL_KEYS[k])}</div>
 
               {!isCap && (
                 <div className="hk-badge">
@@ -146,9 +163,9 @@ export const HotkeysSection = () => {
                   <div className="hk-cap-field">
                     {pending
                       ? (pending.mod ? modSymbol(pending.mod) + ' ' : '') + pending.display
-                      : 'Нажми клавишу…'}
+                      : t('settings.hotkeys.pressKey')}
                   </div>
-                  <button className="hk-cap-ok" onClick={() => save(k)}>Ок</button>
+                  <button className="hk-cap-ok" onClick={() => save(k)}>{t('settings.hotkeys.ok')}</button>
                   <button className="hk-cap-cancel" onClick={cancel}>✕</button>
                 </div>
               )}
@@ -165,7 +182,7 @@ export const HotkeysSection = () => {
         <div style={{ marginTop: 10 }}>
           <button className="btn btg" style={{ fontSize: 11, padding: '5px 11px', display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={onResetAll}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" /></svg>
-            Сбросить всё
+            {t('settings.hotkeys.resetAll')}
           </button>
         </div>
       </div>

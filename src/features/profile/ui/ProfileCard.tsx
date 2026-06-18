@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { usePlayerStore } from '@features/player'
 import { toast } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import { useProfileStore } from '../model/profileStore'
 import { DiscAvatar } from './DiscAvatar'
 
@@ -42,6 +43,7 @@ const btnStyle: CSSProperties = {
 }
 
 const NowPlaying = () => {
+  const t = useT()
   const playing = usePlayerStore((s) => s.playing)
   const title = usePlayerStore((s) => s.title)
   const artist = usePlayerStore((s) => s.artist)
@@ -54,7 +56,7 @@ const NowPlaying = () => {
           <span style={{ width: 3, height: 12, background: 'var(--accent)', borderRadius: 2, animation: 'npBar 0.8s ease-in-out infinite alternate 0.2s' }} />
           <span style={{ width: 3, height: 6, background: 'var(--accent)', borderRadius: 2, animation: 'npBar 0.8s ease-in-out infinite alternate 0.4s' }} />
         </span>
-        <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Слушает сейчас:</span> {title}
+        <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('profile.nowPlaying')}</span> {title}
         {artist ? ` — ${artist}` : ''}
       </span>
     </div>
@@ -62,6 +64,7 @@ const NowPlaying = () => {
 }
 
 export const ProfileCard = () => {
+  const t = useT()
   const p = useProfileStore()
 
   const bannerBg =
@@ -79,7 +82,7 @@ export const ProfileCard = () => {
 
   const copyNick = () => {
     navigator.clipboard?.writeText(p.name).then(
-      () => toast('Ник скопирован!'),
+      () => toast(t('profile.toast.nickCopied')),
       () => {},
     )
   }
@@ -132,7 +135,7 @@ export const ProfileCard = () => {
             onMouseOver={(e) => (e.currentTarget.style.opacity = '.85')}
             onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
           >
-            <ShareIcon /> Поделиться
+            <ShareIcon /> {t('lib.ctx.share')}
           </button>
           <button
             style={btnStyle}
@@ -140,7 +143,7 @@ export const ProfileCard = () => {
             onMouseOver={(e) => (e.currentTarget.style.opacity = '.85')}
             onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
           >
-            <EditIcon /> Изменить
+            <EditIcon /> {t('common.edit')}
           </button>
         </div>
       </div>

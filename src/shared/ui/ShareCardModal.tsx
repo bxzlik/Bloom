@@ -5,6 +5,7 @@ import { buildShareCard } from '@shared/lib/buildShareCard'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { toast } from './GlobalToast'
 import { useShareStore } from './shareStore'
+import { useT } from '@shared/i18n'
 
 /**
  * Модалка «Поделиться» (#shareCardMover / #shareCardModal).
@@ -16,6 +17,7 @@ import { useShareStore } from './shareStore'
  * открытия/закрытия — конвенция `.open` на #shareCardMover (CSS уже в).
  */
 export const ShareCardModal = () => {
+  const t = useT()
   const data = useShareStore((s) => s.data)
   const close = useShareStore((s) => s.closeShare)
 
@@ -46,7 +48,7 @@ export const ShareCardModal = () => {
       })
       .catch((e) => {
         console.warn('[share] build failed', e)
-        if (!cancelled) toast('Не удалось построить карточку')
+        if (!cancelled) toast(t('share.toast.cardFail'))
       })
     return () => {
       cancelled = true
@@ -65,18 +67,18 @@ export const ShareCardModal = () => {
   if (!mounted) return null
 
   const labels: Record<string, string> = {
-    artist: 'Поделиться артистом',
-    playlist: 'Поделиться плейлистом',
-    album: 'Поделиться альбомом',
+    artist: t('share.artist'),
+    playlist: t('share.playlist'),
+    album: t('share.album'),
   }
-  const title = (data && labels[data.type]) || 'Поделиться треком'
+  const title = (data && labels[data.type]) || t('share.track')
 
   const onSave = () => {
     if (!cardUrl || !data) return
     const filename = `${data.title || 'track'} — Bloom`
     void invoke('cover_download', { dataUrl: cardUrl, filename }).catch((e) => {
       console.warn('cover_download failed', e)
-      toast('Не удалось сохранить карточку')
+      toast(t('share.toast.saveFail'))
     })
     close()
   }
@@ -85,8 +87,8 @@ export const ShareCardModal = () => {
     if (!data) return
     void navigator.clipboard
       .writeText(data.shareUrl)
-      .then(() => toast('Ссылка скопирована'))
-      .catch(() => toast('Не удалось скопировать'))
+      .then(() => toast(t('share.toast.linkCopied')))
+      .catch(() => toast(t('share.toast.copyFail')))
     close()
   }
 
@@ -104,7 +106,7 @@ export const ShareCardModal = () => {
       <div id="shareCardModal">
         <div className="sc-card-head">
           <span className="sc-card-title">{title}</span>
-          <button className="sc-card-close" onClick={close} aria-label="Закрыть">
+          <button className="sc-card-close" onClick={close} aria-label={t('common.close')}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -120,13 +122,13 @@ export const ShareCardModal = () => {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Сохранить PNG
+            {t('share.savePng')}
           </button>
           <button className="sc-card-btn" onClick={onCopy}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round">
               <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
-            Копировать ссылку
+            {t('share.copyLink')}
           </button>
         </div>
       </div>

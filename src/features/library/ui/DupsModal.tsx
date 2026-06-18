@@ -5,6 +5,7 @@ import { playTrack } from '@features/player'
 import { useDupsStore, useLibStore, usePlaylistStore } from '../model'
 import { deleteUploadedTrack } from '../lib'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { useT, t as tt } from '@shared/i18n'
 
 /**
  * Модалка «Дубликаты треков» (#dupsOverlay). Группирует треки по
@@ -33,6 +34,7 @@ const NoteIcon = ({ size = 13 }: { size?: number }) => (
 )
 
 export const DupsModal = () => {
+  const t = useT()
   const open = useDupsStore((s) => s.open)
   const plId = useDupsStore((s) => s.plId)
   const close = useDupsStore((s) => s.close)
@@ -100,7 +102,7 @@ export const DupsModal = () => {
   const deleteGroup = (g: Track[]) => deleteTracks(sortGroup(g).slice(1))
   const deleteAll = () => groups.forEach((g) => deleteTracks(g.slice(1)))
 
-  const plLabel = pl ? ` в «${pl.name}»` : ''
+  const plLabel = pl ? t('lib.dups.inPl', { name: pl.name }) : ''
 
   return createPortal(
     <div
@@ -119,9 +121,9 @@ export const DupsModal = () => {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
               <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
-            Дубликаты треков
+            {t('lib.dups.title')}
           </div>
-          <button className="dups-close" onClick={close} aria-label="Закрыть">
+          <button className="dups-close" onClick={close} aria-label={t('common.close')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -132,15 +134,15 @@ export const DupsModal = () => {
           {pool.length === 0 ? (
             <div className="dups-empty">
               <div className="dups-empty-icon"><NoteIcon size={22} /></div>
-              <span style={{ fontSize: 13 }}>{pl ? 'Нет треков в плейлисте' : 'Нет треков в библиотеке'}</span>
+              <span style={{ fontSize: 13 }}>{pl ? t('lib.dups.noTracksPl') : t('lib.dups.noTracksLib')}</span>
             </div>
           ) : groups.length === 0 ? (
             <div className="dups-empty">
               <div className="dups-empty-icon" style={{ background: 'rgba(0,200,100,.08)' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3dd68c" strokeWidth={2} strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
-              <span style={{ fontSize: 13, color: 'var(--text2)' }}>Дубликатов не найдено{plLabel}!</span>
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pool.length} треков проверено</span>
+              <span style={{ fontSize: 13, color: 'var(--text2)' }}>{t('lib.dups.none')}{plLabel}!</span>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>{t('lib.dups.checked', { n: pool.length })}</span>
             </div>
           ) : (
             groups.map((group, gi) => (
@@ -150,10 +152,10 @@ export const DupsModal = () => {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                       <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                     </svg>
-                    {group[0]!.name} — {group[0]!.artist || 'Неизвестный'}
-                    <span className="dups-group-badge">{group.length} копии</span>
+                    {group[0]!.name} — {group[0]!.artist || t('common.unknownArtist')}
+                    <span className="dups-group-badge">{t('lib.dups.copies', { n: group.length })}</span>
                   </div>
-                  <button className="dups-del-btn" onClick={() => deleteGroup(group)}>Удалить дубли</button>
+                  <button className="dups-del-btn" onClick={() => deleteGroup(group)}>{t('lib.dups.delGroup')}</button>
                 </div>
                 {group.map((t, ti) => (
                   <div className={`dups-track${ti === 0 ? ' keep' : ''}`} key={t.id} onClick={() => playTrack(t.id)}>
@@ -161,7 +163,7 @@ export const DupsModal = () => {
                     <div className="dups-track-info">
                       <div className="dups-track-name">{t.name}</div>
                       <div className="dups-track-artist">
-                        {(t.artist || 'Неизвестный') + (t.playCount ? ` · ${t.playCount} прослуш.` : '')}
+                        {(t.artist || tt('common.unknownArtist')) + (t.playCount ? ` · ${tt('lib.dups.plays', { n: t.playCount })}` : '')}
                       </div>
                     </div>
                     <div className="dups-track-dur">{t.dur || '—'}</div>
@@ -175,13 +177,13 @@ export const DupsModal = () => {
         {groups.length > 0 && (
           <div className="dups-foot" id="dupsFoot" style={{ display: 'flex' }}>
             <div className="dups-foot-info" id="dupsFootInfo">
-              Найдено <strong>{groups.length}</strong> групп · <strong>{totalDups}</strong> лишних копий{plLabel}
+              {t('lib.dups.found.a')} <strong>{groups.length}</strong> {t('lib.dups.found.b')} <strong>{totalDups}</strong> {t('lib.dups.found.c')}{plLabel}
             </div>
             <button className="dups-delete-all" onClick={deleteAll}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                 <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" />
               </svg>
-              Удалить все дубли
+              {t('lib.dups.delAll')}
             </button>
           </div>
         )}

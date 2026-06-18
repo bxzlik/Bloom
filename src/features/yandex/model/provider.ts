@@ -1,5 +1,6 @@
 import type { Track } from '@entities/track'
 import { trackRegistry } from '@entities/track'
+import { t as i18nT } from '@shared/i18n'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
 import type { MusicProvider, SearchResults, ArtistPageData, ResolvedUrl } from '@features/providers'
@@ -41,7 +42,7 @@ let _pager: { query: string; page: number } | null = null
 
 export const ymProvider: MusicProvider = {
   id: 'yandex',
-  label: 'Яндекс.Музыка',
+  label: i18nT('settings.nav.yandex'),
 
   isEnabled: () => useYmAuthStore.getState().authed,
 
@@ -150,7 +151,7 @@ export const ymProvider: MusicProvider = {
 
   async getArtist(id): Promise<ArtistPageData> {
     const m = /^ym_artist_(\d+)$/.exec(id)
-    if (!m) throw new Error('Артист не найден')
+    if (!m) throw new Error(i18nT('search.err.artistNotFound'))
     const e = await ymArtist(m[1]!)
     // «Популярные» — из brief-info (popularTracks); «Треки» — вся дискография
     // (e.tracks из /artists/{id}/tracks). с раскладкой SoundCloud.
@@ -170,7 +171,7 @@ export const ymProvider: MusicProvider = {
 
   async getAlbum(id): Promise<{ album: Playlist; tracks: Track[] }> {
     const m = /^ym_album_(\d+)$/.exec(id)
-    if (!m) throw new Error('Альбом не найден')
+    if (!m) throw new Error(i18nT('search.err.albumNotFound'))
     const e = await ymAlbum(m[1]!)
     const tracks = (e.tracks ?? []).map(toTrack)
     if (tracks.length) trackRegistry.put(tracks, { temp: true })
@@ -189,7 +190,7 @@ export const ymProvider: MusicProvider = {
   async getPlaylist(id): Promise<{ playlist: Playlist; tracks: Track[] }> {
     const uuid = parseYmPlaylistUuidId(id)
     const parsed = uuid ? null : parseYmPlaylistId(id)
-    if (!uuid && !parsed) throw new Error('Плейлист не найден')
+    if (!uuid && !parsed) throw new Error(i18nT('search.err.playlistNotFound'))
     const e = uuid ? await ymPlaylistUuid(uuid) : await ymPlaylist(parsed!.owner, parsed!.kind)
     const tracks = (e.tracks ?? []).map(toTrack)
     if (tracks.length) trackRegistry.put(tracks, { temp: true })

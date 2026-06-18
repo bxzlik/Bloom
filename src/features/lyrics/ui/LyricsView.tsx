@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { seek, usePlayerStore } from '@features/player'
 import type { LrcLine } from '../lib/parseLrc'
 import { useLyricsStore } from '../model/lyricsStore'
+import { useLocale, t as tt } from '@shared/i18n'
 
 /**
  * Переиспользуемое тело текста: рендер строк (синхро LRC / plain) + подсветка
@@ -28,6 +29,7 @@ export const LyricsView = ({
   style?: CSSProperties
   offsetSec?: number
 }) => {
+  useLocale()
   const status = useLyricsStore((s) => s.status)
   const lines = useLyricsStore((s) => s.lines)
   const plain = useLyricsStore((s) => s.plain)
@@ -110,7 +112,7 @@ interface BodyProps {
 }
 
 const renderBody = ({ status, lines, plain, curLine, karaoke }: BodyProps): ReactNode => {
-  if (status === 'loading') return <p className="lyrics-status">Загрузка текста…</p>
+  if (status === 'loading') return <p className="lyrics-status">{tt('lyrics.loading')}</p>
   if (lines.length) {
     return lines.map((l, i) => (
       <LyricsLine key={i} line={l} idx={i} next={lines[i + 1]} cls={lineClass(i, curLine)} karaoke={karaoke} />
@@ -123,7 +125,7 @@ const renderBody = ({ status, lines, plain, curLine, karaoke }: BodyProps): Reac
       </p>
     ))
   }
-  return <p className="lyrics-status">Текст не найден</p>
+  return <p className="lyrics-status">{tt('lyrics.notFound')}</p>
 }
 
 const lineClass = (i: number, curLine: number): string => {

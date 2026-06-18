@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { invoke } from '@shared/tauri'
 import { toast } from '@shared/ui'
+import { useT, t as tt } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useLibStore, useHistoryStore } from '@features/library'
 import { trackRegistry, type Track } from '@entities/track'
@@ -25,6 +26,7 @@ const findTrack = (id: string, libTracks: Track[]): Track | undefined =>
   libTracks.find((t) => t.id === id) ?? trackRegistry.get(id)
 
 export const ProfileShareModal = () => {
+  const tr = useT()
   const shareOpen = useProfileStore((s) => s.shareOpen)
   const closeShare = useProfileStore((s) => s.closeShare)
   const tracks = useLibStore((s) => s.tracks)
@@ -45,7 +47,7 @@ export const ProfileShareModal = () => {
       const t = findTrack(e.id, tracks)
       if (!t) continue
       totalSec += parseDur(t.dur) * plays
-      const a = t.artist || 'Неизвестный'
+      const a = t.artist || tt('common.unknownArtist')
       artistMap.set(a, (artistMap.get(a) || 0) + plays)
     }
     const top = [...artistMap.entries()].sort((a, b) => b[1] - a[1])[0]
@@ -87,7 +89,7 @@ export const ProfileShareModal = () => {
       })
       .catch((e) => {
         console.warn('[profile share] build failed', e)
-        if (!cancelled) toast('Не удалось построить карточку')
+        if (!cancelled) toast(tr('profile.toast.cardFail'))
       })
     return () => {
       cancelled = true
@@ -107,10 +109,10 @@ export const ProfileShareModal = () => {
 
   const onSave = () => {
     if (!cardUrl) return
-    const filename = `${useProfileStore.getState().name || 'Профиль'} — Bloom`
+    const filename = `${useProfileStore.getState().name || tr('profile.defaultFile')} — Bloom`
     void invoke('cover_download', { dataUrl: cardUrl, filename }).catch((e) => {
       console.warn('cover_download failed', e)
-      toast('Не удалось сохранить карточку')
+      toast(tr('profile.toast.saveFail'))
     })
     closeShare()
   }
@@ -130,8 +132,8 @@ export const ProfileShareModal = () => {
     const url = SHARE_BASE + '?' + new URLSearchParams(params).toString()
     void navigator.clipboard
       .writeText(url)
-      .then(() => toast('Ссылка скопирована'))
-      .catch(() => toast('Не удалось скопировать'))
+      .then(() => toast(tr('profile.toast.linkCopied')))
+      .catch(() => toast(tr('profile.toast.copyFail')))
     closeShare()
   }
 
@@ -148,8 +150,8 @@ export const ProfileShareModal = () => {
     >
       <div id="shareCardModal">
         <div className="sc-card-head">
-          <span className="sc-card-title">Поделиться профилем</span>
-          <button className="sc-card-close" onClick={closeShare} aria-label="Закрыть">
+          <span className="sc-card-title">{tr('profile.shareTitle')}</span>
+          <button className="sc-card-close" onClick={closeShare} aria-label={tr('common.close')}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -165,13 +167,13 @@ export const ProfileShareModal = () => {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Сохранить PNG
+            {tr('share.savePng')}
           </button>
           <button className="sc-card-btn" onClick={onCopy}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round">
               <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
-            Копировать ссылку
+            {tr('share.copyLink')}
           </button>
         </div>
       </div>

@@ -1,24 +1,29 @@
 import { useEffect, useState } from 'react'
 import { useAudioStore, type NormStatus } from '../../model/audioStore'
+import { useT, useLocale, type TranslationKey } from '@shared/i18n'
 
 /**
  * Секция «Аудио»: кроссфейд, нормализация громкости, устройство вывода.
  * Значения пишутся в `useAudioStore`; движок (`useAudioEffects` в App) применяет.
  */
 
-const NORM_STATUS_LABEL: Record<NormStatus, string> = {
-  off: 'Выключена',
-  analyzing: 'Анализ…',
-  ready: 'Готово',
-  unavailable: 'Недоступно для этого трека',
+const NORM_STATUS_KEY: Record<NormStatus, TranslationKey> = {
+  off: 'settings.audio.norm.off',
+  analyzing: 'settings.audio.norm.analyzing',
+  ready: 'settings.audio.norm.ready',
+  unavailable: 'settings.audio.norm.unavailable',
 }
 
 interface DeviceOpt {
   id: string
   label: string
+  /** true — у устройства есть реальное имя (иначе показываем fallback по id). */
+  named: boolean
 }
 
 export const AudioSection = () => {
+  const t = useT()
+  const locale = useLocale()
   const xfadeEnabled = useAudioStore((s) => s.xfadeEnabled)
   const xfadeDur = useAudioStore((s) => s.xfadeDur)
   const normEnabled = useAudioStore((s) => s.normEnabled)
@@ -42,7 +47,7 @@ export const AudioSection = () => {
     const list = await navigator.mediaDevices.enumerateDevices()
     return list
       .filter((d) => d.kind === 'audiooutput' && d.deviceId && d.deviceId !== 'default')
-      .map((d) => ({ id: d.deviceId, label: d.label || `Устройство ${d.deviceId.slice(0, 8)}…` }))
+      .map((d) => ({ id: d.deviceId, named: !!d.label, label: d.label || d.deviceId.slice(0, 8) }))
   }
 
   useEffect(() => {
@@ -55,7 +60,7 @@ export const AudioSection = () => {
     // придут сразу; если нет — список пуст/без имён → показываем кнопку.
     void collectDevices()
       .then((outs) => {
-        const named = outs.length > 0 && outs.some((d) => !d.label.startsWith('Устройство '))
+        const named = outs.length > 0 && outs.some((d) => d.named)
         setDevices(named ? outs : [])
         setNeedUnlock(!named)
       })
@@ -84,25 +89,25 @@ export const AudioSection = () => {
       <div className="s-section-head">
         <div className="s-section-title">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polyline points="22 8 22 16" /><polyline points="18 10 18 14" /><polyline points="14 4 14 20" /><polyline points="10 8 10 16" /><polyline points="6 11 6 13" /><polyline points="2 10 2 14" /></svg>{' '}
-          Аудио
+          {t('settings.nav.audio')}
         </div>
       </div>
 
       {/* Кроссфейд */}
       <div className="sc">
-        <h3>Кроссфейд</h3>
+        <h3>{t('settings.audio.crossfade')}</h3>
         <div className="sr">
           <div>
-            <div className="sl2">Кроссфейд</div>
-            <div className="ssub">плавный переход между треками</div>
+            <div className="sl2">{t('settings.audio.crossfade')}</div>
+            <div className="ssub">{t('settings.audio.crossfade.sub')}</div>
           </div>
           <Toggle checked={xfadeEnabled} onChange={setXfadeEnabled} />
         </div>
         {xfadeEnabled && (
           <div className="sr" style={{ borderBottom: 'none', paddingBottom: 0 }}>
             <div>
-              <div className="sl2">Длительность</div>
-              <div className="ssub">{xfadeDur} сек</div>
+              <div className="sl2">{t('settings.audio.duration')}</div>
+              <div className="ssub">{t('settings.audio.seconds', { n: xfadeDur })}</div>
             </div>
             <input type="range" className="srange" min={1} max={12} value={xfadeDur} onChange={(e) => setXfadeDur(Number(e.target.value))} />
           </div>
@@ -111,11 +116,11 @@ export const AudioSection = () => {
 
       {/* Нормализация */}
       <div className="sc">
-        <h3>Нормализация громкости</h3>
+        <h3>{t('settings.audio.norm')}</h3>
         <div className="sr">
           <div>
-            <div className="sl2">Нормализация</div>
-            <div className="ssub">все треки одинаковой громкости</div>
+            <div className="sl2">{t('settings.audio.norm.row')}</div>
+            <div className="ssub">{t('settings.audio.norm.sub')}</div>
           </div>
           <Toggle checked={normEnabled} onChange={setNormEnabled} />
         </div>
@@ -123,15 +128,15 @@ export const AudioSection = () => {
           <>
             <div className="sr">
               <div>
-                <div className="sl2">Целевой уровень</div>
+                <div className="sl2">{t('settings.audio.norm.target')}</div>
                 <div className="ssub">{normTargetDb} dB</div>
               </div>
               <input type="range" className="srange" min={-24} max={-6} value={normTargetDb} onChange={(e) => setNormTargetDb(Number(e.target.value))} />
             </div>
             <div className="sr" style={{ opacity: 0.7, borderBottom: 'none', paddingBottom: 0 }}>
               <div>
-                <div className="sl2">Статус</div>
-                <div className="ssub">{NORM_STATUS_LABEL[normStatus]}</div>
+                <div className="sl2">{t('settings.audio.norm.status')}</div>
+                <div className="ssub">{t(NORM_STATUS_KEY[normStatus])}</div>
               </div>
             </div>
           </>
@@ -140,23 +145,23 @@ export const AudioSection = () => {
 
       {/* Устройство вывода */}
       <div className="sc">
-        <h3>Устройство вывода</h3>
+        <h3>{t('settings.audio.output')}</h3>
         <div className="sr" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <div>
-            <div className="sl2">Устройство</div>
+            <div className="sl2">{t('settings.audio.device')}</div>
             <div className="ssub">
               {!devSupported
-                ? 'не поддерживается'
+                ? t('settings.audio.device.unsupported')
                 : needUnlock
-                  ? 'нажмите, чтобы увидеть список устройств'
+                  ? t('settings.audio.device.needUnlock')
                   : devices == null
-                    ? 'выбор аудиовыхода'
-                    : `${devices.length} ${plural(devices.length, ['устройство', 'устройства', 'устройств'])}`}
+                    ? t('settings.audio.device.pick')
+                    : deviceCountLabel(devices.length, locale)}
             </div>
           </div>
           {devSupported && needUnlock ? (
             <button className="btn btg" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => void unlockDevices()}>
-              Показать устройства
+              {t('settings.audio.device.show')}
             </button>
           ) : (
             <select
@@ -165,9 +170,9 @@ export const AudioSection = () => {
               disabled={!devSupported}
               onChange={(e) => setDeviceId(e.target.value)}
             >
-              <option value="">По умолчанию</option>
+              <option value="">{t('settings.audio.device.default')}</option>
               {(devices ?? []).map((d) => (
-                <option key={d.id} value={d.id}>{d.label}</option>
+                <option key={d.id} value={d.id}>{d.named ? d.label : t('settings.audio.device.fallback', { id: d.label })}</option>
               ))}
             </select>
           )}
@@ -185,6 +190,12 @@ const plural = (n: number, forms: [string, string, string]): string => {
   if (b === 1) return forms[0]
   return forms[2]
 }
+
+/** Счётчик устройств с учётом плюрализации языка. */
+const deviceCountLabel = (n: number, locale: string): string =>
+  locale === 'ru'
+    ? `${n} ${plural(n, ['устройство', 'устройства', 'устройств'])}`
+    : `${n} ${n === 1 ? 'device' : 'devices'}`
 
 const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
   <label className="tele-sw">

@@ -10,6 +10,7 @@ import {
 } from '@features/library'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks } from '@entities/track'
+import { useT } from '@shared/i18n'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
 import { useEqStore } from '../model/eqStore'
@@ -110,7 +111,9 @@ const KaomojiBox = () => {
   )
 }
 
-const EmptyState = () => (
+const EmptyState = () => {
+  const t = useT()
+  return (
   <div
     id="playerEmpty"
     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -118,18 +121,20 @@ const EmptyState = () => (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
       <KaomojiBox />
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Выберите трек</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{t('player.selectTrack')}</div>
         <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>
-          Выберите трек для воспроизведения
+          {t('player.selectTrackSub')}
         </div>
       </div>
     </div>
   </div>
-)
+  )
+}
 
 // ── active ───────────────────────────────────────────────────────────────
 
 const PlayerContent = () => {
+  const t = useT()
   const title = usePlayerStore((s) => s.title)
   const artist = usePlayerStore((s) => s.artist)
   const artworkRaw = usePlayerStore((s) => s.artwork)
@@ -286,12 +291,12 @@ const PlayerContent = () => {
     </div>
   )
   const favOverlayBtn = (
-    <button onClick={toggleCurFav} className={`cov-fav${isFav ? '' : ' off'}`} aria-label={isFav ? 'Убрать из «Любимое»' : 'В «Любимое»'}>
+    <button onClick={toggleCurFav} className={`cov-fav${isFav ? '' : ' off'}`} aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}>
       <HeartSvg size={18} filled={isFav} />
     </button>
   )
   const addOverlayBtn = (
-    <button className="cov-add" aria-label="Добавить" onClick={openAddPopup}>
+    <button className="cov-add" aria-label={t('player.aria.add')} onClick={openAddPopup}>
       <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
         <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
       </svg>
@@ -339,7 +344,7 @@ const PlayerContent = () => {
       id="psTitleRow"
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 0, maxWidth: '100%' }}
     >
-      <TitleCopyOnClick title={title || 'Не выбрано'} artist={artist} />
+      <TitleCopyOnClick title={title || t('player.notSelected')} artist={artist} />
     </div>
   )
   const artistNode = (
@@ -353,7 +358,7 @@ const PlayerContent = () => {
       ref={dlBtnRef}
       className="cc"
       id="dlMenuBtn"
-      aria-label="Скачать"
+      aria-label={t('player.aria.download')}
       onClick={(e) => {
         e.stopPropagation()
         setDlOpen((v) => !v)
@@ -371,7 +376,7 @@ const PlayerContent = () => {
       ref={speedBtnRef}
       className="cc"
       id="speedBtn"
-      aria-label="Скорость воспроизведения"
+      aria-label={t('player.aria.speed')}
       onClick={(e) => {
         e.stopPropagation()
         setSpeedOpen((v) => !v)
@@ -390,7 +395,7 @@ const PlayerContent = () => {
       ref={srcBtnRef}
       className={`cc${srcOpen ? ' on' : ''}`}
       id="srcSwitchBtn"
-      aria-label="Сменить площадку"
+      aria-label={t('player.aria.source')}
       onClick={(e) => {
         e.stopPropagation()
         setSrcOpen((v) => !v)
@@ -405,7 +410,7 @@ const PlayerContent = () => {
       ref={eqBtnRef}
       className={`cc${eqActive ? ' on' : ''}`}
       id="eqBtn"
-      aria-label="Эквалайзер"
+      aria-label={t('player.aria.eq')}
       onClick={(e) => {
         e.stopPropagation()
         setEqOpen((v) => !v)
@@ -424,20 +429,20 @@ const PlayerContent = () => {
     <div className="ps-ctrl" style={{ width: '100%' }}>
       <div style={{ width: 124, display: 'flex', alignItems: 'center' }}>{dlBtnNode}</div>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label="Повтор" style={{ position: 'relative' }}>
+        <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
           <RepeatSvg size={18} />
           {repeat === 2 && <RepeatOneBadge />}
         </button>
-        <button className="cc" onClick={prevTr} aria-label="Предыдущий">
+        <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
           <PrevSvg size={20} />
         </button>
-        <button className="cc-play" onClick={togglePlay} aria-label={playing ? 'Пауза' : 'Воспроизвести'}>
+        <button className="cc-play" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
           {playing ? <PauseSvg size={18} /> : <PlaySvg size={18} />}
         </button>
-        <button className="cc" onClick={nextTr} aria-label="Следующий">
+        <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
           <NextSvg size={20} />
         </button>
-        <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label="Перемешать">
+        <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
           <ShuffleSvg size={18} />
         </button>
       </div>
@@ -669,7 +674,7 @@ const PlayerContent = () => {
                     className={`cc${isFav ? '' : ' off'}`}
                     id="mainCovFav"
                     onClick={toggleCurFav}
-                    aria-label={isFav ? 'Убрать из «Любимое»' : 'В «Любимое»'}
+                    aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
                   >
                     <HeartSvg size={14} filled={isFav} />
                   </button>
@@ -677,7 +682,7 @@ const PlayerContent = () => {
                     className="cc"
                     id="mainCovAdd"
                     onClick={openAddPopup}
-                    aria-label="Добавить"
+                    aria-label={t('player.aria.add')}
                   >
                     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                       <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -711,6 +716,7 @@ const NextTrackBlock = ({
 }: {
   onContextMenu: (track: Track, x: number, y: number) => void
 }) => {
+  const t = useT()
   const queue = useQueueStore((s) => s.queue)
   const curId = useQueueStore((s) => s.curId)
   const allTracks = useLibStore((s) => s.tracks)
@@ -736,7 +742,7 @@ const NextTrackBlock = ({
       }}
     >
       <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.9 }}>
-        Далее
+        {t('player.nextUp')}
       </div>
       <div
         className="tr"
@@ -832,6 +838,7 @@ const VizBlock = () => {
 // ── progress (изолирован от PlayerContent ради перф во время игры) ────────
 
 const PsProgress = () => {
+  const t = useT()
   const position = usePlayerStore((s) => s.position)
   const duration = usePlayerStore((s) => s.duration)
   // Волновой слайдер: узор генерится на трек, рисуется на canvas по позиции.
@@ -908,7 +915,7 @@ const PsProgress = () => {
         {/* Прозрачная зона захвата (увеличенная по высоте, как было у input inset:-7px). */}
         <div
           id="prog"
-          aria-label="Перемотка"
+          aria-label={t('player.aria.seek')}
           style={{ position: 'absolute', inset: '-7px 0', cursor: 'pointer', touchAction: 'none' }}
           onPointerDown={onProgDown}
           onPointerMove={onProgMove}
@@ -927,13 +934,14 @@ const PsProgress = () => {
 // ── title с marquee + клик-копирование ──────────────────────────────────
 
 const TitleCopyOnClick = ({ title, artist }: { title: string; artist: string }) => {
+  const t = useT()
   const onClick = () => {
     if (!title) return
     const text = title + (artist ? ' — ' + artist : '')
     navigator.clipboard
       ?.writeText(text)
-      .then(() => toast('Скопировано'))
-      .catch(() => toast('Ошибка'))
+      .then(() => toast(t('player.toast.copied')))
+      .catch(() => toast(t('player.toast.copyError')))
   }
   return (
     <MarqueeTitle

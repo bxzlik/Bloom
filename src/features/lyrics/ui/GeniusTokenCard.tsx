@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import { useGeniusStore } from '../model/geniusStore'
 
 /**
@@ -9,6 +10,7 @@ import { useGeniusStore } from '../model/geniusStore'
  * `lyrics_request` как fallback-провайдер текстов (если LRCLIB не нашёл).
  */
 export const GeniusTokenCard = () => {
+  const t = useT()
   const saved = useGeniusStore((s) => s.token)
   const setToken = useGeniusStore((s) => s.setToken)
   const [value, setValue] = useState(saved)
@@ -17,7 +19,7 @@ export const GeniusTokenCard = () => {
   const save = () => {
     const v = value.trim()
     setToken(v)
-    toast(v ? 'Genius: токен сохранён' : 'Genius: токен сброшен')
+    toast(v ? t('settings.genius.toast.saved') : t('settings.genius.toast.reset'))
   }
 
   return (
@@ -42,13 +44,13 @@ export const GeniusTokenCard = () => {
         <div>
           <div style={{ fontSize: 15, fontWeight: 800 }}>Genius</div>
           <div style={{ fontSize: 11, color: 'var(--text2)' }}>
-            Тексты песен (fallback если LRCLIB не нашёл)
+            {t('settings.genius.subtitle')}
           </div>
         </div>
       </div>
 
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 10 }}>
-        Введи <b>Client Access Token</b> из личного кабинета Genius.
+        {t('settings.genius.intro.a')} <b>Client Access Token</b> {t('settings.genius.intro.b')}
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>
@@ -60,7 +62,7 @@ export const GeniusTokenCard = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter') save()
             }}
-            placeholder="Вставь Access Token…"
+            placeholder={t('settings.genius.placeholder')}
             autoComplete="off"
             spellCheck={false}
             style={{
@@ -109,7 +111,7 @@ export const GeniusTokenCard = () => {
             cursor: 'pointer',
           }}
         >
-          Сохранить
+          {t('common.save')}
         </button>
       </div>
 
@@ -125,20 +127,20 @@ export const GeniusTokenCard = () => {
             color: '#1db954',
           }}
         >
-          ✓ Genius токен сохранён
+          {t('settings.genius.saved')}
         </div>
       )}
 
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 12 }}>
         <div style={{ fontSize: 11.5, color: 'var(--text2)', marginBottom: 8 }}>
-          Как получить токен:
+          {t('settings.genius.help.title')}
         </div>
         <ol style={{ fontSize: 11, color: 'var(--muted)', paddingLeft: 18, lineHeight: 1.8, margin: 0 }}>
-          <li>Зайди на <b style={{ color: 'var(--text2)' }}>genius.com/api-clients</b></li>
-          <li>Нажми <b style={{ color: 'var(--text2)' }}>New API Client</b></li>
-          <li>Заполни название и нажми <b style={{ color: 'var(--text2)' }}>Save</b></li>
-          <li>Нажми <b style={{ color: 'var(--text2)' }}>Generate Access Token</b></li>
-          <li>Скопируй токен и вставь выше</li>
+          <li>{t('settings.genius.step1.a')} <b style={{ color: 'var(--text2)' }}>genius.com/api-clients</b></li>
+          <li>{t('settings.genius.step2.a')} <b style={{ color: 'var(--text2)' }}>New API Client</b></li>
+          <li>{t('settings.genius.step3.a')} <b style={{ color: 'var(--text2)' }}>Save</b></li>
+          <li>{t('settings.genius.step4.a')} <b style={{ color: 'var(--text2)' }}>Generate Access Token</b></li>
+          <li>{t('settings.genius.step5')}</li>
         </ol>
       </div>
     </div>

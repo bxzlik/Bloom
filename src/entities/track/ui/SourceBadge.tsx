@@ -23,6 +23,50 @@ export const YmLogo = ({ size }: { size: number }) => (
 )
 
 /**
+ * Иконка жёсткого диска — для локальных (загруженных на устройство) треков.
+ * Stroke-стиль (в отличие от бренд-лого площадок), наследует цвет через
+ * `currentColor`, как и остальные бейджи.
+ */
+export const HddLogo = ({ size }: { size: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ display: 'block' }}
+  >
+    <line x1="22" x2="2" y1="12" y2="12" />
+    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    <line x1="6" x2="6.01" y1="16" y2="16" />
+    <line x1="10" x2="10.01" y1="16" y2="16" />
+  </svg>
+)
+
+/**
+ * Иконка папки — для треков из folder_watcher (отслеживаемая папка на диске).
+ * Stroke-стиль, как `HddLogo`; цвет через `currentColor`.
+ */
+export const FolderLogo = ({ size }: { size: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ display: 'block' }}
+  >
+    <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+  </svg>
+)
+
+/**
  * Акцентный бейдж-плашка с лого площадки. Фон/цвет — акцентные, лого через
  * `currentColor`. Переиспользуется бейджем трека (`SourceBadge`) и бейджем
  * плейлиста «все треки из площадки» (сайдбар библиотеки).
@@ -82,14 +126,35 @@ export const YmBadge = ({ size = 22, cover }: { size?: number; cover?: boolean }
   </SourcePlaque>
 )
 
+/** Акцентный бейдж загруженного вручную трека — иконка жёсткого диска. */
+export const LocalBadge = ({ size = 22, cover }: { size?: number; cover?: boolean }) => (
+  <SourcePlaque size={size} cover={cover}>
+    <HddLogo size={Math.round(size * 0.62)} />
+  </SourcePlaque>
+)
+
+/** Акцентный бейдж трека из отслеживаемой папки — иконка папки. */
+export const FolderBadge = ({ size = 22, cover }: { size?: number; cover?: boolean }) => (
+  <SourcePlaque size={size} cover={cover}>
+    <FolderLogo size={Math.round(size * 0.62)} />
+  </SourcePlaque>
+)
+
+/** Трек из отслеживаемой папки (folder_watcher) — `_localPath`/`_folder`. */
+const isFolderTrack = (t: Track): boolean => !t._sc && !t._ym && Boolean(t._localPath || t._folder)
+/** Загруженный вручную в библиотеку трек — blob/IDB `url`, без папки/площадки. */
+const isLocalTrack = (t: Track): boolean => !t._sc && !t._ym && !isFolderTrack(t) && Boolean(t.url)
+
 /**
- * Бейдж источника трека (площадки) `psScBadge`. Показывается только
- * для треков площадок (SoundCloud / Яндекс); локальные/загруженные — без бейджа.
- * Цвет/фон — акцентные.
+ * Бейдж источника трека. Для треков площадок — лого SoundCloud / Яндекс;
+ * для треков из папки — иконка папки; для загруженных вручную — иконка
+ * жёсткого диска. Цвет/фон — акцентные.
  */
 export const SourceBadge = ({ track, size = 22 }: { track: Track; size?: number }) => {
   if (track._ym) return <YmBadge size={size} />
   if (track._sc) return <ScBadge size={size} />
+  if (isFolderTrack(track)) return <FolderBadge size={size} />
+  if (isLocalTrack(track)) return <LocalBadge size={size} />
   return null
 }
 
@@ -100,7 +165,15 @@ export const SourceBadge = ({ track, size = 22 }: { track: Track; size?: number 
  * Размещается внутри контейнера обложки (`position:relative`).
  */
 export const CoverSourceBadge = ({ track, size = 16 }: { track: Track; size?: number }) => {
-  const badge = track._ym ? <YmBadge size={size} cover /> : track._sc ? <ScBadge size={size} cover /> : null
+  const badge = track._ym ? (
+    <YmBadge size={size} cover />
+  ) : track._sc ? (
+    <ScBadge size={size} cover />
+  ) : isFolderTrack(track) ? (
+    <FolderBadge size={size} cover />
+  ) : isLocalTrack(track) ? (
+    <LocalBadge size={size} cover />
+  ) : null
   if (!badge) return null
   return <span className="cov-badge">{badge}</span>
 }

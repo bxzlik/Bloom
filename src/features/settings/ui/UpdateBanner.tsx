@@ -1,8 +1,11 @@
+import { useLayoutEffect, useRef } from 'react'
 // Прямые импорты сторов (не баррелы) — чтобы не создавать цикл settings↔player↔app.
 import { useQueueStore } from '@features/player/model/queueStore'
 import { useNavStore } from '@app/navigationStore'
 import { useUpdateStore } from '../model/updateStore'
 import { usePlayerViewStore } from '../model/playerViewStore'
+import { useT } from '@shared/i18n'
+import { useBannerStackStore } from '@shared/ui'
 
 /**
  * Глобальное уведомление о новой версии — небольшая карточка в правом нижнем
@@ -15,6 +18,7 @@ import { usePlayerViewStore } from '../model/playerViewStore'
  * Рендерится один раз в App. Тот же стор питает блок «О приложении» в настройках.
  */
 export const UpdateBanner = () => {
+  const t = useT()
   const phase = useUpdateStore((s) => s.phase)
   const info = useUpdateStore((s) => s.info)
   const percent = useUpdateStore((s) => s.percent)
@@ -33,10 +37,19 @@ export const UpdateBanner = () => {
 
   const downloading = phase === 'downloading'
   const available = phase === 'available' && !!info && info.latest !== dismissedVersion
+
+  // Репортим высоту в общий стек-стор, чтобы баннер скачивания встал над нами.
+  const ref = useRef<HTMLDivElement>(null)
+  const setUpdateBannerHeight = useBannerStackStore((s) => s.setUpdateBannerHeight)
+  useLayoutEffect(() => {
+    setUpdateBannerHeight(available || downloading ? ref.current?.offsetHeight ?? 0 : 0)
+  })
+
   if (!available && !downloading) return null
 
   return (
     <div
+      ref={ref}
       style={{
         position: 'fixed',
         right: 16,
@@ -56,7 +69,7 @@ export const UpdateBanner = () => {
         <img src="/logo.png" alt="" style={{ width: 30, height: 30, objectFit: 'contain', flexShrink: 0 }} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-            {downloading ? 'Загрузка обновления' : 'Доступна новая версия'}
+            {downloading ? t('update.downloading') : t('update.available')}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>
             {downloading ? `${percent}%` : `Bloom v${info?.latest}`}
@@ -90,14 +103,14 @@ export const UpdateBanner = () => {
             style={{ fontSize: 11.5, padding: '5px 12px', background: 'none', border: 'none', color: 'var(--text2)' }}
             onClick={dismiss}
           >
-            Позже
+            {t('update.later')}
           </button>
           <button
             className="btn bta"
             style={{ fontSize: 11.5, padding: '5px 14px' }}
             onClick={() => void downloadInstall()}
           >
-            Обновить
+            {t('settings.about.update')}
           </button>
         </div>
       )}

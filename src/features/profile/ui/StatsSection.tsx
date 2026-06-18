@@ -4,6 +4,7 @@ import { playTrack } from '@features/player'
 import { trackRegistry, type Track } from '@entities/track'
 import { parseDur, fmtDurLong } from '../lib/formatStats'
 import { useArtistAvatars } from '../lib/useArtistAvatars'
+import { useT, useLocale, t as tt } from '@shared/i18n'
 
 /**
  * Полная секция статистики на странице профиля. `#statsSection`
@@ -35,6 +36,8 @@ const UserIcon = ({ size = 11, style }: { size?: number; style?: React.CSSProper
 const dayKey = (d: Date) => d.toISOString().slice(0, 10)
 
 export const StatsSection = () => {
+  const t = useT()
+  const loc = useLocale()
   const tracks = useLibStore((s) => s.tracks)
   const entries = useHistoryStore((s) => s.entries)
   const log = useActivityStore((s) => s.log)
@@ -55,7 +58,7 @@ export const StatsSection = () => {
       if (!t) continue
       totalSec += parseDur(t.dur) * plays
       if (plays > 0) trackRows.push({ track: t, plays })
-      const a = t.artist || 'Неизвестный'
+      const a = t.artist || tt('common.unknownArtist')
       const cur = artistMap.get(a) || { count: 0, cover: '', bestPlays: -1 }
       cur.count += plays
       if (t.cover && plays > cur.bestPlays) {
@@ -111,10 +114,10 @@ export const StatsSection = () => {
       d.setDate(d.getDate() - i)
       const key = dayKey(d)
       let label: string
-      if (period === 7) label = i === 0 ? 'Сег.' : d.toLocaleDateString('ru', { weekday: 'short' })
+      if (period === 7) label = i === 0 ? t('stats.today') : d.toLocaleDateString(loc, { weekday: 'short' })
       else {
         const showLabel = i === 0 || i === 28 || i === 21 || i === 14 || i === 7
-        label = i === 0 ? 'Сег.' : showLabel ? d.toLocaleDateString('ru', { day: 'numeric', month: 'numeric' }) : ''
+        label = i === 0 ? t('stats.today') : showLabel ? d.toLocaleDateString(loc, { day: 'numeric', month: 'numeric' }) : ''
       }
       out.push({ key, label, count: log[key] || 0 })
     }
@@ -147,7 +150,7 @@ export const StatsSection = () => {
         }
         const title = future
           ? ''
-          : `${dt.toLocaleDateString('ru', { day: 'numeric', month: 'short', year: 'numeric' })} · ${cnt} ${cnt === 1 ? 'трек' : 'треков'}`
+          : `${dt.toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' })} · ${cnt} ${loc === 'ru' ? (cnt === 1 ? 'трек' : 'треков') : (cnt === 1 ? 'track' : 'tracks')}`
         cells.push({ lvl, today: key === todayKey, future, title })
       }
       cols.push({ cells })
@@ -162,26 +165,26 @@ export const StatsSection = () => {
         <div className="stat-hero-card">
           <div className="shc-icon"><NoteIcon size={15} /></div>
           <div className="shc-val">{tracks.length}</div>
-          <div className="shc-lbl">Треков</div>
+          <div className="shc-lbl">{t('stats.tracks')}</div>
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
           </div>
           <div className="shc-val">{stats.totalPlays}</div>
-          <div className="shc-lbl">Прослушано</div>
+          <div className="shc-lbl">{t('stats.plays')}</div>
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
           </div>
           <div className="shc-val">{fmtDurLong(stats.totalSec)}</div>
-          <div className="shc-lbl">Время прослушивания</div>
+          <div className="shc-lbl">{t('stats.time')}</div>
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon"><UserIcon size={15} /></div>
           <div className="shc-val" style={{ fontSize: 13, letterSpacing: 0 }}>{stats.favArtist || '—'}</div>
-          <div className="shc-lbl">Любимый исполнитель</div>
+          <div className="shc-lbl">{t('stats.favArtist')}</div>
         </div>
         <div className="stat-hero-card" style={{ gridColumn: '1/-1' }}>
           <div className="shc-icon">
@@ -190,10 +193,10 @@ export const StatsSection = () => {
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <div className="shc-val">{stats.recordDay}</div>
             <div style={{ fontSize: 12, color: 'var(--text2)' }}>
-              {stats.recordDay > 0 ? `треков за день · ${stats.recordDateFmt}` : 'нет данных'}
+              {stats.recordDay > 0 ? t('stats.recordTracksDay', { date: stats.recordDateFmt }) : t('stats.noData')}
             </div>
           </div>
-          <div className="shc-lbl">Рекорд дня</div>
+          <div className="shc-lbl">{t('stats.recordDay')}</div>
         </div>
       </div>
 
@@ -203,11 +206,11 @@ export const StatsSection = () => {
         <div className="stats-card">
           <div className="stats-card-title">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-            Топ треков
+            {t('stats.topTracks')}
           </div>
           <div id="statsTopTracks">
             {stats.topTracks.length === 0 ? (
-              <div style={{ fontSize: 11, color: 'var(--muted)', padding: '8px 0' }}>Пока нет данных</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', padding: '8px 0' }}>{t('stats.noDataYet')}</div>
             ) : (
               stats.topTracks.map(({ track: t, plays }, i) => (
                 <div className="top-track-item" key={t.id} onClick={() => playTop(t.id)} style={{ cursor: 'pointer' }}>
@@ -219,7 +222,7 @@ export const StatsSection = () => {
                     <div className="top-track-name">{t.name}</div>
                     <div className="top-track-artist">{t.artist || ''}</div>
                   </div>
-                  <div className="top-track-plays">{plays} раз</div>
+                  <div className="top-track-plays">{tt('stats.playsCount', { n: plays })}</div>
                 </div>
               ))
             )}
@@ -232,7 +235,7 @@ export const StatsSection = () => {
             <div className="stats-card-title has-actions">
               <div className="sct-left">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-                Активность
+                {t('stats.activity')}
               </div>
               <div className="act-period-switcher">
                 {([7, 30, 0] as const).map((pp) => (
@@ -241,7 +244,7 @@ export const StatsSection = () => {
                     className={`act-period-btn${period === pp ? ' active' : ''}`}
                     onClick={() => setPeriod(pp)}
                   >
-                    {pp === 7 ? '7д' : pp === 30 ? '30д' : 'Всё'}
+                    {pp === 7 ? t('stats.7d') : pp === 30 ? t('stats.30d') : t('stats.all')}
                   </button>
                 ))}
               </div>
@@ -262,9 +265,9 @@ export const StatsSection = () => {
                     ))}
                   </div>
                   <div className="act-heatmap-legend">
-                    <span>меньше</span>
+                    <span>{t('stats.less')}</span>
                     <div className="ahm-cell ahm-l0" /><div className="ahm-cell ahm-l1" /><div className="ahm-cell ahm-l2" /><div className="ahm-cell ahm-l3" /><div className="ahm-cell ahm-l4" />
-                    <span>больше</span>
+                    <span>{t('stats.more')}</span>
                   </div>
                 </>
               ) : (
@@ -283,11 +286,11 @@ export const StatsSection = () => {
 
           <div className="stats-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="stats-card-title">
-              <UserIcon size={12} /> Топ исполнителей
+              <UserIcon size={12} /> {t('stats.topArtists')}
             </div>
             <div id="statsTopArtists" style={{ flex: 1, overflowY: 'auto' }}>
               {stats.topArtists.length === 0 ? (
-                <div style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 0' }}>Пока нет данных</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 0' }}>{t('stats.noDataYet')}</div>
               ) : (
                 stats.topArtists.map(([a, v], i) => {
                   const ava = artistAvas[a.toLowerCase()] || v.cover
@@ -298,7 +301,7 @@ export const StatsSection = () => {
                       {ava ? <img src={ava} alt="" /> : <UserIcon style={{ opacity: 0.3 }} />}
                     </div>
                     <div className="top-artist-name">{a}</div>
-                    <div className="top-artist-count">{v.count} прослуш.</div>
+                    <div className="top-artist-count">{t('lib.dups.plays', { n: v.count })}</div>
                   </div>
                   )
                 })

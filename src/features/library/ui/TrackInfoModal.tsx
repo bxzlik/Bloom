@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
 import { useThemeStore } from '@features/settings'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { useT } from '@shared/i18n'
 
 /**
  * Модалка «Инфо о треке» — `#trackInfoOverlay` / `openTrackInfo`
@@ -25,6 +26,7 @@ export const TrackInfoModal = ({
   track: Track | null
   onClose: () => void
 }) => {
+  const tr = useT()
   const blockColor = useThemeStore((s) => s.blockColor)
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
@@ -96,7 +98,7 @@ export const TrackInfoModal = ({
       >
         <div className="ti-modal" id="tiModal">
           <div className="ti-head">
-            <button className="ti-close" onClick={onClose} aria-label="Закрыть">
+            <button className="ti-close" onClick={onClose} aria-label={tr('common.close')}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -155,41 +157,41 @@ export const TrackInfoModal = ({
               <div className="ti-grid" id="tiGrid">
                 {t?.album && (
                   <div className="ti-cell full">
-                    <div className="ti-lbl">Альбом</div>
+                    <div className="ti-lbl">{tr('lib.ti.album')}</div>
                     <div className="ti-val muted">{t.album}</div>
                   </div>
                 )}
                 {hasYear && hasDur ? (
                   <>
                     <div className="ti-cell">
-                      <div className="ti-lbl">Год</div>
+                      <div className="ti-lbl">{tr('lib.ti.year')}</div>
                       <div className="ti-val muted">{t!.year}</div>
                     </div>
                     <div className="ti-cell">
-                      <div className="ti-lbl">Длительность</div>
+                      <div className="ti-lbl">{tr('lib.ti.duration')}</div>
                       <div className="ti-val muted">{t!.dur}</div>
                     </div>
                   </>
                 ) : hasYear ? (
                   <div className="ti-cell full">
-                    <div className="ti-lbl">Год</div>
+                    <div className="ti-lbl">{tr('lib.ti.year')}</div>
                     <div className="ti-val muted">{t!.year}</div>
                   </div>
                 ) : hasDur ? (
                   <div className="ti-cell full">
-                    <div className="ti-lbl">Длительность</div>
+                    <div className="ti-lbl">{tr('lib.ti.duration')}</div>
                     <div className="ti-val muted">{t!.dur}</div>
                   </div>
                 ) : null}
                 {t?.publisher && (
                   <div className="ti-cell full">
-                    <div className="ti-lbl">Паблишер</div>
+                    <div className="ti-lbl">{tr('lib.ti.publisher')}</div>
                     <div className="ti-val muted">{t.publisher}</div>
                   </div>
                 )}
                 {genres.length > 0 && (
                   <div className="ti-cell full">
-                    <div className="ti-lbl">Жанры</div>
+                    <div className="ti-lbl">{tr('lib.ti.genres')}</div>
                     <div className="ti-genres">
                       {genres.map((g, i) => (
                         <span className="ti-genre-tag" key={`${g}-${i}`}>{g}</span>
@@ -201,7 +203,7 @@ export const TrackInfoModal = ({
             )}
             {t?.description && (
               <div className="ti-desc-cell" id="tiDescRow">
-                <div className="ti-lbl">Описание</div>
+                <div className="ti-lbl">{tr('lib.ti.description')}</div>
                 <div
                   className="ti-desc"
                   id="tiDesc"

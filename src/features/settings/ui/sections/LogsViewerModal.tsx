@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { toast } from '@shared/ui'
+import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 
 /**
@@ -20,6 +21,7 @@ export const LogsViewerModal = ({
   content: string | null
   onClose: () => void
 }) => {
+  const t = useT()
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
   const [text, setText] = useState('')
@@ -45,9 +47,9 @@ export const LogsViewerModal = ({
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(text)
-      toast('Логи скопированы')
+      toast(t('logs.copied'))
     } catch {
-      toast('Не удалось скопировать')
+      toast(t('logs.copyFail'))
     }
   }
 
@@ -74,21 +76,21 @@ export const LogsViewerModal = ({
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Логи</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{t('logs.title')}</span>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
               className="btn btg"
               style={{ fontSize: 11, padding: '4px 10px' }}
               onClick={() => void onCopy()}
             >
-              Копировать
+              {t('logs.copy')}
             </button>
             <button
               className="btn btg"
               style={{ fontSize: 11, padding: '4px 10px' }}
               onClick={onClose}
             >
-              Закрыть
+              {t('common.close')}
             </button>
           </div>
         </div>

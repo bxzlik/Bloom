@@ -8,6 +8,7 @@ import {
 import { createPortal } from 'react-dom'
 import { usePlaylistStore } from '@features/library/model/playlistStore'
 import { mpAddToLib, mpAddToPlaylist, mpOpenNewPlaylist } from '@features/player'
+import { useT } from '@shared/i18n'
 
 export interface AddPopupProps {
   open: boolean
@@ -53,6 +54,7 @@ export const AddPopup = ({
   onPickPlaylist,
   onAddToLib,
 }: AddPopupProps) => {
+  const t = useT()
   const popupRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
   const playlists = usePlaylistStore((s) => s.playlists)
@@ -169,7 +171,7 @@ export const AddPopup = ({
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
             </span>{' '}
-            В библиотеку
+            {t('player.add.toLib')}
           </div>
           {playlists.length > 0 && <div className="cx-sep" />}
         </>
@@ -188,7 +190,7 @@ export const AddPopup = ({
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </span>{' '}
-          Создать плейлист
+          {t('player.add.createPlaylist')}
         </div>
       ) : (
         <>
@@ -225,7 +227,7 @@ export const AddPopup = ({
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </span>{' '}
-            Новый плейлист
+            {t('player.add.newPlaylist')}
           </div>
         </>
       )}

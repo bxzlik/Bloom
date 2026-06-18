@@ -4,6 +4,7 @@ import waveApi, { getWaveSource, setWaveSource } from '@/wave'
 import { useYmAuthStore } from '@features/yandex'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { ScLogo, YmLogo } from '@entities/track'
+import { useT } from '@shared/i18n'
 import { DislikesModal } from './DislikesModal'
 
 /**
@@ -17,6 +18,7 @@ import { DislikesModal } from './DislikesModal'
  * Отложено (зависит от немигрированных фич): аватары сидов.
  */
 export const WaveCard = () => {
+  const t = useT()
   const [loading, setLoading] = useState(false)
   const [dislikesOpen, setDislikesOpen] = useState(false)
   // Координаты открытого попапа (fixed) или null = закрыт. Попап рендерится
@@ -96,14 +98,14 @@ export const WaveCard = () => {
           className={`hwb-play${loading ? ' is-loading' : ''}`}
           id="homeWavePlayBtn"
           onClick={start}
-          aria-label="Запустить «Мою волну»"
+          aria-label={t('wave.start')}
         >
           <svg width={56} height={56} viewBox="0 0 24 24" fill="currentColor">
             <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
           </svg>
           <div className="hwb-spinner" aria-hidden="true" />
         </button>
-        <div className="hwb-title">Моя волна</div>
+        <div className="hwb-title">{t('wave.title')}</div>
         <button
           ref={tuneBtnRef}
           className="hwb-tune"
@@ -111,7 +113,7 @@ export const WaveCard = () => {
             e.stopPropagation()
             toggleMenu()
           }}
-          aria-label="Настройки волны"
+          aria-label={t('wave.settings')}
           aria-haspopup="menu"
           aria-expanded={menuPos !== null}
         >
@@ -164,12 +166,12 @@ export const WaveCard = () => {
                       padding: '0 2px',
                     }}
                   >
-                    Площадка
+                    {t('wave.sourceLabel')}
                   </div>
                   {/* Простой выбор: сегменты, а не вложенный дропдаун. */}
                   <div
                     role="radiogroup"
-                    aria-label="Выбор площадки"
+                    aria-label={t('wave.pickSource')}
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '1fr 1fr',
@@ -208,7 +210,7 @@ export const WaveCard = () => {
                         }}
                       >
                         {s === 'sc' ? <ScLogo size={15} /> : <YmLogo size={14} />}
-                        <span>{s === 'sc' ? 'SoundCloud' : 'Яндекс'}</span>
+                        <span>{s === 'sc' ? 'SoundCloud' : t('settings.nav.yandex')}</span>
                       </button>
                     ))}
                   </div>
@@ -243,7 +245,7 @@ export const WaveCard = () => {
                   <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z" />
                   <path d="M22 2h-4v13" />
                 </svg>
-                <span>Дизлайки</span>
+                <span>{t('wave.dislikes')}</span>
               </button>
             </div>
           </>,

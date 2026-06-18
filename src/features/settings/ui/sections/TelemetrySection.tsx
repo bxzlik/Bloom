@@ -8,11 +8,21 @@ import {
 } from '@features/lyrics'
 import {
   TTL_OPTIONS,
-  ttlLabel,
   useTelemetryStore,
   type TtlPolicy,
 } from '../../model/telemetryStore'
 import { useSettingsStore } from '../../model/settingsStore'
+import { useT, useLocale, type TranslationKey } from '@shared/i18n'
+
+/** Метки TTL-политик — переводимые (метки в сторе не используются для отображения). */
+const TTL_KEY: Record<TtlPolicy, TranslationKey> = {
+  never: 'settings.storage.ttl.never',
+  restart: 'settings.storage.ttl.restart',
+  '24h': 'settings.storage.ttl.24h',
+  '3d': 'settings.storage.ttl.3d',
+  '1w': 'settings.storage.ttl.1w',
+  '1m': 'settings.storage.ttl.1m',
+}
 
 /** Человекочитаемый размер. */
 const fmtBytes = (b: number): string => {
@@ -42,6 +52,8 @@ const ru = (n: number, forms: [string, string, string]): string => {
  * корзина для ручной очистки. «Очистить всё» вайпит все кеши.
  */
 export const TelemetrySection = () => {
+  const t = useT()
+  const locale = useLocale()
   const [lyrics, setLyrics] = useState<LyricsCacheStats>({ count: 0, bytes: 0 })
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null)
   const [ttlOpen, setTtlOpen] = useState(false)
@@ -85,7 +97,7 @@ export const TelemetrySection = () => {
     const secs = TTL_OPTIONS.find((o) => o.id === policy)?.seconds ?? 0
     if (secs > 0) {
       void purgeLyricsCache(secs).then((n) => {
-        if (n > 0) toast(`Удалено устаревших: ${n}`)
+        if (n > 0) toast(t('settings.storage.toast.staleRemoved', { n }))
         refresh()
       })
     }
@@ -93,17 +105,17 @@ export const TelemetrySection = () => {
 
   const clearLyrics = () => {
     if (lyrics.count === 0) return
-    if (!confirm('Очистить кэш текстов песен?\nТексты будут загружены заново при воспроизведении.')) return
+    if (!confirm(t('settings.storage.confirm.clearLyrics'))) return
     void clearLyricsCache().then(() => {
-      toast('Кэш текстов очищен')
+      toast(t('settings.storage.toast.lyricsCleared'))
       refresh()
     })
   }
 
   const clearAll = () => {
-    if (!confirm('Очистить все данные приложения?\nКеши будут удалены, треки и плейлисты не затрагиваются.')) return
+    if (!confirm(t('settings.storage.confirm.clearAll'))) return
     void clearLyricsCache().then(() => {
-      toast('Данные очищены')
+      toast(t('settings.storage.toast.dataCleared'))
       refresh()
     })
   }
@@ -116,30 +128,30 @@ export const TelemetrySection = () => {
       <div className="s-section-head">
         <div className="s-section-title">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg>{' '}
-          Хранилище
+          {t('settings.nav.storage')}
         </div>
         <button className="btn btg" style={{ fontSize: 10, padding: '3px 9px', display: 'flex', alignItems: 'center', gap: 5 }} onClick={refresh}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" /></svg>{' '}
-          Обновить
+          {t('settings.storage.refresh')}
         </button>
       </div>
 
       {/* ХРАНИЛИЩЕ — общий объём */}
       <div className="tele-stat-card">
-        <div className="tele-stat-label">Занято места</div>
+        <div className="tele-stat-label">{t('settings.storage.used')}</div>
         <div className="tele-stat-val">{usedStr}</div>
         <div className="tele-storage-bar"><span style={{ width: `${pct}%` }} /></div>
         {storage && storage.quota > 0 && (
-          <div className="tele-storage-sub">из ~{fmtBytes(storage.quota)} ({pct < 1 ? '<1' : Math.round(pct)}%)</div>
+          <div className="tele-storage-sub">{t('settings.storage.of', { q: fmtBytes(storage.quota), p: pct < 1 ? '<1' : Math.round(pct) })}</div>
         )}
       </div>
 
       {/* УПРАВЛЕНИЕ ДАННЫМИ ПРИЛОЖЕНИЯ */}
       <div className="tele-data-head">
-        <div className="tele-data-head-title">Управление данными приложения</div>
+        <div className="tele-data-head-title">{t('settings.storage.manage')}</div>
         <button className="tele-clear-all" onClick={clearAll}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /></svg>
-          Очистить всё
+          {t('settings.storage.clearAll')}
         </button>
       </div>
 
@@ -149,9 +161,11 @@ export const TelemetrySection = () => {
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
         </div>
         <div className="tele-data-info">
-          <span className="tele-data-name">Тексты</span>
+          <span className="tele-data-name">{t('settings.storage.lyrics')}</span>
           <span className="tele-data-meta">
-            {lyrics.count} {ru(lyrics.count, ['элемент', 'элемента', 'элементов'])}
+            {locale === 'ru'
+              ? `${lyrics.count} ${ru(lyrics.count, ['элемент', 'элемента', 'элементов'])}`
+              : `${lyrics.count} ${lyrics.count === 1 ? 'item' : 'items'}`}
             {lyrics.bytes > 0 ? ` • ${fmtBytes(lyrics.bytes)}` : ''}
           </span>
         </div>
@@ -169,7 +183,7 @@ export const TelemetrySection = () => {
 
         <div className="tele-ttl" ref={ttlRef} style={diskCache ? undefined : { opacity: 0.4, pointerEvents: 'none' }}>
           <button className="tele-ttl-btn" onClick={() => setTtlOpen((v) => !v)}>
-            {ttlLabel(ttl)}
+            {t(TTL_KEY[ttl])}
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
           </button>
           {ttlOpen && (
@@ -180,7 +194,7 @@ export const TelemetrySection = () => {
                   className={`tele-ttl-opt${o.id === ttl ? ' active' : ''}`}
                   onClick={() => pickTtl(o.id)}
                 >
-                  {o.label}
+                  {t(TTL_KEY[o.id])}
                 </button>
               ))}
             </div>

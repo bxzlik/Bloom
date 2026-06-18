@@ -1,6 +1,7 @@
 // Публичное API модуля «Волна». Экспонируется в window для onclick-обработчиков.
 
 import { host } from "./host";
+import { t as i18nT } from "@shared/i18n";
 import * as session from "./session";
 import { startWave, maybeRefill, WAVE_SOURCE_TYPE, waveLabel, prefetchUpcoming } from "./engine";
 import { pickPersonalSeeds, pickTrackSeeds, pickQueueSeeds } from "./seeds";
@@ -30,7 +31,7 @@ async function waveStartPersonal(): Promise<boolean> {
   resetWaveSourceCache();
   const seeds = pickPersonalSeeds();
   if (!seeds.length) {
-    host.toast("Не хватает данных для «Моей волны» — послушай немного музыки", "warn");
+    host.toast(i18nT("wave.toast.notEnough"), "warn");
     return false;
   }
   const ok = await startWave("personal", seeds);
@@ -41,10 +42,10 @@ async function waveStartPersonal(): Promise<boolean> {
 async function waveStartByTrack(trackId: string): Promise<boolean> {
   resetWaveSourceCache();
   const seeds = pickTrackSeeds(trackId);
-  if (!seeds.length) { host.toast("Не нашёл трек для волны", "error"); return false; }
+  if (!seeds.length) { host.toast(i18nT("wave.toast.noSeed"), "error"); return false; }
   const t = host.trackById(trackId);
   if (!t?.scId && !t?.scTrackId) {
-    host.toast("Волна работает только для треков из SoundCloud", "warn");
+    host.toast(i18nT("wave.toast.scOnly"), "warn");
     return false;
   }
   const ok = await startWave("track", seeds);
@@ -56,10 +57,10 @@ async function waveStartByTrack(trackId: string): Promise<boolean> {
 async function waveStartByQueue(trackIds?: string[]): Promise<boolean> {
   resetWaveSourceCache();
   const src = trackIds && trackIds.length ? trackIds : host.queue;
-  if (!src.length) { host.toast("Очередь пуста", "warn"); return false; }
+  if (!src.length) { host.toast(i18nT("wave.toast.queueEmpty"), "warn"); return false; }
   const seeds = pickQueueSeeds(src);
   if (!seeds.length) {
-    host.toast("В очереди нет треков SoundCloud для подбора похожих", "warn");
+    host.toast(i18nT("wave.toast.noScInQueue"), "warn");
     return false;
   }
   const ok = await startWave("queue", seeds);
@@ -68,10 +69,10 @@ async function waveStartByQueue(trackIds?: string[]): Promise<boolean> {
 }
 
 function waveStop(): void {
-  if (ymWave.isRunning()) { ymWave.end(); host.toast("Волна остановлена"); return; }
+  if (ymWave.isRunning()) { ymWave.end(); host.toast(i18nT("wave.toast.stopped")); return; }
   if (!session.isActive()) return;
   session.endSession();
-  host.toast("Волна остановлена");
+  host.toast(i18nT("wave.toast.stopped"));
 }
 
 // Тихое завершение сессии — без toast'а. Используется, когда пользователь не явно «остановил волну»,

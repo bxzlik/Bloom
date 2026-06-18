@@ -5,6 +5,7 @@ import { useProfileStore } from '@features/profile'
 import { makeDiscSvg } from '@features/profile'
 import { compressCover } from '@features/library'
 import { useOnboardingStore } from '../model/onboardingStore'
+import { useT } from '@shared/i18n'
 
 /**
  * Онбординг первого запуска `#onboarding`. Шаг 1 — карточка профиля (обложка-баннер + аватар +
@@ -21,6 +22,7 @@ import { useOnboardingStore } from '../model/onboardingStore'
 const MINI = THEME_PRESETS.slice(0, 6)
 
 export const Onboarding = () => {
+  const t = useT()
   const done = useOnboardingStore((s) => s.done)
   const finish = useOnboardingStore((s) => s.finish)
   const applyTheme = useThemeStore((s) => s.applyTheme)
@@ -56,7 +58,7 @@ export const Onboarding = () => {
   }
 
   const onFinish = () => {
-    const nm = name.trim() || 'Пользователь'
+    const nm = name.trim() || t('common.defaultUser')
     applyTheme(theme)
 
     const patch: Parameters<typeof setProfile>[0] = { name: nm }
@@ -77,7 +79,7 @@ export const Onboarding = () => {
     }, 1800)
   }
 
-  const welcomeName = name.trim() || 'Пользователь'
+  const welcomeName = name.trim() || t('common.defaultUser')
 
   return createPortal(
     <div
@@ -111,7 +113,7 @@ export const Onboarding = () => {
           <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: -1, marginBottom: 4, color: 'var(--text, #fff)' }}>
             Bloom
           </div>
-          <div style={{ fontSize: 12, color: 'var(--muted, #555)', marginBottom: 20 }}>твой личный плеер</div>
+          <div style={{ fontSize: 12, color: 'var(--muted, #555)', marginBottom: 20 }}>{t('onb.tagline')}</div>
 
           {/* Карточка профиля */}
           <div
@@ -170,7 +172,7 @@ export const Onboarding = () => {
                   <circle cx="8.5" cy="8.5" r="1.5" />
                   <polyline points="21 15 16 10 5 21" />
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 600 }}>Добавить обложку профиля</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>{t('onb.addCover')}</span>
               </div>
               <div
                 id="obCoverOverlay"
@@ -198,7 +200,7 @@ export const Onboarding = () => {
                     <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
                     <circle cx="12" cy="13" r="4" />
                   </svg>
-                  Сменить
+                  {t('common.change')}
                 </button>
                 <button
                   onClick={(e) => {
@@ -212,7 +214,7 @@ export const Onboarding = () => {
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
-                  Убрать
+                  {t('common.remove')}
                 </button>
               </div>
               <input
@@ -343,7 +345,7 @@ export const Onboarding = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onFinish()
                 }}
-                placeholder="Введи никнейм..."
+                placeholder={t('profile.nickPlaceholder')}
                 maxLength={32}
                 style={{
                   background: 'var(--hover, #222)',
@@ -382,7 +384,7 @@ export const Onboarding = () => {
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41" />
                 </svg>
-                Тема оформления
+                {t('onb.theme')}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 7 }}>
                 {MINI.map((t) => (
@@ -429,7 +431,7 @@ export const Onboarding = () => {
               justifyContent: 'center',
             }}
           >
-            Начать
+            {t('onb.start')}
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
@@ -451,9 +453,9 @@ export const Onboarding = () => {
               <span dangerouslySetInnerHTML={{ __html: makeDiscSvg(0, null, 'obWelcomeDisc') }} />
             )}
           </div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text, #fff)' }}>Привет, {welcomeName}!</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text, #fff)' }}>{t('onb.welcome', { name: welcomeName })}</div>
           <div style={{ fontSize: 13, color: 'var(--text2, #999)', display: 'flex', alignItems: 'center', gap: 5 }}>
-            Добро пожаловать в Bloom
+            {t('onb.welcomeSub')}
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M9 18V5l12-2v13" />
               <circle cx="6" cy="18" r="3" />

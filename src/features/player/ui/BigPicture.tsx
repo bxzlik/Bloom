@@ -37,6 +37,7 @@ import { regenWave, hasWaveData, drawWaveTo } from '../lib/waveSlider'
 import { MarqueeTitle } from './MarqueeTitle'
 import { QueueBlock } from './QueueBlock'
 import { AddPopup } from './AddPopup'
+import { useT } from '@shared/i18n'
 
 /**
  * Полноэкранный режим обложки (#bigPicOverlay) —
@@ -83,6 +84,7 @@ export const BigPicture = () => {
 // ── Внутренности (монтируются только когда открыто — replay bpIn + scoped effects) ──
 
 const BigPicInner = () => {
+  const t = useT()
   const panel = useBigPicStore((s) => s.panel)
   const fontPanelOpen = useBigPicStore((s) => s.fontPanelOpen)
   const toggleQueue = useBigPicStore((s) => s.toggleQueue)
@@ -118,7 +120,7 @@ const BigPicInner = () => {
           className={`bp-top-btn${panel === 'queue' ? ' bp-lyr-active' : ''}`}
           id="bpQueueBtn"
           onClick={toggleQueue}
-          aria-label="Очередь"
+          aria-label={t('player.aria.queue')}
         >
           <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.9} viewBox="0 0 24 24" strokeLinecap="round">
             <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="15" y2="18" /><circle cx="20" cy="18" r="2" />
@@ -128,19 +130,19 @@ const BigPicInner = () => {
           className={`bp-top-btn${panel === 'lyrics' ? ' bp-lyr-active' : ''}`}
           id="bpLyricsBtn"
           onClick={toggleLyrics}
-          aria-label="Текст песни"
+          aria-label={t('player.lyrics')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="11" y2="18" />
           </svg>
         </button>
-        <button className="bp-top-btn" id="bpFontBtn" onClick={toggleFontPanel} aria-label="Настройки текста">
+        <button className="bp-top-btn" id="bpFontBtn" onClick={toggleFontPanel} aria-label={t('player.aria.textSettings')}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
         </button>
-        <button className="bp-top-btn" onClick={closeBig} aria-label="Закрыть">
+        <button className="bp-top-btn" onClick={closeBig} aria-label={t('player.aria.close')}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -287,6 +289,7 @@ const BpInfo = () => {
 // ── Прогресс (волновой слайдер + перемотка pointer) ─────────────────────────
 
 const BpProgress = () => {
+  const t = useT()
   const position = usePlayerStore((s) => s.position)
   const duration = usePlayerStore((s) => s.duration)
   const sliderType = usePlayerViewStore((s) => s.sliderType)
@@ -343,7 +346,7 @@ const BpProgress = () => {
         <div className="bp-bar-thumb" id="bpThumb" style={{ left: `${pct}%`, transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} />
         <div
           id="bpSeek"
-          aria-label="Перемотка"
+          aria-label={t('player.aria.seek')}
           style={{ position: 'absolute', inset: '-8px 0', cursor: 'pointer', touchAction: 'none' }}
           onPointerDown={onDown}
           onPointerMove={onMove}
@@ -362,6 +365,7 @@ const BpProgress = () => {
 // ── Транспорт (fav/repeat/prev/play/next/shuffle/add) ───────────────────────
 
 const BpControls = () => {
+  const t = useT()
   const playing = usePlayerStore((s) => s.playing)
   const shuffle = usePlayerStore((s) => s.shuffle)
   const repeat = usePlayerStore((s) => s.repeat)
@@ -389,34 +393,34 @@ const BpControls = () => {
 
   return (
     <div className="bp-ctrl">
-      <button className={`cc${isFav ? '' : ' off'}`} id="bpFavBtn" onClick={toggleCurFav} aria-label={isFav ? 'Убрать из «Любимое»' : 'В «Любимое»'}>
+      <button className={`cc${isFav ? '' : ' off'}`} id="bpFavBtn" onClick={toggleCurFav} aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
         </svg>
       </button>
-      <button className={`cc${repeat > 0 ? ' on' : ''}`} id="bpRepBtn" onClick={cycleRepeatMain} aria-label="Повтор">
+      <button className={`cc${repeat > 0 ? ' on' : ''}`} id="bpRepBtn" onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')}>
         <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
           <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
         </svg>
       </button>
-      <button className="cc" onClick={prevTr} aria-label="Предыдущий">
+      <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
         <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
           <polygon points="19 20 9 12 19 4 19 20" /><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth={2} />
         </svg>
       </button>
-      <button className="cc-play" id="bpPlayBtn" onClick={togglePlay} aria-label={playing ? 'Пауза' : 'Воспроизвести'}>
+      <button className="cc-play" id="bpPlayBtn" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
         {playing ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
         ) : (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
         )}
       </button>
-      <button className="cc" onClick={nextTr} aria-label="Следующий">
+      <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
         <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
           <polygon points="5 4 15 12 5 20 5 4" /><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth={2} />
         </svg>
       </button>
-      <button className={`cc${shuffle ? ' on' : ''}`} id="bpShufBtn" onClick={toggleShuffleMain} aria-label="Перемешать">
+      <button className={`cc${shuffle ? ' on' : ''}`} id="bpShufBtn" onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
         <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
           <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" strokeLinecap="round" />
           <path d="m18 2 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
@@ -425,7 +429,7 @@ const BpControls = () => {
           <path d="m18 14 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      <button className="cc" id="bpAddBtn" onClick={openAdd} aria-label="Добавить">
+      <button className="cc" id="bpAddBtn" onClick={openAdd} aria-label={t('player.aria.add')}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>

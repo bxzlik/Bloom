@@ -1,6 +1,7 @@
 import type { Track } from '@entities/track'
 import type { Playlist as PlaylistEntity } from '@entities/playlist'
 import { useLibStore, usePlaylistStore } from '@features/library'
+import { t as i18nT } from '@shared/i18n'
 import type { MusicProvider, SearchResults } from '../model/types'
 
 /** Подстрока в name/artist/album трека (lowercase-сравнение). */
@@ -22,7 +23,7 @@ const trackMatches = (t: Track, q: string): boolean => {
  */
 export const localProvider: MusicProvider = {
   id: 'local',
-  label: 'Моя библиотека',
+  label: i18nT('lib.myLibrary'),
 
   async search(query): Promise<Partial<SearchResults>> {
     const q = query.trim().toLowerCase()
@@ -47,7 +48,7 @@ export const localProvider: MusicProvider = {
   /** Локальный плейлист открывается в том же DetailView, что и сетевые. */
   async getPlaylist(id): Promise<{ playlist: PlaylistEntity; tracks: Track[] }> {
     const pl = usePlaylistStore.getState().playlists.find((p) => p.id === id)
-    if (!pl) throw new Error('Плейлист не найден')
+    if (!pl) throw new Error(i18nT('search.err.playlistNotFound'))
     const byId = new Map(useLibStore.getState().tracks.map((t) => [t.id, t]))
     const tracks = pl.trs.map((tid) => byId.get(tid)).filter((t): t is Track => !!t)
     const playlist: PlaylistEntity = {

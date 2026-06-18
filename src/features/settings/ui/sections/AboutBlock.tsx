@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useUpdateStore } from '../../model/updateStore'
+import { useT } from '@shared/i18n'
 
 /**
  * «О приложении» + проверка обновлений (в самом низу секции «Система»).
@@ -13,6 +14,7 @@ import { useUpdateStore } from '../../model/updateStore'
  */
 
 export const AboutBlock = () => {
+  const t = useT()
   const version = useUpdateStore((s) => s.version)
   const phase = useUpdateStore((s) => s.phase)
   const info = useUpdateStore((s) => s.info)
@@ -28,20 +30,20 @@ export const AboutBlock = () => {
 
   const statusText =
     phase === 'available'
-      ? `Доступна версия ${info?.latest}`
+      ? t('settings.about.available', { v: info?.latest ?? '' })
       : phase === 'uptodate'
-        ? 'Установлена последняя версия'
+        ? t('settings.about.uptodate')
         : phase === 'downloading'
-          ? `Загрузка обновления… ${percent}%`
+          ? t('settings.about.downloading', { p: percent })
           : phase === 'error'
-            ? error || 'Не удалось проверить обновления'
+            ? error || t('settings.about.error')
             : phase === 'checking'
-              ? 'Проверка обновлений…'
+              ? t('settings.about.checking')
               : ''
 
   return (
     <>
-      <div className="s-cat-label">О ПРИЛОЖЕНИИ</div>
+      <div className="s-cat-label">{t('settings.about.title')}</div>
 
       <div className="sc about-hero-card">
         <div className="about-logo-row" style={{ marginBottom: 0 }}>
@@ -80,7 +82,7 @@ export const AboutBlock = () => {
           <div>
             <div style={{ fontSize: 15, fontWeight: 700 }}>Bloom</div>
             <div style={{ marginTop: 3, fontSize: 12.5, fontWeight: 500, color: 'var(--text2)' }}>
-              Версия <span style={{ color: 'var(--muted)' }}>v</span>{version || '—'}
+              {t('settings.about.version')} <span style={{ color: 'var(--muted)' }}>v</span>{version || '—'}
             </div>
           </div>
         </div>
@@ -104,7 +106,7 @@ export const AboutBlock = () => {
                 style={{ flexShrink: 0, fontSize: 11, padding: '4px 12px' }}
                 onClick={() => void downloadInstall()}
               >
-                Обновить
+                {t('settings.about.update')}
               </button>
             )}
           </div>

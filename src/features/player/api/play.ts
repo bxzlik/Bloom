@@ -3,6 +3,7 @@ import { trackRegistry } from '@entities/track'
 import { invoke } from '@shared/tauri'
 import { useLibStore, useFavStore, useHistoryStore, useActivityStore, saveTrackToLibrary, usePlaylistStore, useNewPlModalStore } from '@features/library'
 import { toast } from '@shared/ui'
+import { t as i18nT } from '@shared/i18n'
 import { requestLyrics, useLyricsStore } from '@features/lyrics'
 import waveApi from '@/wave'
 import { getProvider } from '@features/providers'
@@ -106,7 +107,7 @@ const skipUnplayable = (failedId: string, err: unknown): void => {
   // Вся очередь недоступна → останавливаемся, не крутим бесконечный цикл.
   if (++_skipCount >= queue.length) {
     _skipCount = 0
-    toast('Нет доступных треков для воспроизведения')
+    toast(i18nT('toast.noPlayable'))
     return
   }
   const next = (qIdx + 1) % queue.length
@@ -464,7 +465,7 @@ export const switchPlatform = async (providerId: string): Promise<void> => {
 
   const provider = getProvider(providerId)
   if (!provider) {
-    toast('Площадка недоступна')
+    toast(i18nT('toast.srcUnavailable'))
     return
   }
 
@@ -476,7 +477,7 @@ export const switchPlatform = async (providerId: string): Promise<void> => {
     const res = await provider.search(`${cur.name} ${cur.artist}`.trim())
     tracks = res.tracks ?? []
   } catch {
-    toast('Не удалось переключить площадку')
+    toast(i18nT('toast.srcSwitchFail'))
     return
   }
 
@@ -485,7 +486,7 @@ export const switchPlatform = async (providerId: string): Promise<void> => {
 
   const match = pickPlatformMatch(tracks, cur)
   if (!match) {
-    toast(`Трек не найден на «${provider.label}»`)
+    toast(i18nT('toast.trackNotOnSrc', { label: provider.label }))
     return
   }
 
@@ -503,7 +504,7 @@ export const switchPlatform = async (providerId: string): Promise<void> => {
 
   if (posBefore > 2) setPendingResumeSeek(posBefore)
   await loadPlay(match.id)
-  toast(`Площадка: ${provider.label}`)
+  toast(i18nT('toast.srcNow', { label: provider.label }))
 }
 
 /**
@@ -634,7 +635,7 @@ export const mpAddCurrentToLib = (): void => {
   // Трек теперь в библиотеке → прячем «В библиотеку» в мини/трее сразу (пушим).
   usePlayerStore.setState({ canAddToLib: false })
   pushNowPlaying()
-  toast('Добавлено в библиотеку')
+  toast(i18nT('toast.addedToLib'))
 }
 
 /** Добавить текущий трек в плейлист по id. */

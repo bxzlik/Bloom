@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useUiPrefsStore } from '@features/settings'
+import { useT, useLocale, t as tFn } from '@shared/i18n'
 import { useLibStore, usePlaylistStore, useFavStore } from '../model'
 import type { LibMode, Playlist } from '../model'
 import type { Track } from '@entities/track'
@@ -24,6 +25,8 @@ import { SelBar } from './SelBar'
  * Hero отображает иконку + имя + sub-line + кнопки действий.
  */
 export const LibContent = () => {
+  const t = useT()
+  useLocale()
   const mode = useLibStore((s) => s.mode)
   const folderPath = useLibStore((s) => s.folderPath)
   const plId = useLibStore((s) => s.plId)
@@ -160,7 +163,7 @@ export const LibContent = () => {
                   type="text"
                   id="libInlineSearchInp"
                   className="lib-isp-inp"
-                  placeholder="Поиск в плейлисте..."
+                  placeholder={t('lib.searchInPlaylist')}
                   autoComplete="off"
                   spellCheck={false}
                   value={searchQuery}
@@ -208,7 +211,7 @@ export const LibContent = () => {
               <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
               </svg>
-              Играть все
+              {t('lib.playAll')}
             </button>
             <button
               className="btn-icon"
@@ -382,7 +385,7 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
         c.allTracks.filter((t) => c.favs.has(t.id)).map((t) => t.dur),
       )
       return {
-        heroName: 'Любимые',
+        heroName: tFn('lib.liked'),
         heroSub: tracksAndDuration(c.favCount, dur),
         heroIconClass: 'fav-icon',
         HeroIcon: HeartHeroIcon,
@@ -390,7 +393,7 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
     }
     case 'history':
       return {
-        heroName: 'История',
+        heroName: tFn('lib.history'),
         heroSub: recordsLabel(c.historyCount),
         heroIconClass: '',
         HeroIcon: HistoryHeroIcon,
@@ -398,7 +401,7 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
     case 'folder': {
       const dur = sumDurations(c.folderTracks.map((t) => t.dur))
       return {
-        heroName: c.folderPath ? folderName(c.folderPath) : 'Папка',
+        heroName: c.folderPath ? folderName(c.folderPath) : tFn('lib.folder'),
         heroSub: tracksAndDuration(c.folderTracksCount, dur),
         heroIconClass: 'off-icon',
         HeroIcon: NoteHeroIcon,
@@ -409,7 +412,7 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
       const byId = new Map(c.allTracks.map((t) => [t.id, t]))
       const dur = pl ? sumDurations(pl.trs.map((id) => byId.get(id)?.dur)) : 0
       return {
-        heroName: pl?.name ?? 'Плейлист',
+        heroName: pl?.name ?? tFn('lib.playlist'),
         heroSub: tracksAndDuration(pl?.trs.length ?? 0, dur),
         heroIconClass: 'off-icon',
         HeroIcon: NoteHeroIcon,
@@ -420,7 +423,7 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
     default: {
       const dur = sumDurations(c.allTracks.map((t) => t.dur))
       return {
-        heroName: 'Все треки',
+        heroName: tFn('lib.allTracks'),
         heroSub: tracksAndDuration(c.totalTracks, dur),
         heroIconClass: 'off-icon',
         HeroIcon: NoteHeroIcon,

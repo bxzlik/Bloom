@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getManualClientId, setManualClientId, checkConnection } from '../api/scClient'
+import { useT } from '@shared/i18n'
 
 type StatusKind = 'ok' | 'err' | 'info'
 const STATUS_COLOR: Record<StatusKind, string> = {
@@ -14,30 +15,31 @@ const STATUS_COLOR: Record<StatusKind, string> = {
  * через `setManualClientId`. Нужен, если авто-получение (скрейп/известные id) не сработало.
  */
 export const ScClientIdCard = () => {
+  const t = useT()
   const [value, setValue] = useState(() => getManualClientId() ?? '')
   const [visible, setVisible] = useState(false)
   const [checking, setChecking] = useState(false)
   const [status, setStatus] = useState<{ text: string; kind: StatusKind } | null>(
-    getManualClientId() ? { text: '✓ client_id сохранён', kind: 'ok' } : null,
+    getManualClientId() ? { text: t('settings.sc.status.saved'), kind: 'ok' } : null,
   )
 
   const save = () => {
     const v = value.trim()
     setManualClientId(v || null)
-    setStatus({ text: v ? '✓ client_id сохранён' : 'client_id сброшен', kind: 'info' })
+    setStatus({ text: v ? t('settings.sc.status.saved') : t('settings.sc.status.reset'), kind: 'info' })
   }
 
   const check = async () => {
     setChecking(true)
-    setStatus({ text: 'Проверяю…', kind: 'info' })
+    setStatus({ text: t('settings.sc.status.checking'), kind: 'info' })
     const r = await checkConnection()
     setChecking(false)
     if (r.ok) {
       // Авто-получили рабочий ключ и поле пустое — подставим, чтобы можно было сохранить.
       if (!value.trim() && r.clientId) setValue(r.clientId)
-      setStatus({ text: '✓ Подключение работает' + (r.clientId ? ' (client_id получен)' : ''), kind: 'ok' })
+      setStatus({ text: t('settings.sc.status.ok') + (r.clientId ? ' ' + t('settings.sc.status.okIdSuffix') : ''), kind: 'ok' })
     } else {
-      setStatus({ text: '✗ Не удалось: ' + (r.error || 'ошибка'), kind: 'err' })
+      setStatus({ text: t('settings.sc.status.failPrefix') + (r.error || t('settings.sc.status.errFallback')), kind: 'err' })
     }
   }
 
@@ -45,7 +47,7 @@ export const ScClientIdCard = () => {
     <div className="sc">
       <h3>SoundCloud</h3>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 10 }}>
-        Если поиск SoundCloud не работает — введи актуальный <b>client_id</b> вручную.
+        {t('settings.sc.intro.a')} <b>client_id</b> {t('settings.sc.intro.b')}
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>
@@ -57,7 +59,7 @@ export const ScClientIdCard = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter') save()
             }}
-            placeholder="Вставь client_id…"
+            placeholder={t('settings.sc.placeholder')}
             autoComplete="off"
             spellCheck={false}
             style={{
@@ -106,7 +108,7 @@ export const ScClientIdCard = () => {
             cursor: 'pointer',
           }}
         >
-          Сохранить
+          {t('common.save')}
         </button>
       </div>
 
@@ -126,7 +128,7 @@ export const ScClientIdCard = () => {
             opacity: checking ? 0.6 : 1,
           }}
         >
-          {checking ? 'Проверяю…' : 'Проверить / получить автоматически'}
+          {checking ? t('settings.sc.status.checking') : t('settings.sc.check')}
         </button>
         {status && (
           <div style={{ fontSize: 11, color: STATUS_COLOR[status.kind] }}>{status.text}</div>
@@ -135,14 +137,14 @@ export const ScClientIdCard = () => {
 
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 12 }}>
         <div style={{ fontSize: 11.5, color: 'var(--text2)', marginBottom: 8 }}>
-          Как получить client_id:
+          {t('settings.sc.help.title')}
         </div>
         <ol style={{ fontSize: 11, color: 'var(--muted)', paddingLeft: 18, lineHeight: 1.8, margin: 0 }}>
-          <li>Открой <b style={{ color: 'var(--text2)' }}>soundcloud.com</b> в браузере</li>
-          <li>Нажми <b style={{ color: 'var(--text2)' }}>F12</b> → вкладка <b style={{ color: 'var(--text2)' }}>Network</b></li>
-          <li>Нажми play на любом треке</li>
-          <li>Найди запрос к <b style={{ color: 'var(--text2)' }}>api-v2.soundcloud.com</b></li>
-          <li>Скопируй параметр <b style={{ color: 'var(--text2)' }}>client_id</b> из URL</li>
+          <li>{t('settings.sc.step1.a')} <b style={{ color: 'var(--text2)' }}>soundcloud.com</b> {t('settings.sc.step1.b')}</li>
+          <li>{t('settings.sc.step2.a')} <b style={{ color: 'var(--text2)' }}>F12</b> {t('settings.sc.step2.b')} <b style={{ color: 'var(--text2)' }}>Network</b> {t('settings.sc.step2.c')}</li>
+          <li>{t('settings.sc.step3')}</li>
+          <li>{t('settings.sc.step4.a')} <b style={{ color: 'var(--text2)' }}>api-v2.soundcloud.com</b></li>
+          <li>{t('settings.sc.step5.a')} <b style={{ color: 'var(--text2)' }}>client_id</b> {t('settings.sc.step5.b')}</li>
         </ol>
       </div>
     </div>

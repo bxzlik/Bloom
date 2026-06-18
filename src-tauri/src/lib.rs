@@ -108,6 +108,8 @@ pub fn run() {
             commands::folder_scan,
             commands::folder_get,
             commands::sc_download,
+            commands::pick_playlist_dir,
+            commands::download_to_dir,
             commands::local_download,
             commands::cover_download,
             commands::lyrics_request,

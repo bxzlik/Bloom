@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { WaveCard } from '@features/wave'
+import { useT, t as tt } from '@shared/i18n'
 import {
   useLibStore,
   useHistoryStore,
@@ -145,11 +146,11 @@ const NoteSvg = ({ size = 22 }: { size?: number }) => (
 )
 
 const sourceLabel = (s: PlaySource): string => {
-  if (!s) return 'Все треки'
+  if (!s) return tt('lib.allTracks')
   switch (s.kind) {
-    case 'lib-all': return 'Все треки'
-    case 'lib-fav': return 'Любимые треки'
-    case 'lib-history': return 'История'
+    case 'lib-all': return tt('lib.allTracks')
+    case 'lib-fav': return tt('home.favTracks')
+    case 'lib-history': return tt('lib.history')
     case 'playlist': return s.name
     case 'folder': return s.name
     case 'sc': return s.label
@@ -210,19 +211,20 @@ const fmtTime = (sec: number): string => {
  * последнего прослушивания» (Только что / X мин. назад / X ч. назад / Вчера / X дн. назад).
  */
 const resumeStateLabel = (state: string | undefined, savedAt: number | undefined): string => {
-  if (state === 'paused') return 'На паузе'
+  if (state === 'paused') return tt('home.paused')
   if (savedAt && savedAt > 0) {
     const diff = Math.floor((Date.now() - savedAt) / 1000)
-    if (diff < 60) return 'Только что'
-    if (diff < 3600) return Math.floor(diff / 60) + ' мин. назад'
-    if (diff < 86400) return Math.floor(diff / 3600) + ' ч. назад'
-    if (diff < 172800) return 'Вчера'
-    return Math.floor(diff / 86400) + ' дн. назад'
+    if (diff < 60) return tt('home.justNow')
+    if (diff < 3600) return tt('home.minsAgo', { n: Math.floor(diff / 60) })
+    if (diff < 86400) return tt('home.hoursAgo', { n: Math.floor(diff / 3600) })
+    if (diff < 172800) return tt('home.yesterday')
+    return tt('home.daysAgo', { n: Math.floor(diff / 86400) })
   }
-  return 'На паузе'
+  return tt('home.paused')
 }
 
 const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track) => void }) => {
+  const tr = useT()
   const curId = useQueueStore((s) => s.curId)
   const source = useQueueStore((s) => s.source)
   const title = usePlayerStore((s) => s.title)
@@ -253,7 +255,7 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
         pos={position}
         dur={duration}
         playing={playing}
-        stateText={playing ? 'Сейчас играет' : 'На паузе'}
+        stateText={playing ? tr('home.nowPlaying') : tr('home.paused')}
         stateActive={playing}
         onResume={() => {
           togglePlay()
@@ -345,6 +347,7 @@ const ContinueView = ({
   onResume: () => void
   onContextMenu?: (e: ReactMouseEvent) => void
 }) => {
+  const t = useT()
   const pct = dur > 0 ? Math.min(100, (pos / dur) * 100) : 0
   return (
     <div className="home-continue-card" id="homeContinueCard" onClick={onResume} onContextMenu={onContextMenu}>
@@ -379,7 +382,7 @@ const ContinueView = ({
             e.stopPropagation()
             onResume()
           }}
-          aria-label={playing ? 'Пауза' : 'Продолжить'}
+          aria-label={playing ? t('player.aria.pause') : t('home.resume')}
         >
           {playing ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
@@ -395,6 +398,7 @@ const ContinueView = ({
 // ── Любимые / История ──────────────────────────────────────────────────────
 
 const QuickGrid = () => {
+  const t = useT()
   const goNav = useNavStore((s) => s.goNav)
   const selectBuiltin = useLibStore((s) => s.selectBuiltin)
   const open = (m: 'fav' | 'history') => {
@@ -410,8 +414,8 @@ const QuickGrid = () => {
           </svg>
         </div>
         <div className="hqc-info">
-          <div className="hqc-title">Любимые треки</div>
-          <div className="hqc-sub">Ваша коллекция любимой музыки</div>
+          <div className="hqc-title">{t('home.favTracks')}</div>
+          <div className="hqc-sub">{t('home.favSub')}</div>
         </div>
       </div>
       <div className="home-quick-card home-quick-card-hist" onClick={() => open('history')}>
@@ -421,8 +425,8 @@ const QuickGrid = () => {
           </svg>
         </div>
         <div className="hqc-info">
-          <div className="hqc-title">История</div>
-          <div className="hqc-sub">Ваши недавно прослушанные треки</div>
+          <div className="hqc-title">{t('lib.history')}</div>
+          <div className="hqc-sub">{t('home.historySub')}</div>
         </div>
       </div>
     </div>
@@ -441,6 +445,7 @@ const parseDur = (dur: string | undefined): number => {
 }
 
 const StatsBar = ({ onOpen }: { onOpen: () => void }) => {
+  const t = useT()
   const tracks = useLibStore((s) => s.tracks)
   const entries = useHistoryStore((s) => s.entries)
   // Прослушивания берём из истории (count) — playCount на треках не ведётся.
@@ -464,9 +469,9 @@ const StatsBar = ({ onOpen }: { onOpen: () => void }) => {
           <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
         </svg>
       </div>
-      <span className="hsb-sep">за</span>
-      <div className="hsb-item"><span className="hsb-num">{h}</span><span className="hsb-unit">ч</span></div>
-      <div className="hsb-item"><span className="hsb-num">{m}</span><span className="hsb-unit">м</span></div>
+      <span className="hsb-sep">{t('home.per')}</span>
+      <div className="hsb-item"><span className="hsb-num">{h}</span><span className="hsb-unit">{t('home.hShort')}</span></div>
+      <div className="hsb-item"><span className="hsb-num">{m}</span><span className="hsb-unit">{t('home.mShort')}</span></div>
       <div style={{ position: 'absolute', right: 16, bottom: 0, display: 'flex', alignItems: 'flex-end', gap: 5, pointerEvents: 'none', height: '100%' }}>
         {[55, 80, 40, 70].map((hpct, i) => (
           <div key={i} style={{ width: 12, height: `${hpct}%`, background: 'rgba(255,255,255,.13)', borderRadius: '3px 3px 0 0' }} />
@@ -478,13 +483,15 @@ const StatsBar = ({ onOpen }: { onOpen: () => void }) => {
 
 // ── Игры ───────────────────────────────────────────────────────────────────
 
-const GamesCard = () => (
+const GamesCard = () => {
+  const t = useT()
+  return (
   <div className="home-games-card" onClick={() => useGamesStore.getState().openModal()}>
     <div className="home-games-card-left">
       <div className="home-games-card-icon">
         <GamepadIcon size={35} />
       </div>
-      <div className="home-games-card-title">Игры</div>
+      <div className="home-games-card-title">{t('home.games')}</div>
     </div>
     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
       <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)' }} />
@@ -493,7 +500,8 @@ const GamesCard = () => (
       <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#d97706,#ca8a04)' }} />
     </div>
   </div>
-)
+  )
+}
 
 // ── Трек дня ───────────────────────────────────────────────────────────────
 
@@ -507,6 +515,7 @@ const PlaySmall = ({ size = 14 }: { size?: number }) => (
 const mskDayNumber = (): number => Math.floor((Date.now() + 3 * 3600 * 1000) / 86400000)
 
 const TrackOfDay = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track) => void }) => {
+  const t = useT()
   const tracks = useLibStore((s) => s.tracks)
   const goNav = useNavStore((s) => s.goNav)
   // Состояние = номер МСК-суток; авто-обновление в 00:00 МСК даже при открытом окне.
@@ -537,7 +546,7 @@ const TrackOfDay = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track)
           {tod.cover ? <img src={tod.cover} alt="" /> : <NoteSvg />}
         </div>
         <div className="home-tod-info">
-          <div className="home-tod-label">✦ Трек дня</div>
+          <div className="home-tod-label">✦ {t('home.trackOfDay')}</div>
           <div className="home-tod-name">{tod.name}</div>
           <div className="home-tod-artist">
             <ArtistLinks artist={tod.artist} scId={tod.artistScId} permalink={tod.artistPermalink} artistId={tod.artistId} provider={tod.artistProvider} />
@@ -549,7 +558,7 @@ const TrackOfDay = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track)
             e.stopPropagation()
             play()
           }}
-          aria-label="Играть трек дня"
+          aria-label={t('home.playDaily')}
         >
           <PlaySmall />
         </button>
@@ -561,6 +570,7 @@ const TrackOfDay = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track)
 // ── Недавно слушали ──────────────────────────────────────────────────────────
 
 const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track) => void }) => {
+  const tr = useT()
   const entries = useHistoryStore((s) => s.entries)
   const libTracks = useLibStore((s) => s.tracks)
   const recent = useMemo(() => {
@@ -579,7 +589,7 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
 
   return (
     <div className="home-section" id="homeRecentSection">
-      <div className="home-recent-hdr">Недавно слушали</div>
+      <div className="home-recent-hdr">{tr('home.recent')}</div>
       <div className="home-cards" id="homeRecentCards">
         {recent.map((t) => (
           <div
@@ -618,6 +628,7 @@ const PlaylistsSection = ({
   onPlCtx: (e: ReactMouseEvent, pl: Playlist) => void
   onNewPl: () => void
 }) => {
+  const t = useT()
   const playlists = usePlaylistStore((s) => s.playlists)
   const goNav = useNavStore((s) => s.goNav)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
@@ -627,7 +638,7 @@ const PlaylistsSection = ({
   }
   return (
     <div className="home-section">
-      <div className="home-section-hdr">Плейлисты</div>
+      <div className="home-section-hdr">{t('search.tab.playlists')}</div>
       <div className="home-pl-grid" id="homePlGrid">
         {playlists.map((pl) => (
           <div className="home-pl-card" key={pl.id} onClick={() => openPl(pl.id)} onContextMenu={(e) => onPlCtx(e, pl)}>
@@ -642,7 +653,7 @@ const PlaylistsSection = ({
               </div>
             </div>
             <div className="hpc-name">{pl.name}</div>
-            <div className="hpc-sub">{pl.trs.length} тр.</div>
+            <div className="hpc-sub">{tt('lib.grid.tracks', { n: pl.trs.length })}</div>
           </div>
         ))}
         <button
@@ -655,7 +666,7 @@ const PlaylistsSection = ({
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Новый
+          {t('common.new')}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import type { Track } from '@entities/track'
 import { trackRegistry } from '@entities/track'
+import { t as i18nT } from '@shared/i18n'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
 import type { MusicProvider, SearchResults, ArtistPageData, ResolvedUrl } from '@features/providers'
@@ -234,7 +235,7 @@ export const scProvider: MusicProvider = {
       const mP = /^sc_artist_p_(.+)$/.exec(id)
       if (mId) ref = Number(mId[1])
       else if (mP) ref = mP[1]!
-      else throw new Error('Артист не найден')
+      else throw new Error(i18nT('search.err.artistNotFound'))
     }
 
     const [dataR, userR, topR] = await Promise.allSettled([
@@ -300,7 +301,7 @@ const loadScPlaylist = async (
     raw = await getPlaylistTracks(permalink)
   } else {
     const m = /^sc_pl_(\d+)$/.exec(id)
-    if (!m) throw new Error('Плейлист не найден')
+    if (!m) throw new Error(i18nT('search.err.playlistNotFound'))
     const full = await getPlaylistById(Number(m[1]))
     raw = full.tracks
     meta = { title: full.title, cover: full.cover, ownerName: full.ownerName, trackCount: full.trackCount }

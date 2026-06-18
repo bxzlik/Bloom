@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSettingsStore } from '../../model'
 import { usePlayerStore } from '@features/player'
+import { useT } from '@shared/i18n'
 
 /**
  * Раздел «Discord RPC» (`ssec-discord`) — полная конфигурация Rich
@@ -25,6 +26,7 @@ const fmtTime = (s: number): string => {
 }
 
 export const DiscordSection = () => {
+  const t = useT()
   const loaded = useSettingsStore((s) => s.loaded)
   const enabled = useSettingsStore((s) => s.discord_rpc)
   const showProgress = useSettingsStore((s) => s.discord_show_progress)
@@ -70,7 +72,7 @@ export const DiscordSection = () => {
   }, [loaded])
 
   // Превью трека — из плеера (реактивно, без интервала).
-  const title = usePlayerStore((s) => s.title) || 'Track Title'
+  const titleText = usePlayerStore((s) => s.title) || 'Track Title'
   const artist = usePlayerStore((s) => s.artist) || 'Track Artist'
   const artwork = usePlayerStore((s) => s.artwork)
   const position = usePlayerStore((s) => s.position)
@@ -113,7 +115,7 @@ export const DiscordSection = () => {
     smallMode === 'custom' && smallUrl ? smallUrl : smallMode === 'default' ? '/logo.png' : ''
 
   const btnLabel = (m: BtnMode, label: string): string =>
-    m === 'track' ? 'На трек' : m === 'artist' ? 'На артиста' : label || 'Кнопка'
+    m === 'track' ? t('settings.discord.btnMode.track') : m === 'artist' ? t('settings.discord.btnMode.artist') : label || t('settings.discord.btnLabel.fallback')
 
   return (
     <div className="s-section active" id="ssec-discord">
@@ -146,11 +148,11 @@ export const DiscordSection = () => {
               <DiscordIcon size={20} />
             </div>
             <div>
-              <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>Активность в Discord</div>
-              <div className="ssub">Показывать в Discord, что вы слушаете</div>
+              <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>{t('settings.discord.enabled.title')}</div>
+              <div className="ssub">{t('settings.discord.enabled.sub')}</div>
             </div>
           </div>
-          <div className="drpc-on-chip">{enabled ? 'ВКЛ' : 'ВЫКЛ'}</div>
+          <div className="drpc-on-chip">{enabled ? t('settings.discord.on') : t('settings.discord.off')}</div>
         </div>
       </div>
 
@@ -163,14 +165,14 @@ export const DiscordSection = () => {
           pointerEvents: enabled ? undefined : 'none',
         }}
       >
-        <div className="s-cat-label">ОТОБРАЖЕНИЕ</div>
+        <div className="s-cat-label">{t('settings.discord.cat.display')}</div>
 
         {/* Прогресс */}
         <div className="sc">
           <div className="sr">
             <div>
-              <div className="sl2">Прогресс воспроизведения</div>
-              <div className="ssub">Полоска прогресса трека в статусе</div>
+              <div className="sl2">{t('settings.discord.progress')}</div>
+              <div className="ssub">{t('settings.discord.progress.sub')}</div>
             </div>
             <label className="tele-sw">
               <input
@@ -185,19 +187,19 @@ export const DiscordSection = () => {
 
         {/* Обложка */}
         <div className="sc">
-          <div className="sc-title">Обложка</div>
-          <div className="sc-desc">Изображение в статусе Discord</div>
+          <div className="sc-title">{t('settings.discord.cover')}</div>
+          <div className="sc-desc">{t('settings.discord.cover.desc')}</div>
           <div className="s-opt-row" style={{ marginTop: 12 }}>
             <OptBtn active={coverMode === 'auto'} onClick={() => pickCover('auto')}>
-              <NoteIcon /> Авто
+              <NoteIcon /> {t('settings.discord.mode.auto')}
             </OptBtn>
             <OptBtn active={coverMode === 'custom'} onClick={() => pickCover('custom')}>
-              <LinkIcon /> Кастом
+              <LinkIcon /> {t('settings.discord.mode.custom')}
             </OptBtn>
           </div>
           {coverMode === 'custom' && (
             <div style={{ marginTop: 10 }}>
-              <div className="sc-desc" style={{ marginBottom: 8 }}>URL обложки</div>
+              <div className="sc-desc" style={{ marginBottom: 8 }}>{t('settings.discord.coverUrl')}</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <input
                   className="sc-inp"
@@ -208,7 +210,7 @@ export const DiscordSection = () => {
                   onChange={(e) => setCoverUrl(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && applyCoverUrl()}
                 />
-                <button className="sc-btn" onClick={applyCoverUrl} style={{ flexShrink: 0, padding: '0 12px' }}>Применить</button>
+                <button className="sc-btn" onClick={applyCoverUrl} style={{ flexShrink: 0, padding: '0 12px' }}>{t('settings.discord.apply')}</button>
               </div>
             </div>
           )}
@@ -216,22 +218,22 @@ export const DiscordSection = () => {
 
         {/* Иконка приложения */}
         <div className="sc">
-          <div className="sc-title">Иконка приложения</div>
-          <div className="sc-desc">Маленькая иконка в углу обложки Discord</div>
+          <div className="sc-title">{t('settings.discord.appIcon')}</div>
+          <div className="sc-desc">{t('settings.discord.appIcon.desc')}</div>
           <div className="s-opt-row" style={{ marginTop: 12 }}>
             <OptBtn active={smallMode === 'off'} onClick={() => pickSmall('off')}>
-              <CloseIcon /> Выкл
+              <CloseIcon /> {t('settings.discord.mode.off')}
             </OptBtn>
             <OptBtn active={smallMode === 'default'} onClick={() => pickSmall('default')}>
-              <img src="/logo.png" width={16} height={16} style={{ borderRadius: 3, objectFit: 'cover' }} alt="" /> Дефолт
+              <img src="/logo.png" width={16} height={16} style={{ borderRadius: 3, objectFit: 'cover' }} alt="" /> {t('settings.discord.mode.default')}
             </OptBtn>
             <OptBtn active={smallMode === 'custom'} onClick={() => pickSmall('custom')}>
-              <LinkIcon /> Кастом
+              <LinkIcon /> {t('settings.discord.mode.custom')}
             </OptBtn>
           </div>
           {smallMode === 'custom' && (
             <div style={{ marginTop: 10 }}>
-              <div className="sc-desc" style={{ marginBottom: 8 }}>URL иконки</div>
+              <div className="sc-desc" style={{ marginBottom: 8 }}>{t('settings.discord.iconUrl')}</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <input
                   className="sc-inp"
@@ -242,17 +244,17 @@ export const DiscordSection = () => {
                   onChange={(e) => setSmallUrl(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && applySmallUrl()}
                 />
-                <button className="sc-btn" onClick={applySmallUrl} style={{ flexShrink: 0, padding: '0 12px' }}>Применить</button>
+                <button className="sc-btn" onClick={applySmallUrl} style={{ flexShrink: 0, padding: '0 12px' }}>{t('settings.discord.apply')}</button>
               </div>
             </div>
           )}
         </div>
 
-        <div className="s-cat-label">КНОПКИ В СТАТУСЕ</div>
+        <div className="s-cat-label">{t('settings.discord.cat.buttons')}</div>
 
         <BtnCard
-          title="Кнопка 1"
-          desc="Первая кнопка в статусе Discord (до 2 кнопок)"
+          title={t('settings.discord.btn1')}
+          desc={t('settings.discord.btn1.desc')}
           mode={b1}
           onMode={(m) => void setDiscordSettings({ discord_btn1_mode: m === 'off' ? '' : m })}
           label={l1}
@@ -262,8 +264,8 @@ export const DiscordSection = () => {
           onApply={() => void setDiscordSettings({ discord_btn1_label: l1.trim(), discord_btn1_url: u1.trim() })}
         />
         <BtnCard
-          title="Кнопка 2"
-          desc="Вторая кнопка в статусе Discord"
+          title={t('settings.discord.btn2')}
+          desc={t('settings.discord.btn2.desc')}
           mode={b2}
           onMode={(m) => void setDiscordSettings({ discord_btn2_mode: m === 'off' ? '' : m })}
           label={l2}
@@ -273,7 +275,7 @@ export const DiscordSection = () => {
           onApply={() => void setDiscordSettings({ discord_btn2_label: l2.trim(), discord_btn2_url: u2.trim() })}
         />
 
-        <div className="s-cat-label">ПРЕДПРОСМОТР</div>
+        <div className="s-cat-label">{t('settings.discord.cat.preview')}</div>
 
         <div className="drpc-preview-wrap" style={{ marginTop: 0 }}>
           <div className="drpc-preview-header">
@@ -306,7 +308,7 @@ export const DiscordSection = () => {
               )}
             </div>
             <div className="drpc-preview-info">
-              <div className="drpc-preview-title">{title}</div>
+              <div className="drpc-preview-title">{titleText}</div>
               <div className="drpc-preview-artist">{artist}</div>
               {showProgress && (
                 <div className="drpc-preview-progress-row">
@@ -348,41 +350,44 @@ const BtnCard = ({
   onLabel: (v: string) => void
   onUrl: (v: string) => void
   onApply: () => void
-}) => (
+}) => {
+  const t = useT()
+  return (
   <div className="sc">
     <div className="sc-title">{title}</div>
     <div className="sc-desc">{desc}</div>
     <div className="s-opt-row" style={{ marginTop: 12 }}>
       <OptBtn active={mode === 'off'} onClick={() => onMode('off')}>
-        <CloseIcon /> Выкл
+        <CloseIcon /> {t('settings.discord.mode.off')}
       </OptBtn>
       <OptBtn active={mode === 'track'} onClick={() => onMode('track')}>
-        <NoteIcon /> На трек
+        <NoteIcon /> {t('settings.discord.btnMode.track')}
       </OptBtn>
       <OptBtn active={mode === 'artist'} onClick={() => onMode('artist')}>
-        <UserIcon /> На артиста
+        <UserIcon /> {t('settings.discord.btnMode.artist')}
       </OptBtn>
       <OptBtn active={mode === 'custom'} onClick={() => onMode('custom')}>
-        <EditIcon /> Кастомная
+        <EditIcon /> {t('settings.discord.btnMode.custom')}
       </OptBtn>
     </div>
     {mode === 'custom' && (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
         <div>
-          <div className="sc-desc" style={{ marginBottom: 6 }}>Текст кнопки</div>
-          <input className="sc-inp" type="text" placeholder="Например, Открыть трек" style={{ width: '100%', fontSize: 12 }} value={label} onChange={(e) => onLabel(e.target.value)} />
+          <div className="sc-desc" style={{ marginBottom: 6 }}>{t('settings.discord.btnText')}</div>
+          <input className="sc-inp" type="text" placeholder={t('settings.discord.btnText.placeholder')} style={{ width: '100%', fontSize: 12 }} value={label} onChange={(e) => onLabel(e.target.value)} />
         </div>
         <div>
-          <div className="sc-desc" style={{ marginBottom: 6 }}>Ссылка</div>
+          <div className="sc-desc" style={{ marginBottom: 6 }}>{t('settings.discord.link')}</div>
           <div style={{ display: 'flex', gap: 6 }}>
             <input className="sc-inp" type="text" placeholder="https://..." style={{ flex: 1, fontSize: 12 }} value={url} onChange={(e) => onUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && onApply()} />
-            <button className="sc-btn" onClick={onApply} style={{ flexShrink: 0, padding: '0 14px' }}>Применить</button>
+            <button className="sc-btn" onClick={onApply} style={{ flexShrink: 0, padding: '0 14px' }}>{t('settings.discord.apply')}</button>
           </div>
         </div>
       </div>
     )}
   </div>
-)
+  )
+}
 
 const OptBtn = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
   <button className={`s-opt-btn ${active ? 'bta' : 'btg'}`} onClick={onClick}>

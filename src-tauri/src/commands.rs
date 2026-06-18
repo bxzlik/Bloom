@@ -560,10 +560,56 @@ pub fn sc_download(
     cover_url: Option<String>,
     title: Option<String>,
     artist: Option<String>,
+    referer: Option<String>,
 ) -> Result<(), String> {
     tauri::async_runtime::spawn(async move {
-        download_sc(app, url, filename, cover_url, title, artist).await;
+        download_sc(app, url, filename, cover_url, title, artist, referer).await;
     });
+    Ok(())
+}
+
+/// Диалог выбора папки для скачивания плейлиста. Создаёт внутри выбранной
+/// директории подпапку с именем плейлиста и возвращает её путь (или None, если
+/// пользователь отменил выбор). Фронтенд затем покадрово вызывает
+/// `download_to_dir` — так подписанные CDN-ссылки (SC/YM, живут минуты)
+/// резолвятся непосредственно перед скачиванием и не успевают протухнуть.
+#[tauri::command]
+pub async fn pick_playlist_dir(app: AppHandle, folder_name: String) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    // Async-команда выполняется вне главного потока → blocking-диалог безопасен.
+    let picked = app
+        .dialog()
+        .file()
+        .set_title("Выберите папку для сохранения плейлиста")
+        .blocking_pick_folder();
+    let base = match picked.and_then(|p| p.into_path().ok()) {
+        Some(p) => p,
+        None => return Ok(None),
+    };
+    let dir = base.join(sanitize_filename(&folder_name));
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(Some(dir.to_string_lossy().to_string()))
+}
+
+/// Скачать один трек площадки в уже выбранную папку (без диалога), вшить теги.
+/// Имя файла при коллизии получает суффикс ` (N)`.
+#[tauri::command]
+pub async fn download_to_dir(
+    dir: String,
+    url: String,
+    filename: String,
+    cover_url: Option<String>,
+    title: Option<String>,
+    artist: Option<String>,
+    referer: Option<String>,
+) -> Result<(), String> {
+    let bytes = fetch_audio(&url, referer.as_deref()).await?;
+    let ext = audio_ext(&bytes);
+    let dir = PathBuf::from(dir);
+    let safe = sanitize_filename(&filename);
+    let path = unique_path(&dir, &safe, ext);
+    std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
+    embed_tags_async(&path, cover_url.as_deref(), title.as_deref(), artist.as_deref(), referer.as_deref()).await;
     Ok(())
 }
 
@@ -604,6 +650,72 @@ fn sanitize_filename(name: &str) -> String {
     if s.trim().is_empty() { "track".to_string() } else { s }
 }
 
+/// GET с повтором при троттлинге (403/429/5xx) и проверкой статуса ДО чтения
+/// тела. Важно: без проверки статуса `.bytes()` отдаёт тело-ошибку (HTML 403),
+/// которое иначе попало бы в аудиофайл или вшилось как «обложка». Бэкофф растёт
+/// экспоненциально, чтобы переждать rate-limit площадки при пакетной загрузке.
+async fn fetch_bytes_retry(
+    client: &reqwest::Client,
+    url: &str,
+    referer: Option<&str>,
+    attempts: u32,
+) -> Result<Vec<u8>, String> {
+    use std::time::Duration;
+    let mut last = "нет ответа".to_string();
+    for attempt in 0..attempts {
+        if attempt > 0 {
+            // 0.7s, 1.4s, 2.8s, …
+            let ms = 700u64 * (1u64 << (attempt - 1));
+            tokio::time::sleep(Duration::from_millis(ms)).await;
+        }
+        let mut rb = client.get(url);
+        if let Some(r) = referer {
+            rb = rb.header("Referer", r);
+        }
+        match rb.send().await {
+            Ok(resp) => {
+                let st = resp.status();
+                if st.is_success() {
+                    return resp.bytes().await.map(|b| b.to_vec()).map_err(|e| e.to_string());
+                }
+                last = format!("HTTP {}", st.as_u16());
+                let code = st.as_u16();
+                // Не троттлинг (404/410 и пр.) — повторять бессмысленно.
+                if !(code == 403 || code == 429 || st.is_server_error()) {
+                    return Err(last);
+                }
+            }
+            Err(e) => last = e.to_string(),
+        }
+    }
+    Err(last)
+}
+
+/// Похоже ли начало буфера на изображение (JPEG/PNG/GIF/WebP) — защита от
+/// вшивания тела-ошибки как обложки.
+fn looks_like_image(b: &[u8]) -> bool {
+    b.len() >= 4
+        && ((b[0] == 0xFF && b[1] == 0xD8) // JPEG
+            || (b[0] == 0x89 && b[1] == 0x50) // PNG
+            || (b[0] == 0x47 && b[1] == 0x49) // GIF
+            || (b[0] == 0x52 && b[1] == 0x49)) // RIFF/WebP
+}
+
+/// Скачать аудио по прямому CDN-URL (reqwest + rustls, в обход CORS WebView2).
+/// `referer` нужен SC (виртуальный origin → 403 без него); YM передаёт `None`.
+async fn fetch_audio(url: &str, referer: Option<&str>) -> Result<Vec<u8>, String> {
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+        .build()
+        .map_err(|e| e.to_string())?;
+    fetch_bytes_retry(&client, url, referer, 4).await
+}
+
+/// Расширение по magic-bytes: MP4/M4A — "ftyp" по смещению 4, иначе mp3.
+fn audio_ext(bytes: &[u8]) -> &'static str {
+    if bytes.len() > 8 && &bytes[4..8] == b"ftyp" { "m4a" } else { "mp3" }
+}
+
 async fn download_sc(
     app: AppHandle,
     url: String,
@@ -611,31 +723,19 @@ async fn download_sc(
     cover_url: Option<String>,
     title: Option<String>,
     artist: Option<String>,
+    referer: Option<String>,
 ) {
     use tauri_plugin_dialog::DialogExt;
 
-    tracing::info!("SC download: {filename} — {}", &url[..url.len().min(80)]);
+    tracing::info!("stream download: {filename} — {}", &url[..url.len().min(80)]);
     emit_download_state(&app, "downloading", None);
 
-    let client = match reqwest::Client::builder()
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-        .build()
-    {
-        Ok(c) => c,
-        Err(e) => { emit_download_state(&app, "error", Some(&e.to_string())); return; }
+    let bytes = match fetch_audio(&url, referer.as_deref()).await {
+        Ok(b) => b,
+        Err(e) => { emit_download_state(&app, "error", Some(&e)); return; }
     };
 
-    let resp = match client.get(&url).header("Referer", "https://soundcloud.com/").send().await {
-        Ok(r) => r,
-        Err(e) => { emit_download_state(&app, "error", Some(&e.to_string())); return; }
-    };
-    let bytes = match resp.bytes().await {
-        Ok(b) => b.to_vec(),
-        Err(e) => { emit_download_state(&app, "error", Some(&e.to_string())); return; }
-    };
-
-    // Magic bytes: MP4/M4A — "ftyp" at offset 4.
-    let ext = if bytes.len() > 8 && &bytes[4..8] == b"ftyp" { "m4a" } else { "mp3" };
+    let ext = audio_ext(&bytes);
 
     let safe = sanitize_filename(&filename);
     let default_name = format!("{safe}.{ext}");
@@ -661,7 +761,7 @@ async fn download_sc(
             }
             tracing::info!("SC download saved: {}", path.display());
             // Embed cover + metadata tags after saving audio.
-            embed_tags_async(&path, cover_url.as_deref(), title.as_deref(), artist.as_deref()).await;
+            embed_tags_async(&path, cover_url.as_deref(), title.as_deref(), artist.as_deref(), referer.as_deref()).await;
             emit_download_state(&app, "done", None);
         }
         None => emit_download_state(&app, "cancelled", None),
@@ -673,6 +773,7 @@ async fn embed_tags_async(
     cover_url: Option<&str>,
     title: Option<&str>,
     artist: Option<&str>,
+    referer: Option<&str>,
 ) {
     use std::time::Duration;
 
@@ -685,25 +786,24 @@ async fn embed_tags_async(
             cu.find(',').and_then(|i| {
                 base64::engine::general_purpose::STANDARD.decode(&cu[i + 1..]).ok()
             })
-        } else if cu.starts_with("http") {
-            let result = async {
-                let client = reqwest::Client::builder()
-                    .timeout(Duration::from_secs(10))
-                    .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                    .build()?;
-                let bytes = client
-                    .get(cu)
-                    .header("Referer", "https://soundcloud.com/")
-                    .send()
-                    .await?
-                    .bytes()
-                    .await?;
-                Ok::<Vec<u8>, reqwest::Error>(bytes.to_vec())
-            }
-            .await;
-            match result {
-                Ok(b) => Some(b),
-                Err(e) => { tracing::warn!("cover download failed: {e}"); None }
+        } else if cu.starts_with("http") || cu.starts_with("//") {
+            // Протокол-относительный `//host/...` → дополняем https.
+            let url = if let Some(rest) = cu.strip_prefix("//") {
+                format!("https://{rest}")
+            } else {
+                cu.to_string()
+            };
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(12))
+                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                .build();
+            match client {
+                Ok(c) => match fetch_bytes_retry(&c, &url, referer, 3).await {
+                    Ok(b) if looks_like_image(&b) => Some(b),
+                    Ok(_) => { tracing::warn!("cover: ответ не похож на изображение, пропускаем"); None }
+                    Err(e) => { tracing::warn!("cover download failed: {e}"); None }
+                },
+                Err(e) => { tracing::warn!("cover client build: {e}"); None }
             }
         } else {
             None
@@ -928,6 +1028,17 @@ async fn download_cover(app: AppHandle, data_url: Option<String>, url: Option<St
         },
         None => emit_download_state(&app, "cancelled", None),
     }
+}
+
+/// Уникальный путь в папке: при коллизии имени добавляет суффикс ` (N)`.
+fn unique_path(dir: &Path, base: &str, ext: &str) -> PathBuf {
+    let mut p = dir.join(format!("{base}.{ext}"));
+    let mut n = 2;
+    while p.exists() {
+        p = dir.join(format!("{base} ({n}).{ext}"));
+        n += 1;
+    }
+    p
 }
 
 #[tauri::command]

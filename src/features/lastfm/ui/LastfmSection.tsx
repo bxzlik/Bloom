@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLastfmStore } from '../model/lastfmStore'
+import { useT } from '@shared/i18n'
 
 const EyeBtn = ({ onClick }: { onClick: () => void }) => (
   <button
@@ -31,6 +32,7 @@ const EyeBtn = ({ onClick }: { onClick: () => void }) => (
  * ввод API Key/Secret. Состояние/логика — useLastfmStore.
  */
 export const LastfmSection = () => {
+  const t = useT()
   const sk = useLastfmStore((s) => s.sk)
   const user = useLastfmStore((s) => s.user)
   const scrobbleEnabled = useLastfmStore((s) => s.scrobbleEnabled)
@@ -87,7 +89,7 @@ export const LastfmSection = () => {
           <div>
             <div style={{ fontSize: 15, fontWeight: 800 }}>Last.fm</div>
             <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-              {sk && user ? '✓ Подключено как ' + user : 'Не подключено'}
+              {sk && user ? t('settings.lastfm.connectedAs', { user }) : t('settings.lastfm.notConnected')}
             </div>
           </div>
           {sk && (
@@ -95,7 +97,7 @@ export const LastfmSection = () => {
               onClick={logout}
               style={{ marginLeft: 'auto', background: 'rgba(213,16,7,0.12)', border: '1px solid rgba(213,16,7,0.25)', color: '#d51007', borderRadius: 8, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}
             >
-              Выйти
+              {t('settings.lastfm.logout')}
             </button>
           )}
         </div>
@@ -103,7 +105,7 @@ export const LastfmSection = () => {
         {!sk && (
           <div>
             <div className="sc-url-hint" style={{ marginBottom: 12 }}>
-              Войди через браузер — без ввода пароля в приложение. После входа на Last.fm вернись сюда и нажми «Готово».
+              {t('settings.lastfm.oauthHint')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -117,7 +119,7 @@ export const LastfmSection = () => {
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
                   </svg>
-                  Войти через Last.fm
+                  {t('settings.lastfm.login')}
                 </button>
                 {oauthPending && (
                   <button
@@ -125,7 +127,7 @@ export const LastfmSection = () => {
                     onClick={() => void finishOAuth()}
                     style={{ background: 'rgba(213,16,7,0.15)', border: '1px solid rgba(213,16,7,0.4)', color: '#d51007' }}
                   >
-                    ✓ Готово — я подтвердил
+                    {t('settings.lastfm.done')}
                   </button>
                 )}
               </div>
@@ -137,11 +139,11 @@ export const LastfmSection = () => {
         )}
 
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-          <div style={{ fontSize: 11.5, color: 'var(--text2)', marginBottom: 8 }}>Настройки скробблинга</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text2)', marginBottom: 8 }}>{t('settings.lastfm.scrobbleSettings')}</div>
           <div className="sr">
             <div>
-              <div className="sl2">Скробблинг</div>
-              <div className="ssub">Засчитывать прослушанные треки на Last.fm</div>
+              <div className="sl2">{t('settings.lastfm.scrobble')}</div>
+              <div className="ssub">{t('settings.lastfm.scrobble.sub')}</div>
             </div>
             <label className="tele-sw">
               <input type="checkbox" checked={scrobbleEnabled} onChange={toggleScrobble} />
@@ -151,7 +153,7 @@ export const LastfmSection = () => {
           <div className="sr">
             <div>
               <div className="sl2">Now Playing</div>
-              <div className="ssub">Обновлять статус «Сейчас играет»</div>
+              <div className="ssub">{t('settings.lastfm.nowPlaying.sub')}</div>
             </div>
             <label className="tele-sw">
               <input type="checkbox" checked={nowPlayingEnabled} onChange={toggleNowPlaying} />
@@ -162,7 +164,7 @@ export const LastfmSection = () => {
 
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
           <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
-            Для работы нужен API-ключ. Получи его на <b style={{ color: 'var(--text2)' }}>last.fm/api/account/create</b>, затем вставь ниже.
+            {t('settings.lastfm.apiHint.a')} <b style={{ color: 'var(--text2)' }}>last.fm/api/account/create</b>{t('settings.lastfm.apiHint.b')}
           </div>
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ position: 'relative', display: 'flex' }}>
@@ -192,7 +194,7 @@ export const LastfmSection = () => {
               <EyeBtn onClick={() => setSecretVis((v) => !v)} />
             </div>
             <button className="sc-btn" onClick={() => saveKeys(apiKey, apiSecret)} style={{ alignSelf: 'flex-start' }}>
-              Сохранить ключи
+              {t('settings.lastfm.saveKeys')}
             </button>
           </div>
         </div>

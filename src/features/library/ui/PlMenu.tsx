@@ -9,7 +9,9 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
-import { playFromSource, playShuffledFromSource, type PlaySource } from '@features/player'
+import { useT } from '@shared/i18n'
+import type { Track } from '@entities/track'
+import { playFromSource, playShuffledFromSource, downloadPlaylistTracks, type PlaySource } from '@features/player'
 import { exportPlaylistFile, folderScan, folderRemove } from '../api'
 import { buildExportBundle, refreshScPlaylist } from '../lib'
 import {
@@ -70,6 +72,7 @@ export const PlMenu = ({
   onEdit,
   onAddTracks,
 }: PlMenuProps) => {
+  const t = useT()
   const deletePl = usePlaylistStore((s) => s.deletePl)
   const togglePin = useUnifiedOrderStore((s) => s.togglePin)
   const pinOrder = useUnifiedOrderStore((s) => s.order)
@@ -177,10 +180,22 @@ export const PlMenu = ({
     }
   }
 
+  // Скачать треки плейлиста (только площадок SC/YM) в выбранную папку.
+  const downloadPl = () => {
+    if (!playlist) return
+    onClose()
+    const all = useLibStore.getState().tracks
+    const byId = new Map(all.map((tr) => [tr.id, tr]))
+    const tracks = playlist.trs
+      .map((id) => byId.get(id))
+      .filter((tr): tr is Track => !!tr)
+    void downloadPlaylistTracks(playlist.name, tracks)
+  }
+
   const removePl = () => {
     if (!playlist) return
     onClose()
-    if (!confirm(`Удалить плейлист «${playlist.name}»?`)) return
+    if (!confirm(t('lib.plmenu.confirmDeletePl', { name: playlist.name }))) return
     deletePl(playlist.id)
     onReset?.()
   }
@@ -194,14 +209,14 @@ export const PlMenu = ({
   const removeFolder = () => {
     if (!folderPath) return
     onClose()
-    if (!confirm(`Отвязать папку «${heroName}»?`)) return
+    if (!confirm(t('lib.plmenu.confirmUnlinkFolder', { name: heroName }))) return
     folderRemove(folderPath).catch((e) => console.warn('folderRemove failed', e))
     onReset?.()
   }
 
   const clearHistory = () => {
     onClose()
-    if (!confirm('Очистить историю прослушиваний?')) return
+    if (!confirm(t('lib.plmenu.confirmClearHistory'))) return
     useHistoryStore.getState().clear()
     useActivityStore.getState().clear()
   }
@@ -301,13 +316,13 @@ export const PlMenu = ({
     const pinId = mode === 'folder' ? folderPath : playlist?.id
     const pinned = !!pinOrder.find((o) => o.type === pinType && o.id === pinId)?.pinned
     items.push(
-      <Item key="play" icon={<PlayIcon />} label="Воспроизвести" onClick={playCtx} />,
-      <Item key="open" icon={<OpenIcon />} label="Открыть" onClick={openCtx} />,
+      <Item key="play" icon={<PlayIcon />} label={t('player.aria.play')} onClick={playCtx} />,
+      <Item key="open" icon={<OpenIcon />} label={t('common.open')} onClick={openCtx} />,
       <div key="sep-cursor" className="cx-sep" />,
       <Item
         key="pin"
         icon={<PinIcon />}
-        label={pinned ? 'Открепить' : 'Закрепить'}
+        label={pinned ? t('lib.sidebar.unpin') : t('lib.sidebar.pin')}
         onClick={() => {
           if (pinId) togglePin(pinType, pinId)
           onClose()
@@ -324,7 +339,7 @@ export const PlMenu = ({
       <Item
         key="shuffle-play"
         icon={<ShuffleIcon />}
-        label="Перемешать и запустить"
+        label={t('lib.plmenu.shuffleStart')}
         onClick={shufflePlayCtx}
       />,
     )
@@ -335,7 +350,7 @@ export const PlMenu = ({
       <Item
         key="add"
         icon={<PlusIcon />}
-        label="Добавить треки"
+        label={t('lib.plmenu.addTracks')}
         onClick={() => {
           onClose()
           onAddTracks?.(playlist.id)
@@ -344,7 +359,7 @@ export const PlMenu = ({
       <Item
         key="edit"
         icon={<EditIcon />}
-        label="Изменить плейлист"
+        label={t('lib.plmenu.editPlaylist')}
         onClick={() => {
           onClose()
           onEdit?.(playlist.id)
@@ -353,7 +368,7 @@ export const PlMenu = ({
       <Item
         key="merge"
         icon={<MergeIcon />}
-        label="Объединить с…"
+        label={t('lib.plmenu.mergeWith')}
         onClick={() => {
           onClose()
           useMergeStore.getState().openMerge(playlist.id)
@@ -362,7 +377,7 @@ export const PlMenu = ({
       <Item
         key="dups"
         icon={<DupsIcon />}
-        label="Найти дубли"
+        label={t('lib.plmenu.findDups')}
         onClick={() => {
           onClose()
           useDupsStore.getState().openDups(playlist.id)
@@ -373,7 +388,7 @@ export const PlMenu = ({
             <Item
               key="refresh-sc"
               icon={<RefreshIcon />}
-              label="Обновить треки"
+              label={t('lib.plmenu.refreshTracks')}
               onClick={() => {
                 onClose()
                 void refreshScPlaylist(playlist.id)
@@ -381,15 +396,16 @@ export const PlMenu = ({
             />,
           ]
         : []),
-      <Item key="export" icon={<ExportIcon />} label="Экспорт плейлиста" onClick={exportPl} />,
+      <Item key="export" icon={<ExportIcon />} label={t('lib.plmenu.exportPlaylist')} onClick={exportPl} />,
+      <Item key="download" icon={<DownloadIcon />} label={t('lib.plmenu.downloadPlaylist')} onClick={downloadPl} />,
     )
   } else if (mode === 'folder' && folderPath) {
     items.push(
-      <Item key="rescan" icon={<RefreshIcon />} label="Пересканировать" onClick={rescanFolder} />,
+      <Item key="rescan" icon={<RefreshIcon />} label={t('lib.plmenu.rescan')} onClick={rescanFolder} />,
     )
   } else if (mode === 'history') {
     items.push(
-      <Item key="clear" danger icon={<TrashIcon />} label="Очистить историю" onClick={clearHistory} />,
+      <Item key="clear" danger icon={<TrashIcon />} label={t('lib.plmenu.clearHistory')} onClick={clearHistory} />,
     )
   }
 
@@ -403,7 +419,7 @@ export const PlMenu = ({
       <Item
         key="sort"
         icon={<SortLinesIcon />}
-        label="Сортировка"
+        label={t('lib.plmenu.sort')}
         onClick={() => setSortPage(true)}
         chevron
       />,
@@ -414,12 +430,12 @@ export const PlMenu = ({
   if (mode === 'pl' && playlist) {
     items.push(
       <div key="sep-del" className="cx-sep" />,
-      <Item key="delete" danger icon={<TrashIcon />} label="Удалить плейлист" onClick={removePl} />,
+      <Item key="delete" danger icon={<TrashIcon />} label={t('lib.plmenu.deletePlaylist')} onClick={removePl} />,
     )
   } else if (mode === 'folder' && folderPath) {
     items.push(
       <div key="sep-del" className="cx-sep" />,
-      <Item key="delete" danger icon={<TrashIcon />} label="Удалить папку" onClick={removeFolder} />,
+      <Item key="delete" danger icon={<TrashIcon />} label={t('lib.plmenu.deleteFolder')} onClick={removeFolder} />,
     )
   }
 
@@ -511,17 +527,18 @@ const Item = ({
 // ── Sort sub-page ────────
 
 const SortPage = ({ onBack }: { onBack: () => void }) => {
+  const t = useT()
   const sortMode = useLibStore((s) => s.sortMode)
   const sortDir = useLibStore((s) => s.sortDir)
   const setSort = useLibStore((s) => s.setSort)
 
   const SORT_ITEMS: { mode: TrackSortMode; label: string; icon: ReactNode }[] = [
-    { mode: 'name', label: 'По названию', icon: <SortLinesIcon /> },
-    { mode: 'artist', label: 'По исполнителю', icon: <PersonIcon /> },
-    { mode: 'dur', label: 'По длительности', icon: <ClockIcon /> },
-    { mode: 'date', label: 'По дате добавления', icon: <CalendarIcon /> },
-    { mode: 'plays', label: 'По прослушиваниям', icon: <PlayIcon /> },
-    { mode: 'album', label: 'По альбому', icon: <DiscIcon /> },
+    { mode: 'name', label: t('lib.sort.name'), icon: <SortLinesIcon /> },
+    { mode: 'artist', label: t('lib.sort.artist'), icon: <PersonIcon /> },
+    { mode: 'dur', label: t('lib.sort.dur'), icon: <ClockIcon /> },
+    { mode: 'date', label: t('lib.sort.date'), icon: <CalendarIcon /> },
+    { mode: 'plays', label: t('lib.sort.plays'), icon: <PlayIcon /> },
+    { mode: 'album', label: t('lib.sort.album'), icon: <DiscIcon /> },
   ]
 
   return (
@@ -555,13 +572,13 @@ const SortPage = ({ onBack }: { onBack: () => void }) => {
         <span className="ci-icon" style={{ color: sortMode === 'default' ? 'var(--accent)' : undefined }}>
           <RepeatIcon />
         </span>
-        <span style={{ flex: 1 }}>По умолчанию</span>
+        <span style={{ flex: 1 }}>{t('lib.sort.default')}</span>
       </div>
       <div className="pl-menu-back" onClick={onBack}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>{' '}
-        Назад
+        {t('common.back')}
       </div>
     </div>
   )
@@ -631,6 +648,14 @@ const ExportIcon = () => (
     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
     <polyline points="17 8 12 3 7 8" />
     <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
+)
+
+const DownloadIcon = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 )
 

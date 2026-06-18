@@ -21,6 +21,7 @@ import {
   useLibStore,
 } from '@features/library'
 import { toast, useShareStore } from '@shared/ui'
+import { useT, useI18nStore } from '@shared/i18n'
 import { useDetailStore, type DetailTarget } from '../model/detailStore'
 
 /* ── Форматтеры ───── */
@@ -39,10 +40,12 @@ const durToSec = (dur?: string): number => {
   return 0
 }
 const fmtDurLong = (secs: number): string => {
-  if (!secs) return '0 мин'
+  const ru = useI18nStore.getState().locale === 'ru'
+  if (!secs) return ru ? '0 мин' : '0 min'
   const h = Math.floor(secs / 3600)
   const m = Math.floor((secs % 3600) / 60)
-  return h > 0 ? `${h}ч ${m}м` : `${m} мин`
+  if (h > 0) return ru ? `${h}ч ${m}м` : `${h}h ${m}m`
+  return ru ? `${m} мин` : `${m} min`
 }
 const totalSec = (tracks: Track[]): number =>
   tracks.reduce((s, t) => s + durToSec(t.dur), 0)
@@ -91,6 +94,7 @@ const FollowBtn = ({
   const following = useFollowStore((s) => s.artists.some((a) => a.id === id))
   const follow = useFollowStore((s) => s.follow)
   const unfollow = useFollowStore((s) => s.unfollow)
+  const t = useT()
   const toggle = () => {
     if (following) unfollow(id)
     else follow({ id, name, avatar, scId: rawScId(id) || null, scPermalink: permalink })
@@ -99,7 +103,7 @@ const FollowBtn = ({
     <button
       className={`sp-follow-btn${following ? ' followed' : ''}`}
       onClick={toggle}
-      aria-label={following ? 'Отписаться' : 'Подписаться'}
+      aria-label={following ? t('search.unfollow') : t('search.follow')}
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -146,6 +150,7 @@ const TrackRow = ({
   onCtxMenu: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>) => void
 }) => {
+  const tt = useT()
   const isFav = useFavStore((s) => s.favs.has(track.id))
   const toggleFav = useFavStore((s) => s.toggleFav)
   const inLib = useLibStore((s) => s.tracks.some((t) => t.id === track.id))
@@ -172,10 +177,10 @@ const TrackRow = ({
         </div>
       </div>
       <div className="trac">
-        <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label="В «Любимое»">
+        <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label={tt('player.aria.favAdd')}>
           <HeartSvg filled={isFav} />
         </button>
-        <button className="ib" onClick={onAddClick} aria-label="Добавить">
+        <button className="ib" onClick={onAddClick} aria-label={tt('player.aria.add')}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
@@ -264,6 +269,7 @@ const Skeleton = () => (
  * альбом/плейлист → новый плейлист). ПКМ/«+» по треку → TrackCtxMenu.
  */
 export const DetailView = () => {
+  const t = useT()
   const stack = useDetailStore((s) => s.stack)
   const back = useDetailStore((s) => s.back)
   const push = useDetailStore((s) => s.push)
@@ -321,21 +327,21 @@ export const DetailView = () => {
       try {
         let res: Loaded
         if (target.kind === 'artist') {
-          if (!prov?.getArtist) throw new Error('Страница артиста недоступна')
+          if (!prov?.getArtist) throw new Error(t('search.err.artistPage'))
           res = { kind: 'artist', data: await prov.getArtist(target.id) }
         } else if (target.kind === 'album') {
-          if (!prov?.getAlbum) throw new Error('Страница альбома недоступна')
+          if (!prov?.getAlbum) throw new Error(t('search.err.albumPage'))
           const { album, tracks } = await prov.getAlbum(target.id)
           res = { kind: 'album', playlist: album, tracks }
         } else {
-          if (!prov?.getPlaylist) throw new Error('Страница плейлиста недоступна')
+          if (!prov?.getPlaylist) throw new Error(t('search.err.playlistPage'))
           const { playlist, tracks } = await prov.getPlaylist(target.id)
           res = { kind: 'playlist', playlist, tracks }
         }
         detailCache.set(key, res)
         if (!cancelled) setLoaded(res)
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Ошибка загрузки')
+        if (!cancelled) setError(e instanceof Error ? e.message : t('search.err.load'))
       }
     }
     void run()
@@ -378,11 +384,11 @@ export const DetailView = () => {
     tracks.forEach((t) => {
       if (saveTrackToLibrary(t)) added++
     })
-    toast(added ? `Добавлено треков: ${added}` : 'Все треки уже в библиотеке')
+    toast(added ? t('search.toast.added', { n: added }) : t('search.toast.allInLib'))
   }
   const importAsPlaylist = (title: string, cover: string | null, tracks: Track[], scSource?: string) => {
     if (!tracks.length) {
-      toast('Нет треков для импорта')
+      toast(t('search.toast.noImport'))
       return
     }
     const pl = createPl(title, undefined, cover ?? undefined, scSource ? { scSource } : undefined)
@@ -390,14 +396,14 @@ export const DetailView = () => {
     // Точный порядок альбома/плейлиста (addTrackToPl теперь prepend'ит по одному
     // — для импорта это перевернуло бы список, поэтому ставим trs целиком).
     reorderPlTracks(pl.id, tracks.map((t) => t.id))
-    toast(`Плейлист «${title}» импортирован (${tracks.length} треков)`)
+    toast(t('search.toast.plImported', { name: title, n: tracks.length }))
     close()
   }
 
   // ── Hero данные (мгновенно из target, обогащаются из loaded) ──
   const isArtist = target.kind === 'artist'
   const square = !isArtist
-  const label = isArtist ? 'АРТИСТ' : target.kind === 'album' ? 'АЛЬБОМ' : 'ПЛЕЙЛИСТ'
+  const label = isArtist ? t('search.detail.artist') : target.kind === 'album' ? t('search.detail.album') : t('search.detail.playlist')
 
   let heroName = target.title
   let heroCover = target.cover ?? null
@@ -512,7 +518,7 @@ export const DetailView = () => {
           style={heroBg ? { backgroundImage: `url(${heroBg})` } : undefined}
         />
         <div className="sp-am-hero-grad" />
-        <button className="sp-dv-back" onClick={stack.length > 1 ? back : close} aria-label="Назад">
+        <button className="sp-dv-back" onClick={stack.length > 1 ? back : close} aria-label={t('common.back')}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
@@ -535,7 +541,7 @@ export const DetailView = () => {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
                 </svg>
-                Воспроизвести всё
+                {t('search.playAll')}
               </button>
               {/* Follow — сразу после «Воспроизвести всё». */}
               {isArtist && loadedArtist && (
@@ -546,7 +552,7 @@ export const DetailView = () => {
                   permalink={loadedArtist.permalink ?? null}
                 />
               )}
-              <button className="sp-am-icon-btn" onClick={onShuffle} aria-label="Перемешать">
+              <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
                   <path d="m18 2 4 4-4 4" strokeLinejoin="round" />
@@ -555,12 +561,12 @@ export const DetailView = () => {
                   <path d="m18 14 4 4-4 4" strokeLinejoin="round" />
                 </svg>
               </button>
-              <button className="sp-am-icon-btn" onClick={onImport} aria-label="Импортировать">
+              <button className="sp-am-icon-btn" onClick={onImport} aria-label={t('search.import')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
               </button>
-              <button className="sp-am-icon-btn" onClick={onShare} aria-label="Поделиться">
+              <button className="sp-am-icon-btn" onClick={onShare} aria-label={t('lib.ctx.share')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                   <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
@@ -573,7 +579,7 @@ export const DetailView = () => {
 
       <div className="sp-am-body" style={{ padding: '16px 8px 24px' }}>
         {!loaded && !error && <Skeleton />}
-        {error && <div className="sc-status error">Ошибка: {error}</div>}
+        {error && <div className="sc-status error">{t('search.errPrefix')}{error}</div>}
 
         {loaded?.kind === 'artist' && (
           <ArtistBody
@@ -590,7 +596,7 @@ export const DetailView = () => {
                 id: p.id,
                 title: p.title,
                 cover: p.cover ?? null,
-                subtitle: `${p.trackCount ?? 0} треков`,
+                subtitle: t('search.tracksCount', { n: p.trackCount ?? 0 }),
                 round: false,
               })
             }
@@ -672,6 +678,7 @@ const ArtistBody = ({
   onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
   onOpenAlbum: (p: Playlist) => void
 }) => {
+  const t = useT()
   const { artist, topTracks, tracks, albums } = data
   const shownTracks = tracks.slice(0, tracksLimit)
 
@@ -701,7 +708,7 @@ const ArtistBody = ({
 
       {topTracks.length > 0 && (
         <div className="sp-am-section">
-          <div className="sp-am-section-hdr"><span className="sp-am-section-title">Популярные</span></div>
+          <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.popular')}</span></div>
           <div className="sp-am-tracks-grid">
             {topTracks.map((t) => (
               <Card
@@ -722,7 +729,7 @@ const ArtistBody = ({
 
       {tracks.length > 0 && (
         <div className="sp-am-section">
-          <div className="sp-am-section-hdr"><span className="sp-am-section-title">Треки</span></div>
+          <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.tracks')}</span></div>
           {shownTracks.map((t) => (
             <TrackRow
               key={t.id}
@@ -742,7 +749,7 @@ const ArtistBody = ({
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)',
               }}
             >
-              Загрузить ещё
+              {t('search.loadMore')}
             </button>
           )}
         </div>
@@ -750,14 +757,14 @@ const ArtistBody = ({
 
       {albums.length > 0 && (
         <div className="sp-am-section">
-          <div className="sp-am-section-hdr"><span className="sp-am-section-title">Альбомы</span></div>
+          <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.albums')}</span></div>
           <div className="sp-am-tracks-grid">
             {albums.map((a) => (
               <Card
                 key={a.id}
                 cover={a.cover}
                 name={a.title}
-                sub={`${a.trackCount ?? 0} треков`}
+                sub={t('search.tracksCount', { n: a.trackCount ?? 0 })}
                 square
                 showPlay
                 onClick={() => onOpenAlbum(a)}
@@ -768,7 +775,7 @@ const ArtistBody = ({
       )}
 
       {!topTracks.length && !tracks.length && !albums.length && (
-        <div className="sc-status">У этого артиста нет доступных треков</div>
+        <div className="sc-status">{t('search.noArtistTracks')}</div>
       )}
     </>
   )
@@ -786,7 +793,8 @@ const PlaylistBody = ({
   onCtxMenu: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
   onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
 }) => {
-  if (!tracks.length) return <div className="sc-status">Нет доступных треков</div>
+  const t = useT()
+  if (!tracks.length) return <div className="sc-status">{t('search.noTracks')}</div>
   return (
     <div className="sp-am-section">
       {tracks.map((t) => (

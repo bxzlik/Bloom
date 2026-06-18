@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEven
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
 import { useSortable } from '@shared/lib/useSortable'
+import { useT } from '@shared/i18n'
 import {
   useLibStore,
   usePlaylistStore,
@@ -383,6 +384,7 @@ const TrackRow = ({
   /** Для history-режима: время + кол-во прослушиваний. */
   historyMeta?: { time: string; count: number }
 }) => {
+  const t = useT()
   const isFav = useFavStore((s) => s.favs.has(track.id))
   const toggleFav = useFavStore((s) => s.toggleFav)
   const isCurrent = useQueueStore((s) => s.curId === track.id)
@@ -474,7 +476,7 @@ const TrackRow = ({
       <button
         className={`ib${isFav ? ' fav' : ''}`}
         type="button"
-        aria-label={isFav ? 'Убрать из «Любимого»' : 'В «Любимое»'}
+        aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
         onClick={(e) => {
           e.stopPropagation()
           toggleFav(track.id)
@@ -495,7 +497,7 @@ const TrackRow = ({
       <button
         className="ib"
         type="button"
-        aria-label="Добавить"
+        aria-label={t('player.aria.add')}
         onClick={(e) => onAddClick?.(e, track.id)}
       >
         <svg
@@ -555,6 +557,7 @@ const MusicNoteIcon = () => (
 // ── Пустые состояния ─────────────────
 
 const EmptyState = ({ mode }: { mode: string }) => {
+  const t = useT()
   let icon: React.ReactNode = null
   let title = ''
   let sub = ''
@@ -573,8 +576,8 @@ const EmptyState = ({ mode }: { mode: string }) => {
           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
         </svg>
       )
-      title = 'Добавьте первый трек'
-      sub = 'У вас ещё нет треков в любимых'
+      title = t('lib.empty.favTitle')
+      sub = t('lib.empty.favSub')
       break
     case 'history':
       icon = (
@@ -591,7 +594,7 @@ const EmptyState = ({ mode }: { mode: string }) => {
           <polyline points="12 6 12 12 16 14" />
         </svg>
       )
-      title = 'История пуста'
+      title = t('lib.empty.historyTitle')
       sub = ''
       break
     case 'folder':
@@ -608,7 +611,7 @@ const EmptyState = ({ mode }: { mode: string }) => {
           <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
         </svg>
       )
-      title = 'В папке нет аудиофайлов'
+      title = t('lib.empty.folderTitle')
       sub = ''
       break
     case 'pl':
@@ -627,8 +630,8 @@ const EmptyState = ({ mode }: { mode: string }) => {
           <circle cx="18" cy="16" r="3" />
         </svg>
       )
-      title = 'Плейлист пуст'
-      sub = 'Добавьте треки в этот плейлист'
+      title = t('lib.empty.plTitle')
+      sub = t('lib.empty.plSub')
       break
     case 'all':
     default:
@@ -647,8 +650,8 @@ const EmptyState = ({ mode }: { mode: string }) => {
           <circle cx="18" cy="16" r="3" />
         </svg>
       )
-      title = 'Нет треков'
-      sub = 'Добавьте папку с музыкой в настройках'
+      title = t('lib.empty.noTracksTitle')
+      sub = t('lib.empty.noTracksSub')
   }
   return (
     <div

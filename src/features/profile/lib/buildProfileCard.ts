@@ -6,6 +6,7 @@
  * Статистика (треки/прослушивания/время/любимый артист) передаётся снаружи —
  * считается из истории (как StatsSection), а не из мёртвого playCount.
  */
+import { t } from '@shared/i18n'
 
 export interface ProfileCardData {
   name: string
@@ -193,7 +194,7 @@ export const buildProfileCard = async (d: ProfileCardData): Promise<HTMLCanvasEl
   ctx.font = `700 ${22 * S}px ${FONT}`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'alphabetic'
-  ctx.fillText(ellipsis(ctx, d.name || 'Пользователь', availW), tx, y + PROF_AVA * 0.46)
+  ctx.fillText(ellipsis(ctx, d.name || t('common.defaultUser'), availW), tx, y + PROF_AVA * 0.46)
   if (d.bio) {
     ctx.fillStyle = 'rgba(255,255,255,.36)'
     ctx.font = `${12 * S}px ${FONT}`
@@ -205,10 +206,10 @@ export const buildProfileCard = async (d: ProfileCardData): Promise<HTMLCanvasEl
   // ---- 2×2 STATS GRID ----
   const COL_W = (INNER_W - GRID_GAP) / 2
   const statItems = [
-    { val: String(d.trackCount), lbl: 'ТРЕКОВ' },
-    { val: String(d.plays), lbl: 'ПРОСЛУШАНО' },
-    { val: d.timeStr, lbl: 'ВРЕМЯ ПРОСЛУШИВАНИЯ' },
-    { val: d.favArtist, lbl: 'ЛЮБИМЫЙ ИСПОЛНИТЕЛЬ' },
+    { val: String(d.trackCount), lbl: t('stats.card.tracks') },
+    { val: String(d.plays), lbl: t('stats.card.plays') },
+    { val: d.timeStr, lbl: t('stats.card.time') },
+    { val: d.favArtist, lbl: t('stats.card.favArtist') },
   ]
   for (let si = 0; si < 4; si++) {
     const col = si % 2
