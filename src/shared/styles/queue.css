@@ -56,12 +56,12 @@
 .lib-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 14px 6px;display:flex;justify-content:space-between;align-items:center}
 .lib-section-title button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;transition:.15s}
 .lib-section-title button:hover{color:var(--text)}
-#libAddMenu{position:fixed;background:var(--bg2,#1e1e1e);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:190px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top right;display:none}
+#libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:190px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top right;display:none}
 #libAddMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libAddMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #libAddMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
 #libAddMenu button:hover{background:var(--hover,rgba(255,255,255,.07))}
-#speedPicker{position:fixed;background:var(--bg2,#1e1e1e);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:10px 12px;gap:10px;z-index:9100;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top left;display:none;align-items:center}
+#speedPicker{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:10px 12px;gap:10px;z-index:9100;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top left;display:none;align-items:center}
 #speedPicker.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #speedPicker.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #speedPicker .sp-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:none;border:none;padding:0;font-family:var(--font)}
@@ -72,13 +72,13 @@
 #speedPicker .sp-label{font-size:10px;font-weight:700;color:var(--text2,#999)}
 #speedPicker .sp-item.active .sp-label{color:var(--text)}
 #speedPicker .sp-num{font-size:9.5px;font-weight:800;letter-spacing:-.3px}
-#libSortMenu{position:fixed;background:var(--bg2,#1e1e1e);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top right;display:none}
+#libSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top right;display:none}
 #libSortMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libSortMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #libSortMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
 #libSortMenu button:hover{background:var(--hover,rgba(255,255,255,.07))}
 #libSortMenu button.active{color:var(--accent)}
-#afsSortMenu{position:fixed;background:color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:9999;min-width:210px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);display:none}
+#afsSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:9999;min-width:210px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none}
 #afsSortMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 #afsSortBtn.sort-active{color:var(--accent)!important;border-color:rgba(var(--accent-rgb),.3)!important}
 #addFromLibList::-webkit-scrollbar{width:2px}

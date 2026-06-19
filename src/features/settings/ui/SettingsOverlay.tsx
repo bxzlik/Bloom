@@ -85,16 +85,8 @@ export const SettingsOverlay = () => {
     background: <BackgroundSection />,
     medialib: <CustomizationSection />,
     // Интеграции
-    soundcloud: (
-      <div className="s-section active" id="ssec-soundcloud">
-        <ScClientIdCard />
-      </div>
-    ),
-    genius: (
-      <div className="s-section active" id="ssec-genius">
-        <GeniusTokenCard />
-      </div>
-    ),
+    soundcloud: <ScClientIdCard />,
+    genius: <GeniusTokenCard />,
     lastfm: <LastfmSection />,
     discord: <DiscordSection />,
     yandex: <YandexSection />,

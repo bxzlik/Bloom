@@ -21,6 +21,7 @@
 @import './track-modals.css';
 @import './stats-windows.css';
 @import './soundcloud-system.css';
+@import './notifications.css';
 
 /* отдельные блоки */
 @import './onboarding-search.css';

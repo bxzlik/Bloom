@@ -1,14 +1,14 @@
 /* ===== LOGS VIEWER MODAL ===== */
 .logs-backdrop{position:fixed;top:32px;left:0;right:0;bottom:0;z-index:992;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .22s}
 .logs-backdrop.open{opacity:1;pointer-events:all}
-.logs-modal{background:var(--block-bg,var(--card-solid,var(--card)));border:1px solid rgba(255,255,255,.09);border-radius:var(--radius);width:min(900px,100%);height:min(640px,100%);display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.95);overflow:hidden;transform:scale(.9) translateY(20px);will-change:transform;transition:.3s cubic-bezier(.34,1.38,.64,1)}
-.logs-backdrop.open .logs-modal{transform:scale(1) translateY(0)}
+.logs-modal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.09);border-radius:var(--radius);width:min(900px,100%);height:min(640px,100%);display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.95);overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
+.logs-backdrop.open .logs-modal{transform:translateY(0)}
 
 /* ===== PROFILE EDIT MODAL ===== */
 #peditBackdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
 #peditBackdrop.open{opacity:1;pointer-events:all}
-#peditModal{background:var(--block-bg,var(--card-solid,var(--card)));border:1px solid rgba(255,255,255,.09);border-radius:var(--radius);width:540px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.95);overflow:hidden;transform:scale(.9) translateY(20px);will-change:transform;transition:.3s cubic-bezier(.34,1.38,.64,1)}
-#peditBackdrop.open #peditModal{transform:scale(1) translateY(0)}
+#peditModal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.09);border-radius:var(--radius);width:540px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.95);overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
+#peditBackdrop.open #peditModal{transform:translateY(0)}
 .pedit-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px 16px;border-bottom:1px solid rgba(255,255,255,.09);flex-shrink:0}
 .pedit-head-title{font-size:14px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
 .pedit-close{width:28px;height:28px;border-radius:calc(var(--radius)*0.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
@@ -27,7 +27,7 @@
 .pedit-banner-remove:hover{background:rgba(200,40,40,.8);color:#fff;border-color:transparent}
 .pedit-identity{display:flex;align-items:flex-start;gap:16px;padding:0 24px 20px;margin-top:-36px;position:relative;z-index:2;min-width:0}
 .pedit-ava-wrap{position:relative;flex-shrink:0;cursor:pointer}
-.pedit-ava{width:72px;height:72px;border-radius:50%;background:transparent;border:3px solid var(--block-bg,var(--card-solid,var(--card)));overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.pedit-ava{width:72px;height:72px;border-radius:50%;background:transparent;border:3px solid color-mix(in srgb,var(--block-color),var(--text) 1%);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted)}
 .pedit-ava img{width:100%;height:100%;object-fit:cover;display:block}
 .pedit-ava-cam{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s}
 .pedit-ava-wrap:hover .pedit-ava-cam{opacity:1}
@@ -91,29 +91,29 @@
 
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;color:var(--muted);text-align:center;gap:10px}
 .empty p{font-size:12.5px}
-.pl-popup{position:fixed;z-index:9000;background:color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius) * 0.9);padding:5px;min-width:185px;max-width:240px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none;backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);max-height:320px;overflow-y:auto;pointer-events:auto}
+.pl-popup{position:fixed;z-index:9000;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius) * 0.9);padding:5px;min-width:185px;max-width:240px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none;max-height:320px;overflow-y:auto;pointer-events:auto}
 .pl-popup-title{padding:4px 10px 6px;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);margin-bottom:3px}
 .pl-popup-item{padding:7px 10px;font-size:12.5px;cursor:pointer;border-radius:calc(var(--radius) * 0.5);display:flex;align-items:center;gap:8px;color:var(--text);transition:background .1s,box-shadow .1s}
 .pl-popup-item:hover{background:var(--hover)}
 /* ===== CREATE/EDIT PLAYLIST MODAL ===== */
 .mover{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:994;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
 .mover.open{opacity:1;pointer-events:all}
-.modal{background:color-mix(in srgb,var(--card-solid,var(--card)) 40%,#000 60%);border:1px solid rgba(255,255,255,.08);border-radius:20px;width:460px;max-width:95vw;transform:scale(.91) translateY(24px);will-change:transform;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden}
-.mover.open .modal{transform:scale(1) translateY(0)}
+.modal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.08);border-radius:20px;width:460px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden}
+.mover.open .modal{transform:translateY(0)}
 /* ===== DEEP LINK SHARE MODAL ===== */
 #dlinkMover{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9900;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
 #dlinkMover.open{opacity:1;pointer-events:all}
-#dlinkModal{background:color-mix(in srgb,var(--card-solid,var(--card)) 40%,#000 60%);border:1px solid rgba(255,255,255,.08);border-radius:20px;width:340px;max-width:95vw;transform:scale(.91) translateY(24px);will-change:transform;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden}
-#dlinkMover.open #dlinkModal{transform:scale(1) translateY(0)}
+#dlinkModal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.08);border-radius:20px;width:340px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden}
+#dlinkMover.open #dlinkModal{transform:translateY(0)}
 /* ===== SHARE CARD MODAL ===== */
 #shareCardMover{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:996;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 #shareCardMover.open{opacity:1;pointer-events:all}
-#shareCardModal{background:color-mix(in srgb,var(--card-solid,var(--card)) 40%,#000 60%);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:360px;max-width:95vw;transform:scale(.91) translateY(24px);will-change:transform;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden}
-#shareCardMover.open #shareCardModal{transform:scale(1) translateY(0)}
+#shareCardModal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:360px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden}
+#shareCardMover.open #shareCardModal{transform:translateY(0)}
 #profileShareMover{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:997;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 #profileShareMover.open{opacity:1;pointer-events:all}
-#profileShareModal{background:color-mix(in srgb,var(--card-solid,var(--card)) 40%,#000 60%);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:360px;max-width:95vw;transform:scale(.91) translateY(24px);will-change:transform;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden}
-#profileShareMover.open #profileShareModal{transform:scale(1) translateY(0)}
+#profileShareModal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:360px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden}
+#profileShareMover.open #profileShareModal{transform:translateY(0)}
 .sc-card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
 .sc-card-title{font-size:13.5px;font-weight:700;color:var(--text)}
 .sc-card-close{width:26px;height:26px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}

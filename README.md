@@ -4,31 +4,33 @@
 
 # Bloom
 
-**Музыка из всех источников в одном плеере.**
+**Music from every source in one player.**
 
-Десктоп-плеер: Локальная библиотека, Yandex Music и SoundCloud
-в одном окне
+A desktop player: local library, Yandex Music, and SoundCloud
+in a single window
 
-[**🌐 Сайт**](https://bloom-site-x.vercel.app/) · [**📦 Релизы**](https://github.com/bxzlik/Bloom/releases)
+[**🌐 Website**](https://bloom-site-x.vercel.app/) · [**📦 Releases**](https://github.com/bxzlik/Bloom/releases)
+
+**English** · [Русский](README.ru.md)
 
 </div>
 
-## 🚀 Разработка
+## 🚀 Development
 
 ```bash
 npm install
 
 # https://discord.com/developers/applications
-cp src-tauri/.env.example src-tauri/.env   # вписать свой DISCORD_CLIENT_ID
+cp src-tauri/.env.example src-tauri/.env   # set your DISCORD_CLIENT_ID
 
-npm run tauri:dev     # десктоп-приложение
-npm run dev           # фронтенд
+npm run tauri:dev     # desktop app
+npm run dev           # frontend
 
-npm run tauri:build   # сборка инсталлятора
-npm run build         # сборка фронтенда
+npm run tauri:build   # build the installer
+npm run build         # build the frontend
 ```
 
-Требуется [Rust](https://www.rust-lang.org/tools/install) и [пререквизиты Tauri](https://v2.tauri.app/start/prerequisites/).
+Requires [Rust](https://www.rust-lang.org/tools/install) and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ## 📄 License
 

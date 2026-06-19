@@ -720,6 +720,7 @@ const NextTrackBlock = ({
   const queue = useQueueStore((s) => s.queue)
   const curId = useQueueStore((s) => s.curId)
   const allTracks = useLibStore((s) => s.tracks)
+  const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
   const nextId = useMemo(() => {
     if (!curId) return null
     const i = queue.indexOf(curId)
@@ -728,15 +729,36 @@ const NextTrackBlock = ({
   const track = nextId
     ? allTracks.find((t) => t.id === nextId) ?? trackRegistry.get(nextId) ?? null
     : null
+
+  const isFav = useFavStore((s) => (nextId ? s.favs.has(nextId) : false))
+  const toggleFav = useFavStore((s) => s.toggleFav)
+
+  // AddPopup + NewPlaylistModal — локальные для этого блока (как в QueueBlock).
+  // Toggle: повторный клик на «+» закрывает попап.
+  const addAnchorRef = useRef<HTMLElement | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
+  const openAdd = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    const btn = e.currentTarget
+    if (addOpen && addAnchorRef.current === btn) {
+      setAddOpen(false)
+      return
+    }
+    addAnchorRef.current = btn
+    setAddOpen(true)
+  }
+
   if (!track) return null
+  const inLib = allTracks.some((x) => x.id === track.id)
   return (
     <div
       id="nextTrackBlock"
       style={{
         flexShrink: 0,
         borderRadius: 'calc(var(--radius)*1.2)',
-        border: '1px solid rgba(255,255,255,var(--wb2))',
-        background: 'rgba(255,255,255,.03)',
+        border: '1px solid rgba(255,255,255,var(--wb))',
+        background: 'var(--block-bg)',
         padding: '10px 14px 12px',
         overflow: 'hidden',
       }}
@@ -754,23 +776,72 @@ const NextTrackBlock = ({
           onContextMenu(track, e.clientX, e.clientY)
         }}
       >
-        <div style={{ width: 38, height: 38, borderRadius: 'calc(var(--radius)*0.5)', overflow: 'hidden', flexShrink: 0, background: 'var(--card)' }}>
+        <div className="trcov">
           {track.cover ? (
-            <img src={track.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={track.cover} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" style={{ opacity: 0.4, margin: 9 }}>
+            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" style={{ opacity: 0.4 }}>
               <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
             </svg>
           )}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {track.name}
+        <div className="tri">
+          <div className="trn">{track.name}</div>
+          <div className="tra">
+            <ArtistLinks artist={track.artist} scId={track.artistScId} permalink={track.artistPermalink} artistId={track.artistId} provider={track.artistProvider} />
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2 }}>{track.artist}</div>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text2)', flexShrink: 0 }}>{track.dur}</div>
+        <div className="trac">
+          <button
+            className={`ib${isFav ? ' fav' : ''}`}
+            type="button"
+            aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
+            onClick={(e) => {
+              e.stopPropagation()
+              // SC-трек не в библиотеке → сперва персистим (иначе не попадёт в «Любимое»).
+              if (!inLib) saveTrackToLibrary(track)
+              toggleFav(track.id)
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+            </svg>
+          </button>
+          <button className="ib" type="button" aria-label={t('player.aria.add')} onClick={openAdd}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </div>
+        <div className="trd">{track.dur}</div>
       </div>
+      <AddPopup
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        anchorRef={addAnchorRef}
+        hasTrack
+        canAddToLib={!inLib}
+        trackId={track.id}
+        onAddToLib={() => saveTrackToLibrary(track)}
+        onPickPlaylist={(plId) => {
+          // SC-трек сперва персистим (иначе после рестарта не зарезолвится).
+          saveTrackToLibrary(track)
+          addTrackToPl(plId, track.id)
+        }}
+        onCreateNewPlaylist={() => setPendingNewPl(track.id)}
+      />
+      <NewPlaylistModal
+        open={pendingNewPl !== null}
+        onClose={() => setPendingNewPl(null)}
+        onCreated={(plId) => {
+          if (pendingNewPl) {
+            if (!inLib) saveTrackToLibrary(track)
+            addTrackToPl(plId, pendingNewPl)
+            setPendingNewPl(null)
+          }
+        }}
+      />
     </div>
   )
 }

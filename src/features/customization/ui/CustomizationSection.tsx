@@ -114,11 +114,11 @@ export const CustomizationSection = () => {
             style={{ flex: 1, minWidth: 0, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*0.5)', color: 'var(--text)', fontFamily: 'var(--font)', fontSize: 12, fontWeight: 400, textTransform: 'none', letterSpacing: 0, padding: '7px 10px', outline: 'none' }}
           />
           {urlVal.trim() ? (
-            <button className="mlm-icon-btn" title={t('settings.custom.addUrl')} onClick={addUrlAndClear}>
+            <button className="mlm-icon-btn" onClick={addUrlAndClear}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </button>
           ) : (
-            <label className="mlm-icon-btn" title={t('settings.custom.addFiles')} style={{ cursor: 'pointer' }}>
+            <label className="mlm-icon-btn" style={{ cursor: 'pointer' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><circle cx="8.5" cy="9.5" r="1.5" /><polyline points="3 17 9 11 13 15" /><line x1="18" y1="3" x2="18" y2="9" /><line x1="15" y1="6" x2="21" y2="6" /></svg>
               <input
                 type="file"
@@ -190,11 +190,11 @@ const PresetsCard = () => {
           <span style={{ fontWeight: 600, color: 'var(--muted)', textTransform: 'none', letterSpacing: 0 }}>{presets.length} / 20</span>
         </span>
         {adding ? (
-          <button className="mlm-icon-btn" title={t('settings.custom.presets.cancel')} onClick={cancelAdd}>
+          <button className="mlm-icon-btn" onClick={cancelAdd}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
         ) : (
-          <button className="mlm-icon-btn" title={t('settings.custom.presets.new')} onClick={() => setAdding(true)}>
+          <button className="mlm-icon-btn" onClick={() => setAdding(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           </button>
         )}
@@ -213,7 +213,7 @@ const PresetsCard = () => {
             onKeyDown={(e) => { if (e.key === 'Enter') onSave(); else if (e.key === 'Escape') cancelAdd() }}
             style={{ maxWidth: 360 }}
           />
-          <button className="mlm-icon-btn" title={t('settings.custom.presets.save')} onClick={onSave}>
+          <button className="mlm-icon-btn" onClick={onSave}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </button>
         </div>

@@ -146,12 +146,10 @@ export const WaveCard = () => {
                 gap: 8,
                 minWidth: 220,
                 padding: 10,
-                background: 'color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%)',
+                background: 'color-mix(in srgb,var(--block-color),var(--text) 1%)',
                 border: '1px solid rgba(255,255,255,.07)',
                 borderRadius: 'calc(var(--radius)*.7)',
                 boxShadow: '0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04)',
-                backdropFilter: 'blur(32px)',
-                WebkitBackdropFilter: 'blur(32px)',
               }}
             >
               {ymAuthed && (

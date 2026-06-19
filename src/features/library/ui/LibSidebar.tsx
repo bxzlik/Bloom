@@ -188,9 +188,8 @@ export const LibSidebar = () => {
   return (
     <div className={cn('lib-sidebar', sbCompact && 'lib-sb-compact')}>
       {/* ── Системные ─────────────────────────────────────────── */}
-      <div className="lib-block">
-        <div className="lib-section-title">{t('lib.sidebar.system')}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 4px 4px' }}>
+      <div className="lib-block" style={{ paddingBottom: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 4px' }}>
           <div
             className={cn(
               'lib-item lib-item-sys lib-item-sys-all',

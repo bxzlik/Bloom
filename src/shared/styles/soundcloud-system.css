@@ -1,8 +1,8 @@
 /* ===== DUPLICATES MODAL ===== */
 #dupsOverlay{position:fixed;inset:0;z-index:991;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;pointer-events:none;transition:.26s}
 #dupsOverlay.open{opacity:1;pointer-events:all}
-.dups-modal{background:color-mix(in srgb,var(--card-solid,var(--card)) 40%,#000 60%);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);width:520px;max-height:80%;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;transform:scale(.91) translateY(24px);will-change:transform;transition:.32s cubic-bezier(.34,1.38,.64,1)}
-#dupsOverlay.open .dups-modal{transform:scale(1) translateY(0)}
+.dups-modal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);width:520px;max-height:80%;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
+#dupsOverlay.open .dups-modal{transform:translateY(0)}
 .dups-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
 .dups-title{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px}
 .dups-close{width:28px;height:28px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}

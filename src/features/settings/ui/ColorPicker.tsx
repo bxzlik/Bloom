@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { usePopupOpenAnimation } from '@shared/hooks'
 import { useColorPickerStore } from '../model/colorPickerStore'
 
 /**
@@ -92,6 +93,9 @@ export const ColorPicker = () => {
   const hueTrackRef = useRef<HTMLDivElement>(null)
   const onChangeRef = useRef<((hex: string) => void) | null>(null)
   const hexFocusRef = useRef(false)
+  const popRef = useRef<HTMLDivElement>(null)
+  // Open-анимация (scale 0.94→1) — как у прочих попапов/дропдаунов.
+  usePopupOpenAnimation(popRef, anchor)
 
   // Применяет HSV: обновляет state+ref, синкает hex-инпут и эмитит цвет наружу.
   const applyHsv = (next: { h: number; s: number; v: number }, emit = true) => {
@@ -176,7 +180,7 @@ export const ColorPicker = () => {
   }
 
   return (
-    <div id="cpPopup" className="open" style={{ left, top }}>
+    <div id="cpPopup" className="open" ref={popRef} style={{ left, top, transformOrigin: 'top left' }}>
       <div
         id="cpSatBox"
         ref={satBoxRef}

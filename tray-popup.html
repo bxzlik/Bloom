@@ -107,7 +107,6 @@ html,body{
   border-radius:calc(var(--radius) * 0.9);
   padding:5px;min-width:185px;max-width:240px;
   box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);
-  backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);
   display:none;max-height:320px;overflow-y:auto;
 }
 .add-popup.open{display:block;animation:apIn .15s cubic-bezier(.34,1.25,.64,1)}
@@ -235,12 +234,12 @@ html,body{
       </svg>
     </div>
     <div class="info-text">
-      <div class="title" id="tTitle">Не выбрано</div>
+      <div class="title" id="tTitle"></div>
       <div class="artist" id="tArtist">—</div>
     </div>
   </div>
 
-  <div class="toast" id="toast">Скопировано</div>
+  <div class="toast" id="toast"></div>
   <div class="add-popup" id="addPopup"></div>
 
   <!-- Progress -->
@@ -321,6 +320,30 @@ html,body{
   'use strict';
 
   window.addEventListener('contextmenu', function(e){ e.preventDefault(); }, false);
+
+  // ── i18n (standalone — зеркалит ключи player.* из dict.ts, локаль из localStorage) ──
+  var I18N = {
+    ru: { notSelected:'Не выбрано', copied:'Скопировано', copyError:'Ошибка', toLib:'В библиотеку', createPl:'Создать плейлист', newPl:'Новый плейлист' },
+    en: { notSelected:'Nothing selected', copied:'Copied', copyError:'Error', toLib:'Add to library', createPl:'Create playlist', newPl:'New playlist' }
+  };
+  var LOCALE = 'en';
+  function readLocale() {
+    try { var _l = localStorage.getItem('bloom_locale'); if (_l === 'ru' || _l === 'en') LOCALE = _l; } catch(e) {}
+  }
+  readLocale();
+  function tr(k) { return (I18N[LOCALE] && I18N[LOCALE][k]) || I18N.en[k] || k; }
+  // Живое переключение: перечитываем локаль и переприменяем видимые строки.
+  // Окно попапа создаётся раз и прячется/показывается, поэтому ловим смену
+  // языка через storage-событие, state-пуш и фокус (попап получает фокус при показе).
+  function refreshLocale() {
+    var prev = LOCALE;
+    readLocale();
+    document.documentElement.lang = LOCALE;
+    if (prev !== LOCALE) {
+      var tt = document.getElementById('tTitle');
+      if (tt && !st.title) tt.textContent = tr('notSelected');
+    }
+  }
 
   var ti = null;
   var st = { playing:false, pos:0, dur:0, title:'', artist:'', artwork:'', shuffle:false, repeat:0, volume:80, fav:false, canAddToLib:false, source:null };
@@ -443,16 +466,16 @@ html,body{
     var ICON_NT = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
     var ICON_PL = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
     if (st.canAddToLib) {
-      html += '<div class="ci accent" data-act="lib"><span class="ci-icon">' + ICON_DL + '</span>В библиотеку</div>';
+      html += '<div class="ci accent" data-act="lib"><span class="ci-icon">' + ICON_DL + '</span>' + tr('toLib') + '</div>';
       if (pls.length) html += '<div class="cx-sep"></div>';
     }
     if (!pls.length) {
-      html += '<div class="ci" data-act="new"><span class="ci-icon">' + ICON_PL + '</span>Создать плейлист</div>';
+      html += '<div class="ci" data-act="new"><span class="ci-icon">' + ICON_PL + '</span>' + tr('createPl') + '</div>';
     } else {
       pls.forEach(function(pl) {
         html += '<div class="ci" data-act="pl" data-id="' + esc(pl.id) + '"><span class="ci-icon">' + ICON_NT + '</span>' + esc(pl.name) + '</div>';
       });
-      html += '<div class="cx-sep"></div><div class="ci" data-act="new"><span class="ci-icon">' + ICON_PL + '</span>Новый плейлист</div>';
+      html += '<div class="cx-sep"></div><div class="ci" data-act="new"><span class="ci-icon">' + ICON_PL + '</span>' + tr('newPl') + '</div>';
     }
     p.innerHTML = html;
     p.classList.add('open');
@@ -479,6 +502,7 @@ html,body{
 
   function updateUI(s) {
     if (!s) return;
+    refreshLocale();
     if (s.source   !== undefined) st.source  = s.source;
     if (s.title    !== undefined) st.title   = s.title;
     if (s.artist   !== undefined) st.artist  = s.artist;
@@ -500,7 +524,7 @@ html,body{
       updateVolumeIcon(s.volume);
     }
 
-    document.getElementById('tTitle').textContent = st.title || 'Не выбрано';
+    document.getElementById('tTitle').textContent = st.title || tr('notSelected');
     renderArtist(st.artist);
 
     var cov = document.getElementById('tCover');
@@ -591,15 +615,17 @@ html,body{
 
   function start() {
     ti = window.__TAURI_INTERNALS__;
+    document.documentElement.lang = LOCALE;
+    document.getElementById('tTitle').textContent = tr('notSelected');
     loadSettings();
 
     // Клик по названию → копировать "title — artist"
     document.getElementById('tTitle').addEventListener('click', function() {
       if (!st.title) return;
       var text = st.title + (st.artist ? ' — ' + st.artist : '');
-      var ok = function() { showToast('Скопировано'); };
+      var ok = function() { showToast(tr('copied')); };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(ok).catch(function(){ showToast('Ошибка'); });
+        navigator.clipboard.writeText(text).then(ok).catch(function(){ showToast(tr('copyError')); });
       }
     });
 
@@ -682,8 +708,11 @@ html,body{
     window.addEventListener('storage', function(e) {
       if (e.key === 'bloom_settings') {
         try { applySettings(JSON.parse(e.newValue || '{}')); } catch(e2) {}
+      } else if (e.key === 'bloom_locale') {
+        refreshLocale();
       }
     });
+    window.addEventListener('focus', refreshLocale);
 
     listenEvent('bloom-mp-state',    function(p) { updateUI(p); });
     listenEvent('bloom-mp-settings', function(p) { applySettings(p); });

@@ -47,6 +47,8 @@ export interface UiPrefs {
   tbMax: boolean
   /** Кнопка «Закрепить окно поверх остальных». */
   tbPin: boolean
+  /** Колокольчик уведомлений (центр уведомлений). */
+  tbBell: boolean
   /** Кнопка «Закрыть». */
   tbClose: boolean
   /** Текущее состояние закрепления окна (always-on-top), применяется на старте. */
@@ -73,6 +75,7 @@ const DEFAULTS: UiPrefs = {
   tbMin: true,
   tbMax: true,
   tbPin: true,
+  tbBell: true,
   tbClose: true,
   tbPinned: false,
   borderAlpha: 6,
@@ -100,6 +103,7 @@ const load = (): UiPrefs => {
       tbMin: p.tbMin !== false,
       tbMax: p.tbMax !== false,
       tbPin: p.tbPin !== false,
+      tbBell: p.tbBell !== false,
       tbClose: p.tbClose !== false,
       tbPinned: !!p.tbPinned,
       borderAlpha: typeof p.borderAlpha === 'number' ? p.borderAlpha : 6,
@@ -153,6 +157,7 @@ const persist = (s: UiPrefs): void => {
         tbMin: s.tbMin,
         tbMax: s.tbMax,
         tbPin: s.tbPin,
+        tbBell: s.tbBell,
         tbClose: s.tbClose,
         tbPinned: s.tbPinned,
         borderAlpha: s.borderAlpha,

@@ -22,13 +22,17 @@
   color: var(--muted);
 }
 
-/* Шапка блока «Управление данными приложения» */
+/* Шапка блока «Управление данными приложения». Линии сверху/снизу — как у
+   под-заголовков (h3) остальных секций (settings.css). */
 .tele-data-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 22px 0 10px;
+  margin: 16px 0 10px;
+  padding: 13px 2px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 .tele-data-head-title {
   font-size: 10px;
@@ -131,7 +135,7 @@
   right: 0;
   z-index: 50;
   min-width: 150px;
-  background: #1c1c1c;
+  background: color-mix(in srgb, var(--block-color), var(--text) 1%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   padding: 4px;

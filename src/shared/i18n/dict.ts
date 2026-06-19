@@ -96,6 +96,7 @@ export const ru = {
   'settings.interface.titlebar.item.max': 'Развернуть',
   'settings.interface.titlebar.item.pin': 'Закрепить',
   'settings.interface.titlebar.item.close': 'Закрыть',
+  'settings.interface.titlebar.item.bell': 'Уведомления',
   'settings.interface.titlebar.item.logo': 'Логотип',
   'settings.interface.titlebar.item.version': 'Версия',
 
@@ -883,6 +884,17 @@ export const ru = {
   'titlebar.min': 'Свернуть',
   'titlebar.restore': 'Восстановить',
   'titlebar.max': 'Развернуть',
+  'titlebar.notifs': 'Уведомления',
+
+  // Центр уведомлений (NotifBell)
+  'notif.title': 'Уведомления',
+  'notif.empty': 'Уведомлений пока нет',
+  'notif.trackUnavailable.title': 'Недоступный трек',
+  'notif.trackUnavailable.body': 'Этот трек не найден или больше не существует',
+  'notif.trackDl.title': 'Трек скачан',
+  'notif.dlError.title': 'Ошибка скачивания',
+  'notif.update.title': 'Доступно обновление',
+  'notif.update.body': 'Версия {v} готова к установке',
 
   // Поделиться (ShareCardModal)
   'share.artist': 'Поделиться артистом',
@@ -1169,6 +1181,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.interface.titlebar.item.max': 'Maximize',
   'settings.interface.titlebar.item.pin': 'Pin',
   'settings.interface.titlebar.item.close': 'Close',
+  'settings.interface.titlebar.item.bell': 'Notifications',
   'settings.interface.titlebar.item.logo': 'Logo',
   'settings.interface.titlebar.item.version': 'Version',
 
@@ -1956,6 +1969,17 @@ export const en: Record<TranslationKey, string> = {
   'titlebar.min': 'Minimize',
   'titlebar.restore': 'Restore',
   'titlebar.max': 'Maximize',
+  'titlebar.notifs': 'Notifications',
+
+  // Notification center (NotifBell)
+  'notif.title': 'Notifications',
+  'notif.empty': 'No notifications yet',
+  'notif.trackUnavailable.title': 'Track unavailable',
+  'notif.trackUnavailable.body': 'This track was not found or no longer exists',
+  'notif.trackDl.title': 'Track downloaded',
+  'notif.dlError.title': 'Download error',
+  'notif.update.title': 'Update available',
+  'notif.update.body': 'Version {v} is ready to install',
 
   // Share (ShareCardModal)
   'share.artist': 'Share artist',

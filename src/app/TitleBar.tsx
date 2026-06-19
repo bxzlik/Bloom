@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useDetailStore } from '@features/search'
 import { useUiPrefsStore } from '@features/settings'
 import { useNavStore, type PageId } from './navigationStore'
+import { NotifBell } from '@shared/ui'
 import { useT, useLocale, t as tt } from '@shared/i18n'
 
 /** Ключ метки тайтлбара: страница ИЛИ открытая детальная сущность. */
@@ -27,6 +28,7 @@ export const TitleBar = () => {
   const tbMin = useUiPrefsStore((s) => s.tbMin)
   const tbMax = useUiPrefsStore((s) => s.tbMax)
   const tbPin = useUiPrefsStore((s) => s.tbPin)
+  const tbBell = useUiPrefsStore((s) => s.tbBell)
   const tbClose = useUiPrefsStore((s) => s.tbClose)
   const tbPinned = useUiPrefsStore((s) => s.tbPinned)
   const setPref = useUiPrefsStore((s) => s.set)
@@ -70,6 +72,7 @@ export const TitleBar = () => {
         </span>
       </div>
       <div className="win-btns">
+        {tbBell && <NotifBell />}
         {tbPin && (
           <button
             className={`win-btn win-pin${tbPinned ? ' on' : ''}`}

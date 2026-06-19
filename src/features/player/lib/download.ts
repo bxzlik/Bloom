@@ -12,7 +12,7 @@
  *  - загруженный трек (blob/IDB url): браузерный `<a download>`.
  */
 import { invoke, onAppEvent } from '@shared/tauri'
-import { toast, downloadBanner } from '@shared/ui'
+import { toast, notify, downloadBanner } from '@shared/ui'
 import { t as i18nT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { apiFetch, type ScMedia } from '@features/soundcloud'
@@ -37,10 +37,15 @@ const ensureListener = (): Promise<void> => {
     if (!_ctx) return
     const cover = _ctx.kind === 'cover'
     if (state === 'downloading') toast(cover ? 'Скачивание обложки…' : 'Скачивание…')
-    else if (state === 'done') toast(cover ? '✓ Обложка сохранена' : '✓ Сохранено: ' + _ctx.name)
-    else if (state === 'cancelled') {
+    else if (state === 'done') {
+      toast(cover ? '✓ Обложка сохранена' : '✓ Сохранено: ' + _ctx.name)
+      notify({ kind: 'success', titleKey: 'notif.trackDl.title', body: _ctx.name })
+    } else if (state === 'cancelled') {
       /* пользователь отменил диалог — молчим */
-    } else if (state === 'error') toast(i18nT('toast.dlError', { msg: message || '' }))
+    } else if (state === 'error') {
+      toast(i18nT('toast.dlError', { msg: message || '' }))
+      notify({ kind: 'error', titleKey: 'notif.dlError.title', body: message || _ctx.name })
+    }
   }).then(() => undefined)
   return _listenerReady
 }

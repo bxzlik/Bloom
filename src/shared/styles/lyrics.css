@@ -37,7 +37,7 @@
 #bloom-dl-popup,#bloom-src-popup{position:absolute;z-index:100000;width:fit-content;transform-origin:top left}
 #bloom-dl-popup.open,#bloom-src-popup.open{animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #bloom-dl-popup.closing,#bloom-src-popup.closing{animation:libMenuOut .14s ease-in forwards}
-.bloom-dl-inner{background:var(--bg2,#1e1e1e);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:190px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+.bloom-dl-inner{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:190px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
 .bloom-dl-inner button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;background:none;border:none;border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;text-align:left;white-space:nowrap;font-family:var(--font);transition:background .12s}
 .bloom-dl-inner button:hover{background:var(--hover,rgba(255,255,255,.07))}
 .bloom-dl-inner button:disabled{opacity:.35;cursor:default;pointer-events:none}

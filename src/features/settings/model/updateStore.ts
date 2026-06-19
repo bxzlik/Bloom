@@ -2,6 +2,11 @@ import { useEffect } from 'react'
 import { create } from 'zustand'
 import { invoke, onAppEvent } from '@shared/tauri'
 import type { UpdateInfo, UnlistenFn } from '@shared/tauri'
+import { notify } from '@shared/ui'
+import { t as i18nT } from '@shared/i18n'
+
+/** Версия, для которой уже добавили уведомление в этой сессии (без дублей). */
+let _notifiedVersion = ''
 
 /**
  * Общий стор обновлений — единый источник для баннера-уведомления (App) и
@@ -84,8 +89,18 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
     try {
       const res = await invoke<UpdateInfo>('check_update')
       set({ info: res })
-      if (res.available) set({ phase: 'available' })
-      else set({ phase: manual ? 'uptodate' : 'idle' })
+      if (res.available) {
+        set({ phase: 'available' })
+        // Уведомление о новой версии — один раз на версию за сессию.
+        if (res.latest && res.latest !== _notifiedVersion) {
+          _notifiedVersion = res.latest
+          notify({
+            kind: 'update',
+            titleKey: 'notif.update.title',
+            body: i18nT('notif.update.body', { v: res.latest }),
+          })
+        }
+      } else set({ phase: manual ? 'uptodate' : 'idle' })
     } catch (e) {
       if (manual) set({ error: String(e), phase: 'error' })
     }

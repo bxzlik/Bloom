@@ -81,7 +81,7 @@
 .tp-dot{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--block-color)}
 .tp-dot+.tp-dot{margin-left:-6px}
 
-.tp-pop{position:absolute;top:calc(100% + 8px);z-index:8000;width:300px;max-height:340px;overflow-y:auto;background:color-mix(in srgb,var(--card-solid,var(--card)) 50%,#000 50%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:10px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);transform-origin:top right;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
+.tp-pop{position:absolute;top:calc(100% + 8px);z-index:8000;width:300px;max-height:340px;overflow-y:auto;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:10px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);transform-origin:top right;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 /* список — под шевроном (правый край = правый край селектора: +38 кнопка +8 gap) */
 .tp-list{right:46px;left:auto}
 .tp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}

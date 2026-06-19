@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { cn } from '@shared/lib/cn'
+import { usePopupOpenAnimation } from '@shared/hooks'
 import type { Track } from '@entities/track'
 import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, trackRegistry } from '@entities/track'
 import type { Artist } from '@entities/artist'
@@ -294,6 +295,8 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
   useLocale()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  usePopupOpenAnimation(panelRef, open)
   const providers = getProviders()
   const options = ['all', ...providers.map((p) => p.id)]
   const labelOf = (id: string) => sourceLabel(id, providers.find((p) => p.id === id)?.label)
@@ -331,11 +334,13 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
       </button>
       {open && (
         <div
+          ref={panelRef}
           style={{
             position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 60,
             display: 'flex', flexDirection: 'column', gap: 2, padding: 6,
-            background: 'var(--card-solid,var(--card))', border: '1px solid var(--border)',
+            background: 'color-mix(in srgb,var(--block-color),var(--text) 1%)', border: '1px solid var(--border)',
             borderRadius: 'calc(var(--radius)*.85)', boxShadow: '0 10px 34px rgba(0,0,0,.45)', minWidth: 160,
+            transformOrigin: 'top right',
           }}
         >
           {options.map((id) => {
@@ -532,6 +537,8 @@ const SpDropdown = ({
 }) => {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  usePopupOpenAnimation(menuRef, open)
   useEffect(() => {
     if (!open) return
     const onDown = (e: MouseEvent) => {
@@ -549,7 +556,7 @@ const SpDropdown = ({
         <span>{isDefault ? label : cur?.label ?? label}</span>
         <Chev />
       </button>
-      <div className="sp-dd-menu">
+      <div className="sp-dd-menu" ref={menuRef} style={{ transformOrigin: 'top left' }}>
         {options.map((o) => (
           <button
             key={o.id}

@@ -2,7 +2,7 @@ import type { Track } from '@entities/track'
 import { trackRegistry } from '@entities/track'
 import { invoke } from '@shared/tauri'
 import { useLibStore, useFavStore, useHistoryStore, useActivityStore, saveTrackToLibrary, usePlaylistStore, useNewPlModalStore } from '@features/library'
-import { toast } from '@shared/ui'
+import { toast, notify } from '@shared/ui'
 import { t as i18nT } from '@shared/i18n'
 import { requestLyrics, useLyricsStore } from '@features/lyrics'
 import waveApi from '@/wave'
@@ -99,6 +99,11 @@ const skipUnplayable = (failedId: string, err: unknown): void => {
   const msg = err instanceof Error ? err.message : ''
   const isDrm = /DRM/i.test(msg)
   toast(isDrm ? 'Трек защищён DRM — пропускаем' : 'Трек недоступен — пропускаем')
+  notify({
+    kind: 'error',
+    titleKey: 'notif.trackUnavailable.title',
+    body: i18nT('notif.trackUnavailable.body'),
+  })
 
   const { queue, qIdx } = useQueueStore.getState()
   // Скип имеет смысл, только если упавший трек — текущий элемент очереди и есть
@@ -487,6 +492,11 @@ export const switchPlatform = async (providerId: string): Promise<void> => {
   const match = pickPlatformMatch(tracks, cur)
   if (!match) {
     toast(i18nT('toast.trackNotOnSrc', { label: provider.label }))
+    notify({
+      kind: 'error',
+      titleKey: 'notif.trackUnavailable.title',
+      body: i18nT('toast.trackNotOnSrc', { label: provider.label }),
+    })
     return
   }
 
