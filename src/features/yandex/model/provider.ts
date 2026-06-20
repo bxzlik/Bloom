@@ -162,7 +162,7 @@ export const ymProvider: MusicProvider = {
     if (reg.length) trackRegistry.put(reg, { temp: true })
     const artist: Artist = {
       id,
-      name: e.title || 'Артист',
+      name: e.title || i18nT('ym.fallback.artist'),
       source: 'yandex',
       avatar: e.cover || null,
     }
@@ -177,7 +177,7 @@ export const ymProvider: MusicProvider = {
     if (tracks.length) trackRegistry.put(tracks, { temp: true })
     const album: Playlist = {
       id,
-      title: e.title || 'Альбом',
+      title: e.title || i18nT('ym.fallback.album'),
       cover: e.cover || null,
       ownerName: e.subtitle,
       trackCount: tracks.length,
@@ -196,7 +196,7 @@ export const ymProvider: MusicProvider = {
     if (tracks.length) trackRegistry.put(tracks, { temp: true })
     const playlist: Playlist = {
       id,
-      title: e.title || 'Плейлист',
+      title: e.title || i18nT('ym.fallback.playlist'),
       cover: e.cover || null,
       ownerName: e.subtitle,
       trackCount: tracks.length,

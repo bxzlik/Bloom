@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { cn } from '@shared/lib/cn'
+import { t } from '@shared/i18n'
 import { TrackCover } from '@entities/track'
 import type { Playlist } from '../model/types'
 
@@ -39,7 +40,7 @@ export const PlaylistCard = ({
       <div className="truncate text-sm font-medium">{playlist.title}</div>
       <div className="truncate text-xs text-(--color-text-muted)">
         {playlist.ownerName ??
-          (playlist.trackCount !== undefined ? `${playlist.trackCount} треков` : '')}
+          (playlist.trackCount !== undefined ? t('entities.playlist.trackCount', { n: playlist.trackCount }) : '')}
       </div>
     </div>
   </div>

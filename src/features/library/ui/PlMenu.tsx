@@ -11,9 +11,10 @@ import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
+import { toast } from '@shared/ui'
 import { playFromSource, playShuffledFromSource, downloadPlaylistTracks, type PlaySource } from '@features/player'
 import { exportPlaylistFile, folderScan, folderRemove } from '../api'
-import { buildExportBundle, refreshScPlaylist } from '../lib'
+import { buildExportBundle, refreshScPlaylist, deleteUploadedTrack } from '../lib'
 import {
   usePlaylistStore,
   useHistoryStore,
@@ -194,10 +195,51 @@ export const PlMenu = ({
 
   const removePl = () => {
     if (!playlist) return
+    const pl = playlist
     onClose()
-    if (!confirm(t('lib.plmenu.confirmDeletePl', { name: playlist.name }))) return
-    deletePl(playlist.id)
+    // Удаляем сразу и показываем toast с «Отменить» (нативный confirm не работает
+    // в окне без рамки). Сам плейлист легко восстановить — это запись со списком
+    // id треков; сами треки в библиотеке не трогаются.
+    const before = usePlaylistStore.getState().playlists
+    const idx = before.findIndex((p) => p.id === pl.id)
+    deletePl(pl.id)
     onReset?.()
+    toast(t('lib.plmenu.playlistDeleted', { name: pl.name }), {
+      label: t('common.undo'),
+      fn: () => {
+        const cur = usePlaylistStore.getState().playlists
+        if (cur.some((p) => p.id === pl.id)) return // уже восстановлен/существует
+        const next = [...cur]
+        next.splice(idx < 0 ? next.length : Math.min(idx, next.length), 0, pl)
+        usePlaylistStore.getState().replaceAll(next)
+      },
+    })
+  }
+
+  // Удалить плейлист ВМЕСТЕ с треками из библиотеки. Физически удаляем только
+  // «свои» записи (загруженные файлы + сохранённые треки площадок SC/YM);
+  // папочные / локальные не трогаем — ими управляет папка (вернутся при
+  // пересканировании). deleteUploadedTrack сам чистит ссылки из плейлистов,
+  // после чего удаляем сам плейлист.
+  const removePlWithTracks = () => {
+    if (!playlist) return
+    const pl = playlist
+    onClose()
+    // Нативный window.confirm не показывается в окне без рамки (decorations:false),
+    // поэтому подтверждаем через toast: удаление выполняется только по клику на
+    // кнопку «Удалить»; если её проигнорировать, toast гаснет и ничего не удаляется.
+    toast(t('lib.plmenu.confirmDeletePlWithTracks', { name: pl.name }), {
+      label: t('common.delete'),
+      fn: () => {
+        const byId = new Map(useLibStore.getState().tracks.map((tr) => [tr.id, tr]))
+        for (const id of pl.trs) {
+          const tr = byId.get(id)
+          if (tr && !tr._localPath && !tr._folder) void deleteUploadedTrack(id)
+        }
+        deletePl(pl.id)
+        onReset?.()
+      },
+    })
   }
 
   const rescanFolder = () => {
@@ -431,6 +473,13 @@ export const PlMenu = ({
     items.push(
       <div key="sep-del" className="cx-sep" />,
       <Item key="delete" danger icon={<TrashIcon />} label={t('lib.plmenu.deletePlaylist')} onClick={removePl} />,
+      <Item
+        key="delete-tracks"
+        danger
+        icon={<TrashIcon />}
+        label={t('lib.plmenu.deletePlaylistWithTracks')}
+        onClick={removePlWithTracks}
+      />,
     )
   } else if (mode === 'folder' && folderPath) {
     items.push(

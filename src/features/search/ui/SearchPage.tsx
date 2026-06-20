@@ -9,11 +9,12 @@ import {
 import { cn } from '@shared/lib/cn'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import type { Track } from '@entities/track'
-import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, trackRegistry } from '@entities/track'
+import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, YtmLogo, SpLogo, providerBrandColor, trackRegistry } from '@entities/track'
+import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
 import { playFromSource, AddPopup } from '@features/player'
-import { getProviders, getProvider, type ProfileData } from '@features/providers'
+import { getAllProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
 import { toast } from '@shared/ui'
 import { useT, useLocale, t as tt, type TranslationKey } from '@shared/i18n'
@@ -277,11 +278,22 @@ const AllLogo = () => (
  * (`accent` фон) — белым (`accentText`), чтобы оставались видимыми. Лого библиотеки/
  * «все источники» нейтральны (наследуют цвет кнопки).
  */
-const sourceIcon = (id: string, accentText = false): ReactNode => {
-  if (id === 'soundcloud' || id === 'yandex') {
-    const Logo = id === 'soundcloud' ? ScLogo : YmLogo
+/**
+ * Иконка источника для дропдауна. `accentText` — пункт активен (на акцентном
+ * фоне → белый для контраста). `brand` — режим брендовых цветов (настройка
+ * `accentBadges` выключена): неактивные иконки красятся в фирменный цвет площадки.
+ */
+const sourceIcon = (id: string, accentText = false, brand = false): ReactNode => {
+  if (id === 'soundcloud' || id === 'yandex' || id === 'ytmusic' || id === 'spotify') {
+    const Logo = id === 'soundcloud' ? ScLogo : id === 'ytmusic' ? YtmLogo : id === 'spotify' ? SpLogo : YmLogo
+    // Бренд-цвет в приоритете (в т.ч. на активном пункте — фон-подсветка и так
+    // показывает выбор, иначе иконка стала бы тёмной от --accent-text). Без
+    // бренд-режима: на активном фоне белый, иначе акцент.
+    const color =
+      (brand ? providerBrandColor(id) : undefined) ??
+      (accentText ? 'var(--accent-text,#fff)' : 'var(--accent)')
     return (
-      <span style={{ display: 'flex', color: accentText ? 'var(--accent-text,#fff)' : 'var(--accent)' }}>
+      <span style={{ display: 'flex', color }}>
         <Logo size={17} />
       </span>
     )
@@ -297,7 +309,11 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
   const ref = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   usePopupOpenAnimation(panelRef, open)
-  const providers = getProviders()
+  // Бренд-режим иконок (если настройка «акцентные бейджи» выключена).
+  const brand = !useBadgePrefs((s) => s.accentBadges)
+  // Дропдаун показывает ВСЕ площадки (вкл. ненастроенные — напр. Spotify без
+  // Premium): пользователь видит полный список и может выбрать любую.
+  const providers = getAllProviders()
   const options = ['all', ...providers.map((p) => p.id)]
   const labelOf = (id: string) => sourceLabel(id, providers.find((p) => p.id === id)?.label)
   // Стейл/невалидный source (id выключённого/удалённого провайдера в localStorage)
@@ -330,7 +346,7 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
         onMouseOver={(e) => (e.currentTarget.style.background = 'var(--hover)')}
         onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
       >
-        <span style={{ display: 'flex' }}>{sourceIcon(effSource)}</span>
+        <span style={{ display: 'flex' }}>{sourceIcon(effSource, false, brand)}</span>
       </button>
       {open && (
         <div
@@ -366,7 +382,7 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
                   if (!active) e.currentTarget.style.background = 'transparent'
                 }}
               >
-                <span style={{ display: 'flex', width: 18, justifyContent: 'center' }}>{sourceIcon(id, active)}</span>
+                <span style={{ display: 'flex', width: 18, justifyContent: 'center' }}>{sourceIcon(id, active, brand)}</span>
                 {labelOf(id)}
               </button>
             )
@@ -950,7 +966,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const playTrackFromSearch = (t: Track) => {
     pushRecentItem({
       kind: 'track',
-      providerId: t._ym ? 'yandex' : t._sc ? 'soundcloud' : 'local',
+      providerId: t._ym ? 'yandex' : t._ytm ? 'ytmusic' : t._sp ? 'spotify' : t._sc ? 'soundcloud' : 'local',
       id: t.id,
       title: t.name,
       cover: t.cover ?? null,

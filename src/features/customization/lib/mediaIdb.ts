@@ -19,7 +19,7 @@ export interface MediaItem {
 }
 
 /** Ключи «текущих» картинок приложения (_appimg_<key>). */
-export type AppImageKey = 'manualBgUrl' | 'playerCoverUrl' | 'vizPhoto' | 'customCursor'
+export type AppImageKey = 'manualBgUrl' | 'playerCoverUrl' | 'vizPhoto' | 'customCursor' | 'sliderThumb'
 
 const DB_NAME = 'bloom_media'
 const STORE = 'items'
@@ -141,7 +141,7 @@ export const loadAppImages = async (): Promise<Partial<Record<AppImageKey, strin
   const db = await openDb()
   if (!db) {
     const out: Partial<Record<AppImageKey, string>> = {}
-    for (const k of ['manualBgUrl', 'playerCoverUrl', 'vizPhoto', 'customCursor'] as AppImageKey[]) {
+    for (const k of ['manualBgUrl', 'playerCoverUrl', 'vizPhoto', 'customCursor', 'sliderThumb'] as AppImageKey[]) {
       const v = localStorage.getItem(APPIMG_PREFIX + k)
       if (v) out[k] = v
     }

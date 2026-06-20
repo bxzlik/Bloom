@@ -8,6 +8,8 @@
  * (иначе `toDataURL` бросит SecurityError).
  */
 
+import { t } from '@shared/i18n'
+
 export interface ShareCardData {
   title: string
   artist: string
@@ -137,7 +139,7 @@ const draw = (
   ctx.fillStyle = '#fff'
   ctx.font = `700 ${TITLE_FS}px ${FONT}`
   ctx.textAlign = 'center'
-  ctx.fillText(ellipsis(ctx, data.title || 'Трек', INNER_W - 8 * SCALE), CARD_W / 2, y + TITLE_FS)
+  ctx.fillText(ellipsis(ctx, data.title || t('common.track'), INNER_W - 8 * SCALE), CARD_W / 2, y + TITLE_FS)
   y += Math.ceil(TITLE_FS * 1.22) + TITLE_MB
 
   // Артист.

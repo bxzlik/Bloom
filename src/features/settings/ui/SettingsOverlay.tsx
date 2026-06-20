@@ -5,6 +5,7 @@ import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { SettingsNav, type SectionId } from './SettingsNav'
 import { InterfaceSection } from './sections/InterfaceSection'
 import { ViewSection } from './sections/ViewSection'
+import { OverlaySection } from './sections/OverlaySection'
 import { PlaybackSection } from './sections/PlaybackSection'
 import { HotkeysSection } from './sections/HotkeysSection'
 import { DiscordSection } from './sections/DiscordSection'
@@ -16,6 +17,8 @@ import { ScClientIdCard } from '@features/soundcloud'
 import { GeniusTokenCard } from '@features/lyrics'
 import { LastfmSection } from '@features/lastfm'
 import { YandexSection } from '@features/yandex'
+import { SpotifySection } from '@features/spotify'
+import { YtmSection } from '@features/ytmusic'
 
 /**
  * Модалка настроек `#settingsOverlay`.
@@ -76,6 +79,7 @@ export const SettingsOverlay = () => {
   const sectionMap: Record<SectionId, ReactNode> = {
     // Основное
     system: <PlaybackSection />,
+    overlay: <OverlaySection />,
     efficiency: <OptimizationSection />,
     audio: <AudioSection />,
     hotkeys: <HotkeysSection />,
@@ -86,10 +90,12 @@ export const SettingsOverlay = () => {
     medialib: <CustomizationSection />,
     // Интеграции
     soundcloud: <ScClientIdCard />,
+    ytmusic: <YtmSection />,
     genius: <GeniusTokenCard />,
     lastfm: <LastfmSection />,
     discord: <DiscordSection />,
     yandex: <YandexSection />,
+    spotify: <SpotifySection />,
     // Телеметрия
     'tele-storage': <TelemetrySection />,
   }

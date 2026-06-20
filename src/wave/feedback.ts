@@ -1,5 +1,6 @@
 // Обработка фидбека: лайк / дослушал / скип / дизлайк.
 
+import { t as i18nT } from "@shared/i18n";
 import { host } from "./host";
 import { classifyCompletion, stampLastHistoryRatio, bumpSkip } from "../db/history";
 import { markDisliked, unmarkDisliked, normalizeArtist } from "../db/track-meta";
@@ -52,7 +53,7 @@ export function onDislike(trackId: string): void {
   if (trackId === host.curId) {
     const next = host.queue[host.qIdx + 1];
     if (next) host.loadPlay(next);
-    else { host.toast?.("Дизлайк: догружаю похожие…"); maybeRefill(); }
+    else { host.toast?.(i18nT("wave.toast.refilling")); maybeRefill(); }
   }
 }
 

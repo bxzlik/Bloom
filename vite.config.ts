@@ -38,6 +38,7 @@ export default defineConfig(async () => ({
         main: path.resolve(__dirname, 'index.html'),
         miniplayer: path.resolve(__dirname, 'miniplayer.html'),
         'tray-popup': path.resolve(__dirname, 'tray-popup.html'),
+        overlay: path.resolve(__dirname, 'overlay.html'),
       },
     },
   },

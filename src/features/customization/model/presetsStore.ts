@@ -4,8 +4,8 @@ import { t } from '@shared/i18n'
 import { useCustomizationStore } from './customizationStore'
 
 /**
- * Пресеты кастомизации — снимок 4-х
- * контекстов {bg, cover, viz, cursor}. localStorage[bloom_presets], лимит 20.
+ * Пресеты кастомизации — снимок 5-ти
+ * контекстов {bg, cover, viz, cursor, slider}. localStorage[bloom_presets], лимит 20.
  * Сохранение берёт текущие выборы из customizationStore; применение —
  * вызывает его сеттеры (только заданные в пресете поля).
  */
@@ -17,6 +17,7 @@ export interface Preset {
   cover: string | null
   viz: string | null
   cursor: string | null
+  slider: string | null
   ts: number
 }
 
@@ -57,7 +58,8 @@ export const usePresetsStore = create<PresetsState>((set, get) => ({
     const cover = c.coverUrl
     const viz = c.vizUrl
     const cursor = c.cursorUrl
-    if (!bg && !cover && !viz && !cursor) {
+    const slider = c.sliderUrl
+    if (!bg && !cover && !viz && !cursor && !slider) {
       toast(t('presets.toast.noActive'))
       return false
     }
@@ -66,7 +68,7 @@ export const usePresetsStore = create<PresetsState>((set, get) => ({
       return false
     }
     const nm = name.trim() || t('presets.default')
-    const next = [...get().presets, { id: 'pr' + Date.now(), name: nm, bg, cover, viz, cursor, ts: Date.now() }]
+    const next = [...get().presets, { id: 'pr' + Date.now(), name: nm, bg, cover, viz, cursor, slider, ts: Date.now() }]
     save(next)
     set({ presets: next })
     toast(t('presets.toast.saved', { name: nm }))
@@ -82,7 +84,8 @@ export const usePresetsStore = create<PresetsState>((set, get) => ({
     if (p.cover) c.setCover(p.cover)
     if (p.viz) c.setViz(p.viz)
     if (p.cursor) c.setCursor(p.cursor)
-    const badges = [p.bg && t('settings.custom.badge.bg'), p.cover && t('settings.custom.badge.cover'), p.viz && t('settings.custom.badge.viz'), p.cursor && t('settings.custom.badge.cursor')].filter(Boolean)
+    if (p.slider) c.setSlider(p.slider)
+    const badges = [p.bg && t('settings.custom.badge.bg'), p.cover && t('settings.custom.badge.cover'), p.viz && t('settings.custom.badge.viz'), p.cursor && t('settings.custom.badge.cursor'), p.slider && t('settings.custom.badge.slider')].filter(Boolean)
     toast(t('presets.toast.applied', { name: p.name, badges: badges.join(', ') }))
   },
 

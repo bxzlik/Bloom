@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type WheelEvent as ReactWheelEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type WheelEvent as ReactWheelEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import {
   useFavStore,
@@ -24,7 +24,6 @@ import {
   seek,
   seekLive,
   setVol,
-  toggleMuteMain,
   toggleShuffleMain,
   cycleRepeatMain,
   toggleCurFav,
@@ -32,6 +31,7 @@ import {
 import { audioEngine } from '../lib/audioEngine'
 import { MarqueeTitle } from './MarqueeTitle'
 import { useT } from '@shared/i18n'
+import { SkipBack, SkipForward, Play, Pause, Volume1, Volume2, VolumeX } from 'lucide-react'
 
 /**
  * Нижний #miniPlayer в main окне — (≈2897-2960).
@@ -73,6 +73,8 @@ export const PlayerBar = () => {
   const mpEnabled = usePlayerViewStore((s) => s.mpEnabled)
   const mpBgMode = usePlayerViewStore((s) => s.mpBgMode)
   const mpCoverShape = usePlayerViewStore((s) => s.mpCoverShape)
+  const mpRounded = usePlayerViewStore((s) => s.mpRounded)
+  const mpHide = usePlayerViewStore((s) => s.mpHide)
   // В режиме «Фоном» весь бар = прогресс-бар → клик по нему перематывает
   // (линия #mpBarBg при этом обычно скрыта). Кнопки/обложку/название пропускаем.
   const mpBgProgress = usePlayerViewStore((s) => s.mpProgress.bg)
@@ -147,7 +149,7 @@ export const PlayerBar = () => {
   }
 
   // Классы фона/формы.
-  const mpClass = [mpCoverShape === 'round' ? 'mp-cover-round' : '', mpBgMode === 'cover' ? 'mp-bg-cover' : '']
+  const mpClass = [mpCoverShape === 'round' ? 'mp-cover-round' : '', mpBgMode === 'cover' ? 'mp-bg-cover' : '', mpRounded ? 'mp-rounded' : '']
     .filter(Boolean)
     .join(' ')
 
@@ -291,27 +293,29 @@ export const PlayerBar = () => {
                 </span>
               </div>
             </div>
-            <button
-              id="mpFav"
-              onClick={toggleCurFav}
-              aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 'calc(var(--radius) * 0.7)',
-                background: 'none',
-                border: 'none',
-                color: isFav ? '#e03030' : 'var(--text2)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: '.15s',
-                flexShrink: 0,
-              }}
-            >
-              <HeartSvg size={14} filled={isFav} />
-            </button>
+            {!mpHide.fav && (
+              <button
+                id="mpFav"
+                onClick={toggleCurFav}
+                aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 'calc(var(--radius) * 0.7)',
+                  background: 'none',
+                  border: 'none',
+                  color: isFav ? '#e03030' : 'var(--text2)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: '.15s',
+                  flexShrink: 0,
+                }}
+              >
+                <HeartSvg size={14} filled={isFav} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -320,10 +324,12 @@ export const PlayerBar = () => {
           className="mp-center"
           style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0 }}
         >
-          <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
-            <RepeatSvg size={15} />
-            {repeat === 2 && <RepeatOneBadge />}
-          </button>
+          {!mpHide.repeat && (
+            <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
+              <RepeatSvg size={15} />
+              {repeat === 2 && <RepeatOneBadge />}
+            </button>
+          )}
           <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
             <PrevSvg size={17} />
           </button>
@@ -333,9 +339,11 @@ export const PlayerBar = () => {
           <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
             <NextSvg size={17} />
           </button>
-          <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
-            <ShuffleSvg size={15} />
-          </button>
+          {!mpHide.shuffle && (
+            <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
+              <ShuffleSvg size={15} />
+            </button>
+          )}
         </div>
 
         {/* RIGHT — time + volume + queue/lyrics/big-pic */}
@@ -350,35 +358,41 @@ export const PlayerBar = () => {
             minWidth: 0,
           }}
         >
-          <MpTime />
+          {!mpHide.time && <MpTime />}
           <Volume volume={volume} onWheel={onWheelVol} />
           {/* Очередь / Текст — открывают глобальную правую панель (#globalRightPanel).
               Повторный клик по активному режиму — закрыть. */}
-          <button
-            className={`cc${grpOpen && grpMode === 'queue' ? ' on' : ''}`}
-            aria-label={t('player.aria.queue')}
-            style={{ flexShrink: 0 }}
-            onClick={() => openGrp('queue')}
-          >
-            <QueueSvg size={15} />
-          </button>
-          <button
-            className={`cc${grpOpen && grpMode === 'lyrics' ? ' on' : ''}`}
-            aria-label={t('player.lyrics')}
-            style={{ flexShrink: 0 }}
-            onClick={() => openGrp('lyrics')}
-          >
-            <LyricsSvg size={15} />
-          </button>
+          {!mpHide.queue && (
+            <button
+              className={`cc${grpOpen && grpMode === 'queue' ? ' on' : ''}`}
+              aria-label={t('player.aria.queue')}
+              style={{ flexShrink: 0 }}
+              onClick={() => openGrp('queue')}
+            >
+              <QueueSvg size={15} />
+            </button>
+          )}
+          {!mpHide.lyrics && (
+            <button
+              className={`cc${grpOpen && grpMode === 'lyrics' ? ' on' : ''}`}
+              aria-label={t('player.lyrics')}
+              style={{ flexShrink: 0 }}
+              onClick={() => openGrp('lyrics')}
+            >
+              <LyricsSvg size={15} />
+            </button>
+          )}
           {/* Big picture — полноэкранный режим обложки (#bigPicOverlay). */}
-          <button
-            className="cc"
-            aria-label="Big picture"
-            style={{ flexShrink: 0 }}
-            onClick={() => useBigPicStore.getState().openBig()}
-          >
-            <BigPicSvg size={15} />
-          </button>
+          {!mpHide.bigpic && (
+            <button
+              className="cc"
+              aria-label="Big picture"
+              style={{ flexShrink: 0 }}
+              onClick={() => useBigPicStore.getState().openBig()}
+            >
+              <BigPicSvg size={15} />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -601,82 +615,92 @@ const MpTime = () => {
 }
 
 
+/** Сторона раскрытия поп-апа громкости относительно кнопки. */
+type VolPopupPlacement = 'side' | 'top' | 'bottom'
+
 const Volume = ({ volume, onWheel }: { volume: number; onWheel: (e: ReactWheelEvent<HTMLDivElement>) => void }) => {
   const t = useT()
-  const sliderRef = useRef<HTMLInputElement>(null)
-  // В боковом (вертикальном) баре горизонтальный слайдер неудобен → клик по
-  // иконке открывает вертикальный поп-ап громкости.
+  // Громкость всегда раскрывается дропдауном (вертикальный поп-ап) по клику на
+  // иконку — инлайн-слайдер убран. Сторона зависит от позиции бара:
+  //   left/right → сбоку, bottom → над иконкой, top → под иконкой.
   const barPos = usePlayerViewStore((s) => s.playerBarPos)
-  const vertical = barPos === 'left' || barPos === 'right'
+  const placement: VolPopupPlacement =
+    barPos === 'left' || barPos === 'right' ? 'side' : barPos === 'top' ? 'bottom' : 'top'
   const btnRef = useRef<HTMLButtonElement>(null)
   const [popupOpen, setPopupOpen] = useState(false)
-  useEffect(() => {
-    const sl = sliderRef.current
-    if (!sl) return
-    const pct = volume
-    sl.style.background = `linear-gradient(to right,rgba(255,255,255,0.8) 0%,rgba(255,255,255,0.8) ${pct}%,rgba(255,255,255,0.2) ${pct}%,rgba(255,255,255,0.2) 100%)`
-  }, [volume])
-  // Поп-ап закрывается при переходе в горизонтальный бар.
-  useEffect(() => {
-    if (!vertical) setPopupOpen(false)
-  }, [vertical])
+  const [hover, setHover] = useState(false)
   return (
     <div className="ps-vol" onWheel={onWheel} style={{ flex: 0, position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
       <button
         ref={btnRef}
         className="cc"
-        onClick={() => (vertical ? setPopupOpen((v) => !v) : toggleMuteMain())}
-        aria-label={vertical ? t('player.aria.volume') : 'Mute'}
+        onClick={() => setPopupOpen((v) => !v)}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        aria-label={t('player.aria.volume')}
       >
-        <VolSvg size={15} v={volume} />
+        {/* При наведении вместо иконки показываем процент громкости. */}
+        {hover ? (
+          <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            {Math.round(volume)}
+          </span>
+        ) : (
+          <VolSvg size={19} v={volume} />
+        )}
       </button>
-      {!vertical && (
-        <input
-          ref={sliderRef}
-          type="range"
-          className="vol-sl"
-          min={0}
-          max={100}
-          value={volume}
-          onChange={(e) => setVol(Number(e.target.value))}
-        />
+      {popupOpen && (
+        <VertVolPopup volume={volume} anchorRef={btnRef} placement={placement} onClose={() => setPopupOpen(false)} />
       )}
-      {popupOpen && <VertVolPopup volume={volume} anchorRef={btnRef} onClose={() => setPopupOpen(false)} />}
     </div>
   )
 }
 
 /**
- * Вертикальный поп-ап громкости бокового бара. Fixed-портал у
- * кнопки, drag/click/колесо по дорожке = громкость, закрытие по клику снаружи.
+ * Вертикальный поп-ап громкости. Fixed-портал у кнопки, drag/click/колесо по
+ * дорожке = громкость, закрытие по клику снаружи. Сторона раскрытия — placement
+ * (side для боковых баров, top/bottom для горизонтальных).
  */
 const VertVolPopup = ({
   volume,
   anchorRef,
+  placement,
   onClose,
 }: {
   volume: number
   anchorRef: React.RefObject<HTMLButtonElement | null>
+  placement: VolPopupPlacement
   onClose: () => void
 }) => {
   const trackRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
   const popupRef = useRef<HTMLDivElement>(null)
 
-  // Позиционирование у кнопки (слева от колонки; works для left и right).
-  useEffect(() => {
+  // Позиционирование у кнопки: side — слева (фолбэк справа) от колонки;
+  // top/bottom — центрируем по кнопке над/под ней. Размер попапа МЕРЯЕМ по факту
+  // (layout-effect до отрисовки), иначе оценка ширины смещала бы попап вбок.
+  useLayoutEffect(() => {
     const btn = anchorRef.current
-    if (!btn) return
+    const pop = popupRef.current
+    if (!btn || !pop) return
     const r = btn.getBoundingClientRect()
-    const pw = 60
-    const ph = 168
-    let left = r.left - pw - 8
-    if (left < 8) left = r.right + 8
-    let top = r.top + r.height / 2 - ph / 2
+    const pw = pop.offsetWidth || 44
+    const ph = pop.offsetHeight || 168
+    let left: number
+    let top: number
+    if (placement === 'side') {
+      left = r.left - pw - 8
+      if (left < 8) left = r.right + 8
+      top = r.top + r.height / 2 - ph / 2
+    } else {
+      left = r.left + r.width / 2 - pw / 2
+      top = placement === 'bottom' ? r.bottom + 8 : r.top - ph - 8
+    }
+    if (left < 8) left = 8
+    if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8
     if (top < 8) top = 8
     if (top + ph > window.innerHeight - 8) top = window.innerHeight - ph - 8
     setPos({ left, top })
-  }, [anchorRef])
+  }, [anchorRef, placement])
 
   // Закрытие по клику снаружи.
   useEffect(() => {
@@ -712,6 +736,12 @@ const VertVolPopup = ({
   return createPortal(
     <div
       ref={popupRef}
+      // Попап портален в body, но React-события всплывают по дереву компонентов
+      // (track → Volume → … → #miniPlayer). Без stopPropagation клик/тап по
+      // дорожке громкости долетает до onClick бара (onBarClickSeek) и в режиме
+      // «прогресс фоном» перематывает трек. Глушим всплытие здесь.
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       style={{
         display: 'flex',
         position: 'fixed',
@@ -757,26 +787,10 @@ const HeartSvg = ({ size, filled }: { size: number; filled: boolean }) => (
     <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
   </svg>
 )
-const PrevSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="19 20 9 12 19 4 19 20" /><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth={2} />
-  </svg>
-)
-const NextSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="5 4 15 12 5 20 5 4" /><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth={2} />
-  </svg>
-)
-const PlaySvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-  </svg>
-)
-const PauseSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
-  </svg>
-)
+const PrevSvg = ({ size }: { size: number }) => <SkipBack size={size} fill="currentColor" />
+const NextSvg = ({ size }: { size: number }) => <SkipForward size={size} fill="currentColor" />
+const PlaySvg = ({ size }: { size: number }) => <Play size={size} fill="currentColor" strokeWidth={0} />
+const PauseSvg = ({ size }: { size: number }) => <Pause size={size} fill="currentColor" strokeWidth={0} />
 const ShuffleSvg = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
     <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" strokeLinecap="round" />
@@ -816,30 +830,9 @@ const RepeatOneBadge = () => (
   </span>
 )
 const VolSvg = ({ size, v }: { size: number; v: number }) => {
-  if (v === 0) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
-        <line x1="23" y1="9" x2="17" y2="15" strokeWidth={1.8} />
-        <line x1="17" y1="9" x2="23" y2="15" strokeWidth={1.8} />
-      </svg>
-    )
-  }
-  if (v < 50) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
-        <path d="M15.54 8.46a5 5 0 010 7.07" />
-      </svg>
-    )
-  }
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
-      <path d="M15.54 8.46a5 5 0 010 7.07" />
-      <path d="M19.07 4.93a10 10 0 010 14.14" />
-    </svg>
-  )
+  if (v === 0) return <VolumeX size={size} fill="currentColor" strokeWidth={1.8} />
+  if (v < 50) return <Volume1 size={size} fill="currentColor" strokeWidth={1.8} />
+  return <Volume2 size={size} fill="currentColor" strokeWidth={1.8} />
 }
 const QueueSvg = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">

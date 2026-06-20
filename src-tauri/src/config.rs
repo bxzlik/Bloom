@@ -178,6 +178,41 @@ pub fn clear_yandex() -> Result<()> {
     Ok(())
 }
 
+// ---------------- spotify.json ----------------
+// Креденшелы Spotify-приложения (Client Credentials flow). Секрет — отдельным
+// файлом, не в appsettings.json. Вводятся пользователем в настройках.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SpotifyCreds {
+    #[serde(default, rename = "clientId")]
+    pub client_id: String,
+    #[serde(default, rename = "clientSecret")]
+    pub client_secret: String,
+}
+
+pub fn load_spotify() -> Result<SpotifyCreds> {
+    let path = local_appdata_dir()?.join("spotify.json");
+    if !path.exists() {
+        return Ok(SpotifyCreds::default());
+    }
+    let raw = std::fs::read_to_string(&path)?;
+    Ok(serde_json::from_str(&raw).unwrap_or_default())
+}
+
+pub fn save_spotify(c: &SpotifyCreds) -> Result<()> {
+    let dir = local_appdata_dir()?;
+    std::fs::create_dir_all(&dir)?;
+    std::fs::write(dir.join("spotify.json"), serde_json::to_string_pretty(c)?)?;
+    Ok(())
+}
+
+pub fn clear_spotify() -> Result<()> {
+    let path = local_appdata_dir()?.join("spotify.json");
+    if path.exists() {
+        std::fs::remove_file(path)?;
+    }
+    Ok(())
+}
+
 // ---------------- folders.json ----------------
 pub fn load_folders() -> Result<Vec<PathBuf>> {
     let path = local_appdata_dir()?.join("folders.json");

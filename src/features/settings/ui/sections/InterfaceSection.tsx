@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useThemeStore, THEME_PRESETS, type ThemePreset } from '../../model/themeStore'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
+import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useTransparencyStore } from '../../model/transparencyStore'
 import { openColorPicker } from '../../model/colorPickerStore'
 import { toast } from '@shared/ui'
@@ -70,6 +71,8 @@ export const InterfaceSection = () => {
   const deleteCustomTheme = useThemeStore((s) => s.deleteCustomTheme)
 
   const p = useUiPrefsStore()
+  const accentBadges = useBadgePrefs((s) => s.accentBadges)
+  const setAccentBadges = useBadgePrefs((s) => s.setAccentBadges)
 
   const trMode = useTransparencyStore((s) => s.trMode)
   const blockOpacity = useTransparencyStore((s) => s.blockOpacity)
@@ -179,6 +182,16 @@ export const InterfaceSection = () => {
             <div className="ssub">{t('settings.interface.sidebar.sep.sub')}</div>
           </div>
           <Toggle checked={p.sbSep} onChange={(v) => p.set('sbSep', v)} />
+        </div>
+      </div>
+
+      <div className="sc">
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.interface.accentBadges.title')}</div>
+            <div className="ssub">{t('settings.interface.accentBadges.sub')}</div>
+          </div>
+          <Toggle checked={accentBadges} onChange={setAccentBadges} />
         </div>
       </div>
 

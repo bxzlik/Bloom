@@ -116,7 +116,7 @@ export const TamagotchiGame = () => {
     s.happiness = Math.min(100, s.happiness + 10)
     saveTama()
     force()
-    showSpeech('Чистенький! ✨')
+    showSpeech(t('games.tama.bathDone'))
   }
   const pet = () => {
     const s = tamaState
@@ -136,7 +136,7 @@ export const TamagotchiGame = () => {
     }
   }
   const reset = () => {
-    if (!confirm('Сбросить прогресс тамагочи? Питомец начнёт жизнь заново.')) return
+    if (!confirm(t('games.tama.confirmReset'))) return
     resetTama()
     force()
     toast(t('games.tama.reborn'))
@@ -156,11 +156,13 @@ export const TamagotchiGame = () => {
   const mood = tamaMood(s, playing)
   const m = TAMA_MOODS[mood]
   const ageH = tamaAgeHours(s)
-  const ageStr = ageH >= 24 ? (ageH / 24).toFixed(1) + ' дн.' : Math.round(ageH) + ' ч.'
+  const ageStr = ageH >= 24
+    ? t('games.tama.ageDays', { n: (ageH / 24).toFixed(1) })
+    : t('games.tama.ageHours', { n: Math.round(ageH) })
 
   const bars = [
-    { label: SVG_FOOD + 'Сытость', val: s.hunger, col: s.hunger < 25 ? '#e03030' : s.hunger < 50 ? '#f59e0b' : '#1db954' },
-    { label: SVG_SMILE + 'Счастье', val: s.happiness, col: s.happiness < 25 ? '#e03030' : s.happiness < 50 ? '#f59e0b' : 'var(--accent)' },
+    { label: SVG_FOOD + t('games.tama.statHunger'), val: s.hunger, col: s.hunger < 25 ? '#e03030' : s.hunger < 50 ? '#f59e0b' : '#1db954' },
+    { label: SVG_SMILE + t('games.tama.statHappiness'), val: s.happiness, col: s.happiness < 25 ? '#e03030' : s.happiness < 50 ? '#f59e0b' : 'var(--accent)' },
   ]
   const acts = [
     { icon: SVG_ACT_FEED, label: t('games.tama.feed'), cost: 1, fn: feed },
@@ -168,10 +170,10 @@ export const TamagotchiGame = () => {
     { icon: SVG_ACT_BATH, label: t('games.tama.bath'), cost: 2, fn: bath },
   ]
   const statRows: [string, string | number][] = [
-    [STAT_AGE + 'Возраст', ageStr],
-    [STAT_SONGS + 'Треков вместе', s.songsListened || 0],
-    [STAT_FED + 'Покормлено', s.totalFed || 0],
-    [STAT_PETS + 'Поглажено', s.totalPets || 0],
+    [STAT_AGE + t('games.tama.statAge'), ageStr],
+    [STAT_SONGS + t('games.tama.statSongs'), s.songsListened || 0],
+    [STAT_FED + t('games.tama.statFed'), s.totalFed || 0],
+    [STAT_PETS + t('games.tama.statPets'), s.totalPets || 0],
   ]
 
   return (

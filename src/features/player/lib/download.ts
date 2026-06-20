@@ -17,6 +17,7 @@ import { t as i18nT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { apiFetch, type ScMedia } from '@features/soundcloud'
 import { ymStreamUrl } from '@features/yandex/api/ymClient'
+import { bridgeMatch } from '@features/providers'
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
@@ -36,9 +37,9 @@ const ensureListener = (): Promise<void> => {
   _listenerReady = onAppEvent('bloom-download-state', ({ state, message }) => {
     if (!_ctx) return
     const cover = _ctx.kind === 'cover'
-    if (state === 'downloading') toast(cover ? 'Скачивание обложки…' : 'Скачивание…')
+    if (state === 'downloading') toast(cover ? i18nT('toast.dlCover') : i18nT('toast.dlStart'))
     else if (state === 'done') {
-      toast(cover ? '✓ Обложка сохранена' : '✓ Сохранено: ' + _ctx.name)
+      toast(cover ? i18nT('toast.dlCoverSaved') : i18nT('toast.dlSaved', { name: _ctx.name }))
       notify({ kind: 'success', titleKey: 'notif.trackDl.title', body: _ctx.name })
     } else if (state === 'cancelled') {
       /* пользователь отменил диалог — молчим */
@@ -56,7 +57,7 @@ const getProgressiveUrl = async (media: ScMedia | null): Promise<string> => {
   const prog = media.transcodings.find((tc) => tc.format?.protocol === 'progressive')
   if (!prog) throw new Error(i18nT('search.err.hlsOnly'))
   const data = await apiFetch(prog.url)
-  if (!data || !data.url) throw new Error('SC не вернул CDN ссылку')
+  if (!data || !data.url) throw new Error(i18nT('sc.err.noCdn'))
   return data.url
 }
 
@@ -83,10 +84,21 @@ const resolveYmDownloadable = async (t: Track): Promise<Downloadable> => {
   return { url, referer: null }
 }
 
-/** Резолв ссылки для трека площадки (SC/YM). Бросает, если трек не качается. */
+/**
+ * Бридж-площадки (YTM/Spotify): прямой стрим недоступен, поэтому качаем
+ * SC-двойник — находим совпадение на SoundCloud → его progressive mp3.
+ */
+const resolveBridgeDownloadable = async (t: Track): Promise<Downloadable> => {
+  const sc = await bridgeMatch(t)
+  if (!sc) throw new Error(i18nT('toast.trackNotOnSrc', { label: 'SoundCloud' }))
+  return resolveScDownloadable(sc)
+}
+
+/** Резолв ссылки для трека площадки (SC/YM/YTM/Spotify). Бросает, если не качается. */
 const resolveDownloadable = (t: Track): Promise<Downloadable> => {
   if (t._sc) return resolveScDownloadable(t)
   if (t._ym) return resolveYmDownloadable(t)
+  if (t._ytm || t._sp) return resolveBridgeDownloadable(t)
   return Promise.reject(new Error(i18nT('toast.dlUnavailable')))
 }
 
@@ -95,9 +107,10 @@ export const downloadTrack = async (t: Track | null): Promise<void> => {
   if (!t) return
   await ensureListener()
 
-  // Треки площадок (SC/YM): резолвим прямой CDN-URL → Rust HttpClient
-  // (виртуальный origin WebView2 → 403 на CORS, поэтому качает Rust).
-  if (t._sc || t._ym) {
+  // Треки площадок (SC/YM/YTM): резолвим прямой CDN-URL → Rust HttpClient
+  // (виртуальный origin WebView2 → 403 на CORS, поэтому качает Rust). YTM качает
+  // SC-двойник (прямой стрим YouTube заблокирован — см. resolveYtmDownloadable).
+  if (t._sc || t._ym || t._ytm || t._sp) {
     _ctx = { kind: 'track', name: t.name }
     toast(i18nT('toast.dlGettingLink'))
     try {
@@ -160,7 +173,7 @@ export const downloadCover = async (
  * трека (подписанные CDN-URL живут минуты), затем `download_to_dir` пишет файл.
  */
 export const downloadPlaylistTracks = async (name: string, tracks: Track[]): Promise<void> => {
-  const platform = tracks.filter((t) => t._sc || t._ym)
+  const platform = tracks.filter((t) => t._sc || t._ym || t._ytm || t._sp)
   if (!platform.length) {
     toast(i18nT('toast.plDlNoTracks'))
     return

@@ -111,7 +111,7 @@ export const LogsViewerModal = ({
             cursor: 'text',
           }}
         >
-          {text || 'Лог пуст'}
+          {text || t('logs.empty')}
         </pre>
       </div>
     </div>,

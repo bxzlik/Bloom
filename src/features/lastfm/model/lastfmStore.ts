@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { toast } from '@shared/ui'
+import { t } from '@shared/i18n'
 import { md5 } from '../lib/md5'
 
 const BASE = 'https://ws.audioscrobbler.com/2.0/'
@@ -152,47 +153,47 @@ export const useLastfmStore = create<LastfmState>((set, get) => {
       const k = apiKey.trim()
       const s = apiSecret.trim()
       if (!k || !s) {
-        toast('Last.fm: введи оба ключа')
+        toast(t('lastfm.toast.enterBothKeys'))
         return
       }
       set({ apiKey: k, apiSecret: s })
       persist(get())
-      toast('Last.fm: ключи сохранены')
+      toast(t('lastfm.toast.keysSaved'))
     },
 
     startOAuth: async () => {
       const { apiKey } = get()
       if (!apiKey) {
-        toast('Last.fm: сначала сохрани API Key')
+        toast(t('lastfm.toast.saveApiKeyFirst'))
         return
       }
-      set({ oauthStatus: 'Получаю токен...' })
+      set({ oauthStatus: t('lastfm.oauth.gettingToken') })
       try {
         const res = await fetch(`${BASE}?method=auth.getToken&api_key=${apiKey}&format=json`)
         const data = (await res.json()) as { token?: string; message?: string }
         if (!data.token) {
-          set({ oauthStatus: 'Ошибка: ' + (data.message || 'нет токена') })
+          set({ oauthStatus: t('lastfm.oauth.error', { msg: data.message || t('lastfm.oauth.noToken') }) })
           return
         }
         _pendingToken = data.token
         const authUrl = `https://www.last.fm/api/auth/?api_key=${apiKey}&token=${data.token}`
         await openUrl(authUrl).catch(() => window.open(authUrl, '_blank'))
         set({
-          oauthStatus: 'Подтверди доступ на Last.fm, затем нажми «Готово»',
+          oauthStatus: t('lastfm.oauth.confirmAccess'),
           oauthPending: true,
         })
       } catch {
-        set({ oauthStatus: 'Сетевая ошибка' })
+        set({ oauthStatus: t('lastfm.oauth.networkError') })
       }
     },
 
     finishOAuth: async () => {
       const { apiKey } = get()
       if (!_pendingToken) {
-        set({ oauthStatus: 'Сначала нажми «Войти через Last.fm»' })
+        set({ oauthStatus: t('lastfm.oauth.loginFirst') })
         return
       }
-      set({ oauthStatus: 'Проверяю...' })
+      set({ oauthStatus: t('lastfm.oauth.checking') })
       const params: Record<string, string> = {
         method: 'auth.getSession',
         api_key: apiKey,
@@ -222,12 +223,12 @@ export const useLastfmStore = create<LastfmState>((set, get) => {
             /* noop */
           }
           persist(get())
-          toast('Last.fm: подключено как ' + data.session.name)
+          toast(t('lastfm.toast.connectedAs', { name: data.session.name }))
         } else {
-          set({ oauthStatus: data.message || 'Не подтверждено — попробуй ещё раз' })
+          set({ oauthStatus: data.message || t('lastfm.oauth.notConfirmed') })
         }
       } catch {
-        set({ oauthStatus: 'Сетевая ошибка' })
+        set({ oauthStatus: t('lastfm.oauth.networkError') })
       }
     },
 
@@ -241,7 +242,7 @@ export const useLastfmStore = create<LastfmState>((set, get) => {
         /* noop */
       }
       persist(get())
-      toast('Last.fm: отключено')
+      toast(t('lastfm.toast.disconnected'))
     },
 
     toggleScrobble: () => {

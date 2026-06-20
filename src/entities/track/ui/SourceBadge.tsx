@@ -1,4 +1,17 @@
 import type { Track } from '../model/types'
+import { useBadgePrefs } from '@shared/lib/badgePrefs'
+
+/** Брендовые цвета площадок (для бейджей/иконок в режиме «свои цвета»). */
+const BRAND = {
+  soundcloud: '#ff5500',
+  yandex: '#fed42b',
+  ytmusic: '#ff0033',
+  spotify: '#1ED760',
+} as const
+
+/** Брендовый цвет площадки по id провайдера (или undefined — local/all/wave). */
+export const providerBrandColor = (id: string): string | undefined =>
+  (BRAND as Record<string, string>)[id]
 
 /**
  * Лого SoundCloud — фирменная волна + облако (официальный single-path,
@@ -19,6 +32,42 @@ export const ScLogo = ({ size }: { size: number }) => (
 export const YmLogo = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 448 445" fill="currentColor" style={{ display: 'block' }}>
     <path d="M442.973 173.499L441.756 164.528L368.261 147.37L406.225 91.0325L401.739 84.9248L342.538 113.892L349.076 35.1002L342.538 31.8563L305.79 95.1128L262.529 0H254.369L264.962 93.0853L156.773 6.94402L147.396 9.4023L230.673 113.892L65.3346 58.7961L57.5796 67.362L205.355 151.045L2.05279 168.202L0 180.443L211.488 203.303L34.7201 347.834L42.8806 358.859L252.316 244.536L211.083 445H223.729L304.574 256.396L353.562 403.767L362.128 397.228L343.754 249.452L418.466 333.946L422.977 325.38L367.45 220.865L446.242 248.641L447.053 240.05L381.338 187.387L442.973 173.499Z" />
+  </svg>
+)
+
+/**
+ * Лого YouTube Music — фирменная прямоугольная «play-кнопка» (официальный ассет
+ * `YouTube_full-color_icon_(2024).svg`, viewBox 313×216 — широкий, не квадрат).
+ * Монохром через `currentColor` (как Sc/Ym), чтобы наследовать акцент в бейджах;
+ * фирменный красный в акцентную плашку не вписывается. Треугольник вырезан
+ * `evenodd` поверх скруглённого прямоугольника. Высота — пропорция ассета
+ * (~0.69·size), поэтому форма прямоугольная.
+ */
+export const YtmLogo = ({ size }: { size: number }) => (
+  <svg
+    width={size}
+    height={Math.round(size * 0.69)}
+    viewBox="0 0 313.23315 216.02286"
+    fill="currentColor"
+    style={{ display: 'block' }}
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      transform="translate(-54.079375,-5.2758072)"
+      d="m 210.53177,221.29866 c 0,0 98.12514,0 122.46443,-6.48069 13.70449,-3.6724 24.01093,-14.2575 27.62825,-27.32688 6.68807,-23.97854 6.68807,-74.41988 6.68807,-74.41988 0,0 0,-50.117297 -6.68807,-73.879819 C 357.00713,25.79798 346.70069,15.42887 332.9962,11.864515 308.65691,5.2758072 210.53177,5.2758072 210.53177,5.2758072 c 0,0 -97.9062,0 -122.135976,6.5887078 -13.485335,3.564355 -24.010529,13.933465 -27.847831,27.326876 -6.468588,23.762522 -6.468588,73.879819 -6.468588,73.879819 0,0 0,50.44134 6.468588,74.41988 3.837302,13.06938 14.362496,23.65448 27.847831,27.32688 24.229776,6.48069 122.135976,6.48069 122.135976,6.48069 z M 259.30109,113.28723 178.29251,67.382379 v 91.809711 z"
+    />
+  </svg>
+)
+
+/**
+ * Лого Spotify — фирменный круг с тремя «волнами» (официальный single-path из
+ * бренд-ассета). Монохром через `currentColor` (как Sc/Ym/Ytm), чтобы наследовать
+ * акцент в бейджах; фирменный зелёный в акцентную плашку не вписывается.
+ */
+export const SpLogo = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 168 168" fill="currentColor" style={{ display: 'block' }}>
+    <path d="m83.996 0.277c-46.249 0-83.743 37.493-83.743 83.742 0 46.251 37.494 83.741 83.743 83.741 46.254 0 83.744-37.49 83.744-83.741 0-46.246-37.49-83.738-83.745-83.738l0.001-0.004zm38.404 120.78c-1.5 2.46-4.72 3.24-7.18 1.73-19.662-12.01-44.414-14.73-73.564-8.07-2.809 0.64-5.609-1.12-6.249-3.93-0.643-2.81 1.11-5.61 3.926-6.25 31.9-7.291 59.263-4.15 81.337 9.34 2.46 1.51 3.24 4.72 1.73 7.18zm10.25-22.805c-1.89 3.075-5.91 4.045-8.98 2.155-22.51-13.839-56.823-17.846-83.448-9.764-3.453 1.043-7.1-0.903-8.148-4.35-1.04-3.453 0.907-7.093 4.354-8.143 30.413-9.228 68.222-4.758 94.072 11.127 3.07 1.89 4.04 5.91 2.15 8.976v-0.001zm0.88-23.744c-26.99-16.031-71.52-17.505-97.289-9.684-4.138 1.255-8.514-1.081-9.768-5.219-1.254-4.14 1.08-8.513 5.221-9.771 29.581-8.98 78.756-7.245 109.83 11.202 3.73 2.209 4.95 7.016 2.74 10.733-2.2 3.722-7.02 4.949-10.73 2.739z" />
   </svg>
 )
 
@@ -67,62 +116,88 @@ export const FolderLogo = ({ size }: { size: number }) => (
 )
 
 /**
- * Акцентный бейдж-плашка с лого площадки. Фон/цвет — акцентные, лого через
- * `currentColor`. Переиспользуется бейджем трека (`SourceBadge`) и бейджем
- * плейлиста «все треки из площадки» (сайдбар библиотеки).
+ * Бейдж-плашка с лого площадки. По умолчанию красится в БРЕНДОВЫЙ цвет площадки
+ * (`brand`); при включённой настройке `accentBadges` — в цвет акцента (прежнее
+ * поведение). Лого внутри — `currentColor`, наследует цвет плашки. Бейджи без
+ * бренда (локальные/папка) всегда акцентные. Переиспользуется бейджем трека и
+ * бейджем плейлиста «все треки из площадки».
  */
 const SourcePlaque = ({
   size,
   children,
   cover,
+  brand,
 }: {
   size: number
   children: React.ReactNode
   /** Вариант поверх обложки: круглая полупрозрачная «стеклянная» плашка (фон
-   *  затемнён + blur, лого — акцентным цветом), чтобы читалась на любой картинке
-   *  и не перекрывала её. Обычный (без `cover`) — акцентная квадратная плашка. */
+   *  затемнён + blur), чтобы читалась на любой картинке и не перекрывала её.
+   *  Обычный (без `cover`) — квадратная плашка с тонированным фоном. */
   cover?: boolean
-}) => (
-  <span
-    className="src-badge"
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: size,
-      height: size,
-      flexShrink: 0,
-      ...(cover
-        ? {
-            borderRadius: '50%',
-            background: 'rgba(0,0,0,.38)',
-            color: 'var(--accent)',
-            backdropFilter: 'blur(3px)',
-            WebkitBackdropFilter: 'blur(3px)',
-            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.14)',
-          }
-        : {
-            borderRadius: 'calc(var(--radius) * 0.35)',
-            background: 'rgba(var(--accent-rgb),.18)',
-            color: 'var(--accent)',
-          }),
-    }}
-  >
-    {children}
-  </span>
-)
+  /** Брендовый цвет площадки. Нет → всегда акцент (локальные/папка). */
+  brand?: string
+}) => {
+  const accentBadges = useBadgePrefs((s) => s.accentBadges)
+  const useBrand = !accentBadges && !!brand
+  const color = useBrand ? (brand as string) : 'var(--accent)'
+  return (
+    <span
+      className="src-badge"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: size,
+        height: size,
+        flexShrink: 0,
+        ...(cover
+          ? {
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,.38)',
+              color,
+              backdropFilter: 'blur(3px)',
+              WebkitBackdropFilter: 'blur(3px)',
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.14)',
+            }
+          : {
+              borderRadius: 'calc(var(--radius) * 0.35)',
+              background: useBrand
+                ? `color-mix(in srgb, ${brand} 20%, transparent)`
+                : 'rgba(var(--accent-rgb),.18)',
+              color,
+            }),
+      }}
+    >
+      {children}
+    </span>
+  )
+}
 
-/** Акцентный бейдж SoundCloud. */
+/** Бейдж SoundCloud (бренд-оранжевый или акцент по настройке). */
 export const ScBadge = ({ size = 22, cover }: { size?: number; cover?: boolean }) => (
-  <SourcePlaque size={size} cover={cover}>
+  <SourcePlaque size={size} cover={cover} brand={BRAND.soundcloud}>
     <ScLogo size={Math.round(size * 0.6)} />
   </SourcePlaque>
 )
 
-/** Акцентный бейдж Яндекс.Музыки. */
+/** Бейдж Яндекс.Музыки (бренд-жёлтый или акцент по настройке). */
 export const YmBadge = ({ size = 22, cover }: { size?: number; cover?: boolean }) => (
-  <SourcePlaque size={size} cover={cover}>
+  <SourcePlaque size={size} cover={cover} brand={BRAND.yandex}>
     <YmLogo size={Math.round(size * 0.58)} />
+  </SourcePlaque>
+)
+
+/** Бейдж YouTube Music (бренд-красный или акцент по настройке). */
+export const YtmBadge = ({ size = 22, cover }: { size?: number; cover?: boolean }) => (
+  <SourcePlaque size={size} cover={cover} brand={BRAND.ytmusic}>
+    <YtmLogo size={Math.round(size * 0.62)} />
+  </SourcePlaque>
+)
+
+/** Бейдж Spotify (бренд-зелёный или акцент по настройке). */
+export const SpBadge = ({ size = 22, cover }: { size?: number; cover?: boolean }) => (
+  <SourcePlaque size={size} cover={cover} brand={BRAND.spotify}>
+    <SpLogo size={Math.round(size * 0.62)} />
   </SourcePlaque>
 )
 
@@ -141,17 +216,21 @@ export const FolderBadge = ({ size = 22, cover }: { size?: number; cover?: boole
 )
 
 /** Трек из отслеживаемой папки (folder_watcher) — `_localPath`/`_folder`. */
-const isFolderTrack = (t: Track): boolean => !t._sc && !t._ym && Boolean(t._localPath || t._folder)
+const isFolderTrack = (t: Track): boolean =>
+  !t._sc && !t._ym && !t._ytm && !t._sp && Boolean(t._localPath || t._folder)
 /** Загруженный вручную в библиотеку трек — blob/IDB `url`, без папки/площадки. */
-const isLocalTrack = (t: Track): boolean => !t._sc && !t._ym && !isFolderTrack(t) && Boolean(t.url)
+const isLocalTrack = (t: Track): boolean =>
+  !t._sc && !t._ym && !t._ytm && !t._sp && !isFolderTrack(t) && Boolean(t.url)
 
 /**
- * Бейдж источника трека. Для треков площадок — лого SoundCloud / Яндекс;
- * для треков из папки — иконка папки; для загруженных вручную — иконка
+ * Бейдж источника трека. Для треков площадок — лого SoundCloud / Яндекс / YTM /
+ * Spotify; для треков из папки — иконка папки; для загруженных вручную — иконка
  * жёсткого диска. Цвет/фон — акцентные.
  */
 export const SourceBadge = ({ track, size = 22 }: { track: Track; size?: number }) => {
   if (track._ym) return <YmBadge size={size} />
+  if (track._ytm) return <YtmBadge size={size} />
+  if (track._sp) return <SpBadge size={size} />
   if (track._sc) return <ScBadge size={size} />
   if (isFolderTrack(track)) return <FolderBadge size={size} />
   if (isLocalTrack(track)) return <LocalBadge size={size} />
@@ -167,6 +246,10 @@ export const SourceBadge = ({ track, size = 22 }: { track: Track; size?: number 
 export const CoverSourceBadge = ({ track, size = 16 }: { track: Track; size?: number }) => {
   const badge = track._ym ? (
     <YmBadge size={size} cover />
+  ) : track._ytm ? (
+    <YtmBadge size={size} cover />
+  ) : track._sp ? (
+    <SpBadge size={size} cover />
   ) : track._sc ? (
     <ScBadge size={size} cover />
   ) : isFolderTrack(track) ? (
@@ -184,7 +267,15 @@ export const CoverSourceBadge = ({ track, size = 16 }: { track: Track; size?: nu
  */
 export const CoverProviderBadge = ({ provider, size = 16 }: { provider?: string | null; size?: number }) => {
   const badge =
-    provider === 'yandex' ? <YmBadge size={size} cover /> : provider === 'soundcloud' ? <ScBadge size={size} cover /> : null
+    provider === 'yandex' ? (
+      <YmBadge size={size} cover />
+    ) : provider === 'ytmusic' ? (
+      <YtmBadge size={size} cover />
+    ) : provider === 'spotify' ? (
+      <SpBadge size={size} cover />
+    ) : provider === 'soundcloud' ? (
+      <ScBadge size={size} cover />
+    ) : null
   if (!badge) return null
   return <span className="cov-badge">{badge}</span>
 }

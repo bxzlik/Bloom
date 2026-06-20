@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { TranslationKey } from '@shared/i18n'
 
 /**
  * Эквалайзер (6 полос, по макету): пресеты + перетаскиваемая кривая.
@@ -27,6 +28,27 @@ export const EQ_PRESETS: Record<string, EqGains> = {
   'Танцевальная': [6, 4, 1, 0, 2, 5],
   'Акустика': [4, 2, 0, 2, 3, 4],
   'Громкость': [6, 4, 0, 2, 4, 5],
+}
+
+/**
+ * Перевод названий встроенных пресетов. Ключи EQ_PRESETS остаются стабильными
+ * идентификаторами (персистятся как activePreset) — для отображения резолвим
+ * лейбл по этой карте. Пользовательские пресеты показываются как есть.
+ */
+export const EQ_PRESET_LABELS: Record<string, TranslationKey> = {
+  'Нейтральный': 'player.eq.preset.neutral',
+  'Басы': 'player.eq.preset.bass',
+  'Высокие': 'player.eq.preset.treble',
+  'Вокал': 'player.eq.preset.vocal',
+  'Рок': 'player.eq.preset.rock',
+  'Поп': 'player.eq.preset.pop',
+  'Джаз': 'player.eq.preset.jazz',
+  'Классика': 'player.eq.preset.classical',
+  'Электроника': 'player.eq.preset.electronic',
+  'Хип-хоп': 'player.eq.preset.hiphop',
+  'Танцевальная': 'player.eq.preset.dance',
+  'Акустика': 'player.eq.preset.acoustic',
+  'Громкость': 'player.eq.preset.loudness',
 }
 
 const KEY = 'bloom_eq'

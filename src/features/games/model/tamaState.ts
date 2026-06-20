@@ -172,5 +172,5 @@ export function earnFoodFromSong(): void {
   s.happiness = Math.min(100, (s.happiness || 0) + 5)
   saveTama()
   checkTamaAchievements()
-  gameToast('tama', '+1 еда для питомца!')
+  gameToast('tama', t('games.tama.foodEarned'))
 }

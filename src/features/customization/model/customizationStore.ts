@@ -20,6 +20,7 @@ interface CustomizationState {
   coverUrl: string | null
   vizUrl: string | null
   cursorUrl: string | null
+  sliderUrl: string | null
   bgBlur: number
   bgDim: number
   coverAsBg: boolean
@@ -30,6 +31,8 @@ interface CustomizationState {
   /** Фото визуализатора (пишет playerStore.vizPhoto; null = снять). */
   setViz: (url: string | null) => void
   setCursor: (url: string | null) => void
+  /** Фото ползунка слайдера (пишет playerStore.sliderThumb; null = снять). */
+  setSlider: (url: string | null) => void
   setBgBlur: (px: number) => void
   setBgDim: (pct: number) => void
   setCoverAsBg: (v: boolean) => void
@@ -87,6 +90,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => {
     coverUrl: null,
     vizUrl: null,
     cursorUrl: null,
+    sliderUrl: null,
     bgBlur: initPrefs.bgBlur,
     bgDim: initPrefs.bgDim,
     coverAsBg: initPrefs.coverAsBg,
@@ -112,6 +116,12 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => {
       set({ cursorUrl: url })
       void saveAppImage('customCursor', url)
       applyCustomCursor(url)
+    },
+    setSlider: (url) => {
+      set({ sliderUrl: url })
+      void saveAppImage('sliderThumb', url)
+      // Фото ползунка — через playerStore (его читают PagePlayer/BigPicture).
+      usePlayerStore.setState({ sliderThumb: url })
     },
     setBgBlur: (px) => {
       set({ bgBlur: px })
@@ -151,6 +161,7 @@ export const useCustomizationBootstrap = (): void => {
         coverUrl: imgs.playerCoverUrl ?? null,
         vizUrl: imgs.vizPhoto ?? null,
         cursorUrl: imgs.customCursor ?? null,
+        sliderUrl: imgs.sliderThumb ?? null,
       })
       // Применяем восстановленные.
       const s = useCustomizationStore.getState()
@@ -160,6 +171,7 @@ export const useCustomizationBootstrap = (): void => {
       if (s.cursorUrl) applyCustomCursor(s.cursorUrl)
       if (s.coverUrl) usePlayerStore.setState({ coverOverride: s.coverUrl })
       if (s.vizUrl) usePlayerStore.setState({ vizPhoto: s.vizUrl })
+      if (s.sliderUrl) usePlayerStore.setState({ sliderThumb: s.sliderUrl })
     })
 
     // Обложка трека как фон: переприменяем при смене artwork.

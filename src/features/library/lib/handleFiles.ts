@@ -1,4 +1,5 @@
 import type { Track } from '@entities/track'
+import { t as i18nT } from '@shared/i18n'
 import { useLibStore } from '../model'
 import { idbSaveTrack, idbUpdateMeta, idbDeleteTrack } from './idb'
 import { readTags } from './readTags'
@@ -16,11 +17,11 @@ const parseName = (filename: string): { name: string; artist: string } => {
   const d = raw.indexOf(' - ')
   if (d > -1) {
     return {
-      artist: raw.slice(0, d).trim() || 'Неизвестный',
+      artist: raw.slice(0, d).trim() || i18nT('common.unknownArtist'),
       name: raw.slice(d + 3).trim() || raw,
     }
   }
-  return { name: raw, artist: 'Неизвестный' }
+  return { name: raw, artist: i18nT('common.unknownArtist') }
 }
 
 const genId = (): string =>

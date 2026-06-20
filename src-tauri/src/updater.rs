@@ -14,6 +14,11 @@ const REPO: &str = "bxzlik/Bloom";
 /// Версия текущей сборки (из Cargo.toml / tauri.conf.json — они синхронны).
 const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const USER_AGENT: &str = "Bloom-Updater";
+/// Манифест с описаниями обновлений (текст + фото) — лежит в репозитории и
+/// тянется по сети, чтобы старая сборка могла показать анонс новой версии, а
+/// новая — экран «Что нового». Правится без пересборки приложения.
+const NOTES_URL: &str =
+    "https://raw.githubusercontent.com/bxzlik/Bloom/main/update-notes/update-notes.json";
 
 #[derive(Serialize, Clone)]
 pub struct UpdateInfo {
@@ -102,6 +107,37 @@ pub async fn check_update() -> Result<UpdateInfo, String> {
         download_url,
         asset_name,
     })
+}
+
+/// Тянет манифест описаний обновлений (`update-notes.json`) как сырую строку —
+/// парсинг и выбор записи по версии делает фронтенд. Кэш CDN обходим query-меткой
+/// времени, чтобы свежие правки доезжали без задержки в ~5 минут.
+#[tauri::command]
+pub async fn fetch_update_notes() -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .user_agent(USER_AGENT)
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let bust = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let text = client
+        .get(format!("{NOTES_URL}?t={bust}"))
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .error_for_status()
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(text)
 }
 
 /// Качает установщик во временную папку, эмиття прогресс в `bloom-update-progress`.

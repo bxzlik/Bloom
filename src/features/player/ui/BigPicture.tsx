@@ -38,6 +38,7 @@ import { MarqueeTitle } from './MarqueeTitle'
 import { QueueBlock } from './QueueBlock'
 import { AddPopup } from './AddPopup'
 import { useT } from '@shared/i18n'
+import { SkipBack, SkipForward, Play, Pause } from 'lucide-react'
 
 /**
  * Полноэкранный режим обложки (#bigPicOverlay) —
@@ -294,6 +295,15 @@ const BpProgress = () => {
   const duration = usePlayerStore((s) => s.duration)
   const sliderType = usePlayerViewStore((s) => s.sliderType)
   const curId = useQueueStore((s) => s.curId)
+  // Фото на thumb: своё фото («Кастомизация» → Слайдер) → обложка трека (только
+  // при типе 'cover'). Никогда при волновом слайдере.
+  const sliderPhoto = usePlayerStore((s) => s.sliderThumb)
+  const artworkRaw = usePlayerStore((s) => s.artwork)
+  const coverOverride = usePlayerStore((s) => s.coverOverride)
+  const frozenCover = useOptStore((s) => s.frozenCover)
+  const thumbCover = frozenCover ?? coverOverride ?? artworkRaw
+  const photoSrc =
+    sliderType === 'wave' ? null : sliderPhoto ?? (sliderType === 'cover' ? thumbCover : null)
   const waveRef = useRef<HTMLCanvasElement>(null)
   const [dragFrac, setDragFrac] = useState<number | null>(null)
   const pct = dragFrac != null ? dragFrac * 100 : duration > 0 ? Math.min(100, (position / duration) * 100) : 0
@@ -343,7 +353,28 @@ const BpProgress = () => {
       <div className="bp-bar-wrap" id="bpBarWrap" onWheel={onWheel}>
         <canvas id="bpWaveCanvas" ref={waveRef} style={{ pointerEvents: 'none' }} />
         <div className="bp-bar-fill" id="bpFill" style={{ width: `${pct}%`, pointerEvents: 'none' }} />
-        <div className="bp-bar-thumb" id="bpThumb" style={{ left: `${pct}%`, transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} />
+        <div
+          className="bp-bar-thumb"
+          id="bpThumb"
+          style={{
+            left: `${pct}%`,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            ...(photoSrc
+              ? {
+                  display: 'block',
+                  width: 26,
+                  height: 26,
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  background: 'var(--card)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,.6),0 0 0 2px #090909',
+                }
+              : null),
+          }}
+        >
+          {photoSrc && <img src={photoSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+        </div>
         <div
           id="bpSeek"
           aria-label={t('player.aria.seek')}
@@ -404,21 +435,13 @@ const BpControls = () => {
         </svg>
       </button>
       <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
-        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-          <polygon points="19 20 9 12 19 4 19 20" /><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth={2} />
-        </svg>
+        <SkipBack size={20} fill="currentColor" />
       </button>
       <button className="cc-play" id="bpPlayBtn" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
-        {playing ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
-        ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
-        )}
+        {playing ? <Pause size={20} fill="currentColor" strokeWidth={0} /> : <Play size={20} fill="currentColor" strokeWidth={0} />}
       </button>
       <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
-        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-          <polygon points="5 4 15 12 5 20 5 4" /><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth={2} />
-        </svg>
+        <SkipForward size={20} fill="currentColor" />
       </button>
       <button className={`cc${shuffle ? ' on' : ''}`} id="bpShufBtn" onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
         <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">

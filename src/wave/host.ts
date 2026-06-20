@@ -13,6 +13,7 @@ import { trackRegistry } from "@entities/track";
 import { loadPlay } from "@features/player/api/play";
 import { apiFetch as scApiFetch } from "@features/soundcloud/api/scClient";
 import { toast as globalToast } from "@shared/ui";
+import { t as i18nT } from "@shared/i18n";
 
 interface HistoryEntry {
   id: string;
@@ -62,7 +63,7 @@ export const host = {
   },
   set curSource(v: CurSource) {
     if (v.type === "wave") {
-      useQueueStore.setState({ source: { kind: "wave", label: v.label ?? "Моя волна" } });
+      useQueueStore.setState({ source: { kind: "wave", label: v.label ?? i18nT("wave.title") } });
     }
     // Не-волновой источник через волну не ставим — это делают playFromSource/др.
   },

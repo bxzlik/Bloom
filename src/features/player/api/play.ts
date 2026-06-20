@@ -47,7 +47,7 @@ const pushNowPlaying = (opts?: { positionOverride?: number }): void => {
   const q = useQueueStore.getState()
   // Площадка текущего трека — для бейджа на обложке мини-плеера/трея.
   const cur = q.curId ? findTrack(q.curId) : undefined
-  const source = cur?._ym ? 'yandex' : cur?._sc ? 'soundcloud' : null
+  const source = cur?._ym ? 'yandex' : cur?._ytm ? 'ytmusic' : cur?._sp ? 'spotify' : cur?._sc ? 'soundcloud' : null
   void invoke('now_playing', {
     title: p.title,
     artist: p.artist,
@@ -98,7 +98,7 @@ let _skipCount = 0
 const skipUnplayable = (failedId: string, err: unknown): void => {
   const msg = err instanceof Error ? err.message : ''
   const isDrm = /DRM/i.test(msg)
-  toast(isDrm ? 'Трек защищён DRM — пропускаем' : 'Трек недоступен — пропускаем')
+  toast(isDrm ? i18nT('toast.drmSkip') : i18nT('toast.unavailableSkip'))
   notify({
     kind: 'error',
     titleKey: 'notif.trackUnavailable.title',
@@ -415,9 +415,9 @@ export const playFromCurrentQueue = (id: string): void => {
 
 // ── Переключение площадки текущего трека ───────────────────────────────────
 
-/** id провайдера трека ('soundcloud' | 'yandex' | 'local') для UI бейджа-кнопки. */
+/** id провайдера трека ('soundcloud' | 'yandex' | 'ytmusic' | 'local') для UI бейджа-кнопки. */
 export const trackProviderId = (t: Track | null | undefined): string =>
-  t?._ym ? 'yandex' : t?._sc ? 'soundcloud' : 'local'
+  t?._ym ? 'yandex' : t?._ytm ? 'ytmusic' : t?._sp ? 'spotify' : t?._sc ? 'soundcloud' : 'local'
 
 /**
  * Нормализация строки для сравнения названий/артистов между площадками:
@@ -655,7 +655,7 @@ export const mpAddCurrentToPl = (plId: string): void => {
   ensurePersisted(id)
   usePlaylistStore.getState().addTrackToPl(plId, id)
   const pl = usePlaylistStore.getState().playlists.find((p) => p.id === plId)
-  toast(pl ? `Добавлено в «${pl.name}»` : 'Добавлено в плейлист')
+  toast(pl ? i18nT('toast.addedToPlNamed', { name: pl.name }) : i18nT('toast.addedToPl'))
 }
 
 /** «Новый плейлист» из «+» — открыть модалку, после создания добавить текущий трек. */

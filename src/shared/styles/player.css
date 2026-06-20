@@ -2,6 +2,15 @@
 .app.playerbar-top .main-wrap{flex-direction:column-reverse}
 .app.playerbar-top #miniPlayer{border-radius:var(--radius)}
 .app.playerbar-top #mpBarBg{top:auto;bottom:0}
+/* ===== PLAYERBAR: FLOATING (overlay поверх контента) — только bottom/top ===== */
+/* Бар вынут из потока (absolute) и не отодвигает контент — лежит поверх него. */
+.app.mp-floating .main-wrap{position:relative}
+/* position:absolute с !important — инлайн position:relative у #miniPlayer иначе перебивает. */
+.app.mp-floating #miniPlayer{position:absolute!important;left:8px;right:8px;bottom:8px;z-index:40;width:auto;box-shadow:0 8px 32px rgba(0,0,0,.45)}
+.app.mp-floating.playerbar-top #miniPlayer{bottom:auto;top:8px}
+/* ===== PLAYERBAR: COMPACT (узкий, по центру) — только bottom/top ===== */
+.app.mp-compact:not(.mp-floating) #miniPlayer{align-self:center;width:min(620px,calc(100% - 16px))}
+.app.mp-compact.mp-floating #miniPlayer{left:50%;right:auto;transform:translateX(-50%);width:min(620px,calc(100% - 16px))}
 /* ===== PLAYERBAR POSITION: LEFT / RIGHT ===== */
 /* Column: normal flex child, 72px wide, stretches full app height. JS sets display. */
 #miniPlayerCol,#miniPlayerColRight{width:72px;flex-shrink:0;align-self:stretch;position:relative;overflow:hidden}
@@ -127,8 +136,20 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 .cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
 .cc:hover{color:var(--text);background:var(--hover)}
 .cc.on{color:var(--accent)}
-.cc-play{width:48px;height:48px;border-radius:calc(var(--radius) * 0.85);background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cc-play{width:48px;height:48px;border-radius:calc(var(--radius) * 0.85);background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s,transform .08s}
 .cc-play:hover{background:var(--accent2)}
+/* Эффект вжатия при нажатии (как в мини-плеере/трее). */
+.cc-play:active{transform:scale(.94)}
+/* Плоская кнопка play (body.play-flat — по умолчанию): без фона + крупная иконка.
+   Применяется к плееру, нижнему бару и #bigPicOverlay. Тумблер «Фон у кнопки
+   play» (settings → Плеер) возвращает акцентный фон. */
+/* В плоском режиме play ведёт себя как обычная кнопка .cc (тот же размер/радиус/
+   ховер) — отличается только более крупной иконкой. */
+body.play-flat .cc-play{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;color:var(--text2);transition:.15s}
+body.play-flat .cc-play:hover{background:var(--hover);color:var(--accent)}
+body.play-flat .cc-play svg{width:26px;height:26px}
+/* В BigPicture у .cc свой, более тусклый ховер-фон — повторяем его для play. */
+body.play-flat #bigPicOverlay .cc-play:hover{background:rgba(255,255,255,.06)}
 .ps-vol{display:flex;align-items:center;gap:8px}
 .vol-sl{-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;width:80px}
 .ps-ctrl .vol-sl{flex:1;width:auto}

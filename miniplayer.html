@@ -198,6 +198,11 @@ html,body{
 }
 .cc-play:hover{background:var(--accent2)}
 .cc-play:active{transform:scale(.94)}
+/* Плоская кнопка play (по умолчанию): без фона + крупная иконка, как в осн. окне.
+   Синхрон через bloom_view_prefs.playBtnBg (applyPlayBtnBg). Ведёт себя как .cc. */
+body.play-flat .cc-play{width:34px;height:34px;border-radius:calc(var(--radius)*0.7);background:none;color:var(--text2)}
+body.play-flat .cc-play:hover{background:rgba(255,255,255,.07);color:var(--accent)}
+body.play-flat .cc-play svg{width:22px;height:22px}
 
 /* ── Volume ───────────────────────────────────────── */
 .vol{
@@ -308,7 +313,7 @@ html,body{
     </button>
     <button class="cc-play" id="btnPlay" onclick="cmd('playpause')">
       <svg id="playIcon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z"/>
+        <polygon points="6 3 20 12 6 21 6 3"/>
       </svg>
     </button>
     <button class="cc" onclick="cmd('next')">
@@ -457,8 +462,8 @@ html,body{
 
   function setPlayIcon(playing) {
     document.getElementById('playIcon').innerHTML = playing
-      ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
-      : '<path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z"/>';
+      ? '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'
+      : '<polygon points="6 3 20 12 6 21 6 3"/>';
   }
 
   function setProgress(pos, dur) {
@@ -495,18 +500,28 @@ html,body{
     icon.setAttribute('stroke', fav ? '#e03030' : 'currentColor');
   }
 
+  // Бесшовный marquee как в основном плеере (MarqueeTitle): две копии текста с
+  // зазором, сдвиг на (ширина+зазор); зазор 64px, скорость 55 px/с.
   function updateMarquee() {
     var wrap = document.querySelector('.title-wrap');
     var el = document.getElementById('tTitle');
     if (!wrap || !el) return;
+    var text = st.title || tr('notSelected');
     wrap.classList.remove('scrolling');
     el.style.removeProperty('--mp-off');
     el.style.removeProperty('animation-duration');
-    void el.offsetWidth;
-    if (el.scrollWidth > wrap.offsetWidth + 4) {
-      var off = el.scrollWidth - wrap.offsetWidth + 24;
-      el.style.setProperty('--mp-off', '-' + off + 'px');
-      el.style.setProperty('animation-duration', Math.max(5, off / 42) + 's');
+    el.textContent = text;            // одиночный текст — для точного замера
+    var singleW = el.scrollWidth;
+    var wrapW = wrap.offsetWidth;
+    if (singleW > wrapW + 4) {
+      var gap = 64;
+      var step = singleW + gap;
+      var dur = Math.max(4, Math.round(step / 55));
+      el.innerHTML = esc(text) +
+        '<span aria-hidden="true" style="display:inline-block;min-width:' + gap + 'px"></span>' +
+        esc(text);
+      el.style.setProperty('--mp-off', '-' + step + 'px');
+      el.style.setProperty('animation-duration', dur + 's');
       wrap.classList.add('scrolling');
     }
   }
@@ -646,6 +661,13 @@ html,body{
   function loadSettings() {
     try { applySettings(JSON.parse(localStorage.getItem('bloom_settings') || '{}')); } catch(e) {}
   }
+  // Плоская кнопка play — читаем настройку осн. окна (bloom_view_prefs.playBtnBg).
+  // По умолчанию (нет фона) → класс play-flat.
+  function applyPlayBtnBg() {
+    var flat = true;
+    try { flat = !JSON.parse(localStorage.getItem('bloom_view_prefs') || '{}').playBtnBg; } catch(e) {}
+    document.body.classList.toggle('play-flat', flat);
+  }
 
   window.cmd = function(c) {
     if (c === 'fav') {
@@ -691,6 +713,7 @@ html,body{
     document.documentElement.lang = LOCALE;
     document.getElementById('tTitle').textContent = tr('notSelected');
     loadSettings();
+    applyPlayBtnBg();
     readTitlebarPref();
     applyWinTitle();
 

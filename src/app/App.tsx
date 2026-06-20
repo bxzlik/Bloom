@@ -9,6 +9,7 @@ import { useNavStore } from './navigationStore'
 import { useGlobalHotkeys } from './useGlobalHotkeys'
 import { useFullscreenHotkey } from './useFullscreenHotkey'
 import { useDeepLinkBridge } from './useDeepLinkBridge'
+import { useOverlayBridge } from './useOverlayBridge'
 import { LibPage, TrackInfoModal, DupsModal, MergeModal, MpNewPlaylistHost, DeepLinkModal, useTrackInfoStore, useLibStore } from '@features/library'
 import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects } from '@features/player'
 import { useQueueStore } from '@features/player/model/queueStore'
@@ -19,6 +20,8 @@ import { SearchPage, DetailView, useDetailStore } from '@features/search'
 import { bootstrapProviders, getProvider } from '@features/providers'
 import { bootstrapSoundcloud } from '@features/soundcloud'
 import { bootstrapYandex } from '@features/yandex'
+import { bootstrapYtmusic } from '@features/ytmusic'
+import { bootstrapSpotify } from '@features/spotify'
 import { AccountPage } from '@features/profile'
 import { useMediaLibBootstrap, useCustomizationBootstrap } from '@features/customization'
 import { QuickWheel } from '@features/quick-wheel'
@@ -42,6 +45,7 @@ import {
   useTelemetryBootstrap,
   useUpdateBootstrap,
   UpdateBanner,
+  UpdateNotesModal,
 } from '@features/settings'
 
 /**
@@ -91,6 +95,7 @@ export const App = () => {
   useGlobalHotkeys()
   useFullscreenHotkey()
   useDeepLinkBridge()
+  useOverlayBridge()
   useLastfmBridge()
   useAudioEffects()
   useTrackRowMarquee()
@@ -140,6 +145,8 @@ export const App = () => {
     bootstrapProviders()
     bootstrapSoundcloud()
     bootstrapYandex()
+    bootstrapYtmusic()
+    bootstrapSpotify()
   }, [])
 
   // Глобальный клик по имени артиста (.tra-link) → страница артиста. Работает из любого места (поиск, очередь,
@@ -228,6 +235,14 @@ export const App = () => {
         : playerBarPos === 'right'
           ? 'playerbar-right'
           : ''
+  // Плавающий (overlay поверх контента) и компактный (узкий, по центру) режимы —
+  // только для горизонтального бара (bottom/top); для боковых колонок не применимы.
+  const mpFloating = usePlayerViewStore((s) => s.mpFloating)
+  const mpCompact = usePlayerViewStore((s) => s.mpCompact)
+  const horizontalBar = playerBarPos === 'bottom' || playerBarPos === 'top'
+  const mpModeClass = [horizontalBar && mpFloating ? 'mp-floating' : '', horizontalBar && mpCompact ? 'mp-compact' : '']
+    .filter(Boolean)
+    .join(' ')
 
   // Классы `.app` из UI-префов (расположение сайдбара/компакт/разделители/
   // стиль системных карточек/индикатор + cov-btns-in-bar) —
@@ -257,6 +272,9 @@ export const App = () => {
       // Стиль слайдера — body-класс, тоже императивно.
       const active = bodySliderClass(usePlayerViewStore.getState().sliderType)
       for (const c of BODY_SLIDER_CLASSES) document.body.classList.toggle(c, c === active)
+      // Плоская кнопка play (без фона, крупная иконка) — body-класс, чтобы достать
+      // и до #bigPicOverlay (вне .app). По умолчанию вкл (playBtnBg=false).
+      document.body.classList.toggle('play-flat', !usePlayerViewStore.getState().playBtnBg)
     }
     apply()
     const un1 = useUiPrefsStore.subscribe(apply)
@@ -277,7 +295,7 @@ export const App = () => {
 
       <div
         ref={appRef}
-        className={`app${prefClasses ? ' ' + prefClasses : ''}${barPosClass ? ' ' + barPosClass : ''}${grpVisible && grpSide === 'left' ? ' grp-side-left' : ''}`}
+        className={`app${prefClasses ? ' ' + prefClasses : ''}${barPosClass ? ' ' + barPosClass : ''}${mpModeClass ? ' ' + mpModeClass : ''}${grpVisible && grpSide === 'left' ? ' grp-side-left' : ''}`}
       >
         <Sidebar />
 
@@ -384,6 +402,9 @@ export const App = () => {
 
       {/* Уведомление о доступной новой версии (авто-проверка при старте) */}
       <UpdateBanner />
+
+      {/* Модалка «Подробнее»/«Что нового» — текст и фото релиза */}
+      <UpdateNotesModal />
     </>
   )
 }

@@ -187,3 +187,113 @@
 .modal-foot{display:flex;gap:8px;padding:0 18px 16px;justify-content:flex-end}
 .modal-foot .btn{padding:9px 20px;border-radius:10px;font-size:13px}
 .modal-foot .bta{font-weight:700}
+
+/* ── Модалка заметок обновления (UpdateNotesModal) ── */
+/* Чрома/анимации как у штатных модалок (.mover/.modal). z-index ниже оконного
+   тайтлбара (#winTitlebar z1001), чтобы кнопки окна/перетаскивание оставались
+   доступны (как #settingsOverlay z990, #shareCardMover z996 и пр.). */
+.unm-mover{
+  position:fixed;
+  inset:0;
+  z-index:998;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  opacity:0;
+  pointer-events:none;
+  transition:.26s;
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+}
+.unm-mover.open{opacity:1;pointer-events:all}
+.unm-modal{
+  width:min(540px,100%);
+  max-height:82vh;
+  display:flex;
+  flex-direction:column;
+  background:color-mix(in srgb,var(--block-color),var(--text) 1%);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;
+  box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;
+  overflow:hidden;
+  transform:translateY(14px);
+  transition:.32s cubic-bezier(.34,1.38,.64,1);
+}
+.unm-mover.open .unm-modal{transform:translateY(0)}
+
+.unm-close{
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  background:none;
+  border:none;
+  color:var(--text2);
+  border-radius:8px;
+  cursor:pointer;
+  transition:.15s;
+}
+.unm-close svg{display:block}
+.unm-close:hover{background:rgba(255,255,255,.09);color:var(--text)}
+
+.unm-ghost{
+  font-family:var(--font);
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--text2);
+  background:none;
+  border:none;
+  padding:7px 14px;
+  border-radius:8px;
+  cursor:pointer;
+  transition:.15s;
+}
+.unm-ghost:hover{background:rgba(255,255,255,.07);color:var(--text)}
+
+/* Навигация по страницам-слайдам */
+.unm-nav{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  padding:6px 18px 0;
+}
+.unm-arrow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  flex-shrink:0;
+  background:none;
+  border:none;
+  color:var(--text2);
+  border-radius:8px;
+  cursor:pointer;
+  transition:.15s;
+}
+.unm-arrow:hover:not(:disabled){background:rgba(255,255,255,.09);color:var(--text)}
+.unm-arrow:disabled{opacity:.3;cursor:default}
+.unm-dots{display:flex;align-items:center;gap:7px}
+.unm-dot{
+  width:7px;
+  height:7px;
+  padding:0;
+  border:none;
+  border-radius:50%;
+  background:var(--text2);
+  opacity:.35;
+  cursor:pointer;
+  transition:.15s;
+}
+.unm-dot:hover{opacity:.6}
+.unm-dot.on{
+  background:var(--accent);
+  opacity:1;
+  width:18px;
+  border-radius:4px;
+}

@@ -401,7 +401,45 @@ pub fn now_playing(
         let s = mp_state().lock().clone();
         let _ = tp.emit("bloom-mp-state", s);
     }
+    // Оверлей-«остров»: держим контент свежим, пока плашка закреплена/видна.
+    if let Some(ov) = app.get_webview_window("overlay") {
+        let s = mp_state().lock().clone();
+        let _ = ov.emit("bloom-mp-state", s);
+    }
 
+    Ok(())
+}
+
+// ============= Overlay (HUD-«остров») =============
+
+/// Конфиг оверлея с фронта (режим/якорь/масштаб). enabled=false прячет окно.
+#[tauri::command]
+pub fn overlay_set_config(app: AppHandle, enabled: bool, anchor: String, size: f64, preview: bool) -> Result<(), String> {
+    crate::overlay::set_config(&app, enabled, anchor, size, preview);
+    Ok(())
+}
+
+/// Всплытие плашки на смену трека (фронт зовёт, если включено в настройках).
+#[tauri::command]
+pub fn overlay_flash(app: AppHandle) -> Result<(), String> {
+    crate::overlay::flash(&app);
+    Ok(())
+}
+
+/// Тогл закрепления плашки (дублирует глобальный хоткей для UI-кнопок).
+#[tauri::command]
+pub fn overlay_toggle(app: AppHandle) -> Result<(), String> {
+    crate::overlay::toggle(&app);
+    Ok(())
+}
+
+/// Переключить click-through оверлея: interactive=true → окно ловит мышь (кнопки
+/// кликабельны), false → клики проходят насквозь. Зовётся плашкой при показе/скрытии.
+#[tauri::command]
+pub fn overlay_set_interactive(app: AppHandle, interactive: bool) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("overlay") {
+        let _ = w.set_ignore_cursor_events(!interactive);
+    }
     Ok(())
 }
 
@@ -1343,4 +1381,120 @@ pub async fn ym_wave_feedback(
 #[tauri::command]
 pub fn ym_proxy_url(url: String) -> Result<String, String> {
     crate::audio_proxy::proxied_url(&url).ok_or_else(|| "Аудио-прокси не запущен".to_string())
+}
+
+// ============================ YouTube Music ============================
+
+use crate::ytm;
+
+/// Поиск YouTube Music (треки/артисты/альбомы/плейлисты). Без авторизации.
+#[tauri::command]
+pub async fn ytm_search(query: String) -> Result<ytm::YtmSearch, String> {
+    ytm::search(&query).await.map_err(|e| e.to_string())
+}
+
+/// Прямой аудио-URL для трека YTM по videoId. Заворачивать в `ym_proxy_url`
+/// на фронте (googlevideo — range/CORS, как у Яндекса).
+#[tauri::command]
+pub async fn ytm_stream_url(video_id: String) -> Result<String, String> {
+    ytm::stream_url(&video_id).await.map_err(|e| e.to_string())
+}
+
+/// Альбом с треками (browseId MPRE…).
+#[tauri::command]
+pub async fn ytm_album(id: String) -> Result<ytm::YtmEntity, String> {
+    ytm::album(&id).await.map_err(|e| e.to_string())
+}
+
+/// Артист: популярные треки + альбомы (browseId UC…).
+#[tauri::command]
+pub async fn ytm_artist(id: String) -> Result<ytm::YtmEntity, String> {
+    ytm::artist(&id).await.map_err(|e| e.to_string())
+}
+
+/// Плейлист с треками (browseId VL…/playlistId).
+#[tauri::command]
+pub async fn ytm_playlist(id: String) -> Result<ytm::YtmEntity, String> {
+    ytm::playlist(&id).await.map_err(|e| e.to_string())
+}
+
+/// Один трек по videoId (метаданные для ре-резолва из «недавних»).
+#[tauri::command]
+pub async fn ytm_track(video_id: String) -> Result<ytm::YtmTrack, String> {
+    ytm::track(&video_id).await.map_err(|e| e.to_string())
+}
+
+/// Лог-строка из фронта в общий tracing-лог (диагностика, напр. матч YTM-бриджа).
+#[tauri::command]
+pub fn ui_log(msg: String) {
+    tracing::info!("{msg}");
+}
+
+// ============================ Spotify ============================
+
+use crate::spotify;
+
+/// Поиск Spotify (треки/артисты/альбомы/плейлисты). Нужны creds в настройках.
+#[tauri::command]
+pub async fn sp_search(query: String) -> Result<spotify::SpSearch, String> {
+    spotify::search(&query).await.map_err(|e| e.to_string())
+}
+
+/// Альбом с треками.
+#[tauri::command]
+pub async fn sp_album(id: String) -> Result<spotify::SpEntity, String> {
+    spotify::album(&id).await.map_err(|e| e.to_string())
+}
+
+/// Артист: популярные треки + альбомы.
+#[tauri::command]
+pub async fn sp_artist(id: String) -> Result<spotify::SpEntity, String> {
+    spotify::artist(&id).await.map_err(|e| e.to_string())
+}
+
+/// Плейлист с треками.
+#[tauri::command]
+pub async fn sp_playlist(id: String) -> Result<spotify::SpEntity, String> {
+    spotify::playlist(&id).await.map_err(|e| e.to_string())
+}
+
+/// Один трек по id (ре-резолв из «недавних»).
+#[tauri::command]
+pub async fn sp_track(id: String) -> Result<spotify::SpTrack, String> {
+    spotify::track(&id).await.map_err(|e| e.to_string())
+}
+
+/// Сохранить креденшелы приложения Spotify (Client Credentials).
+#[tauri::command]
+pub fn sp_set_creds(client_id: String, client_secret: String) -> Result<(), String> {
+    config::save_spotify(&config::SpotifyCreds {
+        client_id: client_id.trim().to_string(),
+        client_secret: client_secret.trim().to_string(),
+    })
+    .map_err(|e| e.to_string())
+}
+
+/// Текущие сохранённые creds (для префилла полей настроек; локальный конфиг).
+#[tauri::command]
+pub fn sp_get_creds() -> Result<config::SpotifyCreds, String> {
+    config::load_spotify().map_err(|e| e.to_string())
+}
+
+/// Заданы ли creds (для гейта провайдера `isEnabled`).
+#[tauri::command]
+pub fn sp_has_creds() -> Result<bool, String> {
+    let c = config::load_spotify().map_err(|e| e.to_string())?;
+    Ok(!c.client_id.is_empty() && !c.client_secret.is_empty())
+}
+
+/// Проверить creds (обменять на токен). Ok → валидны.
+#[tauri::command]
+pub async fn sp_check() -> Result<(), String> {
+    spotify::check().await.map_err(|e| e.to_string())
+}
+
+/// Удалить сохранённые creds.
+#[tauri::command]
+pub fn sp_clear_creds() -> Result<(), String> {
+    config::clear_spotify().map_err(|e| e.to_string())
 }

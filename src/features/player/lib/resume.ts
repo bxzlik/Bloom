@@ -1,5 +1,6 @@
 import { useLibStore, useFavStore, usePlaylistStore } from '@features/library'
 import { trackRegistry, type Track } from '@entities/track'
+import { t as i18nT } from '@shared/i18n'
 import { useQueueStore, type PlaySource } from '../model/queueStore'
 import { audioEngine } from './audioEngine'
 
@@ -65,19 +66,19 @@ const fromLegacySource = (s: LegacySource | undefined): PlaySource => {
     }
     case 'folder': return s.folderPath ? { kind: 'folder', path: s.folderPath, name: s.label ?? '' } : { kind: 'lib-all' }
     case 'sc': return { kind: 'sc', label: s.label ?? 'SoundCloud' }
-    case 'wave': return { kind: 'wave', label: s.label ?? 'Моя волна' }
+    case 'wave': return { kind: 'wave', label: s.label ?? i18nT('wave.title') }
     default: return { kind: 'lib-all' }
   }
 }
 
 /** Человекочитаемая метка источника из старого формата (для карточки «Продолжить»). */
 export const legacySourceLabel = (s: LegacySource | undefined): string => {
-  if (!s) return 'Все треки'
+  if (!s) return i18nT('player.queueTitle.all')
   switch (s.type) {
-    case 'all': return 'Все треки'
-    case 'fav': return 'Любимые треки'
-    case 'history': return 'История'
-    default: return s.label || 'Все треки'
+    case 'all': return i18nT('player.queueTitle.all')
+    case 'fav': return i18nT('player.queueTitle.fav')
+    case 'history': return i18nT('player.queueTitle.history')
+    default: return s.label || i18nT('player.queueTitle.all')
   }
 }
 

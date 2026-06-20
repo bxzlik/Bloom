@@ -39,6 +39,47 @@ export interface UpdateProgress {
   percent: number
 }
 
+// ---------------- Описания обновлений (updater.fetch_update_notes) ----------------
+// Манифест update-notes.json: { "<version>": UpdateNoteRaw }. Тянется по сети из
+// репозитория, поэтому правится без пересборки. Локализуемые поля — строка (одна
+// на все языки) или { ru, en }.
+export type LocalizedText = string | { ru?: string; en?: string }
+
+/** Одна страница-слайд: свой заголовок, текст (markdown) и (опц.) одна картинка. */
+export interface UpdateNotePageRaw {
+  title?: LocalizedText
+  body?: LocalizedText
+  /** Имя файла из update-notes/assets/ или полная https-ссылка. */
+  image?: string
+  /** Бренд-иконки площадок вместо/в дополнение к фото: 'spotify' | 'ytmusic' | 'soundcloud' | 'yandex'. */
+  icons?: string[]
+}
+
+export interface UpdateNoteRaw {
+  /** Общий заголовок модалки (шапка). */
+  title?: LocalizedText
+  /** Страницы-слайды (переключаются стрелками). */
+  pages?: UpdateNotePageRaw[]
+  // Легаси-формат одной страницы (если pages не задан):
+  body?: LocalizedText
+  images?: string[]
+}
+
+/** Разрешённая под локаль страница. */
+export interface UpdateNotePage {
+  title: string
+  body: string
+  image: string | null
+  icons: string[]
+}
+
+/** Разрешённая под текущую локаль запись (то, что отдаётся в UI). */
+export interface UpdateNote {
+  version: string
+  title: string
+  pages: UpdateNotePage[]
+}
+
 // ---------------- MpState (miniplayer + tray-popup) ----------------
 export interface MpState {
   title: string

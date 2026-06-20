@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import waveApi, { getWaveSource, setWaveSource } from '@/wave'
 import { useYmAuthStore } from '@features/yandex'
 import { usePopupOpenAnimation } from '@shared/hooks'
-import { ScLogo, YmLogo } from '@entities/track'
+import { ScLogo, YmLogo, providerBrandColor } from '@entities/track'
+import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useT } from '@shared/i18n'
 import { DislikesModal } from './DislikesModal'
 
@@ -31,6 +32,8 @@ export const WaveCard = () => {
   const [source, setSource] = useState<'sc' | 'ym'>(getWaveSource())
   // Разлогинились → источник 'ym' уже не валиден, показываем как 'sc'.
   const effSource = ymAuthed ? source : 'sc'
+  // Бренд-режим иконок (настройка «акцентные бейджи» выключена).
+  const brand = !useBadgePrefs((s) => s.accentBadges)
 
   usePopupOpenAnimation(menuRef, menuPos)
 
@@ -195,8 +198,8 @@ export const WaveCard = () => {
                           gap: 7,
                           border: 'none',
                           background: effSource === s ? 'var(--accent)' : 'none',
-                          // На акцентном фоне — контрастный токен (--accent-text тёмный,
-                          // когда акцент светлый), иначе текст сливается с фоном.
+                          // Текст: на акцентном фоне контрастный --accent-text, иначе --text.
+                          // (Иконка красится отдельно — см. span ниже.)
                           color: effSource === s ? 'var(--accent-text, #fff)' : 'var(--text)',
                           padding: '8px 8px',
                           borderRadius: 'calc(var(--radius)*.45)',
@@ -207,7 +210,16 @@ export const WaveCard = () => {
                           fontWeight: 600,
                         }}
                       >
-                        {s === 'sc' ? <ScLogo size={15} /> : <YmLogo size={14} />}
+                        {/* Иконка в бренд-цвете (если включён) — даже на активном
+                            пункте, чтобы не темнела от --accent-text. */}
+                        <span
+                          style={{
+                            display: 'flex',
+                            color: brand ? providerBrandColor(s === 'sc' ? 'soundcloud' : 'yandex') : undefined,
+                          }}
+                        >
+                          {s === 'sc' ? <ScLogo size={15} /> : <YmLogo size={14} />}
+                        </span>
                         <span>{s === 'sc' ? 'SoundCloud' : t('settings.nav.yandex')}</span>
                       </button>
                     ))}

@@ -19,6 +19,8 @@ export const ViewSection = () => {
   const activePreset = matchMpPreset(p)
   const setProgress = (key: 'line' | 'bg' | 'circle') =>
     p.set('mpProgress', { ...p.mpProgress, [key]: !p.mpProgress[key] })
+  const toggleHide = (key: keyof typeof p.mpHide) =>
+    p.set('mpHide', { ...p.mpHide, [key]: !p.mpHide[key] })
   return (
     <div className="s-section active" id="ssec-view">
       <div className="s-section-head">
@@ -103,6 +105,10 @@ export const ViewSection = () => {
             <svg width="44" height="10" viewBox="0 0 44 10"><rect x="0" y="3" width="2" height="4" rx="1" fill="currentColor" /><rect x="3" y="2" width="2" height="6" rx="1" fill="currentColor" /><rect x="6" y="3.5" width="2" height="3" rx="1" fill="currentColor" /><rect x="9" y="1" width="2" height="8" rx="1" fill="currentColor" /><rect x="12" y="2.5" width="2" height="5" rx="1" fill="currentColor" /><rect x="15" y="1.5" width="2" height="7" rx="1" fill="currentColor" /><rect x="18" y="3" width="2" height="4" rx="1" fill="currentColor" /><rect x="21" y="2" width="2" height="6" rx="1" fill="currentColor" opacity={0.3} /><rect x="24" y="3.5" width="2" height="3" rx="1" fill="currentColor" opacity={0.3} /><rect x="27" y="1.5" width="2" height="7" rx="1" fill="currentColor" opacity={0.3} /><rect x="30" y="2.5" width="2" height="5" rx="1" fill="currentColor" opacity={0.3} /><rect x="33" y="3" width="2" height="4" rx="1" fill="currentColor" opacity={0.3} /><rect x="36" y="1" width="2" height="8" rx="1" fill="currentColor" opacity={0.3} /><rect x="39" y="3.5" width="2" height="3" rx="1" fill="currentColor" opacity={0.3} /><rect x="42" y="2.5" width="2" height="5" rx="1" fill="currentColor" opacity={0.3} /></svg>
             {t('settings.view.slider.wave')}
           </OptBtn>
+          <OptBtn active={p.sliderType === 'cover'} onClick={() => p.set('sliderType', 'cover')}>
+            <svg width="44" height="10" viewBox="0 0 44 10"><rect x="0" y="4" width="44" height="2" rx="1" fill="currentColor" opacity={0.3} /><rect x="0" y="4" width="22" height="2" rx="1" fill="currentColor" /><rect x="17" y="0.5" width="9" height="9" rx="2" fill="currentColor" /></svg>
+            {t('settings.view.slider.cover')}
+          </OptBtn>
         </div>
       </div>
 
@@ -113,6 +119,16 @@ export const ViewSection = () => {
             <div className="ssub">{t('settings.view.covBtns.sub')}</div>
           </div>
           <Toggle checked={p.covBtnsInBar} onChange={(v) => p.set('covBtnsInBar', v)} />
+        </div>
+      </div>
+
+      <div className="sc">
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.view.playBtnBg')}</div>
+            <div className="ssub">{t('settings.view.playBtnBg.sub')}</div>
+          </div>
+          <Toggle checked={p.playBtnBg} onChange={(v) => p.set('playBtnBg', v)} />
         </div>
       </div>
 
@@ -269,6 +285,56 @@ export const ViewSection = () => {
           </div>
 
           <div className="sc">
+            <div className="sc-title">{t('settings.view.mpShape')}</div>
+            <div className="sc-desc">{t('settings.view.mpShape.desc')}</div>
+            <div className="s-opt-row" style={{ marginTop: 12 }}>
+              <OptBtn active={!p.mpRounded} onClick={() => p.set('mpRounded', false)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
+                {t('settings.view.mpShape.default')}
+              </OptBtn>
+              <OptBtn active={p.mpRounded} onClick={() => p.set('mpRounded', true)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="9" /></svg>
+                {t('settings.view.mpShape.capsule')}
+              </OptBtn>
+            </div>
+          </div>
+
+          <div className="sc">
+            <div className="sc-title">{t('settings.view.mpElements')}</div>
+            <div className="sc-desc">{t('settings.view.mpElements.desc')}</div>
+            <div className="s-opt-row" style={{ flexWrap: 'wrap', marginTop: 12 }}>
+              <OptBtn active={!p.mpHide.fav} onClick={() => toggleHide('fav')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+                {t('settings.view.mpEl.fav')}
+              </OptBtn>
+              <OptBtn active={!p.mpHide.lyrics} onClick={() => toggleHide('lyrics')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="15" y2="12" /><line x1="4" y1="17" x2="11" y2="17" /></svg>
+                {t('settings.view.mpEl.lyrics')}
+              </OptBtn>
+              <OptBtn active={!p.mpHide.queue} onClick={() => toggleHide('queue')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="14" y2="17" /><circle cx="19" cy="17" r="2" /></svg>
+                {t('settings.view.mpEl.queue')}
+              </OptBtn>
+              <OptBtn active={!p.mpHide.bigpic} onClick={() => toggleHide('bigpic')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3" /><path d="M21 8V5a2 2 0 00-2-2h-3" /><path d="M3 16v3a2 2 0 002 2h3" /><path d="M16 21h3a2 2 0 002-2v-3" /></svg>
+                {t('settings.view.mpEl.bigpic')}
+              </OptBtn>
+              <OptBtn active={!p.mpHide.shuffle} onClick={() => toggleHide('shuffle')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5" /><path d="M4 20 21 3" /><path d="M21 16v5h-5" /><path d="m15 15 6 6" /><path d="M4 4l5 5" /></svg>
+                {t('settings.view.mpEl.shuffle')}
+              </OptBtn>
+              <OptBtn active={!p.mpHide.repeat} onClick={() => toggleHide('repeat')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg>
+                {t('settings.view.mpEl.repeat')}
+              </OptBtn>
+              <OptBtn active={!p.mpHide.time} onClick={() => toggleHide('time')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>
+                {t('settings.view.mpEl.time')}
+              </OptBtn>
+            </div>
+          </div>
+
+          <div className="sc">
             <div className="sc-title">{t('settings.view.mpPos')}</div>
             <div className="sc-desc">{t('settings.view.mpPos.desc')}</div>
             <div className="s-opt-row" id="miniPlayerPosRow" style={{ marginTop: 12 }}>
@@ -290,6 +356,26 @@ export const ViewSection = () => {
               </OptBtn>
             </div>
           </div>
+
+          {/* Плавающий / компактный — применимы только к горизонтальному бару. */}
+          {(p.playerBarPos === 'bottom' || p.playerBarPos === 'top') && (
+            <div className="sc">
+              <div className="sr">
+                <div>
+                  <div className="sl2">{t('settings.view.mpFloating')}</div>
+                  <div className="ssub">{t('settings.view.mpFloating.sub')}</div>
+                </div>
+                <Toggle checked={p.mpFloating} onChange={(v) => p.set('mpFloating', v)} />
+              </div>
+              <div className="sr">
+                <div>
+                  <div className="sl2">{t('settings.view.mpCompact')}</div>
+                  <div className="ssub">{t('settings.view.mpCompact.sub')}</div>
+                </div>
+                <Toggle checked={p.mpCompact} onChange={(v) => p.set('mpCompact', v)} />
+              </div>
+            </div>
+          )}
         </>
       )}
 

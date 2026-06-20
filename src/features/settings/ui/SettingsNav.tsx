@@ -1,5 +1,5 @@
 import { Fragment, useState, type ReactNode } from 'react'
-import { ScLogo, YmLogo } from '@entities/track'
+import { ScLogo, YmLogo, SpLogo, YtmLogo, providerBrandColor } from '@entities/track'
 import { useT, type TranslationKey } from '@shared/i18n'
 
 /**
@@ -9,6 +9,7 @@ import { useT, type TranslationKey } from '@shared/i18n'
 export type SectionId =
   // Основное
   | 'system'
+  | 'overlay'
   | 'audio'
   | 'efficiency'
   | 'hotkeys'
@@ -20,10 +21,12 @@ export type SectionId =
   | 'medialib'
   // Интеграции
   | 'soundcloud'
+  | 'ytmusic'
   | 'genius'
   | 'lastfm'
   | 'discord'
   | 'yandex'
+  | 'spotify'
 
 interface SectionDef {
   id: SectionId
@@ -40,6 +43,17 @@ interface GroupDef {
   sections: SectionDef[]
 }
 
+/**
+ * Бренд-цвета интеграций без музыкального бейджа (Last.fm/Genius/Discord) — для
+ * подсветки активной вкладки. Музыкальные площадки берут цвет из
+ * `providerBrandColor` (общий с бейджами).
+ */
+const NAV_EXTRA_BRAND: Partial<Record<SectionId, string>> = {
+  lastfm: '#D51007',
+  genius: '#FFFF64',
+  discord: '#5865F2',
+}
+
 /** SM_CATS. SVG-иконки скопированы оттуда же. */
 const GROUPS: GroupDef[] = [
   {
@@ -53,6 +67,16 @@ const GROUPS: GroupDef[] = [
             <rect x="2" y="3" width="20" height="14" rx="2" />
             <line x1="8" y1="21" x2="16" y2="21" />
             <line x1="12" y1="17" x2="12" y2="21" />
+          </svg>
+        ),
+      },
+      {
+        id: 'overlay',
+        labelKey: 'settings.nav.overlay',
+        icon: (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="14" rx="2" />
+            <rect x="13" y="6" width="6" height="4" rx="1.2" fill="currentColor" stroke="none" />
           </svg>
         ),
       },
@@ -158,6 +182,16 @@ const GROUPS: GroupDef[] = [
         icon: <ScLogo size={13} />,
       },
       {
+        id: 'ytmusic',
+        brand: 'YouTube Music',
+        icon: <YtmLogo size={13} />,
+      },
+      {
+        id: 'spotify',
+        brand: 'Spotify',
+        icon: <SpLogo size={13} />,
+      },
+      {
         id: 'yandex',
         labelKey: 'settings.nav.yandex',
         icon: <YmLogo size={13} />,
@@ -238,17 +272,27 @@ export const SettingsNav = ({
         return (
           <Fragment key={grp.labelKey}>
             <div className="s-nav-group">{t(grp.labelKey)}</div>
-            {visible.map((sec) => (
-              <div
-                key={sec.id}
-                className={`s-nav-item${active === sec.id ? ' active' : ''}`}
-                onClick={() => onSelect(sec.id)}
-              >
-                <div className="s-nav-icon">{sec.icon}</div>
-                <span>{secLabel(sec)}</span>
-                <div className="s-nav-dot" />
-              </div>
-            ))}
+            {visible.map((sec) => {
+              const isActive = active === sec.id
+              // Активная вкладка интеграции — иконка ВСЕГДА в бренд-цвете (не зависит
+              // от тоггла «акцентные бейджи»); иначе наследует цвет вкладки.
+              const brandC = isActive
+                ? providerBrandColor(sec.id) ?? NAV_EXTRA_BRAND[sec.id]
+                : undefined
+              return (
+                <div
+                  key={sec.id}
+                  className={`s-nav-item${isActive ? ' active' : ''}`}
+                  onClick={() => onSelect(sec.id)}
+                >
+                  <div className="s-nav-icon" style={brandC ? { color: brandC } : undefined}>
+                    {sec.icon}
+                  </div>
+                  <span>{secLabel(sec)}</span>
+                  <div className="s-nav-dot" />
+                </div>
+              )
+            })}
           </Fragment>
         )
       })}

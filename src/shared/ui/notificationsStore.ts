@@ -24,10 +24,18 @@ export interface NotifItem {
   /** Время события (epoch ms). */
   ts: number
   read: boolean
+  /**
+   * Необязательное действие-кнопка в карточке (напр. «Подробнее» для апдейта).
+   * Колбэк живёт только в сессии (история не persist'ится), поэтому хранить
+   * функцию в сторе безопасно. Это держит shared/ui независимым от features.
+   */
+  action?: () => void
+  /** i18n-ключ подписи кнопки действия (по умолчанию `notif.details`). */
+  actionLabelKey?: TranslationKey
 }
 
 /** Полезная нагрузка для `notify()` — без id/ts/read (их проставляет стор). */
-export type NotifInput = Pick<NotifItem, 'kind' | 'titleKey' | 'body'>
+export type NotifInput = Pick<NotifItem, 'kind' | 'titleKey' | 'body' | 'action' | 'actionLabelKey'>
 
 const MAX = 50
 

@@ -50,13 +50,25 @@ export interface Track {
   ymTrackId?: string
   ymAvailable?: boolean
 
+  // YouTube Music-специфика. `ytmVideoId` — id видео YouTube. Воспроизведение/
+  // скачивание — бридж на SoundCloud (прямой стрим YouTube заблокирован).
+  _ytm?: boolean
+  _ytmTemp?: boolean
+  ytmVideoId?: string
+
+  // Spotify-специфика. `spTrackId` — id трека Spotify. Воспроизведение/скачивание
+  // — бридж на SoundCloud (Spotify не отдаёт прямой стрим).
+  _sp?: boolean
+  _spTemp?: boolean
+  spTrackId?: string
+
   /**
    * Сквозной entity-id артиста (`ym_artist_<id>` / sc можно добавить позже) +
    * его провайдер — для прямого открытия страницы артиста по клику на имя,
    * минуя резолв по имени (см. ArtistLinks + глоб. обработчик в App).
    */
   artistId?: string
-  artistProvider?: 'yandex' | 'soundcloud'
+  artistProvider?: 'yandex' | 'soundcloud' | 'ytmusic' | 'spotify'
 
   // Поля «Волны».
   skipCount?: number

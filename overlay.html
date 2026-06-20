@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Bloom Overlay</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+:root{
+  --bg:#1b1b1d;--bg2:#262628;--accent:#fff;--accent-rgb:255,255,255;
+  --text:#fff;--text2:#9a9a9a;--muted:#5a5a5a;
+  --font:-apple-system,'SF Pro Display','SF Pro Text','Segoe UI','Roboto',system-ui,sans-serif;
+  --ov-op:0.9;--ov-from:-14px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent;
+  font-family:var(--font);-webkit-font-smoothing:antialiased;}
+/* Прозрачные поля окна не реагируют на мышь; интерактивна только сама плашка
+   (pointer-events наследуется детьми → кнопки кликабельны). Сам click-through на
+   уровне ОС переключает Rust (overlay_set_interactive) по видимости плашки. */
+body{display:flex;align-items:center;justify-content:center;pointer-events:none}
+
+/* ── Плашка-«остров» ─────────────────────────────────── */
+.island{
+  position:relative;overflow:hidden;
+  width:380px;height:64px;display:flex;align-items:center;gap:12px;
+  padding:8px 18px 8px 8px;
+  background:linear-gradient(180deg,var(--bg2),var(--bg));
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:40px;
+  box-shadow:0 8px 22px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.04);
+  opacity:0;transform:translateY(var(--ov-from)) scale(.96);
+  transition:opacity .26s ease,transform .26s cubic-bezier(.22,1,.36,1);
+  pointer-events:auto;
+}
+.island.show{opacity:var(--ov-op);transform:translateY(0) scale(1)}
+
+/* ── Полоса прогресса (по нижней кромке капсулы) ──────── */
+.prog{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(255,255,255,.12)}
+.prog-fill{height:100%;width:0%;background:var(--accent);transition:width .25s linear}
+
+/* ── Обложка ─────────────────────────────────────────── */
+.cover{
+  width:48px;height:48px;flex-shrink:0;position:relative;
+  border-radius:50%;background:var(--bg);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ── Текст ───────────────────────────────────────────── */
+.info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.title-wrap{max-width:100%;width:100%;overflow:hidden}
+.title{font-size:14px;font-weight:700;color:var(--text);
+  white-space:nowrap;line-height:1.2;display:inline-block}
+@keyframes ov-marquee{0%{transform:translateX(0)}100%{transform:translateX(var(--ov-off,0))}}
+.title-wrap.scrolling .title{animation:ov-marquee linear infinite;will-change:transform}
+.title-wrap.scrolling:hover .title{animation-play-state:paused}
+.artist{font-size:12px;color:var(--text2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.tra-link{cursor:pointer;transition:color .1s}
+.tra-link:hover{color:var(--text);text-decoration:underline}
+
+/* ── Правый слот: эквалайзер (покой) ↔ кнопки (наведение) ──
+   Оба лежат в одной grid-ячейке (стопкой), плавный кросс-фейд по :hover. */
+.right{display:grid;width:106px;flex-shrink:0;justify-items:end;align-items:center}
+.right>*{grid-area:1/1;transition:opacity .18s ease,transform .18s cubic-bezier(.22,1,.36,1)}
+
+.eq{display:flex;align-items:flex-end;gap:2.5px;height:18px;padding-right:6px}
+.eq i{width:3px;border-radius:2px;background:var(--accent);height:30%;
+  transform-origin:bottom;animation:eqb .9s ease-in-out infinite}
+.eq i:nth-child(1){animation-delay:-.2s}
+.eq i:nth-child(2){animation-delay:-.5s}
+.eq i:nth-child(3){animation-delay:-.1s}
+.eq i:nth-child(4){animation-delay:-.7s}
+@keyframes eqb{0%,100%{height:25%}50%{height:100%}}
+body.paused .eq i{animation-play-state:paused;height:30%}
+
+.ctrl{display:flex;align-items:center;gap:3px;opacity:0;transform:translateY(4px) scale(.96);pointer-events:none}
+.island:hover .eq{opacity:0;transform:translateY(-4px)}
+.island:hover .ctrl{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+
+.cbtn{
+  width:30px;height:30px;flex-shrink:0;border:none;background:none;color:var(--text);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;
+  opacity:.82;transition:background .12s,opacity .12s,transform .08s;
+}
+.cbtn:hover{background:rgba(255,255,255,.14);opacity:1}
+.cbtn:active{transform:scale(.92)}
+.cbtn-play{width:34px;height:34px;background:var(--accent);color:#000;opacity:1}
+.cbtn-play:hover{background:var(--accent);filter:brightness(1.1)}
+</style>
+</head>
+<body>
+<div class="island" id="island">
+  <div class="cover" id="cover">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+    </svg>
+  </div>
+  <div class="info">
+    <div class="title-wrap"><div class="title" id="title">—</div></div>
+    <div class="artist" id="artist"></div>
+  </div>
+  <div class="right">
+    <div class="eq"><i></i><i></i><i></i><i></i></div>
+    <div class="ctrl">
+      <button class="cbtn" id="btnPrev">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
+      </button>
+      <button class="cbtn cbtn-play" id="btnPlay">
+        <svg id="ovPlayIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+      </button>
+      <button class="cbtn" id="btnNext">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="prog"><div class="prog-fill" id="progFill"></div></div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var ti = null;
+  var st = { title:'', artist:'', artwork:'', source:null, playing:false, pos:0, dur:0 };
+  var pinned = false;
+  var hideTimer = null;
+  var duration = 4;
+  var ticker = null;
+
+  function $(id){ return document.getElementById(id); }
+
+  function listenEvent(event, fn){
+    try{
+      var hid = ti.transformCallback(function(e){ fn(e.payload); });
+      ti.invoke('plugin:event|listen', { event: event, target: { kind: 'Any' }, handler: hid });
+    }catch(e){ console.warn('[ov] listen', event, e); }
+  }
+
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // ── Цвет из обложки (инлайн-порт coverAccent.ts) ──────
+  function hslToHex(h, s, l){
+    var a = s * Math.min(l, 1 - l);
+    function f(n){
+      var k = (n + h / 30) % 12;
+      var col = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * col).toString(16).padStart(2, '0');
+    }
+    return '#' + f(0) + f(8) + f(4);
+  }
+
+  var lastArt = null;       // последняя обложка, для которой считали цвет
+  var coverColors = null;   // { bg, bg2, accent } | null
+
+  // Применить уже посчитанные цвета обложки поверх темы (если есть).
+  function applyComputed(){
+    if (!coverColors) return;
+    var r = document.documentElement;
+    r.style.setProperty('--bg', coverColors.bg);
+    r.style.setProperty('--bg2', coverColors.bg2);
+    r.style.setProperty('--accent', coverColors.accent);
+  }
+
+  // Посчитать доминантный цвет обложки и окрасить плашку. CORS-tainted/ошибка →
+  // откат к цвету темы.
+  function applyCoverColor(){
+    var src = st.artwork;
+    if (src === lastArt) { applyComputed(); return; }
+    lastArt = src;
+    if (!src){ coverColors = null; applyTheme(); return; }
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function(){
+      try{
+        var c = document.createElement('canvas'); c.width = 32; c.height = 32;
+        var x = c.getContext('2d'); if (!x){ coverColors = null; applyTheme(); return; }
+        x.drawImage(img, 0, 0, 32, 32);
+        var d = x.getImageData(0, 0, 32, 32).data;
+        var bH = 0, bS = 0, bL = 0, best = -1;
+        for (var i = 0; i < d.length; i += 16){
+          var r = d[i]/255, g = d[i+1]/255, b = d[i+2]/255;
+          var max = Math.max(r,g,b), min = Math.min(r,g,b);
+          var l = (max+min)/2;
+          var s = max===min ? 0 : (l < 0.5 ? (max-min)/(max+min) : (max-min)/(2-max-min));
+          var score = s * (1 - Math.abs(l-0.5)*1.5);
+          if (score > best){
+            best = score;
+            var h = 0;
+            if (max !== min){
+              if (max===r) h = ((g-b)/(max-min)+6)%6;
+              else if (max===g) h = (b-r)/(max-min)+2;
+              else h = (r-g)/(max-min)+4;
+              h = Math.round(h*60);
+            }
+            bH = h; bS = s; bL = l;
+          }
+        }
+        // Тёмный доминант для фона + чуть светлее для верха градиента;
+        // сочный, но не кислотный акцент для эквалайзера.
+        var sBg = Math.min(0.55, bS*0.9);
+        var lBg = Math.max(0.10, Math.min(0.20, bL*0.5));
+        coverColors = {
+          bg:  hslToHex(bH, sBg, lBg),
+          bg2: hslToHex(bH, sBg, Math.min(0.30, lBg + 0.07)),
+          accent: hslToHex(bH, Math.min(1, bS*1.3), Math.max(0.45, Math.min(0.65, bL))),
+        };
+        applyComputed();
+      } catch(e){ coverColors = null; applyTheme(); }
+    };
+    img.onerror = function(){ coverColors = null; applyTheme(); };
+    img.src = src;
+  }
+
+  function parseArtists(s){
+    if (!s) return [];
+    return String(s).split(/\s*(?:,|;|&|feat\.?|ft\.?|x|×|with|и)\s+/i)
+      .map(function(p){ return p.trim(); }).filter(Boolean);
+  }
+
+  // Настройки оверлея (прозрачность/масштаб/длительность) — из общих view-префов.
+  function applyPrefs(){
+    var p = {};
+    try{ p = JSON.parse(localStorage.getItem('bloom_view_prefs') || '{}'); }catch(e){}
+    var op = typeof p.overlayOpacity === 'number' ? p.overlayOpacity : 90;
+    var size = typeof p.overlaySize === 'number' ? p.overlaySize : 100;
+    duration = typeof p.overlayDuration === 'number' ? p.overlayDuration : 4;
+    document.documentElement.style.setProperty('--ov-op', Math.max(0, Math.min(100, op)) / 100);
+    // Масштаб плашки. Окно Rust ресайзит синхронно по той же доле.
+    $('island').style.zoom = Math.max(50, Math.min(160, size)) / 100;
+  }
+
+  // Тема (акцент + фон блока) — из настроек главного окна (как у мини-плеера).
+  function applyTheme(){
+    var s = {};
+    try{ s = JSON.parse(localStorage.getItem('bloom_settings') || '{}'); }catch(e){}
+    var r = document.documentElement;
+    if (s.accent){
+      var hex = String(s.accent).replace(/\s/g,'');
+      r.style.setProperty('--accent', hex);
+    }
+    if (typeof s.blockR === 'number' && typeof s.blockG === 'number' && typeof s.blockB === 'number'){
+      r.style.setProperty('--bg', 'rgb('+s.blockR+','+s.blockG+','+s.blockB+')');
+      var l = function(c){ return Math.min(255, Math.round(c + (255-c)*0.07)); };
+      r.style.setProperty('--bg2', 'rgb('+l(s.blockR)+','+l(s.blockG)+','+l(s.blockB)+')');
+    }
+  }
+
+  // Артисты — кликабельные чипы (клик → страница артиста в главном окне).
+  function renderArtist(){
+    var el = $('artist');
+    var parts = parseArtists(st.artist);
+    if (!parts.length){ el.textContent = ''; return; }
+    el.innerHTML = parts.map(function(a){
+      return '<span class="tra-link" data-artist="' + esc(a) + '">' + esc(a) + '</span>';
+    }).join(', ');
+  }
+
+  // Бегущая строка как в приложении (MarqueeTitle): бесшовный loop — две копии
+  // текста с зазором, сдвиг на (ширина+зазор); зазор 64px, скорость 55 px/с.
+  function updateMarquee(){
+    var wrap = document.querySelector('.title-wrap');
+    var el = $('title');
+    if (!wrap || !el) return;
+    var text = st.title || '—';
+    wrap.classList.remove('scrolling');
+    el.style.removeProperty('--ov-off');
+    el.style.removeProperty('animation-duration');
+    el.textContent = text;            // одиночный текст — для точного замера
+    var singleW = el.scrollWidth;
+    var wrapW = wrap.clientWidth;
+    if (singleW > wrapW + 4){
+      var gap = 64;
+      var step = singleW + gap;
+      var dur = Math.max(4, Math.round(step / 55));
+      el.innerHTML = esc(text) +
+        '<span aria-hidden="true" style="display:inline-block;min-width:' + gap + 'px"></span>' +
+        esc(text);
+      el.style.setProperty('--ov-off', '-' + step + 'px');
+      el.style.setProperty('animation-duration', dur + 's');
+      wrap.classList.add('scrolling');
+    }
+  }
+
+  function render(){
+    renderArtist();
+    updateMarquee();
+    var cov = $('cover');
+    if (st.artwork){
+      cov.innerHTML = '<img src="' + esc(st.artwork) + '" alt="">';
+    } else {
+      cov.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+    }
+    document.body.classList.toggle('paused', !st.playing);
+    setPlayIcon();
+    applyCoverColor();
+    setProgress();
+    if (st.playing) startTicker(); else stopTicker();
+  }
+
+  function setPlayIcon(){
+    var pi = $('ovPlayIcon');
+    if (!pi) return;
+    pi.innerHTML = st.playing
+      ? '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'
+      : '<polygon points="6 3 20 12 6 21 6 3"/>';
+  }
+
+  // ── Прогресс трека (локальный тикер, как в мини-плеере) ──
+  function setProgress(){
+    var f = $('progFill');
+    if (!f) return;
+    var pct = st.dur > 0 ? Math.min(100, st.pos / st.dur * 100) : 0;
+    f.style.width = pct + '%';
+  }
+
+  // Команда плееру (играть/пауза/пред/след) — через тот же мост, что мини-плеер.
+  function cmd(c){
+    try{ ti.invoke('miniplayer_cmd', { cmd: c, value: null }); }catch(e){}
+  }
+  // Переключить click-through окна (Rust): плашка видна → ловим мышь.
+  function setInteractive(on){
+    try{ ti.invoke('overlay_set_interactive', { interactive: on }); }catch(e){}
+  }
+  function startTicker(){
+    if (ticker) return;
+    ticker = setInterval(function(){
+      if (!st.playing || st.dur <= 0) return;
+      st.pos = Math.min(st.pos + 0.25, st.dur);
+      setProgress();
+    }, 250);
+  }
+  function stopTicker(){ if (ticker){ clearInterval(ticker); ticker = null; } }
+
+  function update(s){
+    if (!s) return;
+    if (s.source   !== undefined) st.source   = s.source;
+    if (s.title    !== undefined) st.title    = s.title;
+    if (s.artist   !== undefined) st.artist   = s.artist;
+    if (s.artwork  !== undefined) st.artwork  = s.artwork;
+    if (s.playing  !== undefined) st.playing  = s.playing;
+    // Снап позиции при заметном расхождении (seek/смена трека); мелкий дрейф
+    // игнорируем — его докручивает локальный тикер, иначе бар «дёргается».
+    if (s.position !== undefined && Math.abs(s.position - st.pos) > 1.2) st.pos = s.position;
+    if (s.duration !== undefined) st.dur = s.duration;
+    render();
+  }
+
+  function setAnchorDir(anchor){
+    // Направление выезда: верхние якоря — сверху, нижние — снизу.
+    var from = (anchor && anchor.charAt(0) === 'b') ? '14px' : '-14px';
+    document.documentElement.style.setProperty('--ov-from', from);
+  }
+
+  function reveal(asPinned){
+    applyPrefs();
+    if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
+    $('island').classList.add('show');
+    setInteractive(true);
+    // Закрепляем только по явному запросу (хоткей). Авто-показ при смене трека
+    // (asPinned=false) НЕ снимает уже стоящее закрепление.
+    if (asPinned) pinned = true;
+    if (!pinned){
+      hideTimer = setTimeout(hide, Math.max(1, duration) * 1000);
+    }
+  }
+  function hide(){
+    if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
+    $('island').classList.remove('show');
+    setInteractive(false);
+    pinned = false;
+  }
+
+  function start(){
+    ti = window.__TAURI_INTERNALS__;
+    applyTheme();
+    applyPrefs();
+
+    // Кнопки управления.
+    $('btnPrev').addEventListener('click', function(){ cmd('prev'); });
+    $('btnNext').addEventListener('click', function(){ cmd('next'); });
+    $('btnPlay').addEventListener('click', function(){
+      // Оптимистично переключаем иконку/тикер, команду шлём в плеер.
+      st.playing = !st.playing;
+      setPlayIcon();
+      if (st.playing) startTicker(); else stopTicker();
+      cmd('playpause');
+    });
+
+    // Клик по имени артиста → страница артиста в главном окне (как в мини-плеере).
+    $('artist').addEventListener('click', function(e){
+      var link = e.target.closest && e.target.closest('.tra-link');
+      if (!link) return;
+      var name = link.getAttribute('data-artist');
+      if (!name) return;
+      try{ ti.invoke('tray_open_artist', { artist: name }); }catch(err){}
+    });
+
+    // Пересчёт бегущей строки при смене размера окна (меняется масштаб оверлея).
+    window.addEventListener('resize', updateMarquee);
+
+    // Наведение на плашку держит её открытой (как уведомление); увод — перезапуск
+    // авто-скрытия (только если не закреплена).
+    var island = $('island');
+    island.addEventListener('mouseenter', function(){
+      if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
+    });
+    island.addEventListener('mouseleave', function(){
+      if (pinned) return;
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(hide, Math.max(1, duration) * 1000);
+    });
+
+    listenEvent('bloom-mp-state', function(p){ update(p); });
+    listenEvent('bloom-ov-show', function(p){
+      if (p && p.anchor) setAnchorDir(p.anchor);
+      reveal(false);
+    });
+    listenEvent('bloom-ov-toggle', function(p){
+      if (p && p.anchor) setAnchorDir(p.anchor);
+      // Тогл: если плашка видна — прячем, иначе закрепляем без авто-скрытия.
+      if ($('island').classList.contains('show')) hide();
+      else reveal(true);
+    });
+
+    // Живое применение настроек/темы из главного окна.
+    window.addEventListener('storage', function(e){
+      if (e.key === 'bloom_view_prefs'){
+        applyPrefs();
+        // Сдвинули прозрачность/масштаб, пока плашка видна — обновляем сразу.
+      } else if (e.key === 'bloom_settings'){
+        applyTheme();
+        applyComputed(); // цвет обложки приоритетнее темы, если посчитан
+      }
+    });
+
+    // Стартовое состояние из кэша.
+    try{
+      ti.invoke('miniplayer_get_state').then(function(s){ if (s) update(s); }).catch(function(){});
+    }catch(e){}
+  }
+
+  function waitForTauri(){
+    if (window.__TAURI_INTERNALS__) start();
+    else setTimeout(waitForTauri, 30);
+  }
+  waitForTauri();
+})();
+</script>
+</body>
+</html>

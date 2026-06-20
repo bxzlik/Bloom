@@ -13,7 +13,7 @@ import type { MediaItem } from '../lib/mediaIdb'
  * (blur/dim/обложка-как-фон) — в отдельном разделе «Фон» (BackgroundSection).
  */
 
-type Ctx = 'bg' | 'cover' | 'viz' | 'cursor'
+type Ctx = 'bg' | 'cover' | 'viz' | 'cursor' | 'slider'
 
 export const CustomizationSection = () => {
   const t = useT()
@@ -26,10 +26,12 @@ export const CustomizationSection = () => {
   const cursorUrl = useCustomizationStore((s) => s.cursorUrl)
   const coverUrl = useCustomizationStore((s) => s.coverUrl)
   const vizUrl = useCustomizationStore((s) => s.vizUrl)
+  const sliderUrl = useCustomizationStore((s) => s.sliderUrl)
   const setBg = useCustomizationStore((s) => s.setBg)
   const setCover = useCustomizationStore((s) => s.setCover)
   const setViz = useCustomizationStore((s) => s.setViz)
   const setCursor = useCustomizationStore((s) => s.setCursor)
+  const setSlider = useCustomizationStore((s) => s.setSlider)
 
   const [urlVal, setUrlVal] = useState('')
   const [selCtx, setSelCtx] = useState<Ctx | null>(null)
@@ -47,6 +49,9 @@ export const CustomizationSection = () => {
     } else if (ctx === 'cursor') {
       setCursor(data)
       toast(t('settings.custom.toast.cursorUpdated'))
+    } else if (ctx === 'slider') {
+      setSlider(data)
+      toast(t('settings.custom.toast.sliderUpdated'))
     }
   }
   const clearCtx = (ctx: Ctx) => {
@@ -62,6 +67,9 @@ export const CustomizationSection = () => {
     } else if (ctx === 'cursor') {
       setCursor(null)
       toast(t('settings.custom.toast.cursorReset'))
+    } else if (ctx === 'slider') {
+      setSlider(null)
+      toast(t('settings.custom.toast.sliderRemoved'))
     }
   }
 
@@ -78,7 +86,7 @@ export const CustomizationSection = () => {
     setUrlVal('')
   }
 
-  const ctxCurrent: Record<Ctx, string | null> = { bg: bgUrl, cover: coverUrl, viz: vizUrl, cursor: cursorUrl }
+  const ctxCurrent: Record<Ctx, string | null> = { bg: bgUrl, cover: coverUrl, viz: vizUrl, cursor: cursorUrl, slider: sliderUrl }
 
   return (
     <div className="s-section active" id="ssec-medialib">
@@ -90,11 +98,12 @@ export const CustomizationSection = () => {
       </div>
 
       {/* Контексты (4 вкладки) — без обёртки */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10 }}>
         <CtxCard ctx="bg" label={t('settings.custom.ctx.bg')} current={ctxCurrent.bg} selected={selCtx === 'bg'} onSelect={() => setSelCtx('bg')} onClear={() => clearCtx('bg')} icon={<BgIcon />} />
         <CtxCard ctx="cover" label={t('settings.custom.ctx.cover')} current={ctxCurrent.cover} selected={selCtx === 'cover'} onSelect={() => setSelCtx('cover')} onClear={() => clearCtx('cover')} icon={<CoverIcon />} />
         <CtxCard ctx="viz" label={t('settings.custom.ctx.viz')} current={ctxCurrent.viz} selected={selCtx === 'viz'} onSelect={() => setSelCtx('viz')} onClear={() => clearCtx('viz')} icon={<VizIcon />} />
         <CtxCard ctx="cursor" label={t('settings.custom.ctx.cursor')} current={ctxCurrent.cursor} selected={selCtx === 'cursor'} onSelect={() => setSelCtx('cursor')} onClear={() => clearCtx('cursor')} icon={<CursorIcon />} />
+        <CtxCard ctx="slider" label={t('settings.custom.ctx.slider')} current={ctxCurrent.slider} selected={selCtx === 'slider'} onSelect={() => setSelCtx('slider')} onClear={() => clearCtx('slider')} icon={<SliderIcon />} />
       </div>
 
       {/* Ваша библиотека (галерея) */}
@@ -222,8 +231,8 @@ const PresetsCard = () => {
       ) : (
         <div className="presets-grid">
           {presets.map((p) => {
-            const thumb = p.bg || p.cover || p.viz || p.cursor || ''
-            const badges = [p.bg && t('settings.custom.badge.bg'), p.cover && t('settings.custom.badge.cover'), p.viz && t('settings.custom.badge.viz'), p.cursor && t('settings.custom.badge.cursor')].filter(Boolean) as string[]
+            const thumb = p.bg || p.cover || p.viz || p.cursor || p.slider || ''
+            const badges = [p.bg && t('settings.custom.badge.bg'), p.cover && t('settings.custom.badge.cover'), p.viz && t('settings.custom.badge.viz'), p.cursor && t('settings.custom.badge.cursor'), p.slider && t('settings.custom.badge.slider')].filter(Boolean) as string[]
             return (
               <div key={p.id} className="preset-card" onClick={() => applyPreset(p.id)}>
                 <div className="preset-thumb">
@@ -306,4 +315,7 @@ const VizIcon = () => (
 )
 const CursorIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round"><path d="M4 3l6.5 16 2-7 7-2L4 3z" /></svg>
+)
+const SliderIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12" /><circle cx="9" cy="12" r="3.2" fill="currentColor" stroke="none" /></svg>
 )

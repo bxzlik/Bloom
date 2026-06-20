@@ -35,7 +35,7 @@ async function waveStartPersonal(): Promise<boolean> {
     return false;
   }
   const ok = await startWave("personal", seeds);
-  if (!ok) host.toast("SoundCloud не вернул похожих треков", "error");
+  if (!ok) host.toast(i18nT("wave.toast.noSimilar"), "error");
   return ok;
 }
 
@@ -49,7 +49,7 @@ async function waveStartByTrack(trackId: string): Promise<boolean> {
     return false;
   }
   const ok = await startWave("track", seeds);
-  if (!ok) host.toast("SoundCloud не вернул похожих треков", "error");
+  if (!ok) host.toast(i18nT("wave.toast.noSimilar"), "error");
   return ok;
 }
 
@@ -64,7 +64,7 @@ async function waveStartByQueue(trackIds?: string[]): Promise<boolean> {
     return false;
   }
   const ok = await startWave("queue", seeds);
-  if (!ok) host.toast("SoundCloud не вернул похожих треков", "error");
+  if (!ok) host.toast(i18nT("wave.toast.noSimilar"), "error");
   return ok;
 }
 

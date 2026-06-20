@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { create } from 'zustand'
+import { useT } from '@shared/i18n'
 
 /**
  * Глобальный toast main-окна — `showToast`/`#toast`:
@@ -40,6 +41,7 @@ export const toast = (text: string, action?: ToastAction): void =>
 
 /** Рендерится один раз в App. `#toast` спозиционирован fixed — место в дереве не важно. */
 export const GlobalToast = () => {
+  const t = useT()
   const text = useGlobalToastStore((s) => s.text)
   const action = useGlobalToastStore((s) => s.action)
   const seq = useGlobalToastStore((s) => s.seq)
@@ -78,7 +80,7 @@ export const GlobalToast = () => {
       <span>{text}</span>
       {action && (
         <button className="toast-undo" onClick={onUndo}>
-          {action.label || 'Отменить'}
+          {action.label || t('common.undo')}
         </button>
       )}
     </div>

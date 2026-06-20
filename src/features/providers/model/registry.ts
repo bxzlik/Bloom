@@ -20,6 +20,15 @@ export const registerProvider = (p: MusicProvider): void => {
 export const getProviders = (): MusicProvider[] =>
   _providers.filter((p) => p.isEnabled?.() ?? true)
 
+/**
+ * Все зарегистрированные провайдеры, включая выключённые (`isEnabled`=false).
+ * Для UI-дропдауна источника, где площадки показываются всегда — даже не
+ * настроенные (напр. Spotify без Premium-владельца). Поиск по выбранной площадке
+ * всё равно отработает (или покажет ошибку), а «Все источники» опрашивают только
+ * включённые (см. searchAll).
+ */
+export const getAllProviders = (): MusicProvider[] => [..._providers]
+
 export const getProvider = (id: string): MusicProvider | undefined =>
   _providers.find((p) => p.id === id)
 
@@ -47,12 +56,14 @@ export const searchAll = async (
   // 'all' — сентинел «все источники» (SearchSource = 'all' | providerId), трактуем
   // как отсутствие фильтра. Иначе filter(p.id === 'all') вырезал бы ВСЕХ → пусто.
   const onlyId = opts?.providerId && opts.providerId !== 'all' ? opts.providerId : null
-  const all = getProviders()
-  // Фильтр по выбранному провайдеру; но если он не найден (стейл/выключенный
-  // source — напр. в localStorage остался id, которого больше нет) — НЕ отдаём
-  // пусто, а ищем по всем. Иначе дефолтная выдача молча ломается.
-  const picked = onlyId ? all.filter((p) => p.id === onlyId) : all
-  const providers = (picked.length ? picked : all).sort(
+  const enabled = getProviders()
+  // Выбран конкретный источник — ищем именно в нём, даже если он «выключен»
+  // (`isEnabled`=false): дропдаун показывает все площадки, и явный выбор надо
+  // уважить (провайдер сам вернёт результат либо ошибку). Не найден вовсе
+  // (стейл id из localStorage) — фолбэк на все включённые. «Все источники»
+  // (onlyId=null) опрашивают только включённые.
+  const picked = onlyId ? getAllProviders().filter((p) => p.id === onlyId) : enabled
+  const providers = (picked.length ? picked : enabled).sort(
     (a, b) => (a.id === 'local' ? 1 : 0) - (b.id === 'local' ? 1 : 0),
   )
   // Пер-провайдерный таймаут: один медленный/висящий источник (напр. SoundCloud

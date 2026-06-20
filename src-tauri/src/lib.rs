@@ -12,13 +12,16 @@ mod folder_watcher;
 mod global_hotkey;
 mod logger;
 mod lyrics_service;
+mod overlay;
 mod pipe;
 mod smtc;
 mod thumb_toolbar;
 mod tray;
 mod updater;
+mod spotify;
 mod window_chrome;
 mod yandex;
+mod ytm;
 
 use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -91,6 +94,7 @@ pub fn run() {
             commands::getdiscordrpc,
             updater::app_version,
             updater::check_update,
+            updater::fetch_update_notes,
             updater::download_update,
             updater::install_update,
             commands::set_discord_settings,
@@ -127,6 +131,10 @@ pub fn run() {
             commands::get_pending_deep_link,
             commands::open_miniplayer,
             commands::close_miniplayer,
+            commands::overlay_set_config,
+            commands::overlay_flash,
+            commands::overlay_toggle,
+            commands::overlay_set_interactive,
             commands::miniplayer_cmd,
             commands::miniplayer_get_state,
             commands::mp_add_to_lib,
@@ -151,6 +159,23 @@ pub fn run() {
             commands::ym_proxy_url,
             commands::ym_wave_tracks,
             commands::ym_wave_feedback,
+            commands::ytm_search,
+            commands::ytm_stream_url,
+            commands::ytm_album,
+            commands::ytm_artist,
+            commands::ytm_playlist,
+            commands::ytm_track,
+            commands::ui_log,
+            commands::sp_search,
+            commands::sp_album,
+            commands::sp_artist,
+            commands::sp_playlist,
+            commands::sp_track,
+            commands::sp_set_creds,
+            commands::sp_get_creds,
+            commands::sp_has_creds,
+            commands::sp_check,
+            commands::sp_clear_creds,
         ]);
 
     builder

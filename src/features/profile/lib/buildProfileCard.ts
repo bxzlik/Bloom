@@ -6,7 +6,7 @@
  * Статистика (треки/прослушивания/время/любимый артист) передаётся снаружи —
  * считается из истории (как StatsSection), а не из мёртвого playCount.
  */
-import { t } from '@shared/i18n'
+import { t, useI18nStore } from '@shared/i18n'
 
 export interface ProfileCardData {
   name: string
@@ -249,7 +249,8 @@ export const buildProfileCard = async (d: ProfileCardData): Promise<HTMLCanvasEl
   ctx.font = `500 ${12 * S}px ${FONT}`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText(`${d.plays.toLocaleString('ru-RU')} прослушиваний`, PAD, y + FOOTER_BTN_SZ / 2)
+  const numLoc = useI18nStore.getState().locale === 'ru' ? 'ru-RU' : 'en-US'
+  ctx.fillText(t('stats.card.playsFooter', { n: d.plays.toLocaleString(numLoc) }), PAD, y + FOOTER_BTN_SZ / 2)
 
   const btnX = CARD_W - PAD - FOOTER_BTN_SZ
   const btnY = y

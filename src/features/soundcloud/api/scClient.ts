@@ -74,7 +74,7 @@ const proxyFetch = async (url: string): Promise<Response> => {
   try {
     return await Promise.any([direct, ...proxyRace])
   } catch {
-    throw new Error('SoundCloud недоступен (все прокси упали)')
+    throw new Error(i18nT('sc.err.unavailable'))
   }
 }
 
@@ -134,11 +134,11 @@ export const apiFetch = async (url: string, noRetry = false): Promise<any> => {
   const sep = url.includes('?') ? '&' : '?'
   const res = await proxyFetch(url + sep + 'client_id=' + id)
   if (res.status === 401 || res.status === 403) {
-    if (noRetry) throw new Error('SC: доступ запрещён (401/403)')
+    if (noRetry) throw new Error(i18nT('sc.err.forbidden'))
     clientId = null
     const r = await tryKnownIds(url)
     if (r) return r
-    throw new Error('SC: client_id недействителен')
+    throw new Error(i18nT('sc.err.clientIdInvalid'))
   }
   const data = await res.json()
   if (data && data.errors && data.errors.length) {
@@ -146,14 +146,14 @@ export const apiFetch = async (url: string, noRetry = false): Promise<any> => {
     clientId = null
     const r = await tryKnownIds(url)
     if (r) return r
-    throw new Error('SC: client_id истёк')
+    throw new Error(i18nT('sc.err.clientIdExpired'))
   }
   if (data && typeof data.status === 'string' && /^4\d\d/.test(data.status)) {
     if (noRetry) throw new Error('SC: ' + data.status)
     clientId = null
     const r = await tryKnownIds(url)
     if (r) return r
-    throw new Error('SC: client_id недействителен')
+    throw new Error(i18nT('sc.err.clientIdInvalid'))
   }
   return data
 }
@@ -269,7 +269,7 @@ export const checkConnection = async (): Promise<ScCheckResult> => {
     await searchTracks('test', 1)
     return { ok: true, clientId: getActiveClientId() }
   } catch (e) {
-    return { ok: false, clientId: getActiveClientId(), error: e instanceof Error ? e.message : 'Ошибка' }
+    return { ok: false, clientId: getActiveClientId(), error: e instanceof Error ? e.message : i18nT('common.error') }
   }
 }
 
@@ -671,7 +671,7 @@ export const getStreamUrl = async (media: ScMedia | null, retry = false): Promis
   )
   const hasDrm = media.transcodings.some(isDrm)
   if (!order.length) {
-    throw new Error(hasDrm ? 'Трек защищён DRM' : 'SC не вернул ссылку на поток')
+    throw new Error(hasDrm ? i18nT('sc.err.drm') : i18nT('sc.err.noStream'))
   }
 
   const tryTc = async (tc: ScTranscoding): Promise<ScStream> => {
@@ -696,5 +696,5 @@ export const getStreamUrl = async (media: ScMedia | null, retry = false): Promis
     await new Promise((r) => setTimeout(r, 500))
     return getStreamUrl(media, true)
   }
-  throw (lastErr instanceof Error ? lastErr : new Error('SC не вернул ссылку на поток'))
+  throw (lastErr instanceof Error ? lastErr : new Error(i18nT('sc.err.noStream')))
 }

@@ -400,8 +400,8 @@ export const TrackCtxMenu = ({
           </div>
         )}
 
-        {/* cxdl — «Скачать», только для треков площадок (SC/Yandex). */}
-        {(track._sc || track._ym) && (
+        {/* cxdl — «Скачать», только для треков площадок (SC/Yandex/YTM/Spotify). */}
+        {(track._sc || track._ym || track._ytm || track._sp) && (
           <div
             className="ci"
             id="cxdl"

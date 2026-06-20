@@ -84,6 +84,11 @@ const NotifCard = ({ item }: { item: NotifItem }) => {
           <span className="notif-time">{time}</span>
         </div>
         {item.body && <div className="notif-text">{item.body}</div>}
+        {item.action && (
+          <button className="notif-action" onClick={item.action}>
+            {t(item.actionLabelKey ?? 'notif.details')}
+          </button>
+        )}
       </div>
     </div>
   )

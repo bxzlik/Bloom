@@ -242,10 +242,10 @@ export const ClickerGame = () => {
       const cur = stateRef.current
       const ps = clkAutoPerSec(cur, eventRef.current)
       const events = [
-        { label: '🚀 Турбо! x3 пассивный доход на 15 сек', mult: 3, dur: 15000 },
-        { label: '⚡ Мегабуст! x5 пассивный доход на 8 сек', mult: 5, dur: 8000 },
-        { label: '🐛 Баг в системе! Доход x0.1 на 5 сек', mult: 0.1, dur: 5000 },
-        { label: '☕ Кофе-брейк: x2 на 20 сек', mult: 2, dur: 20000 },
+        { label: t('games.clk.evTurbo'), mult: 3, dur: 15000 },
+        { label: t('games.clk.evMega'), mult: 5, dur: 8000 },
+        { label: t('games.clk.evBug'), mult: 0.1, dur: 5000 },
+        { label: t('games.clk.evCoffee'), mult: 2, dur: 20000 },
         { instant: Math.max(100, ps * 30) } as { instant: number },
       ] as Array<{ label?: string; mult?: number; dur?: number; instant?: number }>
       const ev = events[Math.floor(Math.random() * events.length)]!
@@ -255,7 +255,7 @@ export const ClickerGame = () => {
         cur.totalEarned = (cur.totalEarned || 0) + bonus
         cur.sessionEarned = (cur.sessionEarned || 0) + bonus
         saveState(cur)
-        gameToast('clicker', '🎁 Подарок! +' + clkFmtNum(bonus) + ' очков')
+        gameToast('clicker', t('games.clk.gift', { n: clkFmtNum(bonus) }))
       } else {
         eventRef.current = { mult: ev.mult!, until: Date.now() + ev.dur!, label: ev.label! }
         gameToast('clicker', ev.label!)
@@ -321,18 +321,18 @@ export const ClickerGame = () => {
   const prestige = () => {
     const cur = stateRef.current
     if (cur.coins < clkPrestigeThreshold(cur)) return
-    if (!confirm('Престиж: сбросить очки и улучшения, получить x1.5 навсегда?')) return
+    if (!confirm(t('games.clk.confirmPrestige'))) return
     cur.prestigeCount = (cur.prestigeCount || 0) + 1
     cur.coins = 0
     cur.counts = {}
     saveState(cur)
     checkAchievements()
     force()
-    gameToast('clicker', '⭐ Престиж ' + cur.prestigeCount + '! Теперь x' + clkPrestigeMultiplier(cur).toFixed(2) + ' ко всему')
+    gameToast('clicker', t('games.clk.prestigeToast', { n: cur.prestigeCount, mult: clkPrestigeMultiplier(cur).toFixed(2) }))
   }
 
   const reset = () => {
-    if (!confirm('Сбросить весь прогресс кликера? (Включая престиж и достижения)')) return
+    if (!confirm(t('games.clk.confirmReset'))) return
     stateRef.current = { coins: 0, counts: {}, prestigeCount: 0, totalClicks: 0, totalEarned: 0, sessionClicks: 0, sessionEarned: 0, bestPerSec: 0, achievements: {} }
     saveState(stateRef.current)
     eventRef.current = null
@@ -356,15 +356,15 @@ export const ClickerGame = () => {
   const threshold = clkPrestigeThreshold(s)
   const canPrestige = s.coins >= threshold
 
-  let powerTxt = '+' + clkClickPower(s) + ' за клик'
-  if (crit > 0) powerTxt += '  •  крит ' + Math.round(crit * 100) + '%'
-  if (pm > 1) powerTxt += '  •  престиж x' + pm.toFixed(1)
+  let powerTxt = t('games.clk.perClick', { n: clkClickPower(s) })
+  if (crit > 0) powerTxt += '  •  ' + t('games.clk.crit', { n: Math.round(crit * 100) })
+  if (pm > 1) powerTxt += '  •  ' + t('games.clk.prestigeMult', { n: pm.toFixed(1) })
 
   const statRows: [string, string][] = [
-    [STAT_ICONS[0]! + 'Всего кликов', clkFmtNum(s.totalClicks || 0)],
-    [STAT_ICONS[1]! + 'Кликов за сессию', clkFmtNum(s.sessionClicks || 0)],
-    [STAT_ICONS[2]! + 'Всего заработано', clkFmtNum(s.totalEarned || 0)],
-    [STAT_ICONS[3]! + 'Рекорд /сек', clkFmtNum(s.bestPerSec || 0)],
+    [STAT_ICONS[0]! + t('games.clk.statTotalClicks'), clkFmtNum(s.totalClicks || 0)],
+    [STAT_ICONS[1]! + t('games.clk.statSessionClicks'), clkFmtNum(s.sessionClicks || 0)],
+    [STAT_ICONS[2]! + t('games.clk.statTotalEarned'), clkFmtNum(s.totalEarned || 0)],
+    [STAT_ICONS[3]! + t('games.clk.statRecordPerSec'), clkFmtNum(s.bestPerSec || 0)],
   ]
 
   return (
@@ -382,7 +382,7 @@ export const ClickerGame = () => {
 
       <div ref={scRef} className="sc" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '20px 14px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ display: ev ? 'block' : 'none', width: '100%', textAlign: 'center', padding: '5px 10px', borderRadius: 'calc(var(--radius)*.55)', background: 'rgba(255,200,0,.12)', border: '1px solid rgba(255,200,0,.3)', color: '#ffd700', fontSize: 11.5, fontWeight: 700 }}>
-          {ev ? ev.label.split('!')[0] + '! (' + evSecLeft + 'с)' : ''}
+          {ev ? ev.label.split('!')[0] + '! (' + t('games.clk.secsShort', { n: evSecLeft }) + ')' : ''}
         </div>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1, letterSpacing: -1 }}>{clkFmtNum(s.coins)}</div>

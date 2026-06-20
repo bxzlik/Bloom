@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
-import { ScLogo, YmLogo } from '@entities/track'
+import { ScLogo, YmLogo, YtmLogo, SpLogo, providerBrandColor } from '@entities/track'
+import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { getProviders } from '@features/providers'
 import { switchPlatform } from '../api/play'
 
@@ -21,9 +22,13 @@ import { switchPlatform } from '../api/play'
 export const providerLogo = (id: string, size: number) =>
   id === 'yandex'
     ? <YmLogo size={size} />
-    : id === 'soundcloud'
-      ? <ScLogo size={Math.round(size * 1.4)} />
-      : null
+    : id === 'ytmusic'
+      ? <YtmLogo size={size} />
+      : id === 'spotify'
+        ? <SpLogo size={size} />
+        : id === 'soundcloud'
+          ? <ScLogo size={Math.round(size * 1.4)} />
+          : null
 
 export const SourcePicker = ({
   open,
@@ -42,6 +47,8 @@ export const SourcePicker = ({
 
   // Сетевые провайдеры (без локального — на него не «переключаемся»).
   const providers = getProviders().filter((p) => p.id !== 'local')
+  // Бренд-режим иконок (если настройка «акцентные бейджи» выключена).
+  const brand = !useBadgePrefs((s) => s.accentBadges)
 
   // Позиционирование по центру над анкором, flip вниз при нехватке места.
   useLayoutEffect(() => {
@@ -96,10 +103,14 @@ export const SourcePicker = ({
         transformOrigin: 'top center',
       }}
     >
-      {/* Иконки площадок столбиком: текущая подсвечена акцентом, остальные — клик. */}
+      {/* Иконки площадок столбиком: текущая подсвечена акцентом, остальные — клик.
+          В бренд-режиме (настройка accentBadges выключена) иконки в фирменных цветах. */}
       <div className="bloom-dl-inner" style={{ gap: 4, minWidth: 0 }}>
         {providers.map((p) => {
           const active = p.id === currentProviderId
+          const color = brand
+            ? providerBrandColor(p.id) ?? (active ? 'var(--accent)' : 'var(--text2)')
+            : active ? 'var(--accent)' : 'var(--text2)'
           return (
             <button
               key={p.id}
@@ -114,7 +125,7 @@ export const SourcePicker = ({
                 height: 40,
                 justifyContent: 'center',
                 padding: 0,
-                color: active ? 'var(--accent)' : 'var(--text2)',
+                color,
                 background: active ? 'rgba(var(--accent-rgb),.16)' : undefined,
               }}
             >

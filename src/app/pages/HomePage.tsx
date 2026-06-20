@@ -11,6 +11,7 @@ import {
   PlMenu,
   AddFromLibModal,
   saveTrackToLibrary,
+  tracksLabel,
   type Playlist,
 } from '@features/library'
 import {
@@ -24,7 +25,7 @@ import {
   legacySourceLabel,
   type PlaySource,
 } from '@features/player'
-import { trackRegistry, ArtistLinks, type Track } from '@entities/track'
+import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
 import { useGamesStore, GamepadIcon } from '@features/games'
 import { useNavStore } from '../navigationStore'
 import { StatsModal } from './StatsModal'
@@ -111,7 +112,7 @@ export const HomePage = ({ active }: { active: boolean }) => {
         cursorY={plCtx?.y ?? null}
         mode="pl"
         heroName={plCtx?.pl.name ?? ''}
-        heroSub={plCtx ? `${plCtx.pl.trs.length} тр.` : ''}
+        heroSub={plCtx ? tracksLabel(plCtx.pl.trs.length) : ''}
         playlist={plCtx?.pl ?? null}
         folderPath={null}
         onEdit={(id) => setEditPlId(id)}
@@ -136,6 +137,21 @@ export const HomePage = ({ active }: { active: boolean }) => {
 
 const findTrack = (id: string, libTracks: Track[]): Track | undefined =>
   libTracks.find((t) => t.id === id) ?? trackRegistry.get(id)
+
+/**
+ * Источник плейлиста для бейджа: строковый id провайдера, если ВСЕ треки из
+ * одной площадки, иначе null (смешанный/локальный). Совместимо с
+ * `CoverProviderBadge`. См. аналогичную логику в LibGridOverview.
+ */
+const playlistProvider = (trs: string[], libTracks: Track[]): string | null => {
+  const tracks = trs.map((id) => findTrack(id, libTracks)).filter((t): t is Track => !!t)
+  if (!tracks.length) return null
+  if (tracks.every((t) => t._ym)) return 'yandex'
+  if (tracks.every((t) => t._ytm)) return 'ytmusic'
+  if (tracks.every((t) => t._sp)) return 'spotify'
+  if (tracks.every((t) => t._sc)) return 'soundcloud'
+  return null
+}
 
 // ── Продолжить ─────────────────────────────────────────────────────────────
 
@@ -600,6 +616,7 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
           >
             <div className="hc-cover">
               {t.cover ? <img src={t.cover} alt="" /> : <NoteSvg size={24} />}
+              <CoverSourceBadge track={t} size={24} />
               <div className="hc-play-overlay">
                 <div className="hc-play-btn">
                   <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1" strokeLinejoin="round" style={{ marginLeft: 2 }}>
@@ -630,6 +647,7 @@ const PlaylistsSection = ({
 }) => {
   const t = useT()
   const playlists = usePlaylistStore((s) => s.playlists)
+  const libTracks = useLibStore((s) => s.tracks)
   const goNav = useNavStore((s) => s.goNav)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
   const openPl = (id: string) => {
@@ -644,6 +662,7 @@ const PlaylistsSection = ({
           <div className="home-pl-card" key={pl.id} onClick={() => openPl(pl.id)} onContextMenu={(e) => onPlCtx(e, pl)}>
             <div className="hpc-cover">
               {pl.cover ? <img src={pl.cover} alt="" /> : <NoteSvg size={24} />}
+              <CoverProviderBadge provider={playlistProvider(pl.trs, libTracks)} size={24} />
               <div className="hpc-play-overlay">
                 <div className="hpc-play-btn">
                   <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1" strokeLinejoin="round" style={{ marginLeft: 2 }}>

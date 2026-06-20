@@ -9,7 +9,8 @@ import {
   TagEditor,
 } from '@features/library'
 import type { Track } from '@entities/track'
-import { trackRegistry, ArtistLinks } from '@entities/track'
+import { trackRegistry, ArtistLinks, providerBrandColor } from '@entities/track'
+import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useT } from '@shared/i18n'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
@@ -45,6 +46,7 @@ import { LyricsPanel, LyricsToggleButton, useLyricsStore } from '@features/lyric
 import { DislikeButton } from '@features/wave'
 import { usePlayerViewStore, useThemeStore, useOptStore } from '@features/settings'
 import { toast } from '@shared/ui'
+import { SkipBack, SkipForward, Play, Pause, Volume1, Volume2, VolumeX } from 'lucide-react'
 
 /**
  * page-player — главное представление плеера (#page-player).
@@ -190,6 +192,10 @@ const PlayerContent = () => {
   const srcBtnRef = useRef<HTMLButtonElement>(null)
   const [srcOpen, setSrcOpen] = useState(false)
   const curProviderId = trackProviderId(curTrack)
+  // Цвет кнопки-триггера площадки: бренд-цвет текущей площадки (если включён режим
+  // брендовых бейджей) либо акцент.
+  const srcBtnColor =
+    (!useBadgePrefs((s) => s.accentBadges) ? providerBrandColor(curProviderId) : undefined) ?? 'var(--accent)'
   // Бейдж площадки показываем только для сетевых треков (SoundCloud/Яндекс).
   const isNetworkTrack = curProviderId !== 'local'
   // Эквалайзер (анкор — кнопка EQ в правом слоте транспорта).
@@ -400,7 +406,7 @@ const PlayerContent = () => {
         e.stopPropagation()
         setSrcOpen((v) => !v)
       }}
-      style={{ color: 'var(--accent)' }}
+      style={{ color: srcBtnColor }}
     >
       {providerLogo(curProviderId, 16)}
     </button>
@@ -915,6 +921,15 @@ const PsProgress = () => {
   // Волновой слайдер: узор генерится на трек, рисуется на canvas по позиции.
   const sliderType = usePlayerViewStore((s) => s.sliderType)
   const curId = useQueueStore((s) => s.curId)
+  // Фото на thumb слайдера. Приоритет: своё фото («Кастомизация» → Слайдер) →
+  // обложка трека (только при типе 'cover'). Никогда при волновом слайдере.
+  const sliderPhoto = usePlayerStore((s) => s.sliderThumb)
+  const artworkRaw = usePlayerStore((s) => s.artwork)
+  const coverOverride = usePlayerStore((s) => s.coverOverride)
+  const frozenCover = useOptStore((s) => s.frozenCover)
+  const thumbCover = frozenCover ?? coverOverride ?? artworkRaw
+  const photoSrc =
+    sliderType === 'wave' ? null : sliderPhoto ?? (sliderType === 'cover' ? thumbCover : null)
   const waveRef = useRef<HTMLCanvasElement>(null)
   // Локальный drag-state (доля 0..1): пока тащим — показываем drag, иначе
   // позицию из store. Избегает «дёрганья» от timeupdate во время drag.
@@ -981,8 +996,26 @@ const PsProgress = () => {
         <div
           className="ps-bar-thumb"
           id="psThumb"
-          style={{ left: `${pct}%`, transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}
-        />
+          style={{
+            left: `${pct}%`,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            // Фото-thumb: показываем кружок-картинку поверх любого типа (кроме wave).
+            ...(photoSrc
+              ? {
+                  display: 'block',
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  background: 'var(--card)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,.5),0 0 0 2px var(--bg)',
+                }
+              : null),
+          }}
+        >
+          {photoSrc && <img src={photoSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+        </div>
         {/* Прозрачная зона захвата (увеличенная по высоте, как было у input inset:-7px). */}
         <div
           id="prog"
@@ -1065,26 +1098,10 @@ const HeartSvg = ({ size, filled }: { size: number; filled: boolean }) => (
     <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
   </svg>
 )
-const PrevSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="19 20 9 12 19 4 19 20" /><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth={2} />
-  </svg>
-)
-const NextSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="5 4 15 12 5 20 5 4" /><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth={2} />
-  </svg>
-)
-const PlaySvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-  </svg>
-)
-const PauseSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
-  </svg>
-)
+const PrevSvg = ({ size }: { size: number }) => <SkipBack size={size} fill="currentColor" />
+const NextSvg = ({ size }: { size: number }) => <SkipForward size={size} fill="currentColor" />
+const PlaySvg = ({ size }: { size: number }) => <Play size={size} fill="currentColor" strokeWidth={0} />
+const PauseSvg = ({ size }: { size: number }) => <Pause size={size} fill="currentColor" strokeWidth={0} />
 const ShuffleSvg = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
     <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" strokeLinecap="round" />
@@ -1110,28 +1127,7 @@ const RepeatOneBadge = () => (
   }}>1</span>
 )
 const VolSvg = ({ size, v }: { size: number; v: number }) => {
-  if (v === 0) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
-        <line x1="23" y1="9" x2="17" y2="15" strokeWidth={1.8} />
-        <line x1="17" y1="9" x2="23" y2="15" strokeWidth={1.8} />
-      </svg>
-    )
-  }
-  if (v < 50) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
-        <path d="M15.54 8.46a5 5 0 010 7.07" />
-      </svg>
-    )
-  }
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
-      <path d="M15.54 8.46a5 5 0 010 7.07" />
-      <path d="M19.07 4.93a10 10 0 010 14.14" />
-    </svg>
-  )
+  if (v === 0) return <VolumeX size={size} fill="currentColor" strokeWidth={1.8} />
+  if (v < 50) return <Volume1 size={size} fill="currentColor" strokeWidth={1.8} />
+  return <Volume2 size={size} fill="currentColor" strokeWidth={1.8} />
 }

@@ -1,6 +1,7 @@
 import type { Track } from '@entities/track'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
+import { t as i18nT } from '@shared/i18n'
 import type { YmRawTrack, YmRawArtist, YmRawAlbum, YmRawPlaylist } from '../api/ymClient'
 
 /**
@@ -49,8 +50,8 @@ const fmtDur = (sec: number): string => {
  */
 export const toTrack = (t: YmRawTrack): Track => ({
   id: ymTrackId(t.id),
-  name: t.title || 'Без названия',
-  artist: t.artist || 'Неизвестен',
+  name: t.title || i18nT('ym.fallback.untitled'),
+  artist: t.artist || i18nT('ym.fallback.unknown'),
   dur: fmtDur(t.duration),
   cover: t.cover || null,
   year: t.year || undefined,
@@ -64,14 +65,14 @@ export const toTrack = (t: YmRawTrack): Track => ({
 
 export const toArtist = (a: YmRawArtist): Artist => ({
   id: ymArtistId(a.id),
-  name: a.name || 'Неизвестен',
+  name: a.name || i18nT('ym.fallback.unknown'),
   avatar: a.cover || null,
   source: 'yandex',
 })
 
 export const toAlbum = (a: YmRawAlbum): Playlist => ({
   id: ymAlbumId(a.id),
-  title: a.title || 'Альбом',
+  title: a.title || i18nT('ym.fallback.album'),
   cover: a.cover || null,
   ownerName: a.artist || '',
   trackCount: a.trackCount || 0,
@@ -80,7 +81,7 @@ export const toAlbum = (a: YmRawAlbum): Playlist => ({
 
 export const toPlaylist = (p: YmRawPlaylist): Playlist => ({
   id: ymPlaylistId(p.owner, p.kind),
-  title: p.title || 'Плейлист',
+  title: p.title || i18nT('ym.fallback.playlist'),
   cover: p.cover || null,
   trackCount: p.trackCount || 0,
   ownerName: p.owner || '',

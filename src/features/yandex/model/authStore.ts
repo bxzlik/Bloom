@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { t } from '@shared/i18n'
 import { ymAuthStart, ymAuthPoll, ymIsAuthed, ymHasPlus, ymLogout } from '../api/ymClient'
 
 /**
@@ -69,14 +70,14 @@ export const useYmAuthStore = create<YmAuthState>((set, get) => ({
 
   startAuth: async () => {
     _pollGen++ // отменить прошлый поллинг
-    set({ connecting: true, status: { text: 'Получаю код…', kind: 'info' } })
+    set({ connecting: true, status: { text: t('ym.auth.gettingCode'), kind: 'info' } })
     try {
       const d = await ymAuthStart()
       await openUrl(d.verification_url).catch(() => window.open(d.verification_url, '_blank'))
       set({
         userCode: d.user_code,
         verifyUrl: d.verification_url,
-        status: { text: 'Ожидаю подтверждения…', kind: 'info' },
+        status: { text: t('ym.auth.waiting'), kind: 'info' },
       })
 
       const gen = ++_pollGen
@@ -89,7 +90,7 @@ export const useYmAuthStore = create<YmAuthState>((set, get) => ({
           set({
             connecting: false,
             userCode: null,
-            status: { text: 'Код истёк — нажми «Подключить» заново.', kind: 'err' },
+            status: { text: t('ym.auth.codeExpired'), kind: 'err' },
           })
           return
         }

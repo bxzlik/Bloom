@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
-import { EQ_LABELS, EQ_MAX_DB, EQ_PRESETS, useEqStore } from '../model/eqStore'
+import { EQ_LABELS, EQ_MAX_DB, EQ_PRESETS, EQ_PRESET_LABELS, useEqStore } from '../model/eqStore'
 
 /**
  * Панель эквалайзера (по макету): ряд пресетов (+ кастомные) и перетаскиваемая
@@ -216,7 +216,7 @@ export const EqPanel = ({
               className={`eq-chip${activePreset === name ? ' active' : ''}`}
               onClick={() => applyPreset(name)}
             >
-              {name}
+              {EQ_PRESET_LABELS[name] ? t(EQ_PRESET_LABELS[name]!) : name}
             </button>
           )
         })}

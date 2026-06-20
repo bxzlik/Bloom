@@ -1,13 +1,14 @@
 import { create } from 'zustand'
 import type { LyricsResult } from '@shared/tauri'
+import { t } from '@shared/i18n'
 import { parseLrc, stripLrc, type LrcLine } from '../lib/parseLrc'
 
-/** Человекочитаемая метка источника. srcMap. */
+/** Человекочитаемая метка источника. srcMap. Бренды — литералы; локализуемые
+ *  значения (тег файла) резолвятся через t() в момент использования. */
 const SOURCE_LABELS: Record<string, string> = {
   'lrclib/exact': 'LRCLIB',
   'lrclib/search': 'LRCLIB',
   genius: 'Genius',
-  local_tag: 'Тег файла',
   none: '',
 }
 
@@ -92,7 +93,10 @@ export const useLyricsStore = create<LyricsState>((set, get) => ({
       set({ status: 'empty', lines: [], plain: '', source: '', curLine: -1 })
       return
     }
-    const source = (r.source && SOURCE_LABELS[r.source]) ?? ''
+    const source =
+      r.source === 'local_tag'
+        ? t('lyrics.source.localTag')
+        : (r.source && SOURCE_LABELS[r.source]) || ''
     if (r.synced && r.synced.trim()) {
       set({
         status: 'ready',

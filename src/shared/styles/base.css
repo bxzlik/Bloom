@@ -45,6 +45,8 @@ input,textarea{user-select:text;-webkit-user-select:text}
 .sb-avatar img{width:100%;height:100%;object-fit:cover}
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;border-radius:var(--radius);border:1px solid rgba(255,255,255,var(--wb));backdrop-filter:blur(12px);position:relative}
 #miniPlayer{backdrop-filter:blur(12px)}
+/* Скруглённый вид бара (pill) — инлайн border-radius иначе перебивает. */
+#miniPlayer.mp-rounded{border-radius:36px!important}
 #miniPlayer.mp-cover-round #mpCover{border-radius:50%!important}
 #miniPlayer.mp-bg-cover .mp-inner,#miniPlayer.mp-bg-cover #mpBarBg,#miniPlayer.mp-bg-cover #mpBgProgress{position:relative;z-index:1}
 #mpBgImgLayer{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
@@ -56,6 +58,10 @@ input,textarea{user-select:text;-webkit-user-select:text}
 #miniPlayer .cc.on{color:rgba(255,255,255,0.95)}
 #miniPlayer .cc-play{background:rgba(255,255,255,0.92);color:#111}
 #miniPlayer .cc-play:hover{background:#fff!important}
+/* Плоская кнопка play в нижнем баре (body.play-flat — по умолчанию). Перебивает
+   id-специфичные правила выше. */
+body.play-flat #miniPlayer .cc-play{background:none;color:rgba(255,255,255,0.55)}
+body.play-flat #miniPlayer .cc-play:hover{background:rgba(255,255,255,0.1)!important;color:var(--accent)}
 .app.playerbar-left #miniPlayer,.app.playerbar-right #miniPlayer{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* ===== GLOBAL SIDE PANEL (queue/lyrics from mini player) ===== */
 #globalRightPanel{display:none;flex-shrink:0;overflow:hidden;width:0;flex-direction:column;}

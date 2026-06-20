@@ -16,6 +16,10 @@ body.slider-wave .ps-bar-wrap{height:28px!important;border-radius:2px!important;
 body.slider-wave .ps-bar-wrap::before{display:none!important}
 body.slider-wave .ps-bar-fill{display:none!important}
 body.slider-wave .ps-bar-inp{inset:0!important}
+/* — COVER / своё фото слайдера: thumb-фото (размер/форма/<img>) задаётся inline
+     в PsProgress/BpProgress (PagePlayer/BigPicture). Тип 'cover' лишь подсвечивает
+     заливку акцентом, фото показывается при любом типе кроме wave. */
+body.slider-cover .ps-bar-fill{background:var(--accent)!important}
 /* — LARGE PLAYER OVERRIDES */
 body.slider-thin #playerContent.style-large .sl-progress .ps-bar-wrap{height:1.5px!important;overflow:visible!important}
 body.slider-thin #playerContent.style-large .sl-progress .ps-bar-thumb{display:block}
@@ -39,6 +43,7 @@ body.slider-wave #bigPicOverlay .bp-bar-wrap{height:28px!important;border-radius
 body.slider-wave #bigPicOverlay .bp-bar-wrap::before{display:none!important}
 body.slider-wave #bigPicOverlay .bp-bar-fill{display:none!important}
 body.slider-wave #bigPicOverlay .bp-bar-inp{inset:0!important}
+body.slider-cover #bigPicOverlay .bp-bar-fill{background:var(--accent)!important}
 /* glass-mode marker — actual backdrop-filter applied via JS inline styles in _applyTransparency */
 body.glass-mode .sc{will-change:backdrop-filter}
 body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glass-mode .lib-item-sys{background:transparent!important}

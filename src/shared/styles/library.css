@@ -148,8 +148,8 @@
    обложку. Работает в строках треков (.trcov) и карточках (.sp-tc-cover). */
 .cov-badge{position:absolute;right:3px;bottom:3px;z-index:6;pointer-events:none;line-height:0;opacity:1;transition:opacity .15s ease}
 /* На крупных обложках-карточках бейдж больше и с большим отступом от угла. */
-.sp-tc-cover .cov-badge,.hpc-cover .cov-badge{right:6px;bottom:6px}
-.trcov:hover .cov-badge,.sp-tc-cover:hover .cov-badge,.sp-track-card:hover .cov-badge,.sp-am-track-card:hover .cov-badge,#mpCover:hover .cov-badge,.home-pl-card:hover .cov-badge,.lib-sidebar .lib-item:hover .cov-badge,.sp-recent-item:hover .cov-badge{opacity:0}
+.sp-tc-cover .cov-badge,.hpc-cover .cov-badge,.hc-cover .cov-badge{right:6px;bottom:6px}
+.trcov:hover .cov-badge,.sp-tc-cover:hover .cov-badge,.sp-track-card:hover .cov-badge,.sp-am-track-card:hover .cov-badge,#mpCover:hover .cov-badge,.home-pl-card:hover .cov-badge,.home-card:hover .cov-badge,.lib-sidebar .lib-item:hover .cov-badge,.sp-recent-item:hover .cov-badge{opacity:0}
 .trcov-loading{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:5;border-radius:calc(var(--radius) * 0.5);pointer-events:none;animation:coverLoadFadeIn .2s ease}
 .trcov-loading .sc-spinner{width:16px;height:16px;border-width:2px;margin:0}
 .tri{flex:1;min-width:0}

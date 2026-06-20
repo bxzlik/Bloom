@@ -117,7 +117,7 @@
 /* When sections are hosted inside the modal content area, active ones must show */
 #smContent .s-section.active{display:flex}
 /* Вкладки интеграций — короткие карточки, центрируем по вертикали в области контента */
-#smContent .s-section.active:is(#ssec-soundcloud,#ssec-genius,#ssec-lastfm,#ssec-yandex){flex:1;justify-content:center}
+#smContent .s-section.active:is(#ssec-soundcloud,#ssec-genius,#ssec-lastfm,#ssec-yandex,#ssec-spotify,#ssec-ytmusic){flex:1;justify-content:center}
 .clk-float{position:absolute;pointer-events:none;font-size:15px;font-weight:800;color:var(--accent);animation:clkFloat .7s ease-out forwards;white-space:nowrap;z-index:10}
 .tama-char{font-size:40px;line-height:1.2;cursor:pointer;user-select:none;display:inline-block;transition:filter .3s}
 .tama-char.mood-happy{animation:tamaBounce 1.6s ease-in-out infinite}

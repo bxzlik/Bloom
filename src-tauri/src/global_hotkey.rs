@@ -19,6 +19,19 @@ pub fn register(app: &AppHandle) {
     } else {
         tracing::info!("global_hotkey: Win+Shift+X registered");
     }
+
+    // Win+Shift+O — закрепить/снять оверлей-«остров» now-playing.
+    let overlay_sc = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyO);
+    let app_ov = app.clone();
+    if let Err(e) = manager.on_shortcut(overlay_sc, move |_app, _sc, ev| {
+        if ev.state == ShortcutState::Pressed {
+            crate::overlay::toggle(&app_ov);
+        }
+    }) {
+        tracing::warn!("global_hotkey: register Win+Shift+O failed: {e}");
+    } else {
+        tracing::info!("global_hotkey: Win+Shift+O registered");
+    }
 }
 
 fn toggle_main_window(app: &AppHandle) {

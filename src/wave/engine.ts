@@ -1,5 +1,6 @@
 // Ядро движка волны: сборка пула, фильтры, скоринг, очередь, расширение «на лету».
 
+import { t as i18nT } from "@shared/i18n";
 import { host } from "./host";
 import { scStation, scRelated } from "./sources";
 import {
@@ -39,9 +40,9 @@ export function prefetchUpcoming(): void {
 // Человеко-читаемый лейбл для curSource.label.
 export function waveLabel(mode: WaveMode): string {
   switch (mode) {
-    case "personal": return "Моя волна";
-    case "queue":    return "Похожие на очередь";
-    case "track":    return "Волна по треку";
+    case "personal": return i18nT("wave.title");
+    case "queue":    return i18nT("wave.label.queue");
+    case "track":    return i18nT("wave.label.track");
   }
 }
 

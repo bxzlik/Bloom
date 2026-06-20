@@ -45,6 +45,12 @@ export interface PlayerState {
    * Пишется customizationStore. null = нет.
    */
   vizPhoto: string | null
+  /**
+   * Своё фото для ползунка слайдера (раздел «Кастомизация» → контекст Слайдер).
+   * Если задано — показывается на thumb прогресса (PagePlayer/BigPicture) при
+   * любом типе слайдера, кроме волнового. Пишется customizationStore. null = нет.
+   */
+  sliderThumb: string | null
   /** URL трека (SC permalink) — для Discord-кнопки «На трек». null = нет ссылки. */
   trackUrl: string | null
   /** URL артиста (SC permalink) — для Discord-кнопки «На артиста». */
@@ -84,6 +90,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   canAddToLib: false,
   coverOverride: null,
   vizPhoto: null,
+  sliderThumb: null,
   trackUrl: null,
   artistUrl: null,
   _prevVolume: _vol.prevVolume,

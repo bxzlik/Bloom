@@ -13,7 +13,6 @@ import { toTrack } from "@features/yandex/model/mappers";
 import { ymWaveTracks, ymWaveFeedback, ymIsAuthed, type YmRawTrack } from "@features/yandex/api/ymClient";
 import { ymResolveStream } from "@features/yandex/model/provider";
 
-const WAVE_LABEL = "Моя волна";
 const REFILL_THRESHOLD = 4;  // догружаем батч, когда впереди осталось ≤ N треков
 const PREFETCH_AHEAD = 3;    // прогрев стримов следующих треков (мгновенный Next)
 const SKIP_RATIO = 0.3;      // < этой доли длительности → «skip», иначе «trackFinished»
@@ -103,7 +102,7 @@ export async function start(): Promise<boolean> {
 
   host.queue = ids;
   host.qIdx = 0;
-  host.curSource = { type: "wave", label: WAVE_LABEL };
+  host.curSource = { type: "wave", label: i18nT("wave.title") };
   host.shuffle = false; // волна сама задаёт порядок
 
   fb("radioStarted");

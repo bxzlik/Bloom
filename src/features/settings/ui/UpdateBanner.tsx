@@ -25,6 +25,7 @@ export const UpdateBanner = () => {
   const dismissedVersion = useUpdateStore((s) => s.dismissedVersion)
   const downloadInstall = useUpdateStore((s) => s.downloadInstall)
   const dismiss = useUpdateStore((s) => s.dismiss)
+  const openNotes = useUpdateStore((s) => s.openNotes)
 
   // Когда нижний плеер-бар (72px) реально внизу — поднимаем баннер над ним,
   // чтобы не перекрывал. Бар внизу только при playerBarPos='bottom' и наличии трека.
@@ -97,21 +98,30 @@ export const UpdateBanner = () => {
           />
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 12 }}>
           <button
             className="btn"
-            style={{ fontSize: 11.5, padding: '5px 12px', background: 'none', border: 'none', color: 'var(--text2)' }}
-            onClick={dismiss}
+            style={{ fontSize: 11.5, padding: '5px 8px', background: 'none', border: 'none', color: 'var(--text2)' }}
+            onClick={() => void openNotes()}
           >
-            {t('update.later')}
+            {t('update.details')}
           </button>
-          <button
-            className="btn bta"
-            style={{ fontSize: 11.5, padding: '5px 14px' }}
-            onClick={() => void downloadInstall()}
-          >
-            {t('settings.about.update')}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              className="btn"
+              style={{ fontSize: 11.5, padding: '5px 12px', background: 'none', border: 'none', color: 'var(--text2)' }}
+              onClick={dismiss}
+            >
+              {t('update.later')}
+            </button>
+            <button
+              className="btn bta"
+              style={{ fontSize: 11.5, padding: '5px 14px' }}
+              onClick={() => void downloadInstall()}
+            >
+              {t('settings.about.update')}
+            </button>
+          </div>
         </div>
       )}
     </div>

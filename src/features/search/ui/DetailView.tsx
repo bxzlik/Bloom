@@ -19,6 +19,7 @@ import {
   useFavStore,
   useFollowStore,
   useLibStore,
+  tracksLabel,
 } from '@features/library'
 import { toast, useShareStore } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
@@ -446,7 +447,7 @@ export const DetailView = () => {
     const secs = totalSec(tracks)
     subNode = (
       <span className="sp-am-stat">
-        {(playlist.ownerName ? playlist.ownerName + ' · ' : '') + tracks.length + ' треков'}
+        {(playlist.ownerName ? playlist.ownerName + ' · ' : '') + tracksLabel(tracks.length)}
         {secs ? ' · ' + fmtDurLong(secs) : ''}
       </span>
     )
