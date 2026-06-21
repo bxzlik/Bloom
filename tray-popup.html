@@ -411,23 +411,38 @@ body.play-flat .cc-play svg{width:22px;height:22px}
 
   // Бесшовный marquee как в основном плеере: две копии текста с зазором, сдвиг
   // на (ширина+зазор); зазор 64px, скорость 55 px/с.
-  function updateMarquee() {
+  // Замер через скрытый дубликат (measureRef в MarqueeTitle): меряем singleW
+  // на каждом пуше, НЕ трогая видимый бегунок — поэтому замер остаётся корректным
+  // и после догрузки шрифта/смены раскладки. Видимый DOM/анимацию пересобираем
+  // только когда реально изменился результат (step) — иначе частые пуши позиции
+  // во время игры рвали бы анимацию рестартом в 0%. `force` — для resize.
+  var _mqText = null, _mqStep = -1, _mqMeasure = null;
+  function updateMarquee(force) {
     var wrap = document.querySelector('.title-wrap');
     var el = document.getElementById('tTitle');
     if (!wrap || !el) return;
     var text = st.title || tr('notSelected');
+    if (!_mqMeasure) {
+      _mqMeasure = document.createElement('div');
+      _mqMeasure.className = 'title';
+      _mqMeasure.setAttribute('aria-hidden', 'true');
+      _mqMeasure.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;white-space:nowrap;pointer-events:none';
+      wrap.appendChild(_mqMeasure);
+    }
+    _mqMeasure.textContent = text;
+    var singleW = _mqMeasure.scrollWidth;
+    var wrapW = wrap.offsetWidth;
+    var step = singleW > wrapW + 4 ? singleW + 64 : 0;
+    if (!force && text === _mqText && step === _mqStep) return;
+    _mqText = text; _mqStep = step;
     wrap.classList.remove('scrolling');
     el.style.removeProperty('--mp-off');
     el.style.removeProperty('animation-duration');
-    el.textContent = text;            // одиночный текст — для точного замера
-    var singleW = el.scrollWidth;
-    var wrapW = wrap.offsetWidth;
-    if (singleW > wrapW + 4) {
-      var gap = 64;
-      var step = singleW + gap;
+    el.textContent = text;
+    if (step > 0) {
       var dur = Math.max(4, Math.round(step / 55));
       el.innerHTML = esc(text) +
-        '<span aria-hidden="true" style="display:inline-block;min-width:' + gap + 'px"></span>' +
+        '<span aria-hidden="true" style="display:inline-block;min-width:64px"></span>' +
         esc(text);
       el.style.setProperty('--mp-off', '-' + step + 'px');
       el.style.setProperty('animation-duration', dur + 's');
@@ -559,7 +574,8 @@ body.play-flat .cc-play svg{width:22px;height:22px}
       updateVolumeIcon(s.volume);
     }
 
-    document.getElementById('tTitle').textContent = st.title || tr('notSelected');
+    // Текст заголовка ставит сам updateMarquee (владеет одиночным/двухкопийным
+    // содержимым). Отдельный textContent тут затирал бы 2 копии на каждом пуше.
     renderArtist(st.artist);
     updateMarquee();
 

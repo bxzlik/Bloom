@@ -107,6 +107,8 @@ export interface PlayerViewPrefs {
   overlayDuration: number
   /** Всплывать ли оверлею автоматически при смене трека. */
   overlayOnTrackChange: boolean
+  /** Разрешить перемотку трека кликом/скрабом по прогресс-бару оверлея. */
+  overlaySeek: boolean
 }
 
 const DEFAULTS: PlayerViewPrefs = {
@@ -138,6 +140,7 @@ const DEFAULTS: PlayerViewPrefs = {
   overlaySize: 100,
   overlayDuration: 4,
   overlayOnTrackChange: true,
+  overlaySeek: false,
 }
 
 const OVERLAY_POSITIONS: OverlayPos[] = ['tl', 'tc', 'tr', 'bl', 'bc', 'br']
@@ -225,6 +228,7 @@ const load = (): PlayerViewPrefs => {
       overlaySize: clampNum(p.overlaySize, 50, 150, 100),
       overlayDuration: clampNum(p.overlayDuration, 2, 10, 4),
       overlayOnTrackChange: p.overlayOnTrackChange !== false,
+      overlaySeek: !!p.overlaySeek,
     }
   } catch {
     return { ...DEFAULTS }
@@ -264,6 +268,7 @@ const persist = (s: PlayerViewPrefs): void => {
         overlaySize: s.overlaySize,
         overlayDuration: s.overlayDuration,
         overlayOnTrackChange: s.overlayOnTrackChange,
+        overlaySeek: s.overlaySeek,
       }),
     )
   } catch {

@@ -36,6 +36,11 @@ body{display:flex;align-items:center;justify-content:center;pointer-events:none}
 /* ── Полоса прогресса (по нижней кромке капсулы) ──────── */
 .prog{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(255,255,255,.12)}
 .prog-fill{height:100%;width:0%;background:var(--accent);transition:width .25s linear}
+/* Перематываемый прогресс: курсор + расширенная зона клика (невидимый «язычок»
+   вверх над тонкой полоской) + чуть толще на наведении для удобства попадания. */
+.prog.seekable{cursor:pointer}
+.prog.seekable::before{content:'';position:absolute;left:0;right:0;bottom:0;top:-9px}
+.prog.seekable:hover{height:4px}
 
 /* ── Обложка ─────────────────────────────────────────── */
 .cover{
@@ -114,7 +119,7 @@ body.paused .eq i{animation-play-state:paused;height:30%}
       </button>
     </div>
   </div>
-  <div class="prog"><div class="prog-fill" id="progFill"></div></div>
+  <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
 </div>
 
 <script>
@@ -126,6 +131,8 @@ body.paused .eq i{animation-play-state:paused;height:30%}
   var hideTimer = null;
   var duration = 4;
   var ticker = null;
+  var seekEnabled = false;   // перемотка по прогресс-бару (из настроек)
+  var scrubbing = false;     // идёт ручной скраб — не снапаем позицию из пушей
 
   function $(id){ return document.getElementById(id); }
 
@@ -228,6 +235,9 @@ body.paused .eq i{animation-play-state:paused;height:30%}
     var op = typeof p.overlayOpacity === 'number' ? p.overlayOpacity : 90;
     var size = typeof p.overlaySize === 'number' ? p.overlaySize : 100;
     duration = typeof p.overlayDuration === 'number' ? p.overlayDuration : 4;
+    seekEnabled = !!p.overlaySeek;
+    var pe = $('prog');
+    if (pe) pe.classList.toggle('seekable', seekEnabled);
     document.documentElement.style.setProperty('--ov-op', Math.max(0, Math.min(100, op)) / 100);
     // Масштаб плашки. Окно Rust ресайзит синхронно по той же доле.
     $('island').style.zoom = Math.max(50, Math.min(160, size)) / 100;
@@ -261,23 +271,38 @@ body.paused .eq i{animation-play-state:paused;height:30%}
 
   // Бегущая строка как в приложении (MarqueeTitle): бесшовный loop — две копии
   // текста с зазором, сдвиг на (ширина+зазор); зазор 64px, скорость 55 px/с.
-  function updateMarquee(){
+  // Замер через скрытый дубликат (measureRef в MarqueeTitle): меряем singleW
+  // на каждом пуше, НЕ трогая видимый бегунок — поэтому замер остаётся корректным
+  // и после догрузки шрифта/смены масштаба. Видимый DOM/анимацию пересобираем
+  // только когда реально изменился результат (step) — иначе частые пуши позиции
+  // во время игры рвали бы анимацию рестартом в 0%. `force` — для resize.
+  var _mqText = null, _mqStep = -1, _mqMeasure = null;
+  function updateMarquee(force){
     var wrap = document.querySelector('.title-wrap');
     var el = $('title');
     if (!wrap || !el) return;
     var text = st.title || '—';
+    if (!_mqMeasure) {
+      _mqMeasure = document.createElement('div');
+      _mqMeasure.className = 'title';
+      _mqMeasure.setAttribute('aria-hidden', 'true');
+      _mqMeasure.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;white-space:nowrap;pointer-events:none';
+      wrap.appendChild(_mqMeasure);
+    }
+    _mqMeasure.textContent = text;
+    var singleW = _mqMeasure.scrollWidth;
+    var wrapW = wrap.clientWidth;
+    var step = singleW > wrapW + 4 ? singleW + 64 : 0;
+    if (!force && text === _mqText && step === _mqStep) return;
+    _mqText = text; _mqStep = step;
     wrap.classList.remove('scrolling');
     el.style.removeProperty('--ov-off');
     el.style.removeProperty('animation-duration');
-    el.textContent = text;            // одиночный текст — для точного замера
-    var singleW = el.scrollWidth;
-    var wrapW = wrap.clientWidth;
-    if (singleW > wrapW + 4){
-      var gap = 64;
-      var step = singleW + gap;
+    el.textContent = text;
+    if (step > 0){
       var dur = Math.max(4, Math.round(step / 55));
       el.innerHTML = esc(text) +
-        '<span aria-hidden="true" style="display:inline-block;min-width:' + gap + 'px"></span>' +
+        '<span aria-hidden="true" style="display:inline-block;min-width:64px"></span>' +
         esc(text);
       el.style.setProperty('--ov-off', '-' + step + 'px');
       el.style.setProperty('animation-duration', dur + 's');
@@ -321,6 +346,10 @@ body.paused .eq i{animation-play-state:paused;height:30%}
   function cmd(c){
     try{ ti.invoke('miniplayer_cmd', { cmd: c, value: null }); }catch(e){}
   }
+  // Перемотка: тот же мост, что у мини-плеера (Rust → bloom-mp-seek в main).
+  function seek(pos){
+    try{ ti.invoke('miniplayer_cmd', { cmd: 'seek', value: pos }); }catch(e){}
+  }
   // Переключить click-through окна (Rust): плашка видна → ловим мышь.
   function setInteractive(on){
     try{ ti.invoke('overlay_set_interactive', { interactive: on }); }catch(e){}
@@ -328,7 +357,7 @@ body.paused .eq i{animation-play-state:paused;height:30%}
   function startTicker(){
     if (ticker) return;
     ticker = setInterval(function(){
-      if (!st.playing || st.dur <= 0) return;
+      if (scrubbing || !st.playing || st.dur <= 0) return;
       st.pos = Math.min(st.pos + 0.25, st.dur);
       setProgress();
     }, 250);
@@ -344,7 +373,7 @@ body.paused .eq i{animation-play-state:paused;height:30%}
     if (s.playing  !== undefined) st.playing  = s.playing;
     // Снап позиции при заметном расхождении (seek/смена трека); мелкий дрейф
     // игнорируем — его докручивает локальный тикер, иначе бар «дёргается».
-    if (s.position !== undefined && Math.abs(s.position - st.pos) > 1.2) st.pos = s.position;
+    if (s.position !== undefined && !scrubbing && Math.abs(s.position - st.pos) > 1.2) st.pos = s.position;
     if (s.duration !== undefined) st.dur = s.duration;
     render();
   }
@@ -390,6 +419,56 @@ body.paused .eq i{animation-play-state:paused;height:30%}
       cmd('playpause');
     });
 
+    // Прогресс-бар: перемотка кликом/скрабом (если включена в настройках).
+    // Логика как в мини-плеере: визуал ведём за курсором, аудио сикаем на ходу
+    // (throttle) + финальный сик на отпускании; scrubbing гасит эхо-пуши.
+    (function(){
+      var track = $('prog');
+      var fill = $('progFill');
+      if (!track) return;
+      var dragging = false, last = 0, wheelTimer = null;
+      function posFromEvent(e){
+        var r = track.getBoundingClientRect();
+        var ratio = (e.clientX - r.left) / r.width;
+        ratio = Math.max(0, Math.min(1, ratio));
+        return ratio * st.dur;
+      }
+      track.addEventListener('pointerdown', function(e){
+        if (!seekEnabled || !st.dur) return;
+        scrubbing = true; dragging = true;
+        if (fill) fill.style.transition = 'none';  // заливка без задержки за курсором
+        try{ track.setPointerCapture(e.pointerId); }catch(_){}
+        st.pos = posFromEvent(e); setProgress(); seek(st.pos);
+        last = Date.now(); e.preventDefault();
+      });
+      track.addEventListener('pointermove', function(e){
+        if (!dragging || !st.dur) return;
+        st.pos = posFromEvent(e); setProgress();
+        var now = Date.now();
+        if (now - last > 90){ last = now; seek(st.pos); }
+      });
+      function endScrub(e){
+        if (!dragging) return;
+        dragging = false; scrubbing = false;
+        if (fill) fill.style.transition = '';
+        try{ track.releasePointerCapture(e.pointerId); }catch(_){}
+        if (!st.dur) return;
+        st.pos = posFromEvent(e); setProgress(); seek(st.pos);
+      }
+      track.addEventListener('pointerup', endScrub);
+      track.addEventListener('pointercancel', endScrub);
+      // Колесо над баром → перемотка ±1с.
+      track.addEventListener('wheel', function(e){
+        if (!seekEnabled || !st.dur) return;
+        e.preventDefault();
+        scrubbing = true;
+        st.pos = Math.max(0, Math.min(st.dur, st.pos + (e.deltaY < 0 ? 1 : -1)));
+        setProgress(); seek(st.pos);
+        if (wheelTimer) clearTimeout(wheelTimer);
+        wheelTimer = setTimeout(function(){ scrubbing = false; }, 250);
+      }, { passive:false });
+    })();
+
     // Клик по имени артиста → страница артиста в главном окне (как в мини-плеере).
     $('artist').addEventListener('click', function(e){
       var link = e.target.closest && e.target.closest('.tra-link');
@@ -400,7 +479,7 @@ body.paused .eq i{animation-play-state:paused;height:30%}
     });
 
     // Пересчёт бегущей строки при смене размера окна (меняется масштаб оверлея).
-    window.addEventListener('resize', updateMarquee);
+    window.addEventListener('resize', function(){ updateMarquee(true); });
 
     // Наведение на плашку держит её открытой (как уведомление); увод — перезапуск
     // авто-скрытия (только если не закреплена).

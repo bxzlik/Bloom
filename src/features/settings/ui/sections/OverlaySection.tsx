@@ -22,6 +22,7 @@ const OVERLAY_DEFAULTS = {
   overlaySize: 100,
   overlayDuration: 4,
   overlayOnTrackChange: true,
+  overlaySeek: false,
 } as const
 
 /** Мини-иконка экрана с точкой в выбранном углу/крае. */
@@ -127,7 +128,16 @@ export const OverlaySection = () => {
               </div>
               <Toggle checked={p.overlayOnTrackChange} onChange={(v) => p.set('overlayOnTrackChange', v)} />
             </div>
-            <div className="ssub" style={{ marginTop: 10, opacity: 0.8 }}>{t('settings.view.ovHint')}</div>
+          </div>
+
+          <div className="sc">
+            <div className="sr">
+              <div>
+                <div className="sl2">{t('settings.view.ovSeek')}</div>
+                <div className="ssub">{t('settings.view.ovSeek.sub')}</div>
+              </div>
+              <Toggle checked={p.overlaySeek} onChange={(v) => p.set('overlaySeek', v)} />
+            </div>
           </div>
         </>
       )}

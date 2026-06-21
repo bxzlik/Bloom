@@ -135,6 +135,16 @@ export const HotkeysSection = () => {
             <span className="hk-key">X</span>
           </div>
         </div>
+        <div className="hk-row">
+          <div className="hk-label">{t('settings.hotkeys.toggleOverlay')}</div>
+          <div className="hk-badge">
+            <span className="hk-key">Win</span>
+            <span className="sc-plus">+</span>
+            <span className="hk-key">Shift</span>
+            <span className="sc-plus">+</span>
+            <span className="hk-key">O</span>
+          </div>
+        </div>
       </div>
 
       <div className="sc">
