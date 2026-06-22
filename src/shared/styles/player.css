@@ -216,7 +216,7 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 .cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
 .cc:hover{color:var(--text);background:var(--hover)}
 .cc.on{color:var(--accent)}
-.cc-play{width:48px;height:48px;border-radius:calc(var(--radius) * 0.85);background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s,transform .08s}
+.cc-play{width:48px;height:48px;border-radius:calc(var(--radius) * 0.85);background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s,transform .08s;will-change:transform}
 .cc-play:hover{background:var(--accent2)}
 /* Эффект вжатия при нажатии (как в мини-плеере/трее). */
 .cc-play:active{transform:scale(.94)}

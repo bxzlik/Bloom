@@ -9,11 +9,11 @@
 .lyrics-source-badge{display:none}
 .lyrics-content{flex:1;overflow-y:auto;padding:36px 14px 16px;scroll-behavior:smooth;scrollbar-width:none}
 .lyrics-content::-webkit-scrollbar{display:none}
-.lyrics-line{font-size:13px;line-height:1.75;color:rgba(255,255,255,.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
+.lyrics-line{font-size:16px;line-height:1.75;color:rgba(255,255,255,.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
 .lyrics-line.lyr-past{color:rgba(255,255,255,.15)}
 .lyrics-line.lyr-upcoming{color:rgba(255,255,255,.45)}
-.lyrics-line.lyr-active{color:#fff;font-size:15px;font-weight:700;cursor:default}
-.lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.6);font-size:13px}
+.lyrics-line.lyr-active{color:#fff;font-size:19px;font-weight:700;cursor:default}
+.lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.6);font-size:16px}
 .lyrics-status{color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:0 10px;line-height:1.6}
 /* ===== KARAOKE (per-word) ===== */
 .lyrics-line .kw{transition:color .14s ease,opacity .14s ease;display:inline}
@@ -23,11 +23,11 @@
 #bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-active .kw.kw-on{color:#fff}
 /* ===== LYRICS IN QUEUE ===== */
 .lq-content::-webkit-scrollbar{display:none}
-.lq-content .lyrics-line{font-size:13px;line-height:1.75;color:rgba(255,255,255,.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
+.lq-content .lyrics-line{font-size:16px;line-height:1.75;color:rgba(255,255,255,.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
 .lq-content .lyrics-line.lyr-past{color:rgba(255,255,255,.15)}
 .lq-content .lyrics-line.lyr-upcoming{color:rgba(255,255,255,.45)}
-.lq-content .lyrics-line.lyr-active{color:#fff;font-size:15px;font-weight:700;cursor:default}
-.lq-content .lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.6);font-size:13px}
+.lq-content .lyrics-line.lyr-active{color:#fff;font-size:19px;font-weight:700;cursor:default}
+.lq-content .lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.6);font-size:16px}
 .lq-content .lyrics-status{color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:20px 10px;line-height:1.6}
 /* lyrics queue block inherits queue sizing rules */
 #playerContent:not(.queue-right):not(.queue-left) #lyricsQueueBlock{flex:1 1 0;min-height:0}
