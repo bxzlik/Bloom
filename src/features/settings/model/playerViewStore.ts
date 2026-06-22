@@ -24,14 +24,16 @@ import { create } from 'zustand'
  */
 
 export type TitleAlign = 'left' | 'center' | 'right'
-/** Стиль плеера: обычный / пластинка / большой (style-large). */
-export type PlayerStyle = 'standard' | 'vinyl' | 'large'
+/** Стиль плеера: обычный / пластинка / большой (style-large) / кино (style-cinema). */
+export type PlayerStyle = 'standard' | 'vinyl' | 'large' | 'cinema'
 /** Тип слайдера прогресса/громкости. ('cover' — ползунок-обложка трека.) */
 export type SliderType = 'default' | 'thin' | 'ios' | 'wave' | 'cover'
 /** Вид визуализатора: волна (осциллограф) / столбцы (спектр). */
 export type VizType = 'wave' | 'bars'
 /** Положение блока очереди в плеере. */
 export type QueuePos = 'left' | 'bottom' | 'right'
+/** Вид списка очереди: обычный (плоский) / расширенный (с разделами «прослушано/сейчас/далее»). */
+export type QueueView = 'normal' | 'extended'
 /** Позиция нижнего бара мини-плеера. */
 export type PlayerBarPos = 'bottom' | 'top' | 'left' | 'right'
 /** Фон нижнего бара мини-плеера. */
@@ -44,8 +46,8 @@ export interface MpProgress {
   bg: boolean
   circle: boolean
 }
-/** Режим оверлея-«острова»: выключен / плашка. */
-export type OverlayMode = 'off' | 'island'
+/** Режим оверлея-«острова»: выключен / плашка / компактная плашка (раскрытие по наведению). */
+export type OverlayMode = 'off' | 'island' | 'compact'
 /** Якорь оверлея на экране: верт. (t/b) + гориз. (l/c/r). */
 export type OverlayPos = 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br'
 /** Скрытые элементы бара (true = скрыт). */
@@ -68,6 +70,8 @@ export interface PlayerViewPrefs {
   parallax: boolean
   sliderType: SliderType
   queuePos: QueuePos
+  /** Вид списка очереди (обычный / расширенный). */
+  queueView: QueueView
   /** Скрыть блок очереди в плеере. */
   hideQueue: boolean
   /** Текст песни вместо списка очереди. */
@@ -109,6 +113,8 @@ export interface PlayerViewPrefs {
   overlayOnTrackChange: boolean
   /** Разрешить перемотку трека кликом/скрабом по прогресс-бару оверлея. */
   overlaySeek: boolean
+  /** Режим оптимизации: убрать эквалайзер и отключить бегущую строку. */
+  overlayPerf: boolean
 }
 
 const DEFAULTS: PlayerViewPrefs = {
@@ -119,6 +125,7 @@ const DEFAULTS: PlayerViewPrefs = {
   parallax: false,
   sliderType: 'default',
   queuePos: 'bottom',
+  queueView: 'normal',
   hideQueue: false,
   lyricsInQueue: false,
   showNextTrack: false,
@@ -141,6 +148,7 @@ const DEFAULTS: PlayerViewPrefs = {
   overlayDuration: 4,
   overlayOnTrackChange: true,
   overlaySeek: false,
+  overlayPerf: false,
 }
 
 const OVERLAY_POSITIONS: OverlayPos[] = ['tl', 'tc', 'tr', 'bl', 'bc', 'br']
@@ -185,7 +193,10 @@ const load = (): PlayerViewPrefs => {
     if (!p || typeof p !== 'object') return { ...DEFAULTS }
     return {
       titleAlign: p.titleAlign === 'left' || p.titleAlign === 'right' ? p.titleAlign : 'center',
-      playerStyle: p.playerStyle === 'vinyl' || p.playerStyle === 'large' ? p.playerStyle : 'standard',
+      playerStyle:
+        p.playerStyle === 'vinyl' || p.playerStyle === 'large' || p.playerStyle === 'cinema'
+          ? p.playerStyle
+          : 'standard',
       covBtnsInBar: !!p.covBtnsInBar,
       ambientGlow: !!p.ambientGlow,
       parallax: !!p.parallax,
@@ -194,6 +205,7 @@ const load = (): PlayerViewPrefs => {
           ? p.sliderType
           : 'default',
       queuePos: p.queuePos === 'left' || p.queuePos === 'right' ? p.queuePos : 'bottom',
+      queueView: p.queueView === 'extended' ? 'extended' : 'normal',
       hideQueue: !!p.hideQueue,
       lyricsInQueue: !!p.lyricsInQueue,
       showNextTrack: !!p.showNextTrack,
@@ -222,13 +234,14 @@ const load = (): PlayerViewPrefs => {
         fav: !!(p.mpHide && p.mpHide.fav),
       },
       playBtnBg: !!p.playBtnBg,
-      overlayMode: p.overlayMode === 'island' ? 'island' : 'off',
+      overlayMode: p.overlayMode === 'island' || p.overlayMode === 'compact' ? p.overlayMode : 'off',
       overlayPos: OVERLAY_POSITIONS.includes(p.overlayPos) ? p.overlayPos : 'tr',
       overlayOpacity: clampNum(p.overlayOpacity, 0, 100, 90),
       overlaySize: clampNum(p.overlaySize, 50, 150, 100),
       overlayDuration: clampNum(p.overlayDuration, 2, 10, 4),
       overlayOnTrackChange: p.overlayOnTrackChange !== false,
       overlaySeek: !!p.overlaySeek,
+      overlayPerf: !!p.overlayPerf,
     }
   } catch {
     return { ...DEFAULTS }
@@ -247,6 +260,7 @@ const persist = (s: PlayerViewPrefs): void => {
         parallax: s.parallax,
         sliderType: s.sliderType,
         queuePos: s.queuePos,
+        queueView: s.queueView,
         hideQueue: s.hideQueue,
         lyricsInQueue: s.lyricsInQueue,
         showNextTrack: s.showNextTrack,
@@ -269,6 +283,7 @@ const persist = (s: PlayerViewPrefs): void => {
         overlayDuration: s.overlayDuration,
         overlayOnTrackChange: s.overlayOnTrackChange,
         overlaySeek: s.overlaySeek,
+        overlayPerf: s.overlayPerf,
       }),
     )
   } catch {

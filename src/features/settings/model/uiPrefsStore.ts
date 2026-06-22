@@ -28,6 +28,12 @@ export type LibView = 'list' | 'grid'
 export interface UiPrefs {
   sidebarPos: SidebarPos
   sidebarCompact: boolean
+  /** Плавающий сайдбар — капсула overlay поверх контента (взаимоисключим с compact). */
+  sidebarFloating: boolean
+  /** Авто-скрытие сайдбара — спрятан за краем, выезжает при наведении на край. */
+  sidebarAutohide: boolean
+  /** Авто-скрытие тайтлбара — спрятан за верхним краем, выезжает при наведении. */
+  titlebarAutohide: boolean
   sbSep: boolean
   libSysStyle: LibSysStyle
   /** Вид библиотеки: список (сайдбар) или сетка карточек. */
@@ -64,6 +70,9 @@ export interface UiPrefs {
 const DEFAULTS: UiPrefs = {
   sidebarPos: 'left',
   sidebarCompact: false,
+  sidebarFloating: false,
+  sidebarAutohide: false,
+  titlebarAutohide: false,
   sbSep: true,
   libSysStyle: 'accent',
   libView: 'list',
@@ -92,6 +101,9 @@ const load = (): UiPrefs => {
     return {
       sidebarPos: p.sidebarPos === 'top' || p.sidebarPos === 'right' ? p.sidebarPos : 'left',
       sidebarCompact: !!p.sidebarCompact,
+      sidebarFloating: !!p.sidebarFloating,
+      sidebarAutohide: !!p.sidebarAutohide,
+      titlebarAutohide: !!p.titlebarAutohide,
       sbSep: p.sbSep !== false,
       libSysStyle: p.libSysStyle === 'classic' ? 'classic' : 'accent',
       libView: p.libView === 'grid' ? 'grid' : 'list',
@@ -146,6 +158,9 @@ const persist = (s: UiPrefs): void => {
       JSON.stringify({
         sidebarPos: s.sidebarPos,
         sidebarCompact: s.sidebarCompact,
+        sidebarFloating: s.sidebarFloating,
+        sidebarAutohide: s.sidebarAutohide,
+        titlebarAutohide: s.titlebarAutohide,
         sbSep: s.sbSep,
         libSysStyle: s.libSysStyle,
         libView: s.libView,
@@ -196,7 +211,13 @@ export const appClassesFromPrefs = (p: UiPrefs): string[] => {
   const out: string[] = []
   if (p.sidebarPos === 'top') out.push('sidebar-top')
   else if (p.sidebarPos === 'right') out.push('sidebar-right')
-  if (p.sidebarCompact) out.push('sidebar-compact')
+  // Плавающий и компактный взаимоисключимы — floating имеет приоритет в рендере,
+  // даже если оба флага оказались true (старый persist).
+  if (p.sidebarFloating) out.push('sidebar-floating')
+  else if (p.sidebarCompact) out.push('sidebar-compact')
+  // Авто-скрытие совместимо с обычным/компактным/плавающим режимом — CSS
+  // разруливает позиционирование для каждого случая.
+  if (p.sidebarAutohide) out.push('sidebar-autohide')
   if (!p.sbSep) out.push('no-sb-sep')
   if (p.libSysStyle === 'classic') out.push('lib-sys-classic')
   if (!p.navIndicator) out.push('no-nav-indicator')

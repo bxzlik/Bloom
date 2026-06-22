@@ -40,6 +40,53 @@ input,textarea{user-select:text;-webkit-user-select:text}
 .app.sidebar-compact.sidebar-top .sidebar{align-self:center!important;width:auto!important;height:auto!important;padding:6px 8px!important}
 .app.sidebar-compact.sidebar-top .sb-nav{position:static!important;transform:none!important;gap:0!important;flex:none!important;height:auto!important}
 .app.sidebar-compact.sidebar-top .sb-bot{margin-left:0!important;gap:0!important;padding-left:0!important;height:auto!important}
+/* ===== SIDEBAR FLOATING MODE (overlay-капсула поверх контента) ===== */
+/* Сайдбар вынимается из потока (absolute) → .main-wrap занимает всю ширину; капсула
+   висит поверх, как плавающий мини-плеер (см. player.css .app.mp-floating). Внутренняя
+   раскладка — content-sized (как compact): sb-nav не растягивается, разделители видны. */
+.app.sidebar-floating .sidebar{position:absolute;z-index:40;left:8px;top:50%;transform:translateY(-50%);width:auto;height:auto;padding:10px 6px;border-radius:999px;background:rgba(255,255,255,.04);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 8px 32px rgba(0,0,0,.45)}
+.app.sidebar-floating .sb-nav{flex:none}
+.app.sidebar-floating .sb-bot{margin-top:0;padding-top:0}
+.app.sidebar-floating .sidebar>.sb-sep{display:block}
+.app.sidebar-floating.no-sb-sep .sidebar>.sb-sep{display:none!important}
+/* Справа */
+.app.sidebar-floating.sidebar-right .sidebar{left:auto;right:8px}
+/* Сверху — горизонтальная капсула по центру (наследует row-раскладку sidebar-top) */
+.app.sidebar-floating.sidebar-top .sidebar{left:50%;right:auto;top:8px;transform:translateX(-50%);flex-direction:row;width:auto;height:auto;padding:6px 10px}
+.app.sidebar-floating.sidebar-top .sb-nav{position:static;transform:none;flex:none;height:auto}
+.app.sidebar-floating.sidebar-top .sb-bot{margin-left:0;padding-left:0;height:auto}
+/* ===== SIDEBAR AUTO-HIDE (прячется за край, выезжает при наведении) =====
+   Раскрытие ловит ОТДЕЛЬНЫЙ невидимый .sb-edge-trigger во всю высоту/ширину края
+   (он не трансформируется → зона стабильна); сайдбар держится открытым, пока курсор
+   на нём (~ .sidebar / :hover).
+   • Обычный и компактный — сайдбар остаётся В ПОТОКЕ: прячется отрицательным отступом,
+     контент занимает место; при наведении выезжает на штатное место и ужимает контент.
+   • Плавающий — overlay-капсула: выезжает ПОВЕРХ контента (как и задумано режимом). */
+.sb-edge-trigger{display:none}
+.app.sidebar-autohide .sb-edge-trigger{display:block;position:absolute;left:0;top:0;bottom:0;width:12px;z-index:46}
+.app.sidebar-autohide.sidebar-right .sb-edge-trigger{left:auto;right:0}
+.app.sidebar-autohide.sidebar-top .sb-edge-trigger{left:0;right:0;top:0;bottom:auto;width:auto;height:12px}
+
+/* — В потоке (обычный/компактный): отрицательный отступ прячет и освобождает место. — */
+.app.sidebar-autohide:not(.sidebar-floating) .sidebar{transition:margin .22s ease}
+/* Запас (24px помимо ширины+gap) — чтобы за краем скрылись бордер и скруглённые
+   углы капсулы; контент уже во всю ширину, поэтому лишний сдвиг на вид не влияет. */
+.app.sidebar-autohide:not(.sidebar-floating) .sidebar{margin-left:calc(-62px - 24px)}
+.app.sidebar-autohide:not(.sidebar-floating).sidebar-right .sidebar{margin-left:0;margin-right:calc(-62px - 24px)}
+.app.sidebar-autohide:not(.sidebar-floating).sidebar-top .sidebar{margin-left:0;margin-top:calc(-52px - 24px)}
+/* Раскрытие — на штатное место (правила последние по порядку → перебивают скрытые). */
+.app.sidebar-autohide:not(.sidebar-floating) .sb-edge-trigger:hover ~ .sidebar,
+.app.sidebar-autohide:not(.sidebar-floating) .sidebar:hover{margin-left:0;margin-right:0;margin-top:0}
+
+/* — Плавающий: overlay-капсула выезжает поверх контента. — */
+/* 60px помимо 100% ширины — чтобы за край ушла и тень капсулы (blur 32px). */
+.app.sidebar-autohide.sidebar-floating .sidebar{transition:transform .22s ease;transform:translate(calc(-100% - 60px), -50%)}
+.app.sidebar-autohide.sidebar-floating.sidebar-right .sidebar{transform:translate(calc(100% + 60px), -50%)}
+.app.sidebar-autohide.sidebar-floating.sidebar-top .sidebar{transform:translate(-50%, calc(-100% - 60px))}
+.app.sidebar-autohide.sidebar-floating .sb-edge-trigger:hover ~ .sidebar,
+.app.sidebar-autohide.sidebar-floating .sidebar:hover{transform:translate(0, -50%)}
+.app.sidebar-autohide.sidebar-floating.sidebar-top .sb-edge-trigger:hover ~ .sidebar,
+.app.sidebar-autohide.sidebar-floating.sidebar-top .sidebar:hover{transform:translate(-50%, 0)}
 .sb-avatar{width:32px;height:32px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border:2px solid transparent;overflow:hidden;transition:.15s}
 .sni.active .sb-avatar{border-color:var(--accent)}
 .sb-avatar img{width:100%;height:100%;object-fit:cover}

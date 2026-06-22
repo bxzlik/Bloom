@@ -29,6 +29,15 @@ body.slider-wave #playerContent.style-large .sl-progress .ps-bar-wrap{height:28p
 body.slider-wave #playerContent.style-large .sl-progress .ps-bar-fill{display:none!important}
 body.slider-wave #playerContent.style-large .sl-progress #waveCanvas{display:block}
 body.slider-wave #playerContent.style-large .sl-progress .ps-bar-inp{inset:0!important}
+/* — CINEMA PLAYER OVERRIDES (прогресс в .cn-progress) */
+body.slider-thin #playerContent.style-cinema .cn-progress .ps-bar-wrap{height:1.5px!important;overflow:visible!important}
+body.slider-thin #playerContent.style-cinema .cn-progress .ps-bar-thumb{display:block}
+body.slider-ios #playerContent.style-cinema .cn-progress .ps-bar-wrap{height:3px!important;overflow:visible!important}
+body.slider-ios #playerContent.style-cinema .cn-progress .ps-bar-thumb{display:block}
+body.slider-wave #playerContent.style-cinema .cn-progress .ps-bar-wrap{height:28px!important;overflow:hidden!important;background:transparent!important;border-radius:2px!important}
+body.slider-wave #playerContent.style-cinema .cn-progress .ps-bar-fill{display:none!important}
+body.slider-wave #playerContent.style-cinema .cn-progress #waveCanvas{display:block}
+body.slider-wave #playerContent.style-cinema .cn-progress .ps-bar-inp{inset:0!important}
 /* — BIG PICTURE SLIDER VARIANTS */
 #bigPicOverlay .bp-bar-thumb{position:absolute;left:0;top:50%;transform:translateX(0) translateY(-50%);pointer-events:none;display:none;z-index:2;will-change:transform}
 body.slider-thin #bigPicOverlay .bp-bar-wrap{height:1.5px!important;overflow:visible!important}
@@ -44,8 +53,8 @@ body.slider-wave #bigPicOverlay .bp-bar-wrap::before{display:none!important}
 body.slider-wave #bigPicOverlay .bp-bar-fill{display:none!important}
 body.slider-wave #bigPicOverlay .bp-bar-inp{inset:0!important}
 body.slider-cover #bigPicOverlay .bp-bar-fill{background:var(--accent)!important}
-/* glass-mode marker — actual backdrop-filter applied via JS inline styles in _applyTransparency */
-body.glass-mode .sc{will-change:backdrop-filter}
+/* NB: НЕ вешать will-change/backdrop-filter на .sc — это плодит stacking-контекст
+   на каждой карточке и роняет z-index попапов под соседние карточки (см. transparency.css). */
 body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glass-mode .lib-item-sys{background:transparent!important}
 /* ===== TELEMETRY ===== */
 .tele-stat-card{background:var(--card-solid,var(--card));border:1px solid var(--border);border-radius:calc(var(--radius)*0.8);padding:12px 14px}

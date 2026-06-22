@@ -75,6 +75,7 @@ export const PlayerBar = () => {
   const mpCoverShape = usePlayerViewStore((s) => s.mpCoverShape)
   const mpRounded = usePlayerViewStore((s) => s.mpRounded)
   const mpHide = usePlayerViewStore((s) => s.mpHide)
+  const mpCompact = usePlayerViewStore((s) => s.mpCompact)
   // В режиме «Фоном» весь бар = прогресс-бар → клик по нему перематывает
   // (линия #mpBarBg при этом обычно скрыта). Кнопки/обложку/название пропускаем.
   const mpBgProgress = usePlayerViewStore((s) => s.mpProgress.bg)
@@ -108,6 +109,45 @@ export const PlayerBar = () => {
       cancelled = true
     }
   }, [mpBgMode, artwork])
+
+  // Компактный бар: ширину задаём ОПРЕДЕЛЁННОЙ и симметричной —
+  // `2 × max(лево, право) + центр`. Только при определённой ширине боковые
+  // дорожки грида (1fr|auto|1fr) уравниваются, и транспорт (пред/плей/след)
+  // встаёт ровно по центру; при этом бар растёт с числом видимых кнопок.
+  const barRef = useRef<HTMLDivElement>(null)
+  const leftRef = useRef<HTMLDivElement>(null)
+  const centerRef = useRef<HTMLDivElement>(null)
+  const rightRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const bar = barRef.current
+    if (!bar) return
+    if (!mpCompact) {
+      bar.style.removeProperty('--mp-fw')
+      centerRef.current?.style.removeProperty('--mp-cw')
+      return
+    }
+    // Ширину КОНТЕНТА колонки считаем суммой её детей (offsetWidth) + зазоры —
+    // не по offsetWidth самой колонки, т.к. в гриде она растянута на дорожку.
+    const rowW = (el: HTMLElement | null, gap: number): number => {
+      if (!el) return 0
+      const kids = Array.from(el.children) as HTMLElement[]
+      if (!kids.length) return 0
+      return kids.reduce((w, k) => w + k.offsetWidth, 0) + gap * (kids.length - 1)
+    }
+    const side = Math.max(rowW(leftRef.current, 10), rowW(rightRef.current, 10))
+    // Центр тоже делаем симметричным: 2×max(repeat,shuffle)+трио. Тогда грид
+    // 1fr|auto|1fr внутри .mp-center центрирует ИМЕННО трио (пред/плей/след),
+    // даже если repeat/shuffle скрыты. Дети .mp-center: [repeat-ячейка, трио,
+    // shuffle-ячейка]; ширину ячеек берём по их содержимому (rowW детей).
+    const cells = Array.from(centerRef.current?.children ?? []) as HTMLElement[]
+    const trioW = rowW(cells[1] ?? null, 4)
+    const centerSide = Math.max(rowW(cells[0] ?? null, 0), rowW(cells[2] ?? null, 0))
+    // +8: 2 зазора (4×2) между ячейками .mp-center.
+    const center = centerSide * 2 + trioW + 8
+    centerRef.current?.style.setProperty('--mp-cw', `${Math.ceil(center)}px`)
+    // +48: горизонтальный паддинг .mp-inner (16×2) + 2 межколоночных зазора (8×2).
+    bar.style.setProperty('--mp-fw', `${Math.ceil(side * 2 + center + 48)}px`)
+  }, [mpCompact, curId, page, title, artist, playing, volume, mpHide.fav, mpHide.repeat, mpHide.shuffle, mpHide.time, mpHide.queue, mpHide.lyrics, mpHide.bigpic, t])
 
   const goNav = useNavStore((s) => s.goNav)
 
@@ -166,6 +206,7 @@ export const PlayerBar = () => {
     <>
     <div
       id="miniPlayer"
+      ref={barRef}
       className={mpClass || undefined}
       onClick={onBarClickSeek}
       onContextMenu={onBarContextMenu}
@@ -211,6 +252,7 @@ export const PlayerBar = () => {
       >
         {/* LEFT — cover + title + fav */}
         <div
+          ref={leftRef}
           className="mp-left"
           style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}
         >
@@ -319,35 +361,47 @@ export const PlayerBar = () => {
           </div>
         </div>
 
-        {/* CENTER — repeat, prev, PLAY, next, shuffle */}
+        {/* CENTER — repeat | [prev PLAY next] | shuffle.
+            Repeat/shuffle вынесены в боковые ячейки, трио — в .mp-transport. В
+            обычном режиме обёртки = display:contents (раскладка как раньше); в
+            плавающем .mp-center — грид 1fr|auto|1fr, поэтому ТРИО центрируется
+            всегда, даже если repeat/shuffle скрыты (пустая ячейка держит 1fr). */}
         <div
+          ref={centerRef}
           className="mp-center"
           style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0 }}
         >
-          {!mpHide.repeat && (
-            <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
-              <RepeatSvg size={15} />
-              {repeat === 2 && <RepeatOneBadge />}
+          <span className="mp-side-ctl mp-side-l">
+            {!mpHide.repeat && (
+              <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
+                <RepeatSvg size={15} />
+                {repeat === 2 && <RepeatOneBadge />}
+              </button>
+            )}
+          </span>
+          <span className="mp-transport">
+            <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
+              <PrevSvg size={17} />
             </button>
-          )}
-          <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
-            <PrevSvg size={17} />
-          </button>
-          <button className="cc-play" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
-            {playing ? <PauseSvg size={15} /> : <PlaySvg size={15} />}
-          </button>
-          <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
-            <NextSvg size={17} />
-          </button>
-          {!mpHide.shuffle && (
-            <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
-              <ShuffleSvg size={15} />
+            <button className="cc-play" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
+              {playing ? <PauseSvg size={15} /> : <PlaySvg size={15} />}
             </button>
-          )}
+            <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
+              <NextSvg size={17} />
+            </button>
+          </span>
+          <span className="mp-side-ctl mp-side-r">
+            {!mpHide.shuffle && (
+              <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
+                <ShuffleSvg size={15} />
+              </button>
+            )}
+          </span>
         </div>
 
         {/* RIGHT — time + volume + queue/lyrics/big-pic */}
         <div
+          ref={rightRef}
           className="mp-right"
           style={{
             flex: 1,
@@ -638,14 +692,29 @@ const Volume = ({ volume, onWheel }: { volume: number; onWheel: (e: ReactWheelEv
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
         aria-label={t('player.aria.volume')}
+        style={{ position: 'relative' }}
       >
-        {/* При наведении вместо иконки показываем процент громкости. */}
-        {hover ? (
-          <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+        {/* Иконка видна всегда; при наведении в углу появляется бейдж с числом. */}
+        <VolSvg size={19} v={volume} />
+        {hover && (
+          <span
+            style={{
+              position: 'absolute',
+              top: -2,
+              right: -3,
+              fontSize: 9,
+              fontWeight: 700,
+              lineHeight: 1,
+              padding: '1px 3px',
+              borderRadius: 6,
+              background: 'var(--accent)',
+              color: 'var(--accent-text)',
+              fontVariantNumeric: 'tabular-nums',
+              pointerEvents: 'none',
+            }}
+          >
             {Math.round(volume)}
           </span>
-        ) : (
-          <VolSvg size={19} v={volume} />
         )}
       </button>
       {popupOpen && (
@@ -759,7 +828,6 @@ const VertVolPopup = ({
         isolation: 'isolate',
       }}
     >
-      <span style={{ fontSize: 10, color: 'var(--text2)' }}>{Math.round(volume)}%</span>
       <div
         ref={trackRef}
         onPointerDown={onTrackDown}

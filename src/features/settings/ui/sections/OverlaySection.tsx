@@ -3,8 +3,9 @@ import { useT } from '@shared/i18n'
 
 /**
  * Раздел «Оверлей» (`#ssec-overlay`) — настройки всплывающей плашки now-playing
- * поверх всех окон. Режим (выкл/остров), позиция на экране, прозрачность,
- * размер, длительность авто-показа и тумблер показа при смене трека.
+ * поверх всех окон. Режим (выкл/остров/компактный), позиция на экране,
+ * прозрачность, размер, длительность авто-показа, тумблеры показа при смене
+ * трека, перемотки по бару и режима оптимизации (без эквалайзера/бегущей строки).
  *
  * Логику синка с нативным окном держит `useOverlayBridge` (app-слой): пушит
  * конфиг в Rust на смену режима/позиции/масштаба; плашка читает прозрачность/
@@ -23,6 +24,7 @@ const OVERLAY_DEFAULTS = {
   overlayDuration: 4,
   overlayOnTrackChange: true,
   overlaySeek: false,
+  overlayPerf: false,
 } as const
 
 /** Мини-иконка экрана с точкой в выбранном углу/крае. */
@@ -76,10 +78,14 @@ export const OverlaySection = () => {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="8" width="20" height="8" rx="4" /></svg>
             {t('settings.view.ovMode.island')}
           </OptBtn>
+          <OptBtn active={p.overlayMode === 'compact'} onClick={() => p.set('overlayMode', 'compact')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="6" /></svg>
+            {t('settings.view.ovMode.compact')}
+          </OptBtn>
         </div>
       </div>
 
-      {p.overlayMode === 'island' && (
+      {p.overlayMode !== 'off' && (
         <>
           <div className="sc">
             <div className="sc-title">{t('settings.view.ovPos')}</div>
@@ -137,6 +143,16 @@ export const OverlaySection = () => {
                 <div className="ssub">{t('settings.view.ovSeek.sub')}</div>
               </div>
               <Toggle checked={p.overlaySeek} onChange={(v) => p.set('overlaySeek', v)} />
+            </div>
+          </div>
+
+          <div className="sc">
+            <div className="sr">
+              <div>
+                <div className="sl2">{t('settings.view.ovPerf')}</div>
+                <div className="ssub">{t('settings.view.ovPerf.sub')}</div>
+              </div>
+              <Toggle checked={p.overlayPerf} onChange={(v) => p.set('overlayPerf', v)} />
             </div>
           </div>
         </>

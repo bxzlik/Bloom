@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { createPortal } from 'react-dom'
 import {
   useFavStore,
   useLibStore,
@@ -181,6 +182,11 @@ const PlayerContent = () => {
   const vinyl = playerStyle === 'vinyl'
   // Большой плеер: grid-раскладка `.style-large` (обложка крупно + нижний бар).
   const large = playerStyle === 'large'
+  // Кино: grid-раскладка `.style-cinema` — как large, но без нижнего бара,
+  // инфо/прогресс/контролы накладываются на крупную обложку.
+  const cinema = playerStyle === 'cinema'
+  // Общая grid-раскладка (large + cinema): обложка крупно + очередь сбоку.
+  const gridLayout = large || cinema
 
   // Speed picker (анкор — кнопка скорости в левой части транспорта).
   const speedBtnRef = useRef<HTMLButtonElement>(null)
@@ -482,6 +488,13 @@ const PlayerContent = () => {
       <span className="vol-pct">{volume}</span>
     </div>
   )
+  // В большом стиле громкость — компактная кнопка-иконка с вертикальным поп-апом
+  // (как в нижнем баре #miniPlayer), а не инлайн-слайдер.
+  const volumeNodeLarge = (
+    <div className="ps-ctrl" style={{ flexShrink: 0, padding: 6 }}>
+      <VolumePopupBtn volume={volume} onWheel={onWheelVol} />
+    </div>
+  )
   const modalsNode = (
     <>
       {/* Ctx-меню по ПКМ на обложке текущего трека */}
@@ -556,26 +569,77 @@ const PlayerContent = () => {
   const queueClass =
     hideQueue && !lyricsInQueueActive
       ? 'queue-hidden'
-      : large
+      : gridLayout
         ? queuePos === 'left'
           ? 'queue-left'
-          : '' // в large дефолт grid = очередь справа
+          : '' // в large/cinema дефолт grid = очередь справа
         : queuePos === 'left'
           ? 'queue-left'
           : queuePos === 'right'
             ? 'queue-right'
             : ''
   const pcClassName = [
-    large ? 'style-large' : '',
+    large ? 'style-large' : cinema ? 'style-cinema' : '',
     titleAlign === 'left' ? 'title-left' : titleAlign === 'right' ? 'title-right' : '',
     queueClass,
     lyricsInQueueActive ? 'lyrics-in-queue' : '',
   ]
     .filter(Boolean)
     .join(' ')
-  const pcStyle: React.CSSProperties = large
+  const pcStyle: React.CSSProperties = gridLayout
     ? { display: 'grid', flex: 1, overflow: 'hidden', gap: 8, padding: 8 }
     : { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: 8, padding: 8 }
+
+  // ── Кино (style-cinema): grid обложка(кр.) + очередь; инфо/прогресс/контролы
+  // накладываются оверлеем на низ обложки (нет отдельного нижнего бара). ──────
+  if (cinema) {
+    return (
+      <div id="playerContent" className={pcClassName} style={pcStyle}>
+        <div className="sl-cover-wrap" key="sl-cover-wrap">
+          {/* renderCover(false): свои оверлеи ниже (тайтл + ♥/bigpic/+). */}
+          {renderCover(false)}
+          {/* Тайтл/артист по центру обложки — прячется при наведении. */}
+          <div className="cn-center-title">
+            {titleRowNode}
+            {artistNode}
+          </div>
+          {/* ♥ · на весь экран · + — на месте тайтла, появляются по наведению. */}
+          <div className="cn-hover-actions">
+            {favOverlayBtn}
+            <button
+              className="cn-bigpic"
+              aria-label={t('player.aria.bigPic')}
+              onClick={(e) => {
+                e.stopPropagation()
+                useBigPicStore.getState().openBig()
+              }}
+            >
+              <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+              </svg>
+            </button>
+            {addOverlayBtn}
+          </div>
+          <div className="cn-overlay">
+            <div className="cn-progress">
+              <PsProgress />
+            </div>
+            {/* Транспорт отдельной строкой (без рамки): download | плеер | дизлайк. */}
+            {transportNode}
+            {/* Громкость — полным слайдером в своей строке + source/eq/скорость. */}
+            <div className="cn-vol-row">
+              {volumeNode}
+              {ctrlGroupsNode}
+            </div>
+          </div>
+        </div>
+        {/* Прямые дети #playerContent с явным key (см. коммент в large-ветке). */}
+        <QueueBlock key="player-queue" />
+        {lyricsInQueueActive && <LyricsQueueBlock key="lyrics-queue" active />}
+        {modalsNode}
+      </div>
+    )
+  }
 
   // ── Большой плеер (style-large): grid обложка(кр.) + нижний бар ───────────
   // _slSetup: обложка крупно с прогрессом-оверлеем; под ней
@@ -605,7 +669,7 @@ const PlayerContent = () => {
             <div />
             <div>{transportNode}</div>
           </div>
-          <div className="sl-vol-wrap">{volumeNode}{ctrlGroupsNode}</div>
+          <div className="sl-vol-wrap sl-vol-compact">{volumeNodeLarge}{ctrlGroupsNode}</div>
         </div>
         {/* Прямые дети #playerContent с явным key — позиционно-независимое
             сопоставление: QueueBlock сохраняется при переключении стандарт↔large
@@ -1081,6 +1145,153 @@ const VolumeSlider = ({ volume }: { volume: number }) => {
       onChange={(e) => setVol(Number(e.target.value))}
       style={{ flex: 1, width: 'auto' }}
     />
+  )
+}
+
+/**
+ * Компактная громкость для большого стиля — иконка-кнопка, по клику открывает
+ * вертикальный поп-ап с дорожкой (как Volume в нижнем баре #miniPlayer). Бейдж
+ * с числом при наведении. Поп-ап раскрывается вверх (бар внизу страницы).
+ */
+const VolumePopupBtn = ({ volume, onWheel }: { volume: number; onWheel: (e: ReactWheelEvent<HTMLDivElement>) => void }) => {
+  const t = useT()
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [hover, setHover] = useState(false)
+  return (
+    <div onWheel={onWheel} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <button
+        ref={btnRef}
+        className="cc"
+        onClick={() => setPopupOpen((v) => !v)}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        aria-label={t('player.aria.volume')}
+        style={{ position: 'relative' }}
+      >
+        <VolSvg size={18} v={volume} />
+        {hover && (
+          <span
+            style={{
+              position: 'absolute',
+              top: -2,
+              right: -3,
+              fontSize: 9,
+              fontWeight: 700,
+              lineHeight: 1,
+              padding: '1px 3px',
+              borderRadius: 6,
+              background: 'var(--accent)',
+              color: 'var(--accent-text)',
+              fontVariantNumeric: 'tabular-nums',
+              pointerEvents: 'none',
+            }}
+          >
+            {Math.round(volume)}
+          </span>
+        )}
+      </button>
+      {popupOpen && <VertVolPopup volume={volume} anchorRef={btnRef} onClose={() => setPopupOpen(false)} />}
+    </div>
+  )
+}
+
+/**
+ * Вертикальный поп-ап громкости (fixed-портал у кнопки), раскрытие вверх.
+ * Drag/click/колесо по дорожке = громкость, закрытие по клику снаружи.
+ */
+const VertVolPopup = ({
+  volume,
+  anchorRef,
+  onClose,
+}: {
+  volume: number
+  anchorRef: React.RefObject<HTMLButtonElement | null>
+  onClose: () => void
+}) => {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+
+  useLayoutEffect(() => {
+    const btn = anchorRef.current
+    const pop = popupRef.current
+    if (!btn || !pop) return
+    const r = btn.getBoundingClientRect()
+    const pw = pop.offsetWidth || 44
+    const ph = pop.offsetHeight || 168
+    let left = r.left + r.width / 2 - pw / 2
+    let top = r.top - ph - 8
+    if (left < 8) left = 8
+    if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8
+    if (top < 8) top = r.bottom + 8
+    setPos({ left, top })
+  }, [anchorRef])
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const tg = e.target as Node
+      if (popupRef.current?.contains(tg) || anchorRef.current?.contains(tg)) return
+      onClose()
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [anchorRef, onClose])
+
+  const volFromY = (clientY: number): number => {
+    const tr = trackRef.current
+    if (!tr) return volume
+    const r = tr.getBoundingClientRect()
+    const pct = 1 - (clientY - r.top) / r.height
+    return Math.round(Math.min(1, Math.max(0, pct)) * 100)
+  }
+  const onTrackDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setVol(volFromY(e.clientY))
+  }
+  const onTrackMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) setVol(volFromY(e.clientY))
+  }
+  const onTrackWheel = (e: ReactWheelEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setVol(Math.min(100, Math.max(0, volume + (e.deltaY < 0 ? 5 : -5))))
+  }
+
+  return createPortal(
+    <div
+      ref={popupRef}
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        display: 'flex',
+        position: 'fixed',
+        left: pos?.left ?? -9999,
+        top: pos?.top ?? -9999,
+        border: '1px solid rgba(255,255,255,.12)',
+        borderRadius: 10,
+        padding: '10px 8px',
+        zIndex: 9500,
+        alignItems: 'center',
+        flexDirection: 'column',
+        gap: 6,
+        boxShadow: '0 8px 32px rgba(0,0,0,.8)',
+        background: 'var(--block-color, #141414)',
+        isolation: 'isolate',
+      }}
+    >
+      <div
+        ref={trackRef}
+        onPointerDown={onTrackDown}
+        onPointerMove={onTrackMove}
+        onWheel={onTrackWheel}
+        style={{ width: 4, height: 120, background: 'rgba(255,255,255,.15)', borderRadius: 2, position: 'relative', cursor: 'pointer', touchAction: 'none' }}
+      >
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--accent)', borderRadius: 2, height: `${Math.round(volume)}%`, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 12, height: 12, background: 'var(--accent)', borderRadius: '50%', bottom: `calc(${Math.round(volume)}% - 6px)`, pointerEvents: 'none' }} />
+      </div>
+    </div>,
+    document.body,
   )
 }
 

@@ -1,31 +1,39 @@
 {
-  "1.1.1": {
-    "title": { "ru": "Что нового в 1.1.1", "en": "What's new in 1.1.1" },
+  "1.2.0": {
+    "title": { "ru": "Что нового в 1.2.0", "en": "What's new in 1.2.0" },
     "pages": [
       {
-        "title": { "ru": "Spotify и YouTube Music", "en": "Spotify & YouTube Music" },
-        "body": { "ru": "Добавлены новые площадки **Spotify** и **YouTube Music** — поиск, альбомы, артисты и плейлисты.", "en": "Added new platforms: **Spotify** and **YouTube Music** — search, albums, artists and playlists." },
-        "icons": ["spotify", "ytmusic"]
+        "title": { "ru": "Новые настройки оверлея", "en": "New overlay settings" },
+        "body": { "ru": "Оверлей получил больше настроек — теперь его можно гибче подстроить под себя.", "en": "The overlay now has more settings, so you can tailor it to your taste." }
       },
       {
-        "title": { "ru": "Цветные бейджи", "en": "Colored badges" },
-        "body": { "ru": "Бейджи источников теперь в своих фирменных цветах. Их по-прежнему можно красить в цвет акцента, как раньше.", "en": "Source badges now use their own brand colors. You can still tint them to the accent color, as before." },
-        "icons": ["soundcloud", "yandex", "ytmusic", "spotify"]
+        "title": { "ru": "Расширенный вид очереди", "en": "Extended queue view" },
+        "body": { "ru": "Добавлен новый режим отображения очереди — **«Расширенный»**.", "en": "Added a new queue display mode — **Extended**." },
+        "image": "bloom_xICKunSdrV.png"
       },
       {
-        "title": { "ru": "Настройки мини-плеера", "en": "Mini player settings" },
-        "body": { "ru": "Новые настройки мини-плеера.", "en": "New mini player settings." },
-        "image": "1-1-0_miniplayer.png"
+        "title": { "ru": "Редизайн страницы поиска", "en": "Search page redesign" },
+        "body": { "ru": "Страница поиска полностью переработана.", "en": "The search page has been completely redesigned." },
+        "image": "bloom_4OoceiMmdr.png"
       },
       {
-        "title": { "ru": "Оверлей", "en": "Overlay" },
-        "body": { "ru": "Реализован оверлей.", "en": "Added an overlay." },
-        "image": "1-1-0_overlay.png"
+        "title": { "ru": "Вид плеера «Кино»", "en": "Cinema player view" },
+        "body": { "ru": "Новый стиль плеера — **«Кино»**.", "en": "A new player style — **Cinema**." },
+        "image": "bloom_4IfQy1AQ1p.png"
       },
       {
-        "title": { "ru": "Слайдер в кастомизации", "en": "Custom slider image" },
-        "body": { "ru": "Теперь можно поставить свою фотографию на слайдер в кастомизации.", "en": "You can now set your own image for the slider in customization." },
-        "image": "1-1-0_slider.png"
+        "title": { "ru": "Новый вид сайдбара", "en": "New sidebar style" },
+        "body": { "ru": "Сайдбар получил новый вид.", "en": "The sidebar has a fresh new look." },
+        "image": "bloom_fLQoU0HRYX.png"
+      },
+      {
+        "title": { "ru": "Сайдбар и тайтлбар при наведении", "en": "Reveal sidebar & titlebar on hover" },
+        "body": { "ru": "Новая настройка — показывать сайдбар и тайтлбар только при наведении на край.", "en": "A new setting to reveal the sidebar and titlebar only when you hover the edge." }
+      },
+      {
+        "title": { "ru": "Обновлённый сайт", "en": "Updated website" },
+        "body": { "ru": "Сайт обновлён — загляни на [bloom-site-x.vercel.app](https://bloom-site-x.vercel.app/).", "en": "Our website has been updated — check out [bloom-site-x.vercel.app](https://bloom-site-x.vercel.app/)." },
+        "image": "zen_YKhtu9XNWJ.png"
       }
     ]
   }

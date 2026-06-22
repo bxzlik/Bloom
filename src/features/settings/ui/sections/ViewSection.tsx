@@ -25,8 +25,8 @@ export const ViewSection = () => {
     <div className="s-section active" id="ssec-view">
       <div className="s-section-head">
         <div className="s-section-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <circle cx="12" cy="12" r="10" /><path d="M11 9.5C11 8.9 11.6 8.6 12.1 8.9l4 2.5c.5.3.5 1 0 1.3l-4 2.5C11.6 15.5 11 15.1 11 14.6V9.5z" />
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
           </svg>{' '}
           {t('settings.nav.player')}
         </div>
@@ -81,6 +81,18 @@ export const ViewSection = () => {
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>
             {t('settings.view.style.large')}
+          </OptBtn>
+          {/* «Кино» (style-cinema): как большой, но без нижнего бара — инфо,
+              прогресс и контролы накладываются на крупную обложку. */}
+          <OptBtn
+            active={p.playerStyle === 'cinema'}
+            onClick={() => {
+              p.set('playerStyle', 'cinema')
+              if (p.queuePos === 'bottom') p.set('queuePos', 'right')
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15h18" /><path d="M8 19h8" /></svg>
+            {t('settings.view.style.cinema')}
           </OptBtn>
         </div>
       </div>
@@ -144,7 +156,7 @@ export const ViewSection = () => {
           </OptBtn>
           <OptBtn
             active={p.queuePos === 'bottom'}
-            disabled={p.hideQueue || p.playerStyle === 'large'}
+            disabled={p.hideQueue || p.playerStyle === 'large' || p.playerStyle === 'cinema'}
             onClick={() => p.set('queuePos', 'bottom')}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="18" height="9" rx="1" /><rect x="3" y="15" width="18" height="6" rx="1" /></svg>
@@ -153,6 +165,21 @@ export const ViewSection = () => {
           <OptBtn active={p.queuePos === 'right'} disabled={p.hideQueue} onClick={() => p.set('queuePos', 'right')}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="14" y="3" width="7" height="18" rx="1" /><rect x="3" y="3" width="8" height="18" rx="1" /></svg>
             {t('settings.view.queuePos.right')}
+          </OptBtn>
+        </div>
+      </div>
+
+      <div className="sc">
+        <div className="sc-title">{t('settings.view.queueView')}</div>
+        <div className="sc-desc">{t('settings.view.queueView.desc')}</div>
+        <div className="s-opt-row">
+          <OptBtn active={p.queueView === 'normal'} disabled={p.hideQueue} onClick={() => p.set('queueView', 'normal')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+            {t('settings.view.queueView.normal')}
+          </OptBtn>
+          <OptBtn active={p.queueView === 'extended'} disabled={p.hideQueue} onClick={() => p.set('queueView', 'extended')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+            {t('settings.view.queueView.extended')}
           </OptBtn>
         </div>
       </div>
@@ -190,7 +217,7 @@ export const ViewSection = () => {
         </div>
         {/* «Показать следующий трек» — только при скрытой очереди и НЕ в large
 . */}
-        {p.hideQueue && p.playerStyle !== 'large' && (
+        {p.hideQueue && p.playerStyle !== 'large' && p.playerStyle !== 'cinema' && (
           <div className="sr">
             <div>
               <div className="sl2">{t('settings.view.showNext')}</div>

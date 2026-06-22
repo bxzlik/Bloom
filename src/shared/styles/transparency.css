@@ -89,7 +89,9 @@ body.glass-mode .sp-am-track-card {
   background: transparent !important;
 }
 
-/* Подсказка движку (плавнее перерисовка стекла при скролле). */
-body.glass-mode .sc {
-  will-change: backdrop-filter;
-}
+/* ВАЖНО: НЕ ставить `will-change: backdrop-filter` (или сам backdrop-filter) на
+   .sc — на карточки настроек стекло НЕ накладывается (только .main/.sidebar/
+   панели/мини-плеер), а этот хинт создавал бы на КАЖДОМ .sc отдельный stacking-
+   контекст. Тогда `z-index` всплывающих попапов внутри карточки (.tp-pop темы,
+   color-picker и т.п.) переставал действовать глобально и попап уходил ПОД
+   соседние карточки/тогглы ниже по DOM. */

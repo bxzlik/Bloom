@@ -92,6 +92,44 @@ body.paused .eq i{animation-play-state:paused;height:30%}
 .cbtn:active{transform:scale(.92)}
 .cbtn-play{width:34px;height:34px;background:var(--accent);color:#000;opacity:1}
 .cbtn-play:hover{background:var(--accent);filter:brightness(1.1)}
+
+/* ── Режим оптимизации ───────────────────────────────────
+   Убираем эквалайзер, отключаем бегущую строку (заголовок обрезается «…») и
+   прячем полосу прогресса — её постоянная перерисовка дорогая. Полоса
+   показывается только при наведении. */
+body.perf .eq{display:none}
+body.perf .title{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+body.perf .prog{display:none}
+body.perf .island:hover .prog{display:block}
+
+/* ── Компактный режим ────────────────────────────────────
+   Покой: только обложка + эквалайзер (текст схлопнут). Наведение: плашка
+   доезжает до полной ширины, проявляются текст и кнопки. Плашка прижата к
+   якорному краю окна (классы al/ac/ar ставит JS), с зазором под тень. */
+body.compact .island{width:132px;
+  transition:width .26s cubic-bezier(.22,1,.36,1),padding .26s cubic-bezier(.22,1,.36,1),gap .26s cubic-bezier(.22,1,.36,1),opacity .26s ease,transform .26s cubic-bezier(.22,1,.36,1)}
+/* Компакт + оптимизация: эквалайзера нет — свёрнутая плашка обтягивает обложку
+   «кружком» (без зазоров флекса и лишнего паддинга, чтобы не было пустого поля). */
+/* padding:7px — чтобы обложка 48px влезла ровно в контент-бокс (64 − 2 рамки −
+   2×7 = 48) и была строго по центру, без перекоса из-за border-box. */
+body.compact.perf .island{width:64px;padding:7px;gap:0}
+body.compact.perf .island:hover{width:380px;padding:8px 18px 8px 8px;gap:12px}
+/* Колонку грида фиксируем под ширину слота — иначе она тянется под кнопки
+   управления (самый широкий элемент) и эквалайзер уезжает в обрезку. */
+body.compact .right{width:34px;grid-template-columns:100%;transition:width .26s cubic-bezier(.22,1,.36,1)}
+body.compact.perf .right{width:0}
+body.compact .info{opacity:0;transition:opacity .12s ease}
+body.compact .island:hover{width:380px}
+body.compact .island:hover .right{width:106px}
+body.compact .island:hover .info{opacity:1;transition:opacity .2s ease .08s}
+/* Бегущая строка крутится только в раскрытом состоянии (экономим в покое). */
+body.compact .island:not(:hover) .title-wrap.scrolling .title{animation-play-state:paused}
+/* Прижатие к якорному краю + зазор под тень (margin масштабируется zoom'ом плашки). */
+body.compact.ar{justify-content:flex-end}
+body.compact.al{justify-content:flex-start}
+body.compact.ac{justify-content:center}
+body.compact.ar .island{margin-right:28px}
+body.compact.al .island{margin-left:28px}
 </style>
 </head>
 <body>
@@ -132,6 +170,7 @@ body.paused .eq i{animation-play-state:paused;height:30%}
   var duration = 4;
   var ticker = null;
   var seekEnabled = false;   // перемотка по прогресс-бару (из настроек)
+  var perfMode = false;      // режим оптимизации: без эквалайзера и бегущей строки
   var scrubbing = false;     // идёт ручной скраб — не снапаем позицию из пушей
 
   function $(id){ return document.getElementById(id); }
@@ -236,11 +275,24 @@ body.paused .eq i{animation-play-state:paused;height:30%}
     var size = typeof p.overlaySize === 'number' ? p.overlaySize : 100;
     duration = typeof p.overlayDuration === 'number' ? p.overlayDuration : 4;
     seekEnabled = !!p.overlaySeek;
+    perfMode = !!p.overlayPerf;
     var pe = $('prog');
     if (pe) pe.classList.toggle('seekable', seekEnabled);
     document.documentElement.style.setProperty('--ov-op', Math.max(0, Math.min(100, op)) / 100);
     // Масштаб плашки. Окно Rust ресайзит синхронно по той же доле.
     $('island').style.zoom = Math.max(50, Math.min(160, size)) / 100;
+
+    // Режим оптимизации + компактная плашка (прижатая к якорному краю).
+    var compact = p.overlayMode === 'compact';
+    var body = document.body;
+    body.classList.toggle('perf', perfMode);
+    body.classList.toggle('compact', compact);
+    var horiz = (typeof p.overlayPos === 'string' ? p.overlayPos.charAt(1) : 'r') || 'r';
+    body.classList.toggle('al', compact && horiz === 'l');
+    body.classList.toggle('ac', compact && horiz === 'c');
+    body.classList.toggle('ar', compact && horiz === 'r');
+    // В компакте ширина/обёртка меняются — пересчёт бегущей строки.
+    updateMarquee(true);
   }
 
   // Тема (акцент + фон блока) — из настроек главного окна (как у мини-плеера).
@@ -292,7 +344,8 @@ body.paused .eq i{animation-play-state:paused;height:30%}
     _mqMeasure.textContent = text;
     var singleW = _mqMeasure.scrollWidth;
     var wrapW = wrap.clientWidth;
-    var step = singleW > wrapW + 4 ? singleW + 64 : 0;
+    // Режим оптимизации — без прокрутки (заголовок обрезается «…» через CSS).
+    var step = (!perfMode && singleW > wrapW + 4) ? singleW + 64 : 0;
     if (!force && text === _mqText && step === _mqStep) return;
     _mqText = text; _mqStep = step;
     wrap.classList.remove('scrolling');
@@ -405,6 +458,8 @@ body.paused .eq i{animation-play-state:paused;height:30%}
 
   function start(){
     ti = window.__TAURI_INTERNALS__;
+    // Отключаем браузерное контекстное меню вебвью (как в miniplayer/tray).
+    window.addEventListener('contextmenu', function(e){ e.preventDefault(); }, false);
     applyTheme();
     applyPrefs();
 
@@ -486,6 +541,10 @@ body.paused .eq i{animation-play-state:paused;height:30%}
     var island = $('island');
     island.addEventListener('mouseenter', function(){
       if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
+      // Компакт: после раскрытия (ширина обёртки выросла) пересчитываем бегущую строку.
+      if (document.body.classList.contains('compact')){
+        setTimeout(function(){ updateMarquee(true); }, 280);
+      }
     });
     island.addEventListener('mouseleave', function(){
       if (pinned) return;

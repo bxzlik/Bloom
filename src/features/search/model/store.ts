@@ -54,12 +54,21 @@ export type RecentItem = {
   round?: boolean
   /** Автор/владелец — показывается в подзаголовке недавнего: «{author} · {тип}». */
   author?: string
+  /** Когда открыт (мс) — для общей сортировки истории в дропдауне поиска. */
+  ts?: number
 }
 
-const loadStrArr = (key: string): string[] => {
+/** Недавний запрос + время (для recency-merge с открытыми в выпадающем списке). */
+export type RecentSearch = { q: string; ts: number }
+
+/** Недавние запросы: миграция со старого формата `string[]` → `{q,ts}[]`. */
+const loadSearches = (): RecentSearch[] => {
   try {
-    const a = JSON.parse(localStorage.getItem(key) || '[]')
-    return Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : []
+    const a = JSON.parse(localStorage.getItem(RS_KEY) || '[]')
+    if (!Array.isArray(a)) return []
+    return a
+      .map((x) => (typeof x === 'string' ? { q: x, ts: 0 } : x))
+      .filter((x): x is RecentSearch => !!x && typeof x.q === 'string')
   } catch {
     return []
   }
@@ -116,7 +125,7 @@ export interface SearchState {
   loadingMore: boolean
 
   /** Недавние запросы (макс. 8) и недавно открытые сущности (макс. 12). */
-  recentSearches: string[]
+  recentSearches: RecentSearch[]
   recentItems: RecentItem[]
 
   setQuery: (q: string) => void
@@ -165,7 +174,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   tracksOffset: 0,
   loadingMore: false,
 
-  recentSearches: loadStrArr(RS_KEY),
+  recentSearches: loadSearches(),
   recentItems: loadItems(),
 
   setQuery: (q) => set({ query: q }),
@@ -177,7 +186,10 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       return
     }
     // Запомнить запрос (наверх, без дублей, максимум 8).
-    const rs = [query, ...get().recentSearches.filter((x) => x.toLowerCase() !== query.toLowerCase())].slice(0, RS_MAX)
+    const rs = [
+      { q: query, ts: Date.now() },
+      ...get().recentSearches.filter((x) => x.q.toLowerCase() !== query.toLowerCase()),
+    ].slice(0, RS_MAX)
     save(RS_KEY, rs)
 
     const my = ++_token
@@ -248,7 +260,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   },
 
   pushRecentItem: (item) => {
-    const next = [item, ...get().recentItems.filter((x) => x.id !== item.id)].slice(0, RI_MAX)
+    const next = [{ ...item, ts: Date.now() }, ...get().recentItems.filter((x) => x.id !== item.id)].slice(0, RI_MAX)
     save(RI_KEY, next)
     set({ recentItems: next })
   },
@@ -262,7 +274,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     set({ recentItems: [] })
   },
   removeRecentSearch: (q) => {
-    const next = get().recentSearches.filter((x) => x !== q)
+    const next = get().recentSearches.filter((x) => x.q !== q)
     save(RS_KEY, next)
     set({ recentSearches: next })
   },

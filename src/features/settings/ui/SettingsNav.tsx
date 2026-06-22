@@ -17,6 +17,7 @@ export type SectionId =
   // Оформление
   | 'view'
   | 'interface'
+  | 'tabs'
   | 'background'
   | 'medialib'
   // Интеграции
@@ -134,9 +135,10 @@ const GROUPS: GroupDef[] = [
         id: 'view',
         labelKey: 'settings.nav.player',
         icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M11 9.5C11 8.9 11.6 8.6 12.1 8.9l4 2.5c.5.3.5 1 0 1.3l-4 2.5C11.6 15.5 11 15.1 11 14.6V9.5z" />
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
           </svg>
         ),
       },
@@ -147,6 +149,16 @@ const GROUPS: GroupDef[] = [
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <path d="M3 9h18M9 21V9" />
+          </svg>
+        ),
+      },
+      {
+        id: 'tabs',
+        labelKey: 'settings.nav.tabs',
+        icon: (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M3 9h18M9 9V3" />
           </svg>
         ),
       },
@@ -165,9 +177,12 @@ const GROUPS: GroupDef[] = [
         id: 'medialib',
         labelKey: 'settings.nav.customization',
         icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" />
+            <circle cx="13.5" cy="6.5" r=".75" fill="currentColor" stroke="none" />
+            <circle cx="17.5" cy="10.5" r=".75" fill="currentColor" stroke="none" />
+            <circle cx="6.5" cy="12.5" r=".75" fill="currentColor" stroke="none" />
+            <circle cx="8.5" cy="7.5" r=".75" fill="currentColor" stroke="none" />
           </svg>
         ),
       },

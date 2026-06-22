@@ -72,6 +72,8 @@ const APP_PREF_CLASSES = [
   'sidebar-top',
   'sidebar-right',
   'sidebar-compact',
+  'sidebar-floating',
+  'sidebar-autohide',
   'no-sb-sep',
   'lib-sys-classic',
   'no-nav-indicator',
@@ -275,6 +277,8 @@ export const App = () => {
       // Плоская кнопка play (без фона, крупная иконка) — body-класс, чтобы достать
       // и до #bigPicOverlay (вне .app). По умолчанию вкл (playBtnBg=false).
       document.body.classList.toggle('play-flat', !usePlayerViewStore.getState().playBtnBg)
+      // Авто-скрытие тайтлбара — body-класс (#winTitlebar рендерится вне .app).
+      document.body.classList.toggle('titlebar-autohide', useUiPrefsStore.getState().titlebarAutohide)
     }
     apply()
     const un1 = useUiPrefsStore.subscribe(apply)
@@ -290,6 +294,10 @@ export const App = () => {
       {/* Background layer */}
       <div id="bgl" className="no-bg" />
 
+      {/* Невидимая зона-триггер у верхней кромки для авто-скрытия тайтлбара
+          (titlebar-autohide): активна только через body-класс, ловит наведение. */}
+      <div className="tb-edge-trigger" aria-hidden="true" />
+
       {/* Custom titlebar (drag + win controls) */}
       <TitleBar />
 
@@ -297,6 +305,11 @@ export const App = () => {
         ref={appRef}
         className={`app${prefClasses ? ' ' + prefClasses : ''}${barPosClass ? ' ' + barPosClass : ''}${mpModeClass ? ' ' + mpModeClass : ''}${grpVisible && grpSide === 'left' ? ' grp-side-left' : ''}`}
       >
+        {/* Невидимая зона-триггер у края для авто-скрытия сайдбара (sidebar-autohide):
+            всегда в DOM, активна только через CSS-класс. Не трансформируется (в отличие
+            от самого сайдбара), поэтому надёжно ловит наведение на край экрана. */}
+        <div className="sb-edge-trigger" aria-hidden="true" />
+
         <Sidebar />
 
         {/* Вертикальный бар слева (playerbar-left) либо скрытый слот-заглушка. */}

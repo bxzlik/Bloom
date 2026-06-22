@@ -22,7 +22,7 @@ export const useOverlayBridge = (): void => {
     const push = (preview: boolean): void => {
       const p = usePlayerViewStore.getState()
       void invoke('overlay_set_config', {
-        enabled: p.overlayMode === 'island',
+        enabled: p.overlayMode !== 'off',
         anchor: p.overlayPos,
         size: p.overlaySize / 100,
         preview,
@@ -35,7 +35,8 @@ export const useOverlayBridge = (): void => {
         s.overlayPos !== prev.overlayPos ||
         s.overlaySize !== prev.overlaySize ||
         s.overlayOpacity !== prev.overlayOpacity ||
-        s.overlayDuration !== prev.overlayDuration
+        s.overlayDuration !== prev.overlayDuration ||
+        s.overlayPerf !== prev.overlayPerf
       ) {
         push(true)
       }
@@ -48,7 +49,7 @@ export const useOverlayBridge = (): void => {
       if (s.title === prev.title && s.artist === prev.artist) return
       if (!s.title) return
       const p = usePlayerViewStore.getState()
-      if (p.overlayMode !== 'island' || !p.overlayOnTrackChange) return
+      if (p.overlayMode === 'off' || !p.overlayOnTrackChange) return
       void invoke('overlay_flash').catch(() => {})
     })
   }, [])

@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { useSortable } from '@shared/lib/useSortable'
 import { useT, type TFunc } from '@shared/i18n'
 import {
@@ -13,6 +13,7 @@ import {
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
 import waveApi from '@/wave'
+import { usePlayerViewStore } from '@features/settings'
 import { useQueueStore, type PlaySource } from '../model/queueStore'
 import {
   playFromCurrentQueue,
@@ -50,6 +51,12 @@ const QueueBlockImpl = ({
   const curId = useQueueStore((s) => s.curId)
   const source = useQueueStore((s) => s.source)
   const shuffle = useQueueStore((s) => s.shuffle)
+  // Переключение вида очереди (обычный↔расширенный) перестраивает весь список
+  // (для длинных очередей — сотни строк, со сменой структуры контейнеров →
+  // mount/unmount). PagePlayer всегда смонтирован, поэтому без отсрочки клик по
+  // настройке блокировался бы этой перестройкой. useDeferredValue уводит её в
+  // фоновый transition: кнопка настройки (читает стор напрямую) реагирует сразу.
+  const queueView = useDeferredValue(usePlayerViewStore((s) => s.queueView))
   const allTracks = useLibStore((s) => s.tracks)
   const clearExceptCurrent = useQueueStore((s) => s.clearExceptCurrent)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
@@ -81,12 +88,26 @@ const QueueBlockImpl = ({
     return queue.map((id) => ({ id, track: byId.get(id) ?? trackRegistry.get(id) ?? null }))
   }, [queue, allTracks])
 
-  const sortable = useSortable<{ id: string; track: Track | null }>({
-    items,
-    getId: (x) => x.id,
-    enabled: queue.length > 1,
-    onReorder: (newIds) => reorderQueue(newIds),
-  })
+  // Скролл-контейнер списка (#qpList). В расширенном виде каждая секция —
+  // отдельный useSortable-контейнер (см. QueueSortList), поэтому общий ref
+  // храним здесь, а не берём из sortable.
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Реордер внутри секции расширенного вида: секция отдаёт новый порядок СВОИХ
+  // id, мы пересобираем полную очередь = до-текущего + текущий + после. Так drag
+  // в «Прослушано»/«Далее» не трогает позицию играющего трека и другую секцию.
+  const reorderSection = (which: 'played' | 'next') => (newIds: string[]) => {
+    const q = useQueueStore.getState()
+    const cIdx = q.curId ? q.queue.indexOf(q.curId) : -1
+    if (cIdx < 0) {
+      reorderQueue(newIds)
+      return
+    }
+    const cur = q.queue[cIdx]!
+    const before = q.queue.slice(0, cIdx)
+    const after = q.queue.slice(cIdx + 1)
+    reorderQueue(which === 'played' ? [...newIds, cur, ...after] : [...before, cur, ...newIds])
+  }
 
   // Слежка за играющим треком: при СМЕНЕ curId (не на каждый рендер — иначе
   // дёргалось бы на play/pause/fav) скроллим строку к ВЕРХУ списка ('start',
@@ -98,15 +119,19 @@ const QueueBlockImpl = ({
     if (curId && curId !== prevCurRef.current) {
       // rAF — даём React домонтировать новую строку перед замером.
       requestAnimationFrame(() => {
-        const cont = sortable.containerRef.current
+        const cont = scrollRef.current
         if (!cont) return
         const row = Array.from(cont.querySelectorAll<HTMLElement>('[data-id]')).find(
           (el) => el.dataset.id === curId,
         )
         if (!row) return
+        // В расширенном виде над строкой стоит заголовок «Сейчас играет»
+        // (помечен data-q-now) — скроллим к нему, иначе заголовок уезжает за верх.
+        const nowLabel = cont.querySelector<HTMLElement>('[data-q-now]')
+        const target = nowLabel ?? row
         const cRect = cont.getBoundingClientRect()
-        const rRect = row.getBoundingClientRect()
-        const top = cont.scrollTop + (rRect.top - cRect.top)
+        const tRect = target.getBoundingClientRect()
+        const top = cont.scrollTop + (tRect.top - cRect.top)
         cont.scrollTo({ top, behavior: 'smooth' })
       })
     }
@@ -119,6 +144,32 @@ const QueueBlockImpl = ({
     ? items.find((x) => x.id === addPopupTrackId)?.track ?? trackRegistry.get(addPopupTrackId) ?? null
     : null
   const addPopupInLib = addPopupTrack ? allTracks.some((t) => t.id === addPopupTrack.id) : false
+
+  // Общие обработчики строки очереди — прокидываем в QueueSortList (drag-секции)
+  // и в статичную строку играющего трека.
+  const openCtx = (e: ReactMouseEvent<HTMLDivElement>, track: Track | null) => {
+    if (!track) return
+    e.preventDefault()
+    e.stopPropagation()
+    setCtx({ pos: { x: e.clientX, y: e.clientY }, track })
+  }
+  const rowHandlers: RowHandlers = {
+    curId,
+    onPlay: (id) => playFromCurrentQueue(id),
+    onOpenCtx: openCtx,
+    onAddClick: openAddPopup,
+    onRemove: (id) => removeFromQueue(id),
+  }
+
+  // Расширенный вид: бьём очередь на «прослушано» (до текущего трека), «сейчас
+  // играет» (текущий) и «далее» (после). Каждая секция — отдельный
+  // useSortable-контейнер, поэтому drag физически не выходит за её пределы, а
+  // заголовки (статичные div'ы) не участвуют в реордере.
+  const extended = queueView === 'extended' && items.length > 0
+  const curIdx = extended ? items.findIndex((x) => x.id === curId) : -1
+  const played = extended && curIdx > 0 ? items.slice(0, curIdx) : []
+  const nowItem = extended && curIdx >= 0 ? items[curIdx] : null
+  const upNext = extended ? items.slice(curIdx >= 0 ? curIdx + 1 : 0) : []
 
   return (
     <div
@@ -146,7 +197,7 @@ const QueueBlockImpl = ({
       />
 
       <div
-        ref={sortable.containerRef}
+        ref={scrollRef}
         className="qp-list"
         id="qpList"
         style={{ padding: '6px 16px 20px', overflowY: 'auto', flex: 1 }}
@@ -156,30 +207,40 @@ const QueueBlockImpl = ({
             <p style={{ fontSize: 13, color: 'var(--muted)' }}>{t('player.queueEmpty')}</p>
           </div>
         )}
-        {items.map(({ id, track }) => {
-          const { rootProps, handleProps } = sortable.itemProps(id, () =>
-            playFromCurrentQueue(id),
-          )
-          return (
-            <QueueRow
-              key={id}
-              id={id}
-              track={track}
-              isPlaying={id === curId}
-              rootProps={rootProps}
-              handleProps={handleProps}
-              onClick={() => playFromCurrentQueue(id)}
-              onContextMenu={(e) => {
-                if (!track) return
-                e.preventDefault()
-                e.stopPropagation()
-                setCtx({ pos: { x: e.clientX, y: e.clientY }, track })
-              }}
-              onAddClick={openAddPopup}
-              onRemove={() => removeFromQueue(id)}
-            />
-          )
-        })}
+        {extended ? (
+          <>
+            {played.length > 0 && (
+              <>
+                <QueueSectionLabel>{t('player.queue.section.played')}</QueueSectionLabel>
+                <QueueSortList items={played} onReorder={reorderSection('played')} handlers={rowHandlers} />
+              </>
+            )}
+            {nowItem && (
+              <>
+                <QueueSectionLabel markNow>{t('player.queue.section.now')}</QueueSectionLabel>
+                {/* Играющий трек — статичная строка (без drag), закреплён. */}
+                <QueueRow
+                  id={nowItem.id}
+                  track={nowItem.track}
+                  isPlaying
+                  rootProps={{ 'data-sortable-id': nowItem.id, style: {} }}
+                  onClick={() => playFromCurrentQueue(nowItem.id)}
+                  onContextMenu={(e) => openCtx(e, nowItem.track)}
+                  onAddClick={openAddPopup}
+                  onRemove={() => removeFromQueue(nowItem.id)}
+                />
+              </>
+            )}
+            {upNext.length > 0 && (
+              <>
+                <QueueSectionLabel>{t('player.queue.section.next')}</QueueSectionLabel>
+                <QueueSortList items={upNext} onReorder={reorderSection('next')} handlers={rowHandlers} />
+              </>
+            )}
+          </>
+        ) : (
+          <QueueSortList items={items} onReorder={(ids) => reorderQueue(ids)} handlers={rowHandlers} />
+        )}
       </div>
       <TrackCtxMenu
         pos={ctx?.pos ?? null}
@@ -544,6 +605,82 @@ const SimilarButton = ({ icon }: { icon?: boolean }) => {
   )
 }
 
+/**
+ * Заголовок секции в расширенном виде очереди («Прослушано»/«Сейчас играет»/
+ * «Далее»). Живёт вне useSortable-контейнеров секций, поэтому при drag не
+ * затрагивается. markNow помечает заголовок «Сейчас играет» (data-q-now) —
+ * к нему скроллит слежение за играющим треком.
+ */
+const QueueSectionLabel = ({ children, markNow }: { children: ReactNode; markNow?: boolean }) => (
+  <div
+    {...(markNow ? { 'data-q-now': '1' } : {})}
+    style={{
+      padding: '14px 4px 6px',
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: '.04em',
+      textTransform: 'uppercase',
+      color: 'var(--text2)',
+      userSelect: 'none',
+    }}
+  >
+    {children}
+  </div>
+)
+
+/** Общие обработчики строки очереди (drag-секции + статичная строка). */
+interface RowHandlers {
+  curId: string | null
+  onPlay: (id: string) => void
+  onOpenCtx: (e: ReactMouseEvent<HTMLDivElement>, track: Track | null) => void
+  onAddClick: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
+  onRemove: (id: string) => void
+}
+
+/**
+ * Sortable-список треков одной секции (обычный вид = вся очередь; расширенный =
+ * «Прослушано»/«Далее»). Свой useSortable-контейнер на секцию: drag не выходит
+ * за её границы (cross-section перетаскивание физически невозможно), а заголовки
+ * секций живут снаружи и не участвуют в DOM-перестановках реордера.
+ */
+const QueueSortList = ({
+  items,
+  onReorder,
+  handlers,
+}: {
+  items: { id: string; track: Track | null }[]
+  onReorder: (newIds: string[]) => void
+  handlers: RowHandlers
+}) => {
+  const sortable = useSortable<{ id: string; track: Track | null }>({
+    items,
+    getId: (x) => x.id,
+    enabled: items.length > 1,
+    onReorder,
+  })
+  return (
+    <div ref={sortable.containerRef}>
+      {items.map(({ id, track }) => {
+        const { rootProps, handleProps } = sortable.itemProps(id, () => handlers.onPlay(id))
+        return (
+          <QueueRow
+            key={id}
+            id={id}
+            track={track}
+            isPlaying={id === handlers.curId}
+            rootProps={rootProps}
+            handleProps={handleProps}
+            onClick={() => handlers.onPlay(id)}
+            onContextMenu={(e) => handlers.onOpenCtx(e, track)}
+            onAddClick={handlers.onAddClick}
+            onRemove={() => handlers.onRemove(id)}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 // ── ROW ───────────────────────────────────────────────────────────────────
 
 const QueueRow = ({
@@ -564,7 +701,8 @@ const QueueRow = ({
     'data-sortable-id': string
     style: React.CSSProperties
   }
-  handleProps: {
+  /** Drag-handle. undefined → строка не перетаскивается (закреплённый играющий трек). */
+  handleProps?: {
     onPointerDown: (e: React.PointerEvent<HTMLElement>) => void
     onClick: (e: React.MouseEvent<HTMLElement>) => void
     'data-draggable'?: string
@@ -587,7 +725,7 @@ const QueueRow = ({
       style={{ cursor: 'pointer', ...rootProps.style }}
       data-sortable-id={rootProps['data-sortable-id']}
     >
-      <div className="trcov" style={{ position: 'relative' }} {...handleProps}>
+      <div className="trcov" style={{ position: 'relative' }} {...(handleProps ?? {})}>
         {track?.cover ? (
           <img src={track.cover} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (

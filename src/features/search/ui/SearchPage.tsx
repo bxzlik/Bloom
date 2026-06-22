@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -340,8 +341,8 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
         }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 30, height: 30, border: 'none', background: 'none',
-          color: 'var(--muted)', borderRadius: 'calc(var(--radius)*.55)', cursor: 'pointer', transition: '.15s',
+          width: 34, height: 34, border: 'none', background: 'none',
+          color: 'var(--muted)', borderRadius: '50%', cursor: 'pointer', transition: '.15s',
         }}
         onMouseOver={(e) => (e.currentTarget.style.background = 'var(--hover)')}
         onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
@@ -393,20 +394,12 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
   )
 }
 
-/* ── Панель «Недавнее» (.sp-recent-*) spShowRecentSearches ─ */
-const RecentIconClock = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <circle cx="12" cy="12" r="9" /><polyline points="12 6 12 12 16 14" />
-  </svg>
-)
+/* ── Выпадающая история поиска (.sp-hist) ─ */
 const RecentDel = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 )
-/** Подзаголовок недавнего по типу. */
-const recentKindLabel = (kind: string): string =>
-  kind === 'artist' ? tt('search.kind.artist') : kind === 'album' ? tt('search.kind.album') : kind === 'track' ? tt('search.kind.track') : tt('search.kind.playlist')
 /** Плейсхолдер-иконка недавнего по типу. */
 const RecentKindIcon = ({ kind }: { kind: string }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ opacity: 0.5 }}>
@@ -431,101 +424,88 @@ const RecentKindIcon = ({ kind }: { kind: string }) => (
   </svg>
 )
 
-const RecentPanel = ({
-  items,
-  searches,
+/** Строка истории: недавний запрос ИЛИ недавно открытая сущность. */
+type RecentRow =
+  | { type: 'search'; ts: number; q: string }
+  | { type: 'item'; ts: number; item: RecentItem }
+
+/**
+ * Выпадающий список истории под строкой поиска (overlay). Объединяет недавние
+ * запросы (иконка-лупа) и недавно открытое (обложка/иконка типа) в один список,
+ * отсортированный по времени. Каждая строка — с крестиком удаления; внизу —
+ * «Очистить историю».
+ */
+const SearchHistoryDropdown = ({
+  rows,
   onOpenItem,
   onApplySearch,
   onRemoveItem,
   onRemoveSearch,
-  onClearItems,
-  onClearSearches,
 }: {
-  items: RecentItem[]
-  searches: string[]
+  rows: RecentRow[]
   onOpenItem: (it: RecentItem) => void
   onApplySearch: (q: string) => void
   onRemoveItem: (id: string) => void
   onRemoveSearch: (q: string) => void
-  onClearItems: () => void
-  onClearSearches: () => void
 }) => {
   const t = useT()
+  const ref = useRef<HTMLDivElement>(null)
+  usePopupOpenAnimation(ref, rows.length > 0)
+  // Ограничиваем высоту по нижнему краю окна, чтобы список не уходил за экран.
+  const [maxH, setMaxH] = useState<number>()
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const calc = () => setMaxH(Math.max(180, window.innerHeight - el.getBoundingClientRect().top - 16))
+    calc()
+    window.addEventListener('resize', calc)
+    return () => window.removeEventListener('resize', calc)
+  }, [rows.length])
   return (
-  <div className="sp-recent">
-    {items.length > 0 && (
-      <div style={{ marginBottom: 22 }}>
-        <div className="sp-recent-hdr">
-          <span className="sp-recent-hdr-title">{t('search.recentOpened')}</span>
-          <button className="sp-recent-clear" onClick={onClearItems}>{t('common.clear')}</button>
-        </div>
-        <div className="sp-recent-list">
-          {items.map((it) => (
-            <div key={it.id} className="sp-recent-item" onClick={() => onOpenItem(it)}>
-              <div
-                className="sp-recent-item-icon"
-                style={{ position: 'relative', overflow: 'hidden', borderRadius: it.round ? '50%' : undefined }}
-              >
-                {it.cover ? (
-                  <img src={it.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <RecentKindIcon kind={it.kind} />
-                )}
-                {/* Бейдж площадки на обложке — кроме артистов (на аватарах артистов
-                    бейджа нет, как и в карточках/hero). */}
-                {it.kind !== 'artist' && <CoverProviderBadge provider={it.providerId} size={14} />}
-              </div>
-              {/* Название + подзаголовок (тип сущности). */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                  <span className="sp-recent-item-text" style={{ minWidth: 0 }}>{it.title}</span>
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {[it.author, recentKindLabel(it.kind)].filter(Boolean).join(' · ')}
-                </div>
-              </div>
-              <button
-                className="sp-recent-item-del"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemoveItem(it.id)
-                }}
-              >
-                <RecentDel />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-    {searches.length > 0 && (
-      <div>
-        <div className="sp-recent-hdr">
-          <span className="sp-recent-hdr-title">{t('search.recentQueries')}</span>
-          <button className="sp-recent-clear" onClick={onClearSearches}>{t('common.clear')}</button>
-        </div>
-        <div className="sp-recent-list">
-          {searches.map((q) => (
-            <div key={q} className="sp-recent-item" onClick={() => onApplySearch(q)}>
-              <div className="sp-recent-item-icon">
-                <RecentIconClock />
-              </div>
-              <div className="sp-recent-item-text">{q}</div>
-              <button
-                className="sp-recent-item-del"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemoveSearch(q)
-                }}
-              >
-                <RecentDel />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
+    <div
+      ref={ref}
+      className="sp-hist"
+      style={{ transformOrigin: 'top center', maxHeight: maxH }}
+      // Клик по строке/крестику не должен снимать фокус с инпута — иначе дропдаун
+      // закроется (onBlur) раньше, чем сработает onClick.
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      {rows.map((r) =>
+        r.type === 'search' ? (
+          <div key={`s:${r.q}`} className="sp-hist-row" onClick={() => onApplySearch(r.q)}>
+            <span className="sp-hist-ico"><IconSearch /></span>
+            <span className="sp-hist-text">{r.q}</span>
+            <button
+              className="sp-hist-del"
+              aria-label={t('common.clear')}
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemoveSearch(r.q)
+              }}
+            >
+              <RecentDel />
+            </button>
+          </div>
+        ) : (
+          <div key={`i:${r.item.id}`} className="sp-hist-row" onClick={() => onOpenItem(r.item)}>
+            <span className="sp-hist-ico" style={{ borderRadius: r.item.round ? '50%' : undefined }}>
+              {r.item.cover ? <img src={r.item.cover} alt="" /> : <RecentKindIcon kind={r.item.kind} />}
+            </span>
+            <span className="sp-hist-text">{r.item.title}</span>
+            <button
+              className="sp-hist-del"
+              aria-label={t('common.clear')}
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemoveItem(r.item.id)
+              }}
+            >
+              <RecentDel />
+            </button>
+          </div>
+        ),
+      )}
+    </div>
   )
 }
 
@@ -822,9 +802,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const recentItems = useSearchStore((s) => s.recentItems)
   const pushRecentItem = useSearchStore((s) => s.pushRecentItem)
   const removeRecentItem = useSearchStore((s) => s.removeRecentItem)
-  const clearRecentItems = useSearchStore((s) => s.clearRecentItems)
   const removeRecentSearch = useSearchStore((s) => s.removeRecentSearch)
-  const clearRecentSearches = useSearchStore((s) => s.clearRecentSearches)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
   const createPl = usePlaylistStore((s) => s.createPl)
   const reorderPlTracks = usePlaylistStore((s) => s.reorderPlTracks)
@@ -912,6 +890,9 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
   const { artists, playlists, albums, tracks } = results
   const empty = !artists.length && !playlists.length && !albums.length && !tracks.length
+
+  // Фокус инпута — управляет показом выпадающей истории.
+  const [focused, setFocused] = useState(false)
 
   // Контекстное меню трека + создание плейлиста под трек.
   const [ctx, setCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(null)
@@ -1039,11 +1020,20 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
   // Что показываем в теле.
   const hasQuery = query.trim().length > 0
+  // Пустой старт (нет запроса и профиля) → строка поиска по центру; история — в
+  // выпадающем списке под строкой. Появился запрос → строка уезжает наверх.
+  const centered = !hasQuery && !profile
   const showProfile = !loading && !!profile // ссылка на профиль /username — инлайн hero
   const showResults = !loading && !profile && hasQuery && !empty
-  const showRecent = !loading && !profile && !hasQuery && (recentItems.length > 0 || recentSearches.length > 0)
-  const showHint = !loading && !profile && !hasQuery && !showRecent
   const showNotFound = !loading && !profile && hasQuery && searched && empty
+  // Объединённая история (запросы + открытое) по убыванию времени — для дропдауна.
+  const mergedRecents: RecentRow[] = [
+    ...recentSearches.map((s) => ({ type: 'search' as const, ts: s.ts, q: s.q })),
+    ...recentItems.map((it) => ({ type: 'item' as const, ts: it.ts ?? 0, item: it })),
+  ]
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 12)
+  const showHistory = focused && !hasQuery && mergedRecents.length > 0
   // Фильтрация секций по активному табу.
   const showTracks = (tab === 'all' || tab === 'tracks') && filteredTracks.length > 0
   const showArtists = (tab === 'all' || tab === 'artists') && artists.length > 0
@@ -1058,7 +1048,8 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
   return (
     <div className={cn('page', active && 'active')} id="page-search" style={{ position: 'relative' }}>
-      <div className="search-page">
+      <div className={cn('search-page', centered && 'sp-centered')}>
+        <div className="sp-spacer" aria-hidden />
         <div className="sp-header sp-header-sc">
           <div className="sp-inp-wrap">
             <IconSearch />
@@ -1067,6 +1058,8 @@ export const SearchPage = ({ active }: SearchPageProps) => {
               value={query}
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={onKeyDown}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
               placeholder={t('search.placeholder')}
               autoComplete="off"
               spellCheck={false}
@@ -1077,6 +1070,22 @@ export const SearchPage = ({ active }: SearchPageProps) => {
               </button>
             )}
             <SourceDropdown source={source} onSource={setSource} />
+            {showHistory && (
+              <SearchHistoryDropdown
+                rows={mergedRecents}
+                onOpenItem={(it) => {
+                  setFocused(false)
+                  onRecentItem(it)
+                }}
+                onApplySearch={(q) => {
+                  setFocused(false)
+                  setQuery(q)
+                  void runSearch(q)
+                }}
+                onRemoveItem={removeRecentItem}
+                onRemoveSearch={removeRecentSearch}
+              />
+            )}
           </div>
         </div>
 
@@ -1086,8 +1095,8 @@ export const SearchPage = ({ active }: SearchPageProps) => {
           <div
             id="spMetaFilters"
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 28px 8px', borderBottom: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '2px 28px 10px',
               flexShrink: 0, flexWrap: 'wrap',
             }}
           >
@@ -1131,44 +1140,6 @@ export const SearchPage = ({ active }: SearchPageProps) => {
                 onLikesAsPlaylist={likesAsPlaylist}
                 onAddTrack={onAddTrack}
               />
-            )}
-
-            {showRecent && (
-              <RecentPanel
-                items={recentItems}
-                searches={recentSearches}
-                onOpenItem={onRecentItem}
-                onApplySearch={(q) => {
-                  setQuery(q)
-                  void runSearch(q)
-                }}
-                onRemoveItem={removeRecentItem}
-                onRemoveSearch={removeRecentSearch}
-                onClearItems={clearRecentItems}
-                onClearSearches={clearRecentSearches}
-              />
-            )}
-
-            {showHint && (
-              <div className="sc-status sp-sc-empty" style={{ paddingTop: 48 }}>
-                <svg
-                  width="40"
-                  height="40"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                  style={{ opacity: 0.15, margin: '0 auto 14px', display: 'block' }}
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, opacity: 0.5 }}>
-                  {t('search.findSomething')}
-                </div>
-                <div style={{ fontSize: 12, opacity: 0.3 }}>{t('search.hint')}</div>
-              </div>
             )}
 
             {showNotFound && (

@@ -8,9 +8,34 @@
 /* position:absolute с !important — инлайн position:relative у #miniPlayer иначе перебивает. */
 .app.mp-floating #miniPlayer{position:absolute!important;left:8px;right:8px;bottom:8px;z-index:40;width:auto;box-shadow:0 8px 32px rgba(0,0,0,.45)}
 .app.mp-floating.playerbar-top #miniPlayer{bottom:auto;top:8px}
-/* ===== PLAYERBAR: COMPACT (узкий, по центру) — только bottom/top ===== */
-.app.mp-compact:not(.mp-floating) #miniPlayer{align-self:center;width:min(620px,calc(100% - 16px))}
-.app.mp-compact.mp-floating #miniPlayer{left:50%;right:auto;transform:translateX(-50%);width:min(620px,calc(100% - 16px))}
+
+/* ===== PLAYERBAR: COMPACT (узкий, по центру, ширина по содержимому) — bottom/top =====
+   Ширина бара — ОПРЕДЕЛЁННАЯ, из JS-переменной --mp-fw (= 2×max(лево,право)+центр,
+   считает PlayerBar): чем больше видимых кнопок (см. mpHide), тем бар длиннее, а
+   симметрия даёт центрирование транспорта (см. грид ниже). Фолбэк — фикс. 620px,
+   пока --mp-fw ещё не выставлена. min-width 620 — бар не уже прежнего фикс. размера. */
+.app.mp-compact:not(.mp-floating) #miniPlayer{align-self:center;width:var(--mp-fw,min(620px,calc(100% - 16px)))!important;min-width:min(620px,calc(100% - 16px));max-width:calc(100% - 16px)}
+/* Компактный + плавающий: то же по ширине, но overlay-позиционирование (центр через left/transform). */
+.app.mp-compact.mp-floating #miniPlayer{left:50%;right:auto;transform:translateX(-50%);width:var(--mp-fw,min(620px,calc(100% - 16px)))!important;min-width:min(620px,calc(100% - 16px));max-width:calc(100% - 16px)}
+/* Внутренний контейнер — грид 1fr|auto|1fr вместо инлайн flex. При ОПРЕДЕЛЁННОЙ
+   ширине бара (--mp-fw) боковые дорожки 1fr равны, поэтому центральная группа
+   (транспорт) всегда по центру бара, как бы ни различались лево/право. */
+.app.mp-compact #miniPlayer .mp-inner{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:8px}
+.app.mp-compact #miniPlayer .mp-left{flex:initial!important;min-width:0}
+.app.mp-compact #miniPlayer .mp-right{flex:initial!important}
+/* Обёртки центра: вне компактного режима «прозрачны» (display:contents) — раскладка
+   repeat|prev|play|next|shuffle как раньше. В компактном .mp-center становится
+   гридом 1fr|auto|1fr с симметричной шириной (--mp-cw), и трио центрируется
+   всегда: пустая боковая ячейка всё равно держит свою 1fr-дорожку. */
+.mp-side-ctl,.mp-transport{display:contents}
+.app.mp-compact #miniPlayer .mp-center{flex:initial!important;display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:4px;width:var(--mp-cw,auto)}
+.app.mp-compact #miniPlayer .mp-side-ctl{display:flex;align-items:center}
+.app.mp-compact #miniPlayer .mp-side-l{justify-content:flex-end}
+.app.mp-compact #miniPlayer .mp-side-r{justify-content:flex-start}
+.app.mp-compact #miniPlayer .mp-transport{display:flex;align-items:center;gap:4px}
+/* Заголовок/исполнитель — потолок ширины, иначе длинное название растянуло бы
+   бар и «длина от числа кнопок» потерялась бы (текст всё ещё с marquee/ellipsis). */
+.app.mp-compact #miniPlayer .mp-left .mp-title-wrap,.app.mp-compact #miniPlayer #mpArtist{max-width:200px!important}
 /* ===== PLAYERBAR POSITION: LEFT / RIGHT ===== */
 /* Column: normal flex child, 72px wide, stretches full app height. JS sets display. */
 #miniPlayerCol,#miniPlayerColRight{width:72px;flex-shrink:0;align-self:stretch;position:relative;overflow:hidden}
@@ -85,11 +110,16 @@
 #playerContent.style-large>.sl-bottom .sl-text-wrap>div:first-child{justify-content:flex-start!important}
 #playerContent.style-large>.sl-bottom .sl-bottom-info .ps-artist{font-size:11px;text-align:left;display:block;width:fit-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);margin:0}
 #playerContent.style-large>.sl-bottom .sl-bottom-info .cov-fav,#playerContent.style-large>.sl-bottom .sl-bottom-info .cov-add{position:static;width:28px;height:28px;border-radius:50%;flex-shrink:0;background:none;backdrop-filter:none}
+/* Иконки fav/add в нижнем баре large 28px — масштаб 14px (как #mpFav/#mainCovFav),
+   а не 18/17 из контекста крупных overlay-кнопок на обложке. */
+#playerContent.style-large>.sl-bottom .sl-bottom-info .cov-fav svg{width:14px;height:14px}
+#playerContent.style-large>.sl-bottom .sl-bottom-info .cov-add svg{width:14px;height:14px}
 #playerContent.style-large>.sl-bottom .ps-right{grid-column:2;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:4px!important;width:auto!important;flex:none!important}
 #playerContent.style-large>.sl-bottom .ps-right>div:first-child{display:none}
 #playerContent.style-large>.sl-bottom .ps-right>div:nth-child(2){display:flex!important;flex-direction:row!important;align-items:center;justify-content:center;gap:4px;flex:none!important;min-width:0;max-width:none!important;width:auto!important;margin:0!important}
 #playerContent.style-large>.sl-bottom .ps-ctrl{width:auto!important;flex:none}
 #playerContent.style-large>.sl-bottom .sl-vol-wrap{grid-column:3;display:flex;align-items:center;gap:4px;justify-self:end;min-width:120px}
+#playerContent.style-large>.sl-bottom .sl-vol-wrap.sl-vol-compact{min-width:auto}
 #playerContent.style-large>.sl-bottom .sl-vol-wrap .vol-sl{max-width:90px;flex:1}
 #playerContent.style-large>.sl-bottom #vizWrap{display:none!important}
 #playerContent.style-large #playerQueueBlock{grid-column:2;grid-row:1;min-width:0;min-height:0;overflow:hidden!important;width:auto!important}
@@ -99,6 +129,51 @@
 #playerContent.style-large #playerQueueBlock>.qp-list,#playerContent.style-large #lyricsQueueBlock>.lq-content{flex:1;min-height:0;overflow-y:auto}
 #playerContent.style-large.queue-left{flex-direction:unset!important}
 #playerContent.style-large.queue-left #playerMainBlock,#playerContent.style-large.queue-right #playerMainBlock,#playerContent.style-large.queue-hidden #playerMainBlock{display:none!important}
+/* Cinema player style — как large, но контролы оверлеем на обложке (без нижнего бара) */
+#playerContent.style-cinema{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr);gap:8px;padding:8px;overflow:hidden;height:100%}
+#playerContent.style-cinema>.sl-cover-wrap{grid-column:1;grid-row:1;min-width:0;min-height:0;overflow:hidden;border-radius:var(--radius);position:relative}
+#playerContent.style-cinema.queue-left>.sl-cover-wrap{grid-column:2;grid-row:1}
+#playerContent.style-cinema.queue-left #playerQueueBlock,#playerContent.style-cinema.queue-left #lyricsQueueBlock{grid-column:1!important;grid-row:1}
+#playerContent.style-cinema>.sl-cover-wrap .ps-cover{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto;min-width:0;border-radius:var(--radius)}
+#playerContent.style-cinema>.sl-cover-wrap .ps-cover img{object-fit:cover}
+/* Прячем встроенный hover-хинт обложки (⤢): в cinema свой значок ⛶ по центру */
+#playerContent.style-cinema>.sl-cover-wrap .ps-cover::after{content:none!important}
+/* Тайтл + артист по центру обложки (как в примере) — прячется при наведении */
+#playerContent.style-cinema .cn-center-title{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 24px;text-align:center;pointer-events:none;transition:opacity .18s ease}
+#playerContent.style-cinema .cn-center-title .sl-title-wrap,#playerContent.style-cinema .cn-center-title .ps-title-wrap{overflow:hidden;min-width:0;max-width:100%}
+#playerContent.style-cinema .cn-center-title>div:first-child{justify-content:center!important;max-width:100%}
+#playerContent.style-cinema .cn-center-title .ps-title{font-size:28px;font-weight:800;text-align:center;white-space:nowrap;display:block;color:#fff}
+#playerContent.style-cinema .cn-center-title .ps-artist{font-size:17px;text-align:center;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.78);margin:0}
+#playerContent.style-cinema>.sl-cover-wrap:hover .cn-center-title{opacity:0}
+/* ♥ · на весь экран · + — на месте тайтла, появляются по наведению (разнесены) */
+#playerContent.style-cinema .cn-hover-actions{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);z-index:4;display:flex;align-items:center;justify-content:space-between;padding:0 13%;opacity:0;pointer-events:none;transition:opacity .18s ease}
+#playerContent.style-cinema>.sl-cover-wrap:hover .cn-hover-actions{opacity:1;pointer-events:auto}
+#playerContent.style-cinema .cn-hover-actions .cov-fav,#playerContent.style-cinema .cn-hover-actions .cov-add,#playerContent.style-cinema .cn-hover-actions .cn-bigpic{position:static;width:auto;height:auto;border:none;background:none!important;backdrop-filter:none;border-radius:0;color:#fff;opacity:.92;cursor:pointer;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 8px rgba(0,0,0,.55));transition:opacity .15s,transform .12s}
+#playerContent.style-cinema .cn-hover-actions .cov-fav:hover,#playerContent.style-cinema .cn-hover-actions .cov-add:hover,#playerContent.style-cinema .cn-hover-actions .cn-bigpic:hover{opacity:1;transform:scale(1.12)}
+#playerContent.style-cinema .cn-hover-actions .cov-fav svg,#playerContent.style-cinema .cn-hover-actions .cov-add svg,#playerContent.style-cinema .cn-hover-actions .cn-bigpic svg{width:26px;height:26px}
+/* Затемнение низа обложки под контролы (сильнее, чем в large — текста больше) */
+#playerContent.style-cinema>.sl-cover-wrap::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4),rgba(0,0,0,.34) 40%,rgba(0,0,0,.86));border-radius:var(--radius);pointer-events:none;z-index:1}
+/* Оверлей: прогресс + контролы внизу обложки (фон даёт ::after-градиент) */
+#playerContent.style-cinema .cn-overlay{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:12px;padding:18px 22px 18px}
+/* Прогресс */
+#playerContent.style-cinema .cn-progress .ps-bar-wrap{height:4px!important;background:rgba(255,255,255,.22)!important;border-radius:2px!important}
+#playerContent.style-cinema .cn-progress .ps-bar-fill{border-radius:3px!important;background:var(--accent)!important}
+#playerContent.style-cinema .cn-progress .ps-bar-wrap:hover .ps-bar-fill{filter:brightness(1.15)}
+#playerContent.style-cinema .cn-progress .ps-bar-inp{inset:-9px 0!important}
+#playerContent.style-cinema .cn-progress .ps-times{font-size:12px;color:rgba(255,255,255,.7);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.6px}
+/* Транспорт — отдельной строкой в боксе с фоном (download | плеер | дизлайк) */
+#playerContent.style-cinema .cn-overlay>.ps-ctrl{width:100%;background:rgba(0,0,0,.32);backdrop-filter:blur(8px)}
+/* Громкость — полным слайдером в своей строке + source/eq/скорость (боксы с рамкой) */
+#playerContent.style-cinema .cn-vol-row{display:flex;align-items:center;gap:8px;width:100%}
+#playerContent.style-cinema .cn-vol-row .ps-ctrl{background:rgba(0,0,0,.28);backdrop-filter:blur(8px)}
+#playerContent.style-cinema .cn-vol-row .vol-pct{color:rgba(255,255,255,.85)}
+#playerContent.style-cinema #vizWrap{display:none!important}
+/* Очередь */
+#playerContent.style-cinema #playerQueueBlock,#playerContent.style-cinema #lyricsQueueBlock{grid-column:2;grid-row:1;min-width:0;min-height:0;overflow:hidden!important;width:auto!important}
+#playerContent.style-cinema.queue-hidden>.sl-cover-wrap{grid-column:1/-1!important}
+#playerContent.style-cinema #playerQueueBlock>.qp-list,#playerContent.style-cinema #lyricsQueueBlock>.lq-content{flex:1;min-height:0;overflow-y:auto}
+#playerContent.style-cinema.queue-left{flex-direction:unset!important}
+#playerContent.style-cinema.queue-left #playerMainBlock,#playerContent.style-cinema.queue-right #playerMainBlock,#playerContent.style-cinema.queue-hidden #playerMainBlock{display:none!important}
 .ps-right{flex:1;display:flex;flex-direction:column;justify-content:center;min-width:0;gap:10px}
 .marquee-wrap{overflow:hidden;white-space:nowrap;min-width:0;position:relative;display:flex;align-items:center}
 .marquee-wrap .marquee-inner{display:inline-block;white-space:nowrap;flex-shrink:0;animation:none}

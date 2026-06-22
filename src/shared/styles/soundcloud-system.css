@@ -152,6 +152,16 @@
 /* ===== WINDOW TITLEBAR ===== */
 #winTitlebar{height:32px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;flex-shrink:0;user-select:none;-webkit-user-select:none;position:relative;z-index:1001}
 body.fullscreen #winTitlebar{display:none}
+/* ===== TITLEBAR AUTO-HIDE (в потоке: прячется вверх, выезжает на своё место) =====
+   Панель окна остаётся в потоке #root: отрицательный margin-top убирает её за верхний
+   край, и .app занимает освободившиеся 32px. При наведении на верхнюю кромку (через
+   невидимый .tb-edge-trigger, который не двигается) выезжает на штатное место и
+   сдвигает контент вниз; держится открытой, пока курсор на панели. */
+.tb-edge-trigger{display:none}
+body.titlebar-autohide .tb-edge-trigger{display:block;position:fixed;top:0;left:0;right:0;height:8px;z-index:1000}
+body.titlebar-autohide #winTitlebar{margin-top:-32px;transition:margin-top .22s ease}
+body.titlebar-autohide .tb-edge-trigger:hover ~ #winTitlebar,
+body.titlebar-autohide #winTitlebar:hover{margin-top:0}
 .win-icon{width:16px;height:16px;flex-shrink:0;pointer-events:none;background-color:currentColor;-webkit-mask-image:url('/logo.png');mask-image:url('/logo.png');-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;color:var(--text2)}
 .win-title{font-size:12px;font-weight:600;color:var(--text2);flex:0 0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .win-ver{font-size:10.5px;font-weight:600;color:var(--text2);opacity:.55;letter-spacing:.3px;flex-shrink:0;pointer-events:none;margin-left:-2px}

@@ -23,14 +23,22 @@
 /* ── Search Page ── */
 .search-page{display:flex;flex-direction:column;height:100%;overflow:hidden}
 .sp-header{padding:24px 28px 16px;flex-shrink:0}
-.sp-filter-tabs{display:flex;gap:6px;padding:0 28px 12px;flex-shrink:0;flex-wrap:wrap}
-.sp-filter-btn{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:20px;color:var(--muted);font-size:12px;font-weight:600;padding:5px 14px;cursor:pointer;transition:.15s;font-family:var(--font);white-space:nowrap}
-.sp-filter-btn:hover{background:rgba(255,255,255,.12);color:var(--fg)}
-.sp-filter-btn.active{background:var(--accent,#fff);color:var(--accent-text,#000);border-color:transparent}
+.sp-filter-tabs{display:flex;justify-content:center;gap:8px;padding:0 28px 12px;flex-shrink:0;flex-wrap:wrap}
+/* Спейсер: 0 в обычном режиме; в центрированном растёт и плавно опускает строку
+   поиска к середине экрана (анимация «уезжает наверх», когда появляется запрос). */
+.sp-spacer{height:0;flex-shrink:0;transition:height .38s cubic-bezier(.4,0,.2,1)}
+.search-page.sp-centered .sp-spacer{height:calc(34vh - 40px)}
+.search-page.sp-centered #spScScroll{display:none}
+.search-page.sp-centered .sp-header{display:flex;justify-content:center;padding-top:0;padding-bottom:0}
+.search-page.sp-centered .sp-inp-wrap{width:100%;max-width:540px}
+.search-page.sp-centered .sp-filter-tabs{justify-content:center;padding-top:14px;padding-bottom:0}
+.sp-filter-btn{display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid transparent;border-radius:11px;color:var(--muted);font-size:12.5px;font-weight:600;padding:7px 15px;cursor:pointer;transition:.15s;font-family:var(--font);white-space:nowrap}
+.sp-filter-btn:hover{color:var(--fg)}
+.sp-filter-btn.active{background:#fff;border-color:#fff;color:#111}
 .sp-dd{position:relative;display:inline-flex}
-.sp-dd-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 9px;border-radius:20px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap;line-height:1}
-.sp-dd-btn:hover{background:rgba(255,255,255,.09);color:var(--fg)}
-.sp-dd-btn.active{background:var(--accent,#fff);color:var(--accent-text,#000);border-color:var(--accent,#fff)}
+.sp-dd-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:9px;border:1px solid transparent;background:none;color:var(--muted);font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap;line-height:1}
+.sp-dd-btn:hover{color:var(--fg)}
+.sp-dd-btn.active{background:#fff;color:#111;border-color:#fff}
 .sp-dd-btn.active .sp-dd-chev{opacity:.7}
 .sp-dd-chev{transition:transform .18s;flex-shrink:0}
 .sp-dd.open .sp-dd-chev{transform:rotate(180deg)}
@@ -46,11 +54,22 @@
 .sp-filter-list .sc-load-more-card{width:100%;flex-direction:row;height:44px;padding:0 16px}
 /* Artists/Playlists/Albums wrap mode */
 .sp-filter-wrap .sp-artist-grid,.sp-filter-wrap .sp-pl-grid{flex-wrap:wrap;overflow-x:unset;padding-bottom:0}
-.sp-inp-wrap{display:flex;align-items:center;gap:10px;background:var(--input,var(--card));border:1px solid var(--border);border-radius:var(--radius);padding:0 16px;height:46px;transition:.15s}
+.sp-inp-wrap{position:relative;display:flex;align-items:center;gap:11px;background:var(--input,var(--card));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:999px;padding:0 7px 0 18px;height:48px;transition:.15s}
 .sp-inp-wrap:focus-within{border-color:rgba(var(--accent-rgb),.5);background:var(--card)}
 .sp-inp-wrap input{flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:15px;font-family:var(--font)}
 #spClear{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;display:flex;align-items:center;flex-shrink:0;transition:.15s}
 #spClear:hover{color:var(--fg)}
+/* Выпадающая история поиска под строкой (overlay). Высоту докручивает JS под
+   нижний край окна; max-height тут — фолбэк до первого замера. Скроллбар скрыт. */
+.sp-hist{position:absolute;top:calc(100% + 10px);left:0;right:0;z-index:80;display:flex;flex-direction:column;gap:1px;padding:10px;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:24px;box-shadow:0 16px 44px rgba(0,0,0,.5);max-height:60vh;overflow-y:auto;scrollbar-width:none}
+.sp-hist::-webkit-scrollbar{display:none}
+.sp-hist-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:14px;cursor:pointer;transition:background .12s}
+.sp-hist-row:hover{background:var(--hover)}
+.sp-hist-ico{width:30px;height:30px;border-radius:calc(var(--radius)*.55);background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);overflow:hidden}
+.sp-hist-ico img{width:100%;height:100%;object-fit:cover}
+.sp-hist-text{flex:1;min-width:0;font-size:13px;font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-hist-del{width:26px;height:26px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s}
+.sp-hist-del:hover{background:var(--hover);color:var(--fg)}
 .sp-body{flex:1;overflow-y:auto;padding:14px 28px 28px;min-height:0;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 .sp-body::-webkit-scrollbar{width:2px}
 .sp-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
