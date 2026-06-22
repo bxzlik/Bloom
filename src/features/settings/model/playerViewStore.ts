@@ -76,6 +76,8 @@ export interface PlayerViewPrefs {
   hideQueue: boolean
   /** Текст песни вместо списка очереди. */
   lyricsInQueue: boolean
+  /** Скрыть шапку-пилюлю «Текст песни» над текстом. */
+  hideLyricsHeader: boolean
   /** Показать след. трек под контролами (только при hideQueue, toggleShowNextTrack). */
   showNextTrack: boolean
   /** Визуализатор (анимация волн под музыку, toggleViz). */
@@ -128,6 +130,7 @@ const DEFAULTS: PlayerViewPrefs = {
   queueView: 'normal',
   hideQueue: false,
   lyricsInQueue: false,
+  hideLyricsHeader: false,
   showNextTrack: false,
   vizEnabled: false,
   vizType: 'bars',
@@ -208,6 +211,7 @@ const load = (): PlayerViewPrefs => {
       queueView: p.queueView === 'extended' ? 'extended' : 'normal',
       hideQueue: !!p.hideQueue,
       lyricsInQueue: !!p.lyricsInQueue,
+      hideLyricsHeader: !!p.hideLyricsHeader,
       showNextTrack: !!p.showNextTrack,
       vizEnabled: !!p.vizEnabled,
       vizType: p.vizType === 'wave' ? 'wave' : 'bars',
@@ -263,6 +267,7 @@ const persist = (s: PlayerViewPrefs): void => {
         queueView: s.queueView,
         hideQueue: s.hideQueue,
         lyricsInQueue: s.lyricsInQueue,
+        hideLyricsHeader: s.hideLyricsHeader,
         showNextTrack: s.showNextTrack,
         vizEnabled: s.vizEnabled,
         vizType: s.vizType,

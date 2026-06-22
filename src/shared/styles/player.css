@@ -136,7 +136,7 @@
 #playerContent.style-cinema.queue-left #playerQueueBlock,#playerContent.style-cinema.queue-left #lyricsQueueBlock{grid-column:1!important;grid-row:1}
 #playerContent.style-cinema>.sl-cover-wrap .ps-cover{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto;min-width:0;border-radius:var(--radius)}
 #playerContent.style-cinema>.sl-cover-wrap .ps-cover img{object-fit:cover}
-/* Прячем встроенный hover-хинт обложки (⤢): в cinema свой значок ⛶ по центру */
+/* Прячем встроенный hover-хинт обложки (⤢): в cinema свой значок ⤢ по центру */
 #playerContent.style-cinema>.sl-cover-wrap .ps-cover::after{content:none!important}
 /* Тайтл + артист по центру обложки (как в примере) — прячется при наведении */
 #playerContent.style-cinema .cn-center-title{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 24px;text-align:center;pointer-events:none;transition:opacity .18s ease}
@@ -148,6 +148,11 @@
 /* ♥ · на весь экран · + — на месте тайтла, появляются по наведению (разнесены) */
 #playerContent.style-cinema .cn-hover-actions{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);z-index:4;display:flex;align-items:center;justify-content:space-between;padding:0 13%;opacity:0;pointer-events:none;transition:opacity .18s ease}
 #playerContent.style-cinema>.sl-cover-wrap:hover .cn-hover-actions{opacity:1;pointer-events:auto}
+/* Зона наведения = только сама обложка (красная зона на скрине). При наведении на
+   нижний оверлей (прогресс/транспорт/громкость) НЕ показываем ♥/⤢/+ и не прячем
+   центральный тайтл — иначе значки всплывали бы и над контролами. */
+#playerContent.style-cinema>.sl-cover-wrap:has(.cn-overlay:hover) .cn-hover-actions{opacity:0;pointer-events:none}
+#playerContent.style-cinema>.sl-cover-wrap:has(.cn-overlay:hover) .cn-center-title{opacity:1}
 #playerContent.style-cinema .cn-hover-actions .cov-fav,#playerContent.style-cinema .cn-hover-actions .cov-add,#playerContent.style-cinema .cn-hover-actions .cn-bigpic{position:static;width:auto;height:auto;border:none;background:none!important;backdrop-filter:none;border-radius:0;color:#fff;opacity:.92;cursor:pointer;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 8px rgba(0,0,0,.55));transition:opacity .15s,transform .12s}
 #playerContent.style-cinema .cn-hover-actions .cov-fav:hover,#playerContent.style-cinema .cn-hover-actions .cov-add:hover,#playerContent.style-cinema .cn-hover-actions .cn-bigpic:hover{opacity:1;transform:scale(1.12)}
 #playerContent.style-cinema .cn-hover-actions .cov-fav svg,#playerContent.style-cinema .cn-hover-actions .cov-add svg,#playerContent.style-cinema .cn-hover-actions .cn-bigpic svg{width:26px;height:26px}

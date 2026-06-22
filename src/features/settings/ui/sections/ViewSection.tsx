@@ -1,5 +1,6 @@
 import { usePlayerViewStore, matchMpPreset } from '../../model/playerViewStore'
 import { useLyricsStore } from '@features/lyrics'
+import { useGrpStore } from '@features/player/model/grpStore'
 import { useT } from '@shared/i18n'
 
 /**
@@ -16,6 +17,8 @@ export const ViewSection = () => {
   const p = usePlayerViewStore()
   const karaoke = useLyricsStore((s) => s.karaoke)
   const toggleKaraoke = useLyricsStore((s) => s.toggleKaraoke)
+  const grpSide = useGrpStore((s) => s.side)
+  const setGrpSide = useGrpStore((s) => s.setSide)
   const activePreset = matchMpPreset(p)
   const setProgress = (key: 'line' | 'bg' | 'circle') =>
     p.set('mpProgress', { ...p.mpProgress, [key]: !p.mpProgress[key] })
@@ -146,6 +149,20 @@ export const ViewSection = () => {
 
       <div className="s-cat-label">{t('settings.view.cat.queueLyrics')}</div>
       <div className="sc">
+        <div className="sc-title">{t('settings.view.grpSide')}</div>
+        <div className="sc-desc">{t('settings.view.grpSide.desc')}</div>
+        <div className="s-opt-row">
+          <OptBtn active={grpSide === 'left'} onClick={() => setGrpSide('left')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="7" height="18" rx="1" /><rect x="13" y="3" width="8" height="18" rx="1" /></svg>
+            {t('settings.view.grpSide.left')}
+          </OptBtn>
+          <OptBtn active={grpSide === 'right'} onClick={() => setGrpSide('right')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="14" y="3" width="7" height="18" rx="1" /><rect x="3" y="3" width="8" height="18" rx="1" /></svg>
+            {t('settings.view.grpSide.right')}
+          </OptBtn>
+        </div>
+      </div>
+      <div className="sc">
         <div className="sc-title">{t('settings.view.queuePos')}</div>
         <div className="sc-desc">{t('settings.view.queuePos.desc')}</div>
         <div className="s-opt-row">
@@ -200,6 +217,13 @@ export const ViewSection = () => {
             <div className="ssub">{t('settings.view.karaoke.sub')}</div>
           </div>
           <Toggle checked={karaoke} onChange={() => toggleKaraoke()} />
+        </div>
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.view.hideLyricsHeader')}</div>
+            <div className="ssub">{t('settings.view.hideLyricsHeader.sub')}</div>
+          </div>
+          <Toggle checked={p.hideLyricsHeader} onChange={(v) => p.set('hideLyricsHeader', v)} />
         </div>
         <div className="sr">
           <div>

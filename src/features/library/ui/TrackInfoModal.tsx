@@ -30,9 +30,16 @@ export const TrackInfoModal = ({
   const blockColor = useThemeStore((s) => s.blockColor)
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
+  const [shownTrack, setShownTrack] = useState<Track | null>(null)
   const [descPopup, setDescPopup] = useState<{ html: string; left: number; top: number } | null>(null)
 
   const open = track !== null
+
+  // Кешируем последний непустой track, чтобы во время exit-анимации (track уже
+  // null, но модалка ещё в DOM) контент не схлопывался в «—» / плейсхолдер.
+  useEffect(() => {
+    if (track) setShownTrack(track)
+  }, [track])
 
   // Enter-анимация `.open` без «дёрганья» появления (см. runEnterAnimation).
   useEffect(() => {
@@ -68,7 +75,7 @@ export const TrackInfoModal = ({
   if (!mounted) return null
 
   // Берём последний непустой track (чтобы во время exit-анимации не мигало «—»).
-  const t = track
+  const t = track ?? shownTrack
   const hasYear = !!t?.year
   const hasDur = !!(t?.dur && t.dur !== '—')
   const genres = t?.genres?.length ? t.genres : []

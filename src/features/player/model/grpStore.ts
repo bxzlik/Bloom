@@ -25,7 +25,8 @@ export interface GrpState {
   /** Открыть в режиме; повторный клик по активному режиму — закрыть (toggle). */
   openPanel: (mode: GrpMode) => void
   close: () => void
-  toggleSide: () => void
+  /** Задать сторону панели (лево/право) — из настроек. */
+  setSide: (side: GrpSide) => void
 }
 
 export const useGrpStore = create<GrpState>((set, get) => ({
@@ -42,14 +43,12 @@ export const useGrpStore = create<GrpState>((set, get) => ({
     set({ open: true, mode })
   },
   close: () => set({ open: false }),
-  toggleSide: () =>
-    set((s) => {
-      const next: GrpSide = s.side === 'right' ? 'left' : 'right'
-      try {
-        localStorage.setItem(SIDE_KEY, next)
-      } catch {
-        /* ignore */
-      }
-      return { side: next }
-    }),
+  setSide: (side) => {
+    try {
+      localStorage.setItem(SIDE_KEY, side)
+    } catch {
+      /* ignore */
+    }
+    set({ side })
+  },
 }))

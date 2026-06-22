@@ -1,6 +1,6 @@
 {
-  "1.2.0": {
-    "title": { "ru": "Что нового в 1.2.0", "en": "What's new in 1.2.0" },
+  "1.2.1": {
+    "title": { "ru": "Что нового в 1.2.1", "en": "What's new in 1.2.1" },
     "pages": [
       {
         "title": { "ru": "Новые настройки оверлея", "en": "New overlay settings" },

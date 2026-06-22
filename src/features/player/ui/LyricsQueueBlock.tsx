@@ -1,5 +1,6 @@
 import { LyricsView, useLyricsStore } from '@features/lyrics'
 import { useT } from '@shared/i18n'
+import { usePlayerViewStore } from '@features/settings'
 
 /**
  * Блок «Текст вместо очереди» (#lyricsQueueBlock) — занимает место
@@ -12,6 +13,7 @@ import { useT } from '@shared/i18n'
 export const LyricsQueueBlock = ({ active }: { active: boolean }) => {
   const t = useT()
   const source = useLyricsStore((s) => s.source)
+  const hideHeader = usePlayerViewStore((s) => s.hideLyricsHeader)
   return (
     <div
       id="lyricsQueueBlock"
@@ -27,35 +29,37 @@ export const LyricsQueueBlock = ({ active }: { active: boolean }) => {
         backdropFilter: 'blur(12px)',
       }}
     >
-      <div
-        style={{
-          padding: '10px 16px 6px',
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      {!hideHeader && (
         <div
           style={{
-            display: 'inline-flex',
+            padding: '10px 16px 6px',
+            flexShrink: 0,
+            display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            padding: '5px 12px',
-            borderRadius: 'calc(var(--radius) * 0.8)',
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,var(--wb2))',
+            justifyContent: 'space-between',
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
-            <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="11" y2="18" />
-          </svg>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{t('player.lyrics')}</span>
-          <span id="lqSourceBadge" style={{ fontSize: 10, color: 'var(--text2)' }}>
-            {source}
-          </span>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '5px 12px',
+              borderRadius: 'calc(var(--radius) * 0.8)',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,var(--wb2))',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="11" y2="18" />
+            </svg>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{t('player.lyrics')}</span>
+            <span id="lqSourceBadge" style={{ fontSize: 10, color: 'var(--text2)' }}>
+              {source}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
       <LyricsView
         className="lq-content"
         id="lqContent"
