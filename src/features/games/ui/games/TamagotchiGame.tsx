@@ -2,7 +2,9 @@ import { useEffect, useReducer, useRef, useState } from 'react'
 import { usePlayerStore } from '@features/player'
 import { toast } from '@shared/ui'
 import { useT } from '@shared/i18n'
-import { useGamesStore } from '../../model/gamesStore'
+import { GameTopBar } from '../GameTopBar'
+import { PetMark } from '../PetMark'
+import type { GameProps } from '../gameRegistry'
 import {
   TAMA_MOODS,
   TAMA_ACHIEVEMENTS,
@@ -14,7 +16,9 @@ import {
   tamaMood,
   tamaAgeHours,
   checkTamaAchievements,
+  type TamaMoodKey,
 } from '../../model/tamaState'
+import './tamagotchi.css'
 
 /**
  * Игра «Тамагочи». Виртуальный питомец: сытость/счастье деградируют со временем,
@@ -28,7 +32,6 @@ import {
 
 const SVG_FOOD = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:3px"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>'
 const SVG_SMILE = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>'
-const SVG_COIN = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
 
 // Иконки действий (path-содержимое для общего <svg>).
 const SVG_ACT_FEED = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:4px"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>'
@@ -53,14 +56,85 @@ interface Speech {
   opacity: number
 }
 
-export const TamagotchiGame = () => {
+/** Визуал мордочки по настроению: распускается (bloom) / спит / форма рта. */
+const PET_FACE: Record<TamaMoodKey, { bloom: boolean; sleepy: boolean; mouth: string }> = {
+  dancing: { bloom: true, sleepy: false, mouth: 'M40 64 Q50 77 60 64' },
+  happy: { bloom: true, sleepy: false, mouth: 'M42 65 Q50 73 58 65' },
+  hungry: { bloom: false, sleepy: false, mouth: 'M44 67 Q50 61 56 67' },
+  sad: { bloom: false, sleepy: false, mouth: 'M42 71 Q50 63 58 71' },
+  sleepy: { bloom: false, sleepy: true, mouth: 'M45 67 H55' },
+}
+
+/**
+ * Персонаж «Bloom-питомец» — росток-бутон на SVG. Распускается (открытые
+ * лепестки + румянец) когда питомцу хорошо/играет музыка, и сворачивается в
+ * закрытый бутон, когда грустно/голодно/спит. Класс `mood-<key>` подключает
+ * анимацию из animations.css.
+ */
+const BloomPet = ({ mood }: { mood: TamaMoodKey }) => {
+  const f = PET_FACE[mood]
+  return (
+    <svg className={'tama-pet mood-' + mood} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="tamaBody" cx="40%" cy="32%" r="72%">
+          <stop offset="0%" stopColor="#AED98C" />
+          <stop offset="100%" stopColor="#7FB45F" />
+        </radialGradient>
+      </defs>
+      {/* листики-ушки */}
+      <path d="M50 37 C46 27 38 23 30 25 C32 34 40 39 50 37 Z" fill="#7FB45F" />
+      <path d="M50 37 C54 27 62 23 70 25 C68 34 60 39 50 37 Z" fill="#8FC06F" />
+      {/* бутон / распустившийся цветок */}
+      {f.bloom ? (
+        <g>
+          {[0, 72, 144, 216, 288].map((a) => (
+            <ellipse key={a} cx="50" cy="14" rx="6.5" ry="10" fill="#F4A9A0" transform={`rotate(${a} 50 26)`} />
+          ))}
+          <circle cx="50" cy="26" r="5" fill="#F6C34A" />
+        </g>
+      ) : (
+        <path d="M50 13 C43 20 43 31 50 35 C57 31 57 20 50 13 Z" fill="#7FB45F" />
+      )}
+      {/* тело */}
+      <ellipse cx="50" cy="64" rx="27" ry="25" fill="url(#tamaBody)" />
+      {/* щёчки */}
+      {f.bloom && (
+        <>
+          <circle cx="33" cy="67" r="5" fill="#F4A9A0" opacity="0.7" />
+          <circle cx="67" cy="67" r="5" fill="#F4A9A0" opacity="0.7" />
+        </>
+      )}
+      {/* глаза */}
+      {f.sleepy ? (
+        <>
+          <path d="M35 59 Q40 63 45 59" stroke="#33402c" strokeWidth="2.4" strokeLinecap="round" />
+          <path d="M55 59 Q60 63 65 59" stroke="#33402c" strokeWidth="2.4" strokeLinecap="round" />
+          <text x="72" y="42" fill="#8FC06F" fontSize="13" fontWeight="700">z</text>
+        </>
+      ) : (
+        <>
+          <circle cx="40" cy="58" r="3.6" fill="#33402c" />
+          <circle cx="60" cy="58" r="3.6" fill="#33402c" />
+          <circle cx="41.3" cy="56.7" r="1.2" fill="#fff" />
+          <circle cx="61.3" cy="56.7" r="1.2" fill="#fff" />
+        </>
+      )}
+      {/* рот */}
+      <path d={f.mouth} stroke="#33402c" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+    </svg>
+  )
+}
+
+type TamaTab = 'pet' | 'achievements' | 'profile'
+
+export const TamagotchiGame = ({ onBack, onClose }: GameProps) => {
   const t = useT()
   const playing = usePlayerStore((s) => s.playing)
   const [, force] = useReducer((x: number) => x + 1, 0)
   const charRef = useRef<HTMLDivElement>(null)
   const [speech, setSpeech] = useState<Speech | null>(null)
   const speechTo = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const setControls = useGamesStore((st) => st.setControls)
+  const [tab, setTab] = useState<TamaTab>('pet')
 
   // Тик деградации/счастья (1с) + загрузка на маунте. tamaInitUI.
   useEffect(() => {
@@ -141,14 +215,13 @@ export const TamagotchiGame = () => {
     force()
     toast(t('games.tama.reborn'))
   }
-
-  // Контролы в шапке модалки (сброс + тумблер уведомлений, ключ 'tama').
-  // Хук ДО раннего return (s может быть null до loadTama). reset стабилен.
-  useEffect(() => {
-    setControls({ notifGame: 'tama', onReset: reset })
-    return () => setControls(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const onName = (v: string) => {
+    const st = tamaState
+    if (!st) return
+    st.name = v
+    saveTama()
+    force()
+  }
 
   const s = tamaState
   if (!s) return null
@@ -161,8 +234,8 @@ export const TamagotchiGame = () => {
     : t('games.tama.ageHours', { n: Math.round(ageH) })
 
   const bars = [
-    { label: SVG_FOOD + t('games.tama.statHunger'), val: s.hunger, col: s.hunger < 25 ? '#e03030' : s.hunger < 50 ? '#f59e0b' : '#1db954' },
-    { label: SVG_SMILE + t('games.tama.statHappiness'), val: s.happiness, col: s.happiness < 25 ? '#e03030' : s.happiness < 50 ? '#f59e0b' : 'var(--accent)' },
+    { label: SVG_FOOD + t('games.tama.statHunger'), val: s.hunger, col: s.hunger < 25 ? '#c4564a' : s.hunger < 50 ? '#d99a3c' : '#7fb45f' },
+    { label: SVG_SMILE + t('games.tama.statHappiness'), val: s.happiness, col: s.happiness < 25 ? '#c4564a' : s.happiness < 50 ? '#d99a3c' : '#6f9a52' },
   ]
   const acts = [
     { icon: SVG_ACT_FEED, label: t('games.tama.feed'), cost: 1, fn: feed },
@@ -175,95 +248,154 @@ export const TamagotchiGame = () => {
     [STAT_FED + t('games.tama.statFed'), s.totalFed || 0],
     [STAT_PETS + t('games.tama.statPets'), s.totalPets || 0],
   ]
+  const achDone = TAMA_ACHIEVEMENTS.filter((a) => s.achievements[a.id]).length
+
+  const tabs: { id: TamaTab; label: string; icon: React.ReactNode }[] = [
+    {
+      id: 'pet',
+      label: t('games.tama.tab.pet'),
+      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M12 21c4-2.2 7-5.5 7-10a7 7 0 0 0-14 0c0 4.5 3 7.8 7 10Z" /><path d="M12 11c-2.4-.8-4-2.4-4-4.8 2.4-.8 4 .8 4 4.8Z" /></svg>,
+    },
+    {
+      id: 'achievements',
+      label: t('games.tama.tab.achievements'),
+      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9" r="6" /><path d="M9 14.5 8 22l4-2.5L16 22l-1-7.5" /></svg>,
+    },
+    {
+      id: 'profile',
+      label: t('games.tama.tab.profile'),
+      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" /></svg>,
+    },
+  ]
 
   return (
-    <div className="s-section active" id="ssec-tamagotchi">
-      <div className="s-section-head">
-        <div className="s-section-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>{' '}
-          {t('games.tama')}
-        </div>
-        <button className="s-section-reset" onClick={reset}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" /></svg>{' '}
-          {t('common.reset')}
-        </button>
-      </div>
+    <div className="game-root game-tama">
+      <GameTopBar
+        brand={t('games.tama.brand')}
+        icon={<PetMark size={22} />}
+        onBack={onBack}
+        onClose={onClose}
+        onReset={reset}
+        notifGame="tama"
+      />
 
-      <div className="sc" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '20px 14px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-          <div ref={charRef} className={'tama-char ' + m.css} onClick={pet} style={{ transition: 'transform .3s, filter .3s' }}>
-            {m.char}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', minHeight: 16, textAlign: 'center', transition: 'opacity .3s', opacity: speech ? speech.opacity : 1 }}>
-            {speech ? speech.text : t(m.labelKey)}
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{s.name}</div>
-        </div>
+      <div className="game-scroll">
+        {/* ── Питомец ── */}
+        {tab === 'pet' && (
+          <div className="tama-stage">
+            <div ref={charRef} onClick={pet} style={{ transition: 'transform .3s' }}>
+              <BloomPet mood={mood} />
+            </div>
+            <div className="tama-speech" style={{ opacity: speech ? speech.opacity : 1 }}>
+              {speech ? speech.text : t(m.labelKey)}
+            </div>
+            <div className="tama-name">{s.name}</div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, width: '100%' }}>
-          {bars.map((b, i) => (
-            <div key={i} className="tama-bar-row">
-              <div style={{ width: 72, color: 'var(--muted)' }} dangerouslySetInnerHTML={{ __html: b.label }} />
-              <div className="tama-bar-bg">
-                <div className="tama-bar-fill" style={{ width: Math.round(b.val) + '%', background: b.col }} />
+            <div className="tama-bars">
+              {bars.map((b, i) => (
+                <div key={i} className="tama-bar-row">
+                  <div className="tama-bar-label" dangerouslySetInnerHTML={{ __html: b.label }} />
+                  <div className="tama-bar-track">
+                    <div className="tama-bar-fill" style={{ width: Math.round(b.val) + '%', background: b.col }} />
+                  </div>
+                  <div className="tama-bar-val">{Math.round(b.val)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="tama-actions">
+              {acts.map((a) => {
+                const ok = (s.food || 0) >= a.cost
+                return (
+                  <button key={a.label} className="tama-act" data-ok={ok ? 'true' : 'false'} onClick={a.fn}>
+                    <span dangerouslySetInnerHTML={{ __html: a.icon }} />
+                    {a.label}
+                    <span className="tama-act-cost">
+                      {a.cost}
+                      <span dangerouslySetInnerHTML={{ __html: NOTE_ICON }} />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="tama-food">
+              <span dangerouslySetInnerHTML={{ __html: NOTE_ICON }} />
+              {t('games.tama.foodLabel')} <b>{s.food || 0}</b> {t('games.tama.foodHint')}
+            </div>
+          </div>
+        )}
+
+        {/* ── Достижения ── */}
+        {tab === 'achievements' && (
+          <div className="tama-tabwrap">
+            <div className="tama-coll-head">
+              {t('games.achievements')} <span className="tama-coll-count">{achDone}/{TAMA_ACHIEVEMENTS.length}</span>
+            </div>
+            <div className="tama-coll-list">
+              {TAMA_ACHIEVEMENTS.map((a) => {
+                const on = !!s.achievements[a.id]
+                return (
+                  <div key={a.id} className="tama-coll-item" data-on={on ? 'true' : 'false'}>
+                    <div className="tama-medal" data-on={on ? 'true' : 'false'} dangerouslySetInnerHTML={{ __html: a.icon }} />
+                    <div className="tama-coll-info">
+                      <div className="tama-coll-name">{t(a.nameKey)}</div>
+                      <div className="tama-coll-desc">{t(a.descKey)}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Профиль ── */}
+        {tab === 'profile' && (
+          <div className="tama-tabwrap">
+            <div className="tama-profile-card">
+              <span className="tama-profile-pet">
+                <BloomPet mood={mood} />
+              </span>
+              <div className="tama-profile-meta">
+                <input
+                  className="tama-name-input"
+                  value={s.name}
+                  onChange={(e) => onName(e.target.value)}
+                  placeholder={t('games.tama.defaultName')}
+                  maxLength={20}
+                  spellCheck={false}
+                />
+                <div className="tama-profile-sub">{t(m.labelKey)} · {ageStr}</div>
               </div>
-              <div style={{ width: 26, fontSize: 11, fontWeight: 700, textAlign: 'right' }}>{Math.round(b.val)}</div>
             </div>
-          ))}
-        </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {acts.map((a) => {
-            const ok = (s.food || 0) >= a.cost
-            return (
-              <button
-                key={a.label}
-                onClick={a.fn}
-                style={{ padding: '6px 12px', borderRadius: 'calc(var(--radius)*.55)', fontSize: 11.5, fontWeight: 700, border: '1px solid ' + (ok ? 'rgba(var(--accent-rgb),.5)' : 'var(--border)'), background: ok ? 'rgba(var(--accent-rgb),.13)' : 'none', color: ok ? 'var(--accent)' : 'var(--muted)', cursor: ok ? 'pointer' : 'default', fontFamily: 'var(--font)', transition: '.15s' }}
-              >
-                <span dangerouslySetInnerHTML={{ __html: a.icon }} />
-                {a.label}{' '}
-                <span style={{ opacity: 0.65, fontWeight: 500 }}>
-                  {a.cost}
-                  <span dangerouslySetInnerHTML={{ __html: SVG_COIN }} />
-                </span>
-              </button>
-            )
-          })}
-        </div>
-
-        <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
-          <span dangerouslySetInnerHTML={{ __html: NOTE_ICON }} />
-          {t('games.tama.foodLabel')} <span style={{ fontWeight: 700, color: 'var(--text)' }}>{s.food || 0}</span> {t('games.tama.foodHint')}
-        </div>
+            <div className="tama-section">
+              <div className="tama-section-label">{t('games.stats')}</div>
+              <div className="tama-stats">
+                {statRows.map(([label, val], i) => (
+                  <div key={i} className="tama-stat">
+                    <div className="tama-stat-label" dangerouslySetInnerHTML={{ __html: label }} />
+                    <div className="tama-stat-val">{val}</div>
+                  </div>
+                ))}
+                <div className="tama-stat">
+                  <div className="tama-stat-label">{t('games.achievements')}</div>
+                  <div className="tama-stat-val">{achDone}/{TAMA_ACHIEVEMENTS.length}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="sc" style={{ marginTop: 10 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: 'var(--text2)', marginBottom: 8 }}>{t('games.stats')}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-          {statRows.map(([label, val], i) => (
-            <div key={i} style={{ padding: '8px 10px', borderRadius: 'calc(var(--radius)*.55)', background: 'rgba(var(--accent-rgb),.06)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--muted)', marginBottom: 4, fontSize: 10, fontWeight: 600 }} dangerouslySetInnerHTML={{ __html: label }} />
-              <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-.5px' }}>{val}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="sc" style={{ marginTop: 10 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: 'var(--text2)', marginBottom: 8 }}>{t('games.achievements')}</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {TAMA_ACHIEVEMENTS.map((a) => {
-            const got = !!s.achievements[a.id]
-            return (
-              <div
-                key={a.id}
-                style={{ width: 36, height: 36, borderRadius: 'calc(var(--radius)*.55)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: got ? 'rgba(var(--accent-rgb),.12)' : 'rgba(255,255,255,.02)', opacity: got ? 1 : 0.22, cursor: 'default', transition: '.2s', color: got ? 'var(--accent)' : 'var(--muted)' }}
-                dangerouslySetInnerHTML={{ __html: a.icon }}
-              />
-            )
-          })}
-        </div>
+      {/* ── Дека вкладок ── */}
+      <div className="tama-deck">
+        {tabs.map((tb) => (
+          <button key={tb.id} className="tama-tab" data-active={tab === tb.id ? 'true' : 'false'} onClick={() => setTab(tb.id)}>
+            <span className="tama-tab-icon">{tb.icon}</span>
+            {tb.label}
+          </button>
+        ))}
       </div>
     </div>
   )

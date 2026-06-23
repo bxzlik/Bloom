@@ -118,16 +118,10 @@
 #smContent .s-section.active{display:flex}
 /* Вкладки интеграций — короткие карточки, центрируем по вертикали в области контента */
 #smContent .s-section.active:is(#ssec-soundcloud,#ssec-genius,#ssec-lastfm,#ssec-yandex,#ssec-spotify,#ssec-ytmusic){flex:1;justify-content:center}
-.clk-float{position:absolute;pointer-events:none;font-size:15px;font-weight:800;color:var(--accent);animation:clkFloat .7s ease-out forwards;white-space:nowrap;z-index:10}
-.tama-char{font-size:40px;line-height:1.2;cursor:pointer;user-select:none;display:inline-block;transition:filter .3s}
-.tama-char.mood-happy{animation:tamaBounce 1.6s ease-in-out infinite}
-.tama-char.mood-dancing{animation:tamaDance .55s ease-in-out infinite}
-.tama-char.mood-sleepy{animation:tamaSleep 2.8s ease-in-out infinite}
-.tama-char.mood-hungry{animation:tamaShake .6s ease-in-out infinite}
-.tama-char.mood-sad{animation:tamaDroop 2.2s ease-in-out infinite}
-.tama-bar-row{display:flex;align-items:center;gap:8px;font-size:11px}
-.tama-bar-bg{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
-.tama-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+/* .clk-float — всплывающее «+N» Кликера; базовая позиция/анимация, цвет красит
+   тема игры (.game-clicker .clk-float). tama-char/tama-bar-* удалены — Тамагочи
+   переоформлен на собственные классы (.tama-pet/.tama-bar-track), см. tamagotchi.css. */
+.clk-float{position:absolute;pointer-events:none;font-size:15px;font-weight:800;color:#e8b84b;animation:clkFloat .7s ease-out forwards;white-space:nowrap;z-index:10}
 /* Quiz game */
 .quiz-opt-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px;border-radius:calc(var(--radius)*.65);background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text2);font-size:10.5px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font);line-height:1.2;min-width:0}
 .quiz-opt-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(var(--accent-rgb),.08)}

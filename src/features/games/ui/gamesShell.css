@@ -1,0 +1,264 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Каркас модалки игр: витрина + базовая структура полноэкранной игры.
+   Тематика конкретных игр — в clicker.css / tamagotchi.css (scoped под
+   .game-clicker / .game-tama). Здесь только то, что общее: размеры модалки под
+   игру, полка-витрина и нейтральный «скелет» (game-root / game-topbar / кнопки),
+   который темы перекрашивают под себя.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Размер модалки подстраивается под игру (data-game на .games-modal).
+   Селектор с [data-game] специфичнее, чем .games-modal в home.css — переопределяет
+   ширину/высоту независимо от порядка загрузки CSS. */
+.games-modal[data-game='launcher'] {
+  width: 760px;
+  height: auto;
+  max-height: 86vh;
+  /* фон/цвет — обычная модалка приложения (см. .games-modal в home.css) */
+}
+.games-modal[data-game='clicker'] {
+  width: 900px;
+  height: 86vh;
+  max-height: 760px;
+  background: #1a1310;
+  border-color: rgba(232, 184, 75, 0.16);
+}
+.games-modal[data-game='tama'] {
+  width: 560px;
+  height: 86vh;
+  max-height: 720px;
+  background: #efe6d8;
+  border-color: rgba(120, 96, 70, 0.22);
+}
+
+/* ── Полноэкранный каркас игры ───────────────────────────────────────────── */
+.game-root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.game-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.game-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.game-scroll::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.35);
+  border-radius: 3px;
+}
+
+/* Базовый топ-бар (перекрашивается темами). */
+.game-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  height: 54px;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+.game-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: center;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.game-brand-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.game-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+}
+.game-back {
+  justify-self: start;
+}
+.game-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: none;
+  cursor: pointer;
+  transition: 0.15s;
+  font-family: inherit;
+}
+
+/* ── Витрина игр (полка карточек) ────────────────────────────────────────── */
+.games-launcher {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  color: var(--text);
+  font-family: var(--font);
+}
+.games-launcher-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px 6px;
+}
+.games-launcher-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+.games-launcher-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s;
+}
+.games-launcher-close:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.games-launcher-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 22px 24px;
+}
+
+.gl-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s cubic-bezier(0.34, 1.4, 0.64, 1), border-color 0.18s, background 0.18s;
+}
+.gl-card:hover {
+  transform: translateY(-2px);
+}
+.gl-card:active {
+  transform: translateY(0);
+}
+.gl-card-clicker {
+  background: linear-gradient(135deg, rgba(60, 46, 38, 0.5), rgba(28, 24, 21, 0.6));
+  border-color: rgba(168, 107, 76, 0.22);
+}
+.gl-card-clicker:hover {
+  border-color: rgba(168, 107, 76, 0.5);
+}
+.gl-card-tama {
+  background: linear-gradient(135deg, rgba(231, 220, 200, 0.1), rgba(150, 190, 130, 0.14));
+  border-color: rgba(150, 190, 130, 0.28);
+}
+.gl-card-tama:hover {
+  border-color: rgba(150, 190, 130, 0.55);
+}
+.gl-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.gl-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.gl-card-tag {
+  font-size: 12px;
+  margin-top: 3px;
+  color: var(--text2);
+}
+.gl-card-play {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text2);
+  transition: 0.18s;
+}
+.gl-card:hover .gl-card-play {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+}
+
+/* Обложки карточек. */
+.gl-cover {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.gl-cover-coin {
+  background: radial-gradient(circle at 35% 28%, #232325, #0e0e0f);
+}
+.gl-cover-pet {
+  background: radial-gradient(circle at 50% 35%, #f6efe1, #e3d8c4);
+}
+/* Мини-винил с этикеткой и логотипом Bloom */
+.gl-coin {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-radial-gradient(circle at center, rgba(255, 255, 255, 0) 0 1.6px, rgba(255, 255, 255, 0.05) 1.6px 2.3px),
+    radial-gradient(circle at 40% 32%, #313134, #161618 62%, #0a0a0b);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 3px 9px rgba(0, 0, 0, 0.5);
+}
+.gl-coin::before {
+  /* центральная терракотовая этикетка */
+  content: '';
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #b67a58, #a86b4c 70%, #8a563c);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4);
+}
+.gl-coin-logo {
+  width: 14px;
+  height: 14px;
+  position: relative;
+  background-color: #f0e7d6;
+  opacity: 0.92;
+  -webkit-mask: url('/logo.png') center / contain no-repeat;
+  mask: url('/logo.png') center / contain no-repeat;
+}

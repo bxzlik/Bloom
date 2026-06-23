@@ -1,39 +1,16 @@
 {
-  "1.2.2": {
-    "title": { "ru": "Что нового в 1.2.2", "en": "What's new in 1.2.2" },
+  "1.2.3": {
+    "title": { "ru": "Что нового в 1.2.3", "en": "What's new in 1.2.3" },
     "pages": [
       {
-        "title": { "ru": "Новые настройки оверлея", "en": "New overlay settings" },
-        "body": { "ru": "Оверлей получил больше настроек — теперь его можно гибче подстроить под себя.", "en": "The overlay now has more settings, so you can tailor it to your taste." }
+        "title": { "ru": "bloom coin", "en": "bloom coin" },
+        "body": { "ru": "Обновлена игра.", "en": "Updated the game." },
+        "image": "bloom_8BkNOWZO7i.png"
       },
       {
-        "title": { "ru": "Расширенный вид очереди", "en": "Extended queue view" },
-        "body": { "ru": "Добавлен новый режим отображения очереди — **«Расширенный»**.", "en": "Added a new queue display mode — **Extended**." },
-        "image": "bloom_xICKunSdrV.png"
-      },
-      {
-        "title": { "ru": "Редизайн страницы поиска", "en": "Search page redesign" },
-        "body": { "ru": "Страница поиска полностью переработана.", "en": "The search page has been completely redesigned." },
-        "image": "bloom_4OoceiMmdr.png"
-      },
-      {
-        "title": { "ru": "Вид плеера «Кино»", "en": "Cinema player view" },
-        "body": { "ru": "Новый стиль плеера — **«Кино»**.", "en": "A new player style — **Cinema**." },
-        "image": "bloom_4IfQy1AQ1p.png"
-      },
-      {
-        "title": { "ru": "Новый вид сайдбара", "en": "New sidebar style" },
-        "body": { "ru": "Сайдбар получил новый вид.", "en": "The sidebar has a fresh new look." },
-        "image": "bloom_fLQoU0HRYX.png"
-      },
-      {
-        "title": { "ru": "Сайдбар и тайтлбар при наведении", "en": "Reveal sidebar & titlebar on hover" },
-        "body": { "ru": "Новая настройка — показывать сайдбар и тайтлбар только при наведении на край.", "en": "A new setting to reveal the sidebar and titlebar only when you hover the edge." }
-      },
-      {
-        "title": { "ru": "Обновлённый сайт", "en": "Updated website" },
-        "body": { "ru": "Сайт обновлён — загляни на [bloom-site-x.vercel.app](https://bloom-site-x.vercel.app/).", "en": "Our website has been updated — check out [bloom-site-x.vercel.app](https://bloom-site-x.vercel.app/)." },
-        "image": "zen_YKhtu9XNWJ.png"
+        "title": { "ru": "bloom-питомец", "en": "bloom-pet" },
+        "body": { "ru": "Обновлена игра.", "en": "Updated the game." },
+        "image": "bloom_chaMjwj4DC.png"
       }
     ]
   }

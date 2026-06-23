@@ -1,0 +1,428 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Тема Тамагочи — «Bloom-питомец» (живой уголок).
+   Тёплая природная палитра (крем/шалфей/терракота/лепесток), уютно и матово,
+   без неона. Всё scoped под .game-tama. Персонаж — росток-бутон (SVG), который
+   распускается под музыку и вянет от голода. Keyframes (tamaBounce/Dance/Sleep/
+   Shake/Droop) переиспользуются из animations.css.
+   ────────────────────────────────────────────────────────────────────────── */
+.game-tama {
+  --t-cream: #efe6d8;
+  --t-ink: #4a3f2f;
+  --t-sage: #8fb46f;
+  --t-sage-dk: #6f9a52;
+  --t-terra: #c97b4a;
+  --t-petal: #f4a9a0;
+  --t-panel: #f8f2e7;
+  --t-panel-2: #f1e8d9;
+  --t-border: rgba(120, 96, 70, 0.18);
+  --t-muted: rgba(74, 63, 47, 0.55);
+
+  color: var(--t-ink);
+  font-family: var(--font);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(143, 180, 111, 0.16), transparent 55%),
+    radial-gradient(100% 60% at 50% 100%, rgba(201, 123, 74, 0.1), transparent 60%),
+    var(--t-cream);
+}
+
+/* Топ-бар */
+.game-tama .game-topbar {
+  border-bottom: 1px solid var(--t-border);
+  background: linear-gradient(180deg, rgba(143, 180, 111, 0.1), transparent);
+}
+.game-tama .game-brand {
+  color: var(--t-sage-dk);
+}
+.game-tama .game-icon-btn {
+  color: var(--t-muted);
+}
+.game-tama .game-icon-btn:hover {
+  background: rgba(111, 154, 82, 0.14);
+  color: var(--t-sage-dk);
+}
+.game-tama .game-notif[data-on='true'] {
+  color: var(--t-sage-dk);
+  border-color: rgba(111, 154, 82, 0.5);
+  background: rgba(111, 154, 82, 0.16);
+}
+
+/* Сцена с питомцем */
+.tama-stage {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 18px 24px;
+  position: relative;
+}
+.tama-pet {
+  width: 150px;
+  height: 150px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.3s, filter 0.3s;
+  filter: drop-shadow(0 8px 14px rgba(90, 70, 40, 0.18));
+}
+.tama-pet.mood-happy {
+  animation: tamaBounce 1.8s ease-in-out infinite;
+}
+.tama-pet.mood-dancing {
+  animation: tamaDance 0.6s ease-in-out infinite;
+}
+.tama-pet.mood-sleepy {
+  animation: tamaSleep 2.8s ease-in-out infinite;
+}
+.tama-pet.mood-hungry {
+  animation: tamaShake 0.6s ease-in-out infinite;
+}
+.tama-pet.mood-sad {
+  animation: tamaDroop 2.4s ease-in-out infinite;
+}
+.tama-speech {
+  min-height: 20px;
+  font-size: 12px;
+  color: var(--t-muted);
+  text-align: center;
+  transition: opacity 0.3s;
+  font-weight: 500;
+}
+.tama-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--t-terra);
+  letter-spacing: 0.2px;
+}
+
+/* Бары сытости/счастья */
+.tama-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+  max-width: 320px;
+  margin: 6px auto 0;
+}
+.tama-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+}
+.tama-bar-label {
+  width: 78px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--t-muted);
+  font-weight: 600;
+}
+.tama-bar-track {
+  flex: 1;
+  height: 9px;
+  border-radius: 6px;
+  background: var(--t-panel-2);
+  border: 1px solid var(--t-border);
+  overflow: hidden;
+}
+.tama-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s ease, background 0.3s;
+}
+.tama-bar-val {
+  width: 26px;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
+  color: var(--t-ink);
+}
+
+/* Действия */
+.tama-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 14px;
+}
+.tama-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: default;
+  border: 1px solid var(--t-border);
+  background: var(--t-panel);
+  color: var(--t-muted);
+  transition: 0.15s;
+}
+.tama-act[data-ok='true'] {
+  cursor: pointer;
+  color: var(--t-sage-dk);
+  border-color: rgba(111, 154, 82, 0.45);
+  background: rgba(143, 180, 111, 0.16);
+}
+.tama-act[data-ok='true']:hover {
+  background: rgba(143, 180, 111, 0.26);
+}
+.tama-act-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.7;
+  font-weight: 600;
+}
+.tama-food {
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--t-muted);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+}
+.tama-food b {
+  color: var(--t-terra);
+  font-weight: 800;
+}
+
+/* Панели-секции */
+.tama-section {
+  margin: 0 16px 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-border);
+}
+.tama-section:first-of-type {
+  margin-top: 4px;
+}
+.tama-section-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--t-sage-dk);
+  margin-bottom: 9px;
+}
+.tama-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.tama-stat {
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: var(--t-panel-2);
+}
+.tama-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--t-muted);
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.tama-stat-val {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Достижения — «значки-цветочки» */
+.tama-medals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tama-medal {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--t-border);
+  background: var(--t-panel-2);
+  color: var(--t-muted);
+  opacity: 0.35;
+  transition: 0.2s;
+}
+.tama-medal[data-on='true'] {
+  opacity: 1;
+  color: #fff;
+  background: linear-gradient(160deg, var(--t-sage), var(--t-sage-dk));
+  border-color: rgba(111, 154, 82, 0.5);
+  box-shadow: 0 2px 8px rgba(111, 154, 82, 0.3);
+}
+
+/* ── Обёртка вкладок ─────────────────────────────────────────────────────── */
+.tama-tabwrap {
+  padding-top: 16px;
+}
+
+/* Достижения списком */
+.tama-coll-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--t-ink);
+}
+.tama-coll-count {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: rgba(143, 180, 111, 0.22);
+  color: var(--t-sage-dk);
+  font-variant-numeric: tabular-nums;
+}
+.tama-coll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 0 16px 14px;
+}
+.tama-coll-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: 13px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-border);
+}
+.tama-coll-item[data-on='false'] {
+  opacity: 0.6;
+}
+.tama-coll-item .tama-medal {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.tama-coll-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--t-ink);
+}
+.tama-coll-desc {
+  font-size: 11px;
+  color: var(--t-muted);
+  margin-top: 1px;
+}
+
+/* Профиль */
+.tama-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 16px 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-border);
+}
+.tama-profile-pet {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tama-profile-pet .tama-pet {
+  width: 60px;
+  height: 60px;
+  cursor: default;
+  animation: none;
+  filter: none;
+}
+.tama-profile-meta {
+  flex: 1;
+  min-width: 0;
+}
+.tama-name-input {
+  width: 100%;
+  background: var(--t-panel-2);
+  border: 1px solid var(--t-border);
+  border-radius: 10px;
+  padding: 7px 11px;
+  color: var(--t-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.tama-name-input::placeholder {
+  color: var(--t-muted);
+  font-weight: 700;
+}
+.tama-name-input:focus {
+  border-color: rgba(111, 154, 82, 0.6);
+}
+.tama-profile-sub {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t-muted);
+}
+
+/* ── Дека вкладок (округлые «кнопки-камешки») ────────────────────────────── */
+.tama-deck {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--t-border);
+  background: linear-gradient(0deg, rgba(120, 96, 70, 0.08), transparent);
+}
+.tama-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 4px 6px;
+  border: 1px solid var(--t-border);
+  border-radius: 12px;
+  background: var(--t-panel);
+  color: var(--t-muted);
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, transform 0.06s;
+}
+.tama-tab-icon {
+  display: flex;
+}
+.tama-tab-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.tama-tab:not([data-active='true']):hover {
+  color: var(--t-sage-dk);
+  background: rgba(143, 180, 111, 0.12);
+}
+.tama-tab[data-active='true'] {
+  color: #fff;
+  background: linear-gradient(180deg, var(--t-sage), var(--t-sage-dk));
+  border-color: rgba(111, 154, 82, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.tama-tab[data-active='true']:active {
+  transform: translateY(1px);
+}

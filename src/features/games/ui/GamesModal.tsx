@@ -1,27 +1,45 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGamesStore } from '../model/gamesStore'
-import { GAMES_LIST } from '../model/gamesList'
+import { GAMES_LIST, type GameDef } from '../model/gamesList'
 import { GAME_COMPONENTS } from './gameRegistry'
-import { GameNotifToggle } from './GameNotifToggle'
 import { GamepadIcon } from './GamepadIcon'
+import { PetMark } from './PetMark'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT, useLocale } from '@shared/i18n'
+import './gamesShell.css'
 
 /**
- * Модалка игр (#gamesOverlay).
- * Логика: openGamesModal/openGame/gamesBack.
+ * Модалка игр (#gamesOverlay) — теперь это «витрина» + хост полноэкранной игры.
  *
- * Два экрана внутри одной `.games-modal`:
- *   - грид плиток (#gamesGrid) — клик по плитке открывает игру;
- *   - вид игры (#gamesGameView) — шапка «Назад» + контент игры из реестра.
+ * Два состояния одной `.games-modal`:
+ *   - витрина (`current === null`): полка тематических карточек игр;
+ *   - игра (`current` задан): игра монтируется **full-bleed**, без шапки
+ *     приложения — свою тематическую шапку (топ-бар) рисует сама игра. Модалке
+ *     проставляется `data-game=<theme>`, чтобы подстроить размер под игру.
  *
  * Открытие/закрытие — модальная конвенция `.open` (двойной rAF + onTransitionEnd
  * для размонтирования, см. [[project-modal-style]]). Esc закрывает модалку.
- *
- * CSS — shared/styles/home.css + settings.css (#gamesOverlay/.games-modal/.game-tile,
- * перенесён без изменений).
  */
+
+/** Тематическая обложка карточки витрины (рисуется по теме игры). */
+const GameCover = ({ theme }: { theme: GameDef['theme'] }) => {
+  if (theme === 'clicker') {
+    return (
+      <div className="gl-cover gl-cover-coin">
+        <div className="gl-coin">
+          <span className="gl-coin-logo" />
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="gl-cover gl-cover-pet">
+      <PetMark size={58} className="gl-pet" />
+    </div>
+  )
+}
+
 export const GamesModal = () => {
   const t = useT()
   useLocale()
@@ -30,7 +48,6 @@ export const GamesModal = () => {
   const close = useGamesStore((s) => s.close)
   const openGame = useGamesStore((s) => s.openGame)
   const back = useGamesStore((s) => s.back)
-  const controls = useGamesStore((s) => s.controls)
 
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
@@ -69,72 +86,43 @@ export const GamesModal = () => {
         if (!open && e.target === e.currentTarget) setMounted(false)
       }}
     >
-      <div className="games-modal">
-        {/* Грид плиток */}
-        <div id="gamesGrid" style={{ display: current ? 'none' : 'flex', flexDirection: 'column' }}>
-          <div className="games-modal-head">
-            <div className="games-modal-head-title">
-              <GamepadIcon size={30} />
-              {t('home.games')}
-            </div>
-            <button className="games-modal-close" onClick={close} aria-label={t('common.close')}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-          <div className="games-tiles">
-            {GAMES_LIST.map((g) => (
-              <div key={g.id} className="game-tile" onClick={() => openGame(g.id)}>
-                <div className="game-tile-icon">{g.icon}</div>
-                <div className="game-tile-name">{t(g.labelKey)}</div>
+      <div className="games-modal" data-game={game ? game.theme : 'launcher'}>
+        {current && GameComp ? (
+          /* Полноэкранная игра — свою шапку рисует сама. */
+          <GameComp onBack={back} onClose={close} />
+        ) : (
+          /* Витрина игр. */
+          <div className="games-launcher">
+            <div className="games-launcher-head">
+              <div className="games-launcher-title">
+                <GamepadIcon size={26} />
+                {t('home.games')}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Вид одной игры */}
-        <div id="gamesGameView" style={{ display: current ? 'flex' : 'none' }}>
-          <div className="games-modal-head" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center' }}>
-            <button className="games-modal-back" onClick={back} style={{ justifySelf: 'start' }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              {t('common.back')}
-            </button>
-            <div className="games-modal-head-title">{game ? t(game.labelKey) : current}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifySelf: 'end' }}>
-              {controls && (
-                <>
-                  <button
-                    onClick={controls.onReset}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 'calc(var(--radius)*.5)', fontSize: 11.5, fontWeight: 700, fontFamily: 'var(--font)', cursor: 'pointer', transition: '.15s', border: '1px solid var(--border)', background: 'none', color: 'var(--text2)' }}
-                  >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-                      <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
-                    </svg>
-                    {t('common.reset')}
-                  </button>
-                  <GameNotifToggle game={controls.notifGame} />
-                </>
-              )}
-              <button className="games-modal-close" onClick={close} aria-label={t('common.close')}>
+              <button className="games-launcher-close" onClick={close} aria-label={t('common.close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
+            <div className="games-launcher-grid">
+              {GAMES_LIST.map((g) => (
+                <button key={g.id} className={'gl-card gl-card-' + g.theme} onClick={() => openGame(g.id)}>
+                  <GameCover theme={g.theme} />
+                  <div className="gl-card-body">
+                    <div className="gl-card-title">{t(g.labelKey)}</div>
+                    <div className="gl-card-tag">{t(g.tagKey)}</div>
+                  </div>
+                  <div className="gl-card-play">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-          <div id="gamesGameContent">
-            {GameComp ? (
-              <GameComp />
-            ) : (
-              <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 13, padding: '40px 0' }}>
-                {t('settings.custom.ctx.soon')}
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>,
     document.body,
