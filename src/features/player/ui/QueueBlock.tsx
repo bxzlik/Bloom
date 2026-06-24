@@ -6,15 +6,18 @@ import {
   usePlaylistStore,
   useFavStore,
   saveTrackToLibrary,
+  createPlaylistInline,
   TrackCtxMenu,
-  NewPlaylistModal,
   TagEditor,
 } from '@features/library'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
+import { VinylCover } from '@shared/ui'
+import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
 import { usePlayerViewStore } from '@features/settings'
 import { useQueueStore, type PlaySource } from '../model/queueStore'
+import { useBigPicStore } from '../model/bigPicStore'
 import {
   playFromCurrentQueue,
   reorderQueue,
@@ -60,10 +63,19 @@ const QueueBlockImpl = ({
   const allTracks = useLibStore((s) => s.tracks)
   const clearExceptCurrent = useQueueStore((s) => s.clearExceptCurrent)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
+  const goNav = useNavStore((s) => s.goNav)
+
+  // «Новый плейлист» из очереди: закрываем фуллскрин, уходим в библиотеку и
+  // создаём плейлист с этим треком сразу в inline-редакте.
+  const createPlForTrack = (trackId: string) => {
+    const tr = items.find((x) => x.id === trackId)?.track ?? trackRegistry.get(trackId) ?? null
+    useBigPicStore.getState().closeBig()
+    goNav('lib')
+    createPlaylistInline(tr ? { track: tr } : { trackId })
+  }
 
   // Ctx-menu по ПКМ на треке очереди.
   const [ctx, setCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(null)
-  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
   const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
 
   // AddPopup (общий для всех строк, анкор подменяется по клику на «+»).
@@ -246,20 +258,8 @@ const QueueBlockImpl = ({
         pos={ctx?.pos ?? null}
         track={ctx?.track ?? null}
         onClose={() => setCtx(null)}
-        onCreatePlaylistForTrack={(id) => setPendingNewPl(id)}
+        onCreatePlaylistForTrack={(id) => createPlForTrack(id)}
         onEditTags={(t) => setTagEditTrack(t)}
-      />
-      <NewPlaylistModal
-        open={pendingNewPl !== null}
-        onClose={() => setPendingNewPl(null)}
-        onCreated={(plId) => {
-          if (pendingNewPl) {
-            const t = items.find((x) => x.id === pendingNewPl)?.track ?? trackRegistry.get(pendingNewPl)
-            if (t && !allTracks.some((x) => x.id === t.id)) saveTrackToLibrary(t)
-            addTrackToPl(plId, pendingNewPl)
-            setPendingNewPl(null)
-          }
-        }}
       />
       <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
       <AddPopup
@@ -279,7 +279,7 @@ const QueueBlockImpl = ({
           }
         }}
         onCreateNewPlaylist={() => {
-          if (addPopupTrackId) setPendingNewPl(addPopupTrackId)
+          if (addPopupTrackId) createPlForTrack(addPopupTrackId)
         }}
       />
     </div>
@@ -385,14 +385,10 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
         </div>
       )
     case 'playlist':
-      // Плейлист без cover — note-icon на var(--card).
+      // Плейлист без cover — рисованный винил (цвет лейбла по id плейлиста).
       return (
         <div id="qpSourceIcon" style={box}>
-          <div style={{ ...innerStyle, background: 'var(--card)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-            </svg>
-          </div>
+          <VinylCover seed={source.id} />
         </div>
       )
     case 'sc':

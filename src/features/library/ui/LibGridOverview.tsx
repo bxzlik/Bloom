@@ -2,9 +2,11 @@ import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useSortable } from '@shared/lib/useSortable'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
+import { VinylCover } from '@shared/ui'
 import {
   useLibStore,
   usePlaylistStore,
+  usePlEditStore,
   useFavStore,
   useFollowStore,
   useUnifiedOrderStore,
@@ -21,7 +23,6 @@ import {
 } from '../lib'
 import { LibAddMenu } from './LibAddMenu'
 import { LibSortMenu } from './LibSortMenu'
-import { NewPlaylistModal } from './NewPlaylistModal'
 import { PlMenu } from './PlMenu'
 import { AddFromLibModal } from './AddFromLibModal'
 import { ArtistCtxMenu } from './LibSidebar'
@@ -42,11 +43,6 @@ import { ArtistCtxMenu } from './LibSidebar'
 const cardSub = (count: number, sec: number): string =>
   `${tFn('lib.grid.tracks', { n: count })}${sec > 0 ? ' · ' + fmtTotalDur(sec) : ''}`
 
-const NoteSvg = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-  </svg>
-)
 const PlayOverlay = () => (
   <div className="hpc-play-overlay">
     <div className="hpc-play-btn">
@@ -79,8 +75,7 @@ export const LibGridOverview = () => {
   const addBtnRef = useRef<HTMLButtonElement>(null)
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [addMenuOpen, setAddMenuOpen] = useState(false)
-  const [newPlOpen, setNewPlOpen] = useState(false)
-  const [editPlId, setEditPlId] = useState<string | null>(null)
+  const startEdit = usePlEditStore((s) => s.startEdit)
   const [addToPlId, setAddToPlId] = useState<string | null>(null)
 
   // ПКМ карточек: плейлист/папка → PlMenu, артист → ArtistCtxMenu.
@@ -259,8 +254,8 @@ export const LibGridOverview = () => {
             return (
               <div key={`pl_${pl.id}`} className="home-pl-card" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
                 <div style={{ position: 'relative' }}>
-                  <div className="hpc-cover">
-                    {pl.cover ? <img src={pl.cover} loading="lazy" alt="" /> : <NoteSvg />}
+                  <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
+                    {pl.cover ? <img src={pl.cover} loading="lazy" alt="" /> : <VinylCover seed={pl.id} />}
                     <PlayOverlay />
                     {/* Бейдж площадки поверх обложки (прячется при наведении —
                         PlayOverlay перекрывает). hasSc/hasYm взаимоисключающи. */}
@@ -325,8 +320,7 @@ export const LibGridOverview = () => {
 
       {/* Меню/модалки (вне контейнера sortable, чтобы не мешать DOM-reorder карточек) */}
       <LibSortMenu open={sortMenuOpen} onClose={() => setSortMenuOpen(false)} anchorRef={sortBtnRef} value={sortMode} onChange={setSortMode} />
-      <LibAddMenu open={addMenuOpen} onClose={() => setAddMenuOpen(false)} anchorRef={addBtnRef} onCreatePlaylist={() => setNewPlOpen(true)} />
-      <NewPlaylistModal open={newPlOpen} onClose={() => setNewPlOpen(false)} onCreated={(id) => selectPlaylist(id)} />
+      <LibAddMenu open={addMenuOpen} onClose={() => setAddMenuOpen(false)} anchorRef={addBtnRef} />
 
       <PlMenu
         open={ctxEntry !== null}
@@ -339,10 +333,12 @@ export const LibGridOverview = () => {
         playlist={ctxPlaylist}
         folderPath={ctxFolderPath}
         onReset={() => {}}
-        onEdit={(id) => setEditPlId(id)}
+        onEdit={(id) => {
+          selectPlaylist(id)
+          startEdit(id)
+        }}
         onAddTracks={(id) => setAddToPlId(id)}
       />
-      <NewPlaylistModal open={editPlId !== null} onClose={() => setEditPlId(null)} editPlaylistId={editPlId} />
       <AddFromLibModal open={addToPlId !== null} onClose={() => setAddToPlId(null)} playlistId={addToPlId} />
       <ArtistCtxMenu ctx={artistCtx} onClose={() => setArtistCtx(null)} />
     </>

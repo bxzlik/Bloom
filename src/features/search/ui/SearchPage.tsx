@@ -21,12 +21,13 @@ import { toast } from '@shared/ui'
 import { useT, useLocale, t as tt, type TranslationKey } from '@shared/i18n'
 import {
   TrackCtxMenu,
-  NewPlaylistModal,
   saveTrackToLibrary,
+  createPlaylistInline,
   usePlaylistStore,
   useFavStore,
   useLibStore,
 } from '@features/library'
+import { useNavStore } from '@app/navigationStore'
 import { useSearchStore, looksLikeUrl, type SearchTab, type RecentItem } from '../model/store'
 import { useDetailStore, type DetailTarget } from '../model/detailStore'
 
@@ -804,6 +805,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const removeRecentItem = useSearchStore((s) => s.removeRecentItem)
   const removeRecentSearch = useSearchStore((s) => s.removeRecentSearch)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
+  const goNav = useNavStore((s) => s.goNav)
   const createPl = usePlaylistStore((s) => s.createPl)
   const reorderPlTracks = usePlaylistStore((s) => s.reorderPlTracks)
   const profile = useSearchStore((s) => s.profile)
@@ -896,7 +898,13 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
   // Контекстное меню трека + создание плейлиста под трек.
   const [ctx, setCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(null)
-  const [pendingNewPlTrack, setPendingNewPlTrack] = useState<Track | null>(null)
+  // «Новый плейлист» из поиска: уходим в библиотеку и создаём плейлист с этим
+  // (ещё не библиотечным) треком сразу в inline-редакте.
+  const createPlForTrack = (track: Track | null) => {
+    if (!track) return
+    goNav('lib')
+    createPlaylistInline({ track })
+  }
   const onCtxMenu = (e: ReactMouseEvent<HTMLDivElement>, track: Track) => {
     e.preventDefault()
     setCtx({ pos: { x: e.clientX, y: e.clientY }, track })
@@ -1235,19 +1243,8 @@ export const SearchPage = ({ active }: SearchPageProps) => {
         track={ctx?.track ?? null}
         onClose={() => setCtx(null)}
         onCreatePlaylistForTrack={(id) =>
-          setPendingNewPlTrack(tracks.find((t) => t.id === id) ?? null)
+          createPlForTrack(tracks.find((t) => t.id === id) ?? null)
         }
-      />
-      <NewPlaylistModal
-        open={pendingNewPlTrack !== null}
-        onClose={() => setPendingNewPlTrack(null)}
-        onCreated={(plId) => {
-          if (pendingNewPlTrack) {
-            saveTrackToLibrary(pendingNewPlTrack)
-            addTrackToPl(plId, pendingNewPlTrack.id)
-          }
-          setPendingNewPlTrack(null)
-        }}
       />
 
       {/* Поповер «+» для строк трек-списка: плейлисты + «В библиотеку». */}
@@ -1269,7 +1266,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
             addTrackToPl(plId, addTrack.id)
           }
         }}
-        onCreateNewPlaylist={() => setPendingNewPlTrack(addTrack)}
+        onCreateNewPlaylist={() => createPlForTrack(addTrack)}
       />
     </div>
   )

@@ -17,7 +17,7 @@ import {
   downloadTrack,
 } from '@features/player'
 import waveApi from '@/wave'
-import { useShareStore } from '@shared/ui'
+import { useShareStore, VinylCover } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { useFavStore, useLibStore, usePlaylistStore, useTrackInfoStore } from '../model'
 import { deleteUploadedTrack, saveTrackToLibrary } from '../lib'
@@ -27,7 +27,8 @@ export interface TrackCtxMenuProps {
   pos: { x: number; y: number } | null
   track: Track | null
   onClose: () => void
-  /** «Создать плейлист и добавить» — родитель открывает NewPlaylistModal. */
+  /** «Создать плейлист и добавить» — мгновенное создание + inline-редакт
+   *  (родитель зовёт createPlaylistInline). */
   onCreatePlaylistForTrack?: (trackId: string) => void
   /** «Редактировать теги» — родитель открывает TagEditor. */
   onEditTags?: (track: Track) => void
@@ -610,20 +611,16 @@ export const TrackCtxMenu = ({
                     onClose()
                   }}
                 >
-                  <span className="ci-icon">
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      strokeLinecap="round"
-                    >
-                      <path d="M9 18V5l12-2v13" />
-                      <circle cx="6" cy="18" r="3" />
-                      <circle cx="18" cy="16" r="3" />
-                    </svg>
+                  <span className="ci-icon" style={{ background: 'transparent', overflow: 'hidden' }}>
+                    {pl.cover ? (
+                      <img
+                        src={pl.cover}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <VinylCover seed={pl.id} />
+                    )}
                   </span>{' '}
                   {pl.name}
                 </div>

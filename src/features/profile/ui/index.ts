@@ -1,6 +1,7 @@
 export * from './AccountPage'
 export * from './ProfileCard'
 export * from './StatsSection'
+export * from './AchievementsSection'
 export * from './DiscAvatar'
 export * from './ProfileEditModal'
 export * from './ImageCropper'

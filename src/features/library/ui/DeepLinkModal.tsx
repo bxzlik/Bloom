@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { playFromSource, type PlaySource } from '@features/player'
 import { useNavStore } from '@app/navigationStore'
-import { toast } from '@shared/ui'
+import { toast, VinylCover } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { trackRegistry } from '@entities/track'
@@ -188,9 +188,7 @@ export const DeepLinkModal = () => {
                       {pl.cover ? (
                         <img src={pl.cover} alt="" />
                       ) : (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ opacity: 0.35 }}>
-                          <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-                        </svg>
+                        <VinylCover seed={pl.id} />
                       )}
                     </div>
                     <span className="dlink-pl-item-name">{pl.name}</span>

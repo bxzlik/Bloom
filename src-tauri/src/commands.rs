@@ -412,10 +412,32 @@ pub fn now_playing(
 
 // ============= Overlay (HUD-«остров») =============
 
-/// Конфиг оверлея с фронта (режим/якорь/масштаб). enabled=false прячет окно.
+/// Конфиг оверлея с фронта (режим/якорь/масштаб + свободная позиция). enabled=false прячет окно.
 #[tauri::command]
-pub fn overlay_set_config(app: AppHandle, enabled: bool, anchor: String, size: f64, preview: bool) -> Result<(), String> {
-    crate::overlay::set_config(&app, enabled, anchor, size, preview);
+pub fn overlay_set_config(
+    app: AppHandle,
+    enabled: bool,
+    anchor: String,
+    size: f64,
+    custom_x: f64,
+    custom_y: f64,
+    preview: bool,
+) -> Result<(), String> {
+    crate::overlay::set_config(&app, enabled, anchor, size, custom_x, custom_y, preview);
+    Ok(())
+}
+
+/// Вкл/выкл режим ручного размещения плашки (перетаскивание мышью).
+#[tauri::command]
+pub fn overlay_place_mode(app: AppHandle, on: bool) -> Result<(), String> {
+    crate::overlay::set_place_mode(&app, on);
+    Ok(())
+}
+
+/// Сдвинуть окно оверлея на дельту мыши (логич. CSS-пиксели) при ручном размещении.
+#[tauri::command]
+pub fn overlay_drag_by(app: AppHandle, dx: f64, dy: f64) -> Result<(), String> {
+    crate::overlay::drag_by(&app, dx, dy);
     Ok(())
 }
 

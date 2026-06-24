@@ -1,16 +1,34 @@
 {
-  "1.2.3": {
-    "title": { "ru": "Что нового в 1.2.3", "en": "What's new in 1.2.3" },
+  "1.3.0": {
+    "title": { "ru": "Что нового в 1.3.0", "en": "What's new in 1.3.0" },
     "pages": [
       {
-        "title": { "ru": "bloom coin", "en": "bloom coin" },
-        "body": { "ru": "Обновлена игра.", "en": "Updated the game." },
-        "image": "bloom_8BkNOWZO7i.png"
+        "title": { "ru": "Уведомления", "en": "Notifications" },
+        "body": {
+          "ru": "- Обновлены тосты\n- Обновлено уведомление об обновлении",
+          "en": "- Redesigned toasts\n- Redesigned update notification"
+        }
       },
       {
-        "title": { "ru": "bloom-питомец", "en": "bloom-pet" },
-        "body": { "ru": "Обновлена игра.", "en": "Updated the game." },
-        "image": "bloom_chaMjwj4DC.png"
+        "title": { "ru": "Профиль", "en": "Profile" },
+        "body": {
+          "ru": "- Новые статистики\n- Новая вкладка «Достижения»",
+          "en": "- New statistics\n- New \"Achievements\" tab"
+        }
+      },
+      {
+        "title": { "ru": "Библиотека", "en": "Library" },
+        "body": {
+          "ru": "- Создание и редактирование плейлистов\n- Плейлисты без обложек теперь рисуют винил вместо обложки\n- В шапках плейлистов теперь замазанные обложки\n- Мощно обновлена кнопка «+» в сайдбаре",
+          "en": "- Create and edit playlists\n- Playlists without covers now show a vinyl instead of a cover\n- Playlist headers now use blurred covers\n- Heavily reworked the \"+\" button in the sidebar"
+        }
+      },
+      {
+        "title": { "ru": "Оверлей", "en": "Overlay" },
+        "body": {
+          "ru": "- Новые настройки оверлея",
+          "en": "- New overlay settings"
+        }
       }
     ]
   }

@@ -1,7 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react'
 import { useUiPrefsStore } from '@features/settings'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
-import { useLibStore, usePlaylistStore, useFavStore } from '../model'
+import { VinylCover } from '@shared/ui'
+import { useLibStore, usePlaylistStore, useFavStore, usePlEditStore } from '../model'
 import type { LibMode, Playlist } from '../model'
 import type { Track } from '@entities/track'
 import {
@@ -11,12 +19,12 @@ import {
   usePlayHistoryCount,
   handleFiles,
   getCurrentView,
+  compressCover,
 } from '../lib'
 import { playFromSource, playShuffledFromSource } from '@features/player'
 import { LibTracklist } from './LibTracklist'
 import { LibGridOverview } from './LibGridOverview'
 import { PlMenu } from './PlMenu'
-import { NewPlaylistModal } from './NewPlaylistModal'
 import { AddFromLibModal } from './AddFromLibModal'
 import { SelBar } from './SelBar'
 
@@ -40,6 +48,15 @@ export const LibContent = () => {
   const activePlaylist = usePlaylistStore((s) =>
     plId ? s.playlists.find((p) => p.id === plId) : undefined,
   )
+  const renamePl = usePlaylistStore((s) => s.renamePl)
+  const setPlDesc = usePlaylistStore((s) => s.setPlDesc)
+  const setPlCover = usePlaylistStore((s) => s.setPlCover)
+  const deletePl = usePlaylistStore((s) => s.deletePl)
+  const editingId = usePlEditStore((s) => s.editingId)
+  const isNewEdit = usePlEditStore((s) => s.isNew)
+  const startEdit = usePlEditStore((s) => s.startEdit)
+  const stopEdit = usePlEditStore((s) => s.stop)
+  const editing = mode === 'pl' && !!activePlaylist && editingId === activePlaylist.id
   const searchQuery = useLibStore((s) => s.searchQuery)
   const setSearchQuery = useLibStore((s) => s.setSearchQuery)
   const selectBuiltin = useLibStore((s) => s.selectBuiltin)
@@ -57,8 +74,81 @@ export const LibContent = () => {
   // plMenu state (только для mode='pl')
   const plMenuBtnRef = useRef<HTMLButtonElement>(null)
   const [plMenuOpen, setPlMenuOpen] = useState(false)
-  const [editPlId, setEditPlId] = useState<string | null>(null)
   const [addToPlId, setAddToPlId] = useState<string | null>(null)
+
+  // Inline-редактирование плейлиста (вместо модалки).
+  const [editName, setEditName] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editCover, setEditCover] = useState<string | undefined>(undefined)
+  const [coverBusy, setCoverBusy] = useState(false)
+  const editNameRef = useRef<HTMLInputElement>(null)
+
+  // При входе в режим — подставляем значения редактируемого плейлиста и фокус
+  // на имя. Читаем из стора напрямую, чтобы не зависеть от порядка ре-рендера.
+  useEffect(() => {
+    if (!editingId) return
+    const pl = usePlaylistStore.getState().playlists.find((p) => p.id === editingId)
+    if (!pl) return
+    setEditName(pl.name)
+    setEditDesc(pl.desc ?? '')
+    setEditCover(pl.cover)
+    setCoverBusy(false)
+    const tm = setTimeout(() => {
+      editNameRef.current?.focus()
+      editNameRef.current?.select()
+    }, 40)
+    return () => clearTimeout(tm)
+  }, [editingId])
+
+  // Уход со страницы редактируемого плейлиста — выходим из режима. Только что
+  // созданный плейлист (isNew), который не сохранили, удаляем как брошенный.
+  useEffect(() => {
+    if (editingId && (mode !== 'pl' || plId !== editingId)) {
+      if (isNewEdit) deletePl(editingId)
+      stopEdit()
+    }
+  }, [mode, plId, editingId, isNewEdit, stopEdit, deletePl])
+
+  const onCoverChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setCoverBusy(true)
+    try {
+      setEditCover(await compressCover(file))
+    } catch {
+      // ignore
+    } finally {
+      setCoverBusy(false)
+    }
+  }
+
+  const clearCover = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setEditCover(undefined)
+  }
+
+  const saveEdit = () => {
+    if (!activePlaylist) return
+    const name = editName.trim()
+    if (!name) return
+    renamePl(activePlaylist.id, name)
+    setPlDesc(activePlaylist.id, editDesc.trim() || undefined)
+    setPlCover(activePlaylist.id, editCover)
+    stopEdit()
+  }
+
+  // Отмена: свежесозданный плейлист (isNew) удаляем целиком и уходим в «Все
+  // треки» — отмена создания должна убрать его, даже если в нём уже есть трек,
+  // добавленный при создании «из трека».
+  const cancelEdit = () => {
+    if (isNewEdit && activePlaylist) {
+      deletePl(activePlaylist.id)
+      selectBuiltin('all')
+    }
+    stopEdit()
+  }
 
   // При смене раздела закрываем поиск.
   useEffect(() => {
@@ -102,26 +192,114 @@ export const LibContent = () => {
         <LibGridOverview />
       ) : (
       <>
-      <div className="lib-content-head">
+      <div
+        className={`lib-content-head${heroCover ? ' has-cover' : ''}`}
+        style={heroCover ? ({ '--hero-cover': `url("${heroCover}")` } as CSSProperties) : undefined}
+      >
         <div className="lib-content-hero">
-          <div
-            className={`lib-hero-icon ${heroIconClass}`}
-            id="libHeroIcon"
-            style={{
-              position: 'relative',
-              cursor: 'default',
-              ...(heroCover
-                ? {
-                    background: `center / cover no-repeat url(${heroCover})`,
-                  }
-                : mode === 'history'
-                  ? { background: 'rgba(255,180,0,.15)' }
-                  : {}),
-            }}
-          >
-            {!heroCover && <HeroIcon />}
-          </div>
-          {!searchOpen && (
+          {editing ? (
+            <div className="lib-hero-icon lib-hero-cov-edit" id="libHeroIcon">
+              <label className="pl-cov-zone">
+                {editCover ? (
+                  <img className="pl-cov-img" src={editCover} alt="" />
+                ) : (
+                  <div className="pl-cov-hint">
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.6}
+                      strokeLinecap="round"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="3" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    <span>{t('lib.newpl.addCover')}</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={onCoverChange}
+                  disabled={coverBusy}
+                />
+              </label>
+              {editCover && (
+                <button
+                  type="button"
+                  className="pl-cov-rmv"
+                  onClick={clearCover}
+                  aria-label={t('lib.newpl.removeCover')}
+                  style={{ display: 'flex' }}
+                >
+                  <svg
+                    width="8"
+                    height="8"
+                    viewBox="0 0 8 8"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    style={{ display: 'block', flexShrink: 0 }}
+                  >
+                    <line x1="1.5" y1="1.5" x2="6.5" y2="6.5" />
+                    <line x1="6.5" y1="1.5" x2="1.5" y2="6.5" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div
+              className={`lib-hero-icon ${heroIconClass}`}
+              id="libHeroIcon"
+              style={{
+                position: 'relative',
+                cursor: 'default',
+                ...(heroCover
+                  ? {
+                      background: `center / cover no-repeat url(${heroCover})`,
+                    }
+                  : mode === 'history'
+                    ? { background: 'rgba(255,180,0,.15)' }
+                    : {}),
+              }}
+            >
+              {!heroCover && <HeroIcon />}
+            </div>
+          )}
+          {editing ? (
+            <div className="lib-hero-edit" id="libHeroNameWrap">
+              <input
+                ref={editNameRef}
+                type="text"
+                className="lib-hero-name-inp"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder={t('lib.newpl.namePlaceholder')}
+                maxLength={120}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveEdit()
+                  else if (e.key === 'Escape') cancelEdit()
+                }}
+              />
+              <input
+                type="text"
+                className="lib-hero-desc-inp"
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                placeholder={t('lib.newpl.descPlaceholder')}
+                maxLength={300}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveEdit()
+                  else if (e.key === 'Escape') cancelEdit()
+                }}
+              />
+            </div>
+          ) : !searchOpen ? (
             <div style={{ flex: 1, minWidth: 0 }} id="libHeroNameWrap">
               <div className="lib-hero-name" id="libHeroName">
                 {heroName}
@@ -137,9 +315,9 @@ export const LibContent = () => {
                 {heroSub}
               </div>
             </div>
-          )}
+          ) : null}
           {/* Inline-поиск `libInlineSearch` */}
-          {searchOpen && (
+          {!editing && searchOpen && (
             <div
               id="libInlineSearch"
               style={{ display: 'flex', flex: 1, minWidth: 0, alignItems: 'center' }}
@@ -179,9 +357,56 @@ export const LibContent = () => {
             </div>
           )}
           <div className="lib-hero-btns">
+            {editing ? (
+              <>
+                <button
+                  key="edit-cancel"
+                  type="button"
+                  className="btn-icon"
+                  aria-label={t('common.cancel')}
+                  onClick={cancelEdit}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+                <button
+                  key="edit-save"
+                  type="button"
+                  className="btn-icon is-save"
+                  aria-label={t('common.save')}
+                  onClick={saveEdit}
+                  disabled={!editName.trim()}
+                >
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+            <>
             {/* «Назад к сетке» — только в grid-виде, когда провалились в раздел. */}
             {libView === 'grid' && (
               <button
+                key="back"
                 className="btn-icon"
                 id="libBackToGrid"
                 onClick={backToGrid}
@@ -201,6 +426,7 @@ export const LibContent = () => {
               </button>
             )}
             <button
+              key="play-all"
               className="btn-play-all"
               onClick={() => {
                 const view = getCurrentView()
@@ -214,6 +440,7 @@ export const LibContent = () => {
               {t('lib.playAll')}
             </button>
             <button
+              key="shuffle"
               className="btn-icon"
               onClick={() => {
                 const view = getCurrentView()
@@ -230,6 +457,7 @@ export const LibContent = () => {
               </svg>
             </button>
             <label
+              key="upload"
               id="libUploadBtn"
               className="btn-icon"
               style={{
@@ -261,6 +489,7 @@ export const LibContent = () => {
               />
             </label>
             <button
+              key="search"
               className="btn-icon"
               id="libInlineSearchBtn"
               onClick={toggleSearch}
@@ -299,7 +528,30 @@ export const LibContent = () => {
                 </svg>
               )}
             </button>
+            {mode === 'pl' && activePlaylist && (
+              <button
+                key="edit-pl"
+                className="btn-icon"
+                id="plEditBtn"
+                aria-label={t('lib.plmenu.editPlaylist')}
+                onClick={() => startEdit(activePlaylist.id)}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                </svg>
+              </button>
+            )}
             <button
+              key="menu"
               ref={plMenuBtnRef}
               className="btn-icon"
               id="plMenuBtn"
@@ -314,6 +566,8 @@ export const LibContent = () => {
                 <circle cx="19" cy="12" r="2" />
               </svg>
             </button>
+            </>
+            )}
           </div>
         </div>
       </div>
@@ -333,13 +587,8 @@ export const LibContent = () => {
         playlist={activePlaylist ?? null}
         folderPath={folderPath}
         onReset={() => selectBuiltin('all')}
-        onEdit={(id) => setEditPlId(id)}
+        onEdit={(id) => startEdit(id)}
         onAddTracks={(id) => setAddToPlId(id)}
-      />
-      <NewPlaylistModal
-        open={editPlId !== null}
-        onClose={() => setEditPlId(null)}
-        editPlaylistId={editPlId}
       />
       <AddFromLibModal
         open={addToPlId !== null}
@@ -414,8 +663,10 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
       return {
         heroName: pl?.name ?? tFn('lib.playlist'),
         heroSub: tracksAndDuration(pl?.trs.length ?? 0, dur),
-        heroIconClass: 'off-icon',
-        HeroIcon: NoteHeroIcon,
+        // Без обложки рисуем винил (без бирюзовой подложки off-icon); цвет
+        // лейбла детерминирован по id плейлиста.
+        heroIconClass: pl?.cover ? 'off-icon' : '',
+        HeroIcon: pl ? () => <VinylCover seed={pl.id} /> : NoteHeroIcon,
         heroCover: pl?.cover,
       }
     }

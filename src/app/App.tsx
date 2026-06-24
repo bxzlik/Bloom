@@ -10,7 +10,7 @@ import { useGlobalHotkeys } from './useGlobalHotkeys'
 import { useFullscreenHotkey } from './useFullscreenHotkey'
 import { useDeepLinkBridge } from './useDeepLinkBridge'
 import { useOverlayBridge } from './useOverlayBridge'
-import { LibPage, TrackInfoModal, DupsModal, MergeModal, MpNewPlaylistHost, DeepLinkModal, useTrackInfoStore, useLibStore } from '@features/library'
+import { LibPage, TrackInfoModal, DupsModal, MergeModal, MpNewPlaylistHost, DeepLinkModal, useTrackInfoStore, useLibStore, startUsageTracking } from '@features/library'
 import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects } from '@features/player'
 import { useQueueStore } from '@features/player/model/queueStore'
 import { trackRegistry } from '@entities/track'
@@ -44,7 +44,6 @@ import {
   useOptBootstrap,
   useTelemetryBootstrap,
   useUpdateBootstrap,
-  UpdateBanner,
   UpdateNotesModal,
 } from '@features/settings'
 
@@ -83,6 +82,7 @@ const APP_PREF_CLASSES = [
 export const App = () => {
   useThemeSettings()
   useEffect(initLocaleAttr, [])
+  useEffect(startUsageTracking, [])
   useMainPlayerBridge()
   useLyricsBridge()
   useThemeBootstrap()
@@ -410,11 +410,8 @@ export const App = () => {
       {/* Глобальный императивный toast (для движка «Волны» и др. не-React кода) */}
       <GlobalToast />
 
-      {/* Баннер прогресса скачивания плейлиста */}
+      {/* Тост прогресса скачивания плейлиста (сверху по центру) */}
       <DownloadBanner />
-
-      {/* Уведомление о доступной новой версии (авто-проверка при старте) */}
-      <UpdateBanner />
 
       {/* Модалка «Подробнее»/«Что нового» — текст и фото релиза */}
       <UpdateNotesModal />

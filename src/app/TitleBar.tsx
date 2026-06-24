@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useDetailStore } from '@features/search'
-import { useUiPrefsStore } from '@features/settings'
+import { useUiPrefsStore, UpdateButton } from '@features/settings'
 import { useNavStore, type PageId } from './navigationStore'
 import { NotifBell } from '@shared/ui'
 import { useT, useLocale, t as tt } from '@shared/i18n'
@@ -72,6 +72,7 @@ export const TitleBar = () => {
         </span>
       </div>
       <div className="win-btns">
+        <UpdateButton />
         {tbBell && <NotifBell />}
         {tbPin && (
           <button

@@ -1,13 +1,13 @@
 import { create } from 'zustand'
 
 /**
- * Глобальный триггер модалки «Новый плейлист», открываемой ИЗ ДРУГИХ окон
+ * Глобальный триггер создания «Нового плейлиста» ИЗ ДРУГИХ окон
  * (miniplayer/tray-popup «+» → «Новый плейлист» → Rust `mp_open_new_pl` →
  * событие `bloom-mp-new-pl`). Главное окно слушает событие в useMainPlayerBridge
- * и зовёт `openModal(curId)`; App рендерит сам `NewPlaylistModal` (хост), а после
- * создания добавляет `pendingTrackId` в новый плейлист.
+ * и зовёт `openModal(curId)`; `MpNewPlaylistHost` (хост в App) мгновенно создаёт
+ * плейлист с `pendingTrackId` и открывает его в inline-редакте (createPlaylistInline).
  *
- * В самом главном окне модалку открывают локальным state (LibContent и т.п.) —
+ * В самом главном окне создание идёт напрямую через createPlaylistInline —
  * этот стор только для кросс-оконного сценария.
  */
 interface NewPlModalState {

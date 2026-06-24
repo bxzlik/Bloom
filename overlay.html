@@ -130,6 +130,21 @@ body.compact.al{justify-content:flex-start}
 body.compact.ac{justify-content:center}
 body.compact.ar .island{margin-right:28px}
 body.compact.al .island{margin-left:28px}
+
+/* ── Режим ручного размещения ─────────────────────────────
+   Вся плашка превращается в drag-ручку: курсор «move», пунктирная рамка-
+   подсказка, а кнопки/прогресс не перехватывают перетаскивание. */
+body.placing .island{cursor:move;outline:2px dashed var(--accent);outline-offset:3px}
+body.placing .island:hover .ctrl,body.placing .ctrl{opacity:0;pointer-events:none}
+body.placing .island:hover .eq{opacity:1;transform:none}
+body.placing .prog{pointer-events:none}
+/* Живой бейдж с координатами (доли %) во время ручного размещения. */
+.place-coords{position:absolute;top:3px;left:50%;transform:translateX(-50%);
+  display:none;white-space:nowrap;padding:2px 9px;border-radius:9px;
+  font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.2px;
+  background:rgba(0,0,0,.72);color:#fff;border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 3px 10px rgba(0,0,0,.4);pointer-events:none;z-index:10}
+body.placing .place-coords{display:block}
 </style>
 </head>
 <body>
@@ -159,6 +174,7 @@ body.compact.al .island{margin-left:28px}
   </div>
   <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
 </div>
+<div class="place-coords" id="placeCoords"></div>
 
 <script>
 (function(){
@@ -552,7 +568,47 @@ body.compact.al .island{margin-left:28px}
       hideTimer = setTimeout(hide, Math.max(1, duration) * 1000);
     });
 
+    // Режим ручного размещения: вся плашка — drag-ручка. OS-перетаскивание
+    // (start_dragging) для этого окна не работает — оно no-activate (focus:false),
+    // поэтому двигаем окно сами: считаем дельту мыши в экранных координатах и
+    // шлём её в Rust. Capture-фаза — чтобы опередить обработчики кнопок/прогресса.
+    (function(){
+      var dragging = false, lastSX = 0, lastSY = 0;
+      island.addEventListener('pointerdown', function(e){
+        if (!document.body.classList.contains('placing')) return;
+        e.preventDefault(); e.stopPropagation();
+        dragging = true; lastSX = e.screenX; lastSY = e.screenY;
+        try{ island.setPointerCapture(e.pointerId); }catch(_){}
+      }, true);
+      island.addEventListener('pointermove', function(e){
+        if (!dragging) return;
+        var dx = e.screenX - lastSX, dy = e.screenY - lastSY;
+        if (!dx && !dy) return;
+        lastSX = e.screenX; lastSY = e.screenY;
+        try{ ti.invoke('overlay_drag_by', { dx: dx, dy: dy }); }catch(_){}
+      }, true);
+      function endDrag(e){
+        if (!dragging) return;
+        dragging = false;
+        try{ island.releasePointerCapture(e.pointerId); }catch(_){}
+      }
+      island.addEventListener('pointerup', endDrag, true);
+      island.addEventListener('pointercancel', endDrag, true);
+    })();
+
     listenEvent('bloom-mp-state', function(p){ update(p); });
+    listenEvent('bloom-ov-place', function(p){
+      var on = !!(p && p.on);
+      document.body.classList.toggle('placing', on);
+      if (on) reveal(true);   // показать закреплённой, без авто-скрытия
+      else hide();
+    });
+    // Живые координаты (доли → %) во время перетаскивания.
+    listenEvent('bloom-ov-placed', function(p){
+      if (!p) return;
+      var el = $('placeCoords');
+      if (el) el.textContent = 'X ' + Math.round(p.x * 100) + '%  ·  Y ' + Math.round(p.y * 100) + '%';
+    });
     listenEvent('bloom-ov-show', function(p){
       if (p && p.anchor) setAnchorDir(p.anchor);
       reveal(false);

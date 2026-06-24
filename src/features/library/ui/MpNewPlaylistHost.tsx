@@ -1,25 +1,26 @@
+import { useEffect } from 'react'
+import { useNavStore } from '@app/navigationStore'
 import { useNewPlModalStore } from '../model/newPlModalStore'
-import { usePlaylistStore } from '../model/playlistStore'
-import { NewPlaylistModal } from './NewPlaylistModal'
+import { createPlaylistInline } from '../lib/createPlaylistInline'
 
 /**
- * Хост модалки «Новый плейлист» для кросс-оконного сценария: miniplayer/tray
- * «+» → «Новый плейлист» открывает её в главном окне (через useNewPlModalStore),
- * и после создания добавляет запомненный трек. Рендерится один раз в App.
+ * Кросс-оконное создание плейлиста: miniplayer/tray «+» → «Новый плейлист»
+ * (Rust `mp_open_new_pl` → событие `bloom-mp-new-pl` → `useMainPlayerBridge`
+ * зовёт `openModal(curId)`). Здесь, в главном окне, мгновенно создаём плейлист
+ * с запомненным треком, уходим в библиотеку и открываем его в inline-редакте.
+ * Рендерится один раз в App; собственного UI не имеет.
  */
 export const MpNewPlaylistHost = () => {
   const open = useNewPlModalStore((s) => s.open)
   const pendingTrackId = useNewPlModalStore((s) => s.pendingTrackId)
   const close = useNewPlModalStore((s) => s.close)
-  const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
 
-  return (
-    <NewPlaylistModal
-      open={open}
-      onClose={close}
-      onCreated={(id) => {
-        if (pendingTrackId) addTrackToPl(id, pendingTrackId)
-      }}
-    />
-  )
+  useEffect(() => {
+    if (!open) return
+    useNavStore.getState().goNav('lib')
+    createPlaylistInline(pendingTrackId ? { trackId: pendingTrackId } : undefined)
+    close()
+  }, [open, pendingTrackId, close])
+
+  return null
 }

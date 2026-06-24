@@ -13,14 +13,15 @@ import { getProvider } from '@features/providers'
 import { AddPopup, playFromSource, playShuffledFromSource, type PlaySource } from '@features/player'
 import {
   TrackCtxMenu,
-  NewPlaylistModal,
   saveTrackToLibrary,
+  createPlaylistInline,
   usePlaylistStore,
   useFavStore,
   useFollowStore,
   useLibStore,
   tracksLabel,
 } from '@features/library'
+import { useNavStore } from '@app/navigationStore'
 import { toast, useShareStore } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
 import { useDetailStore, type DetailTarget } from '../model/detailStore'
@@ -288,7 +289,14 @@ export const DetailView = () => {
 
   // Ctx-menu трека (ПКМ) — как в SearchPage.
   const [ctx, setCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(null)
-  const [pendingNewPlTrack, setPendingNewPlTrack] = useState<Track | null>(null)
+  const goNav = useNavStore((s) => s.goNav)
+  // «Новый плейлист» из деталей: уходим в библиотеку и создаём плейлист с этим
+  // (ещё не библиотечным) треком сразу в inline-редакте.
+  const createPlForTrack = (track: Track | null) => {
+    if (!track) return
+    goNav('lib')
+    createPlaylistInline({ track })
+  }
   const onCtxMenu = (e: ReactMouseEvent<HTMLElement>, track: Track) => {
     e.preventDefault()
     e.stopPropagation()
@@ -619,7 +627,7 @@ export const DetailView = () => {
         track={ctx?.track ?? null}
         onClose={() => setCtx(null)}
         onCreatePlaylistForTrack={(id) =>
-          setPendingNewPlTrack(mainTracks.find((t) => t.id === id) ?? ctx?.track ?? null)
+          createPlForTrack(mainTracks.find((t) => t.id === id) ?? ctx?.track ?? null)
         }
       />
 
@@ -644,18 +652,7 @@ export const DetailView = () => {
             addTrackToPl(plId, addTrack.id)
           }
         }}
-        onCreateNewPlaylist={() => setPendingNewPlTrack(addTrack)}
-      />
-      <NewPlaylistModal
-        open={pendingNewPlTrack !== null}
-        onClose={() => setPendingNewPlTrack(null)}
-        onCreated={(plId) => {
-          if (pendingNewPlTrack) {
-            saveTrackToLibrary(pendingNewPlTrack)
-            addTrackToPl(plId, pendingNewPlTrack.id)
-          }
-          setPendingNewPlTrack(null)
-        }}
+        onCreateNewPlaylist={() => createPlForTrack(addTrack)}
       />
     </div>
   )

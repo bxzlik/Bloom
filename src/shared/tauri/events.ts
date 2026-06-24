@@ -40,6 +40,8 @@ export interface AppEvents {
   'bloom-window-minimized': boolean
   'bloom-set-maximized': boolean
   'bloom-update-progress': UpdateProgress
+  /** Оверлей передвинут в режиме ручного размещения: новые доли позиции (0..1). */
+  'bloom-ov-placed': { x: number; y: number }
 }
 
 export type AppEventName = keyof AppEvents

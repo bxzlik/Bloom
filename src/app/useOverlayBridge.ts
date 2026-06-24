@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { invoke } from '@shared/tauri'
+import { invoke, onAppEvent } from '@shared/tauri'
 import { usePlayerViewStore } from '@features/settings'
 import { usePlayerStore } from '@features/player/model/store'
 
@@ -25,6 +25,8 @@ export const useOverlayBridge = (): void => {
         enabled: p.overlayMode !== 'off',
         anchor: p.overlayPos,
         size: p.overlaySize / 100,
+        customX: p.overlayX,
+        customY: p.overlayY,
         preview,
       }).catch(() => {})
     }
@@ -33,6 +35,8 @@ export const useOverlayBridge = (): void => {
       if (
         s.overlayMode !== prev.overlayMode ||
         s.overlayPos !== prev.overlayPos ||
+        s.overlayX !== prev.overlayX ||
+        s.overlayY !== prev.overlayY ||
         s.overlaySize !== prev.overlaySize ||
         s.overlayOpacity !== prev.overlayOpacity ||
         s.overlayDuration !== prev.overlayDuration ||
@@ -41,6 +45,23 @@ export const useOverlayBridge = (): void => {
         push(true)
       }
     })
+  }, [])
+
+  // Ручное размещение: плашку перетащили в новую точку — Rust шлёт новые доли
+  // позиции, сохраняем их в стор (persist → localStorage). При активном режиме
+  // размещения push выше пропускаем (overlayX/overlayY уже актуальны в Rust),
+  // чтобы drag не дёргал окно репозиционированием на каждый кадр.
+  useEffect(() => {
+    let un: (() => void) | undefined
+    void onAppEvent('bloom-ov-placed', ({ x, y }) => {
+      const p = usePlayerViewStore.getState()
+      if (Math.abs(p.overlayX - x) < 0.0005 && Math.abs(p.overlayY - y) < 0.0005) return
+      p.set('overlayX', x)
+      p.set('overlayY', y)
+    }).then((u) => {
+      un = u
+    })
+    return () => un?.()
   }, [])
 
   // Всплытие на смену трека.

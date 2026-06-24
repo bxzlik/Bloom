@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
-import { toast } from '@shared/ui'
+import { toast, VinylCover } from '@shared/ui'
 import { playFromSource, playShuffledFromSource, downloadPlaylistTracks, type PlaySource } from '@features/player'
 import { exportPlaylistFile, folderScan, folderRemove } from '../api'
 import { buildExportBundle, refreshScPlaylist, deleteUploadedTrack } from '../lib'
@@ -45,7 +45,7 @@ export interface PlMenuProps {
   folderPath: string | null
   /** Колбэк после удаления pl/папки — родитель переключает mode на 'all'. */
   onReset?: () => void
-  /** «Изменить плейлист» — открывает NewPlaylistModal в edit-режиме. */
+  /** «Изменить плейлист» — включает inline-редактор в шапке (см. plEditStore). */
   onEdit?: (id: string) => void
   /** «Добавить треки» — открывает AddFromLibModal с этим plId. */
   onAddTracks?: (id: string) => void
@@ -316,6 +316,9 @@ export const PlMenu = ({
     if (mode === 'pl' && playlist?.cover) {
       return <img src={playlist.cover} alt="" />
     }
+    if (mode === 'pl' && playlist) {
+      return <VinylCover seed={playlist.id} />
+    }
     if (mode === 'fav') {
       return (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth={1.5}>
@@ -523,7 +526,16 @@ export const PlMenu = ({
             : undefined
         }
       >
-        <div id="plMenuHeaderCov">{headerIcon}</div>
+        <div
+          id="plMenuHeaderCov"
+          style={
+            mode === 'pl' && playlist && !playlist.cover
+              ? { background: 'transparent', boxShadow: 'none' }
+              : undefined
+          }
+        >
+          {headerIcon}
+        </div>
         <div style={{ minWidth: 0 }}>
           <div id="plMenuHeaderName">{heroName}</div>
           <div id="plMenuHeaderSub">{heroSub}</div>

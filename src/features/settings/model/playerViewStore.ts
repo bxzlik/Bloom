@@ -48,8 +48,9 @@ export interface MpProgress {
 }
 /** Режим оверлея-«острова»: выключен / плашка / компактная плашка (раскрытие по наведению). */
 export type OverlayMode = 'off' | 'island' | 'compact'
-/** Якорь оверлея на экране: верт. (t/b) + гориз. (l/c/r). */
-export type OverlayPos = 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br'
+/** Якорь оверлея на экране: верт. (t/b) + гориз. (l/c/r); `custom` — свободная
+ *  позиция, заданная вручную перетаскиванием (доли overlayX/overlayY). */
+export type OverlayPos = 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br' | 'custom'
 /** Скрытые элементы бара (true = скрыт). */
 export interface MpHide {
   lyrics: boolean
@@ -105,6 +106,10 @@ export interface PlayerViewPrefs {
   overlayMode: OverlayMode
   /** Позиция оверлея на экране. */
   overlayPos: OverlayPos
+  /** Свободная позиция (доля рабочей области, 0..1) по горизонтали — для `overlayPos==='custom'`. */
+  overlayX: number
+  /** Свободная позиция (доля рабочей области, 0..1) по вертикали — для `overlayPos==='custom'`. */
+  overlayY: number
   /** Прозрачность плашки оверлея (0–100). */
   overlayOpacity: number
   /** Масштаб плашки оверлея в процентах (50–150). */
@@ -146,6 +151,8 @@ const DEFAULTS: PlayerViewPrefs = {
   playBtnBg: false,
   overlayMode: 'off',
   overlayPos: 'tr',
+  overlayX: 0.98,
+  overlayY: 0.02,
   overlayOpacity: 90,
   overlaySize: 100,
   overlayDuration: 4,
@@ -239,7 +246,9 @@ const load = (): PlayerViewPrefs => {
       },
       playBtnBg: !!p.playBtnBg,
       overlayMode: p.overlayMode === 'island' || p.overlayMode === 'compact' ? p.overlayMode : 'off',
-      overlayPos: OVERLAY_POSITIONS.includes(p.overlayPos) ? p.overlayPos : 'tr',
+      overlayPos: OVERLAY_POSITIONS.includes(p.overlayPos) || p.overlayPos === 'custom' ? p.overlayPos : 'tr',
+      overlayX: clampNum(p.overlayX, 0, 1, 0.98),
+      overlayY: clampNum(p.overlayY, 0, 1, 0.02),
       overlayOpacity: clampNum(p.overlayOpacity, 0, 100, 90),
       overlaySize: clampNum(p.overlaySize, 50, 150, 100),
       overlayDuration: clampNum(p.overlayDuration, 2, 10, 4),
@@ -283,6 +292,8 @@ const persist = (s: PlayerViewPrefs): void => {
         playBtnBg: s.playBtnBg,
         overlayMode: s.overlayMode,
         overlayPos: s.overlayPos,
+        overlayX: s.overlayX,
+        overlayY: s.overlayY,
         overlayOpacity: s.overlayOpacity,
         overlaySize: s.overlaySize,
         overlayDuration: s.overlayDuration,

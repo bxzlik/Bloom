@@ -135,6 +135,8 @@ pub fn run() {
             commands::overlay_flash,
             commands::overlay_toggle,
             commands::overlay_set_interactive,
+            commands::overlay_place_mode,
+            commands::overlay_drag_by,
             commands::miniplayer_cmd,
             commands::miniplayer_get_state,
             commands::mp_add_to_lib,
@@ -276,6 +278,17 @@ pub fn run() {
                             let _ = config::save_window_state(&ws);
                         }
                         _ => {}
+                    }
+                });
+            }
+
+            // Оверлей: в режиме ручного размещения ловим перемещения окна (OS-drag)
+            // и сообщаем main-окну новые доли позиции для persist.
+            if let Some(ov) = app.get_webview_window("overlay") {
+                let ov_app = app.handle().clone();
+                ov.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Moved(_) = event {
+                        overlay::report_moved(&ov_app);
                     }
                 });
             }

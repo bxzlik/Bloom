@@ -56,11 +56,40 @@
 .lib-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 14px 6px;display:flex;justify-content:space-between;align-items:center}
 .lib-section-title button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;transition:.15s}
 .lib-section-title button:hover{color:var(--text)}
-#libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:190px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top right;display:none}
+#libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;width:248px;box-sizing:border-box;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
 #libAddMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libAddMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #libAddMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
 #libAddMenu button:hover{background:var(--hover,rgba(255,255,255,.07))}
+#libAddMenu .lam-chevron{margin-left:auto;color:var(--muted);opacity:.7}
+/* Inline-ввод (создание плейлиста / ссылка импорта) */
+#libAddMenu .lam-input-row{display:flex;align-items:center;gap:6px;padding:3px 3px 6px}
+#libAddMenu .lam-input-field{flex:1;min-width:0;position:relative;display:flex}
+#libAddMenu .lam-input{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,var(--wb));border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .12s}
+#libAddMenu .lam-input.lam-input-badged{padding-right:32px}
+#libAddMenu .lam-input:focus{border-color:rgba(var(--accent-rgb),.5)}
+#libAddMenu .lam-input::placeholder{color:var(--muted)}
+#libAddMenu .lam-link-logo{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;pointer-events:none}
+#libAddMenu .lam-check{flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--accent);color:var(--accent-text,#fff);border-radius:8px;transition:.12s}
+#libAddMenu .lam-check:hover{background:var(--accent);filter:brightness(1.12)}
+#libAddMenu .lam-check:disabled{opacity:.6;cursor:default}
+#libAddMenu .lam-spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:lamSpin .6s linear infinite}
+@keyframes lamSpin{to{transform:rotate(360deg)}}
+/* Выбор цели импорта */
+#libAddMenu .lam-target-wrap{position:relative}
+#libAddMenu .lam-target-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#libAddMenu .lam-target-caret{color:var(--muted);opacity:.8;flex-shrink:0;transition:transform .18s cubic-bezier(.34,1.25,.64,1)}
+#libAddMenu .lam-target-btn.open{background:var(--hover,rgba(255,255,255,.07));box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.45)}
+#libAddMenu .lam-target-btn.open .lam-target-caret{color:var(--accent);opacity:1;transform:rotate(180deg)}
+#libAddMenu .lam-icon-box{width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+#libAddMenu .lam-all-thumb{width:22px;height:22px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a3a4a,#0d2535)}
+#libAddMenu .lam-pl-thumb{width:22px;height:22px;border-radius:5px;overflow:hidden;flex-shrink:0;display:block;background:var(--card)}
+#libAddMenu .lam-pl-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+#libAddMenu .lam-target-menu{position:absolute;top:calc(100% + 2px);left:0;right:0;background:color-mix(in srgb,var(--block-color),var(--text) 3%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:10px;padding:4px;z-index:1;box-shadow:0 10px 28px rgba(0,0,0,.5);max-height:240px;overflow-y:auto;scrollbar-width:thin;animation:libMenuIn .15s cubic-bezier(.22,1,.36,1) forwards;transform-origin:top}
+#libAddMenu .lam-target-menu button.active{color:var(--accent);background:rgba(var(--accent-rgb),.1)}
+#libAddMenu .lam-active-check{flex-shrink:0;color:var(--accent)}
+#libAddMenu .lam-target-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 6px}
+#libAddMenu .lam-back{color:var(--muted)}
 #speedPicker{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:10px 12px;gap:10px;z-index:9100;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top left;display:none;align-items:center}
 #speedPicker.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #speedPicker.closing{display:flex;animation:libMenuOut .14s ease-in forwards}

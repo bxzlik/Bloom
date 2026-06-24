@@ -5,12 +5,13 @@ import {
   useLibStore,
   usePlaylistStore,
   saveTrackToLibrary,
+  createPlaylistInline,
   TrackCtxMenu,
-  NewPlaylistModal,
   TagEditor,
 } from '@features/library'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, providerBrandColor } from '@entities/track'
+import { useNavStore } from '@app/navigationStore'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useT } from '@shared/i18n'
 import { usePlayerStore } from '../model/store'
@@ -48,6 +49,17 @@ import { DislikeButton } from '@features/wave'
 import { usePlayerViewStore, useThemeStore, useOptStore } from '@features/settings'
 import { toast } from '@shared/ui'
 import { SkipBack, SkipForward, Play, Pause, Volume1, Volume2, VolumeX } from 'lucide-react'
+
+/**
+ * «Новый плейлист» из плеера: закрываем фуллскрин (если открыт), уходим в
+ * библиотеку и создаём плейлист с этим треком сразу в inline-редакте.
+ */
+const createPlFromPlayer = (id: string) => {
+  const tr = useLibStore.getState().tracks.find((x) => x.id === id) ?? trackRegistry.get(id) ?? null
+  useBigPicStore.getState().closeBig()
+  useNavStore.getState().goNav('lib')
+  createPlaylistInline(tr ? { track: tr } : { trackId: id })
+}
 
 /**
  * page-player — главное представление плеера (#page-player).
@@ -214,7 +226,6 @@ const PlayerContent = () => {
   const [coverCtx, setCoverCtx] = useState<{ x: number; y: number } | null>(null)
   // Ctx-меню по ПКМ на блоке «Следующий трек».
   const [nextCtx, setNextCtx] = useState<{ track: Track; x: number; y: number } | null>(null)
-  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
   const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
 
   // AddPopup для cov-add и mainCovAdd. Анкор подменяется по клику.
@@ -502,7 +513,7 @@ const PlayerContent = () => {
         pos={coverCtx}
         track={curTrack}
         onClose={() => setCoverCtx(null)}
-        onCreatePlaylistForTrack={(id) => setPendingNewPl(id)}
+        onCreatePlaylistForTrack={(id) => createPlFromPlayer(id)}
         onEditTags={(t) => setTagEditTrack(t)}
       />
       {/* Ctx-меню для блока «Следующий трек» */}
@@ -510,20 +521,8 @@ const PlayerContent = () => {
         pos={nextCtx ? { x: nextCtx.x, y: nextCtx.y } : null}
         track={nextCtx?.track ?? null}
         onClose={() => setNextCtx(null)}
-        onCreatePlaylistForTrack={(id) => setPendingNewPl(id)}
+        onCreatePlaylistForTrack={(id) => createPlFromPlayer(id)}
         onEditTags={(t) => setTagEditTrack(t)}
-      />
-      <NewPlaylistModal
-        open={pendingNewPl !== null}
-        onClose={() => setPendingNewPl(null)}
-        onCreated={(plId) => {
-          if (pendingNewPl) {
-            // SC-трек сперва персистим, затем в новый плейлист.
-            if (curTrack && curTrack.id === pendingNewPl) saveTrackToLibrary(curTrack)
-            addTrackToPl(plId, pendingNewPl)
-            setPendingNewPl(null)
-          }
-        }}
       />
       <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
       <SpeedPicker open={speedOpen} onClose={() => setSpeedOpen(false)} anchorRef={speedBtnRef} />
@@ -559,7 +558,7 @@ const PlayerContent = () => {
           }
         }}
         onCreateNewPlaylist={() => {
-          if (curId) setPendingNewPl(curId)
+          if (curId) createPlFromPlayer(curId)
         }}
       />
     </>
@@ -803,11 +802,10 @@ const NextTrackBlock = ({
   const isFav = useFavStore((s) => (nextId ? s.favs.has(nextId) : false))
   const toggleFav = useFavStore((s) => s.toggleFav)
 
-  // AddPopup + NewPlaylistModal — локальные для этого блока (как в QueueBlock).
+  // AddPopup — локальный для этого блока (как в QueueBlock).
   // Toggle: повторный клик на «+» закрывает попап.
   const addAnchorRef = useRef<HTMLElement | null>(null)
   const [addOpen, setAddOpen] = useState(false)
-  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
   const openAdd = (e: ReactMouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     const btn = e.currentTarget
@@ -899,18 +897,7 @@ const NextTrackBlock = ({
           saveTrackToLibrary(track)
           addTrackToPl(plId, track.id)
         }}
-        onCreateNewPlaylist={() => setPendingNewPl(track.id)}
-      />
-      <NewPlaylistModal
-        open={pendingNewPl !== null}
-        onClose={() => setPendingNewPl(null)}
-        onCreated={(plId) => {
-          if (pendingNewPl) {
-            if (!inLib) saveTrackToLibrary(track)
-            addTrackToPl(plId, pendingNewPl)
-            setPendingNewPl(null)
-          }
-        }}
+        onCreateNewPlaylist={() => createPlFromPlayer(track.id)}
       />
     </div>
   )

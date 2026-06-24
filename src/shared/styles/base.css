@@ -2,6 +2,7 @@
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:#000;color:var(--text);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
 input,button,select,textarea{font-family:var(--font)}
 input,textarea{user-select:text;-webkit-user-select:text}
+*:focus,*:focus-visible{outline:none!important}
 #bgl{position:fixed;inset:0;background-size:cover;background-position:center;z-index:0;pointer-events:none;transform:scale(1.1);will-change:transform;transition:opacity .4s ease}
 #bgl.gif-bg{transform:translateZ(0);will-change:transform}
 #bgl.gif-bg::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:1;pointer-events:none}

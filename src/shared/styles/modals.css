@@ -163,7 +163,8 @@
 .modal-x{width:26px;height:26px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .modal-x:hover{background:rgba(255,255,255,.09);color:var(--text)}
 .modal-body{display:flex;gap:15px;padding:16px 18px}
-.pl-cov-wrap{position:relative;width:118px;height:118px;flex-shrink:0}
+/* .pl-cov-* переиспользует inline-редактор плейлиста в шапке
+   (LibContent .lib-hero-cov-edit) — оставлены после удаления модалки. */
 .pl-cov-zone{width:100%;height:100%;border-radius:12px;background:rgba(255,255,255,.07);border:1.5px dashed rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;overflow:hidden;position:relative}
 .pl-cov-zone:hover{border-color:rgba(var(--accent-rgb),.7);background:rgba(var(--accent-rgb),.05)}
 .pl-cov-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -174,16 +175,6 @@
 .pl-cov-rmv{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:#333;border:1.5px solid rgba(255,255,255,.15);cursor:pointer;z-index:3;transition:.15s;padding:0;margin:0;box-sizing:border-box;appearance:none;-webkit-appearance:none;overflow:hidden}
 .pl-cov-rmv:hover{background:rgba(210,45,45,.9);border-color:transparent}
 .pl-cov-rmv svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-.modal-fields{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
-.mf-row{display:flex;flex-direction:column;gap:4px}
-.mf-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em}
-.mf-opt{font-weight:400;text-transform:none;letter-spacing:0;opacity:.45;font-size:10px}
-.minp{width:100%;background:rgba(255,255,255,.09);border:1.5px solid rgba(255,255,255,.13);border-radius:10px;color:var(--text);padding:9px 12px;font-size:13.5px;outline:none;transition:.2s;font-family:var(--font)}
-.minp:focus{border-color:var(--accent);background:rgba(255,255,255,.12);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.13)}
-.minp::placeholder{color:var(--muted)}
-.pl-desc-inp{width:100%;background:rgba(255,255,255,.09);border:1.5px solid rgba(255,255,255,.13);border-radius:10px;color:var(--text);padding:9px 12px;font-size:12.5px;outline:none;transition:.2s;font-family:var(--font);resize:none;height:72px;line-height:1.5}
-.pl-desc-inp:focus{border-color:var(--accent);background:rgba(255,255,255,.12);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.13)}
-.pl-desc-inp::placeholder{color:var(--muted)}
 .modal-foot{display:flex;gap:8px;padding:0 18px 16px;justify-content:flex-end}
 .modal-foot .btn{padding:9px 20px;border-radius:10px;font-size:13px}
 .modal-foot .bta{font-weight:700}

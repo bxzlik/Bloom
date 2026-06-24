@@ -49,7 +49,7 @@
   flex-direction: column;
   background: var(--card-solid, var(--card));
   border: 1.5px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   z-index: 1002;
   overflow: hidden;
@@ -90,7 +90,7 @@
   align-items: flex-start;
   gap: 10px;
   padding: 10px 8px 10px 10px;
-  border-radius: 10px;
+  border-radius: calc(var(--radius) * 0.7);
   background: transparent;
   transition: background 0.12s;
 }
@@ -173,5 +173,191 @@
 }
 .notif-action:hover {
   background: rgba(var(--accent-rgb), 0.22);
+}
+
+/* ── Кнопка обновления в тайтлбаре + попап-анонс (UpdateButton.tsx) ── */
+.tb-update-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.tb-update-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 11px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-text, #fff);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.12s;
+}
+.tb-update-btn:hover {
+  filter: brightness(1.08);
+}
+.tb-update-btn.on {
+  filter: brightness(0.95);
+}
+
+/* Под кнопкой, отцентрирован по ней; анимация — как у панели колокольчика (notifPop). */
+.tb-update-pop {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 14px;
+  background: var(--card-solid, var(--card));
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  z-index: 1002;
+  overflow: hidden;
+  animation: notifPop 0.14s ease;
+}
+.tbu-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tbu-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text);
+}
+.tbu-ver {
+  font-size: 11px;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+.tbu-preview {
+  margin-bottom: 10px;
+}
+.tbu-frame {
+  width: 100%;
+  height: 148px;
+  border-radius: calc(var(--radius) * 0.7);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  animation: bloom-fade-in 0.25s ease;
+}
+.tbu-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tbu-noimg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tbu-noimg img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  opacity: 0.5;
+}
+.tbu-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 9px;
+}
+.tbu-dot {
+  width: 6px;
+  height: 6px;
+  border: none;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--text2);
+  opacity: 0.35;
+  cursor: pointer;
+  transition: opacity 0.15s, width 0.15s, background 0.15s;
+}
+.tbu-dot.on {
+  opacity: 1;
+  width: 16px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.tbu-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text2);
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tbu-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.tbu-ghost {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: var(--text2);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: calc(var(--radius) * 0.5);
+  transition: background 0.12s, color 0.12s;
+}
+.tbu-ghost:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.tbu-go {
+  flex: 1;
+  justify-content: center;
+  font-size: 12px;
+  padding: 8px 16px;
+}
+.tbu-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.tbu-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.tbu-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.2s;
+}
+.tbu-pct {
+  font-size: 11px;
+  color: var(--text2);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 

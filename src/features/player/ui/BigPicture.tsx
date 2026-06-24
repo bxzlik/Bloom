@@ -11,12 +11,13 @@ import {
   useLibStore,
   usePlaylistStore,
   saveTrackToLibrary,
+  createPlaylistInline,
   TrackCtxMenu,
-  NewPlaylistModal,
   TagEditor,
 } from '@features/library'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks } from '@entities/track'
+import { useNavStore } from '@app/navigationStore'
 import { LyricsView } from '@features/lyrics'
 import { usePlayerViewStore, useOptStore } from '@features/settings'
 import { usePlayerStore } from '../model/store'
@@ -39,6 +40,16 @@ import { QueueBlock } from './QueueBlock'
 import { AddPopup } from './AddPopup'
 import { useT } from '@shared/i18n'
 import { SkipBack, SkipForward, Play, Pause } from 'lucide-react'
+
+/**
+ * «Новый плейлист» из фуллскрина: закрываем оверлей, уходим в библиотеку и
+ * создаём плейлист с этим треком сразу в inline-редакте.
+ */
+const createPlFromBp = (track: Track | null, trackId?: string) => {
+  useBigPicStore.getState().closeBig()
+  useNavStore.getState().goNav('lib')
+  createPlaylistInline(track ? { track } : { trackId })
+}
 
 /**
  * Полноэкранный режим обложки (#bigPicOverlay) —
@@ -186,10 +197,7 @@ const BpCover = ({ artwork }: { artwork: string | null }) => {
     (curId ? trackRegistry.get(curId) ?? null : null)
 
   const [coverCtx, setCoverCtx] = useState<{ x: number; y: number } | null>(null)
-  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
   const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
-  const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
-  const allTracks = useLibStore((s) => s.tracks)
 
   useEffect(() => {
     if (!parallax && coverRef.current) coverRef.current.style.transform = ''
@@ -239,20 +247,10 @@ const BpCover = ({ artwork }: { artwork: string | null }) => {
         pos={coverCtx}
         track={curTrack}
         onClose={() => setCoverCtx(null)}
-        onCreatePlaylistForTrack={(id) => setPendingNewPl(id)}
+        onCreatePlaylistForTrack={(id) =>
+          createPlFromBp(curTrack && curTrack.id === id ? curTrack : trackRegistry.get(id) ?? null, id)
+        }
         onEditTags={(t) => setTagEditTrack(t)}
-      />
-      <NewPlaylistModal
-        open={pendingNewPl !== null}
-        onClose={() => setPendingNewPl(null)}
-        onCreated={(plId) => {
-          if (pendingNewPl) {
-            if (curTrack && curTrack.id === pendingNewPl && !allTracks.some((x) => x.id === curTrack.id))
-              saveTrackToLibrary(curTrack)
-            addTrackToPl(plId, pendingNewPl)
-            setPendingNewPl(null)
-          }
-        }}
       />
       <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
     </>
@@ -410,7 +408,6 @@ const BpControls = () => {
 
   const addAnchorRef = useRef<HTMLElement | null>(null)
   const [addOpen, setAddOpen] = useState(false)
-  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
   const openAdd = (e: ReactMouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     const btn = e.currentTarget
@@ -475,18 +472,7 @@ const BpControls = () => {
           }
         }}
         onCreateNewPlaylist={() => {
-          if (curId) setPendingNewPl(curId)
-        }}
-      />
-      <NewPlaylistModal
-        open={pendingNewPl !== null}
-        onClose={() => setPendingNewPl(null)}
-        onCreated={(plId) => {
-          if (pendingNewPl) {
-            if (curTrack && curTrack.id === pendingNewPl) saveTrackToLibrary(curTrack)
-            addTrackToPl(plId, pendingNewPl)
-            setPendingNewPl(null)
-          }
+          if (curId) createPlFromBp(curTrack, curId)
         }}
       />
     </div>

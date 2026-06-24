@@ -17,10 +17,39 @@
 #cxPlFlyout.open{display:block;animation:ctxIn .15s cubic-bezier(.34,1.25,.64,1)}
 .pl-popup.open{animation:ctxIn .15s cubic-bezier(.34,1.25,.64,1)}
 #cxadd.flyout-open{background:var(--hover)}
-#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card-solid,var(--card));border:1px solid var(--border);border-radius:calc(var(--radius) * 0.55);padding:8px 14px;font-size:12px;color:var(--text);z-index:9500;transition:opacity .3s;pointer-events:none;opacity:0;display:flex;align-items:center;gap:10px}
+#toast{position:fixed;top:48px;left:50%;transform:translate(-50%,-14px);background:var(--card-solid,var(--card));border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 16px 11px;font-size:12px;color:var(--text);z-index:9500;transition:opacity .28s cubic-bezier(.34,1.25,.64,1),transform .28s cubic-bezier(.34,1.25,.64,1);pointer-events:none;opacity:0;display:flex;align-items:center;gap:10px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.45),0 4px 14px rgba(0,0,0,.3)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
 #toast.has-action{pointer-events:auto}
+#toast .toast-ico{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:26px;height:26px;border-radius:50%;color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+#toast.toast-success .toast-ico{color:#2fbf6c;background:color-mix(in srgb,#2fbf6c 16%,transparent)}
+#toast.toast-warn .toast-ico{color:#e0a52e;background:color-mix(in srgb,#e0a52e 16%,transparent)}
+#toast.toast-error .toast-ico{color:#e0494a;background:color-mix(in srgb,#e0494a 16%,transparent)}
+#toast .toast-text{line-height:1.35}
 #toast .toast-undo{background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:0;font-family:var(--font);white-space:nowrap}
 #toast .toast-undo:hover{text-decoration:underline}
+#toast .toast-bar{position:absolute;left:0;bottom:0;height:2.5px;width:100%;transform-origin:left;background:var(--accent);border-radius:2px;animation:toastBar linear forwards}
+#toast.toast-success .toast-bar{background:#2fbf6c}
+#toast.toast-warn .toast-bar{background:#e0a52e}
+#toast.toast-error .toast-bar{background:#e0494a}
+@keyframes toastBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+/* Тост прогресса скачивания — сверху по центру, в стиле #toast. Когда он висит,
+   эфемерный #toast уезжает ниже (body.dl-toast), чтобы не перекрывались. */
+#dltoast{position:fixed;top:48px;left:50%;transform:translateX(-50%);width:330px;max-width:calc(100vw - 32px);background:var(--card-solid,var(--card));border:1.5px solid var(--border);border-radius:var(--radius);padding:11px 14px 12px;z-index:9600;box-shadow:0 14px 40px rgba(0,0,0,.45),0 4px 14px rgba(0,0,0,.3);animation:dlToastIn .28s cubic-bezier(.34,1.25,.64,1)}
+#dltoast .dlt-row{display:flex;align-items:center;gap:10px}
+#dltoast .dlt-ico{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:28px;height:28px;border-radius:50%;color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+#dltoast.is-done .dlt-ico{color:#2fbf6c;background:color-mix(in srgb,#2fbf6c 16%,transparent)}
+#dltoast .dlt-body{min-width:0;flex:1}
+#dltoast .dlt-title{font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dltoast .dlt-sub{font-size:11.5px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dltoast .dlt-close{flex-shrink:0;background:none;border:none;color:var(--text2);cursor:pointer;padding:3px;line-height:0;opacity:.7;border-radius:6px;transition:background .12s,opacity .12s}
+#dltoast .dlt-close:hover{opacity:1;background:var(--hover)}
+#dltoast .dlt-progress{display:flex;align-items:center;gap:9px;margin-top:10px}
+#dltoast .dlt-track{flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+#dltoast .dlt-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .25s ease}
+#dltoast.is-done .dlt-fill{background:#2fbf6c}
+#dltoast .dlt-count{font-size:11px;color:var(--text2);flex-shrink:0;font-variant-numeric:tabular-nums}
+body.dl-toast #toast{top:120px}
+@keyframes dlToastIn{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
 .sbox{display:flex;align-items:center;gap:5px;background:var(--card-solid,var(--card));border:1px solid var(--border);border-radius:var(--radius);padding:5px 11px}
 .sbox input{background:none;border:none;outline:none;color:var(--text);font-size:12px;width:110px;font-family:var(--font)}
 .sbox input::placeholder{color:var(--muted)}

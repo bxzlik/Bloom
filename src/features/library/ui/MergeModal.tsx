@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Playlist } from '../model'
 import { useMergeStore, usePlaylistStore, useLibStore } from '../model'
-import { toast } from '@shared/ui'
+import { toast, VinylCover } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 
@@ -13,13 +13,8 @@ import { runEnterAnimation } from '@shared/lib/enterAnimation'
  * Имя автогенерируется, пока пользователь его не тронул.
  */
 
-const PlIcon = ({ size = 14 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ opacity: 0.6 }}>
-    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-  </svg>
-)
-const PlCov = ({ pl, size }: { pl: Playlist; size: number }) =>
-  pl.cover ? <img src={pl.cover} alt="" /> : <PlIcon size={size} />
+const PlCov = ({ pl }: { pl: Playlist }) =>
+  pl.cover ? <img src={pl.cover} alt="" /> : <VinylCover seed={pl.id} />
 
 export const MergeModal = () => {
   const t = useT()
@@ -147,7 +142,7 @@ export const MergeModal = () => {
           </button>
           <div className="mpl-cstack" id="mergePlCStack">
             {coverStack.map((p) => (
-              <div className="mpl-cov" key={p.id}><PlCov pl={p} size={18} /></div>
+              <div className="mpl-cov" key={p.id}><PlCov pl={p} /></div>
             ))}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
@@ -182,7 +177,7 @@ export const MergeModal = () => {
           <div>
             <div className="mpl-section-title">{t('lib.merge.source')}</div>
             <div className="mpl-source">
-              <div className="mpl-src-icon"><PlCov pl={src} size={16} /></div>
+              <div className="mpl-src-icon"><PlCov pl={src} /></div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{src.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text2)' }}>{t('search.tracksCount', { n: src.trs.length })}</div>
@@ -210,7 +205,7 @@ export const MergeModal = () => {
                   const isSel = sel.has(p.id)
                   return (
                     <div className={`mpl-item${isSel ? ' sel' : ''}`} key={p.id} onClick={() => toggleSel(p.id)}>
-                      <div className="mpl-item-cov"><PlCov pl={p} size={14} /></div>
+                      <div className="mpl-item-cov"><PlCov pl={p} /></div>
                       <div className="mpl-item-info">
                         <div className="mpl-item-name">{p.name}</div>
                         <div className="mpl-item-sub">{t('search.tracksCount', { n: p.trs.length })}</div>

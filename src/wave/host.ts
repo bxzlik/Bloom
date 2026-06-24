@@ -96,9 +96,10 @@ export const host = {
   updateBgl(): void {
     /* фон обновляется отдельно — no-op */
   },
-  toast(msg: string, _kind?: string): void {
+  toast(msg: string, kind?: string): void {
     try {
-      globalToast(msg);
+      const k = kind === 'warn' || kind === 'error' || kind === 'success' ? kind : 'info';
+      globalToast(msg, null, k);
     } catch {
       /* ignore */
     }

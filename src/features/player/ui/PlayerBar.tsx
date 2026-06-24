@@ -3,10 +3,8 @@ import { createPortal } from 'react-dom'
 import {
   useFavStore,
   useLibStore,
-  usePlaylistStore,
-  saveTrackToLibrary,
+  createPlaylistInline,
   TrackCtxMenu,
-  NewPlaylistModal,
   TagEditor,
 } from '@features/library'
 import type { Track } from '@entities/track'
@@ -151,10 +149,17 @@ export const PlayerBar = () => {
 
   const goNav = useNavStore((s) => s.goNav)
 
-  const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
+  // «Новый плейлист» из бара: закрываем фуллскрин, уходим в библиотеку и
+  // создаём плейлист с этим треком сразу в inline-редакте.
+  const createPlForTrack = (id: string) => {
+    const tr = curTrack && curTrack.id === id ? curTrack : trackRegistry.get(id) ?? null
+    useBigPicStore.getState().closeBig()
+    goNav('lib')
+    createPlaylistInline(tr ? { track: tr } : { trackId: id })
+  }
+
   // Ctx-меню трека по ПКМ на баре (как на обложке page-player).
   const [ctxPos, setCtxPos] = useState<{ x: number; y: number } | null>(null)
-  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
   const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
 
   // Глобальная правая панель (очередь/текст). Хуки ДО early-return ниже.
@@ -456,20 +461,8 @@ export const PlayerBar = () => {
         pos={ctxPos}
         track={curTrack}
         onClose={() => setCtxPos(null)}
-        onCreatePlaylistForTrack={(id) => setPendingNewPl(id)}
+        onCreatePlaylistForTrack={(id) => createPlForTrack(id)}
         onEditTags={(tr) => setTagEditTrack(tr)}
-      />
-      <NewPlaylistModal
-        open={pendingNewPl !== null}
-        onClose={() => setPendingNewPl(null)}
-        onCreated={(plId) => {
-          if (pendingNewPl) {
-            // SC-трек сперва персистим, затем в новый плейлист.
-            if (curTrack && curTrack.id === pendingNewPl) saveTrackToLibrary(curTrack)
-            addTrackToPl(plId, pendingNewPl)
-            setPendingNewPl(null)
-          }
-        }}
       />
       <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
     </>

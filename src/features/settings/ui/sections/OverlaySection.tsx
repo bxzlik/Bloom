@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { usePlayerViewStore, type OverlayPos } from '../../model/playerViewStore'
+import { invoke } from '@shared/tauri'
 import { useT } from '@shared/i18n'
 
 /**
@@ -19,6 +21,8 @@ const OVERLAY_POS: OverlayPos[] = ['tl', 'tc', 'tr', 'bl', 'bc', 'br']
 const OVERLAY_DEFAULTS = {
   overlayMode: 'off',
   overlayPos: 'tr',
+  overlayX: 0.98,
+  overlayY: 0.02,
   overlayOpacity: 90,
   overlaySize: 100,
   overlayDuration: 4,
@@ -42,7 +46,32 @@ const PosIcon = ({ id }: { id: OverlayPos }) => {
 export const OverlaySection = () => {
   const t = useT()
   const p = usePlayerViewStore()
+
+  // Режим ручного размещения: плашка закреплена и перетаскивается мышью.
+  const [placing, setPlacing] = useState(false)
+  const setPlaceMode = (on: boolean) => {
+    setPlacing(on)
+    void invoke('overlay_place_mode', { on }).catch(() => {})
+  }
+  // Выход из режима при уходе с секции / выключении оверлея.
+  useEffect(() => {
+    return () => {
+      void invoke('overlay_place_mode', { on: false }).catch(() => {})
+    }
+  }, [])
+  useEffect(() => {
+    if (p.overlayMode === 'off' && placing) setPlaceMode(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.overlayMode])
+
+  /** Выбрать пресет-якорь (выходим из ручного размещения). */
+  const pickAnchor = (pos: OverlayPos) => {
+    if (placing) setPlaceMode(false)
+    p.set('overlayPos', pos)
+  }
+
   const resetOverlay = () => {
+    if (placing) setPlaceMode(false)
     for (const [k, v] of Object.entries(OVERLAY_DEFAULTS)) {
       p.set(k as keyof typeof OVERLAY_DEFAULTS, v as never)
     }
@@ -92,11 +121,49 @@ export const OverlaySection = () => {
             <div className="sc-desc">{t('settings.view.ovPos.desc')}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
               {OVERLAY_POS.map((pos) => (
-                <OptBtn key={pos} active={p.overlayPos === pos} onClick={() => p.set('overlayPos', pos)}>
+                <OptBtn key={pos} active={p.overlayPos === pos} onClick={() => pickAnchor(pos)}>
                   <PosIcon id={pos} />
                 </OptBtn>
               ))}
             </div>
+
+            {/* Свободное расположение: выбор «custom» + перетаскивание плашки. */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <OptBtn active={p.overlayPos === 'custom'} onClick={() => pickAnchor('custom')}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
+                  <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20" />
+                </svg>
+                {t('settings.view.ovPos.custom')}
+              </OptBtn>
+              <button
+                className={`s-opt-btn ${placing ? 'bta' : 'btg'}`}
+                disabled={p.overlayPos !== 'custom'}
+                style={{ opacity: p.overlayPos === 'custom' ? 1 : 0.45 }}
+                onClick={() => setPlaceMode(!placing)}
+              >
+                {placing ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    {t('settings.view.ovPos.placeDone')}
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
+                      <path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z" />
+                    </svg>
+                    {t('settings.view.ovPos.place')}
+                  </>
+                )}
+              </button>
+            </div>
+            {placing && <div className="sc-desc" style={{ marginTop: 8 }}>{t('settings.view.ovPos.placeHint')}</div>}
+            {p.overlayPos === 'custom' && (
+              <div className="sc-desc" style={{ marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
+                {t('settings.view.ovPos.coords')}: X {Math.round(p.overlayX * 100)}% · Y {Math.round(p.overlayY * 100)}%
+              </div>
+            )}
           </div>
 
           <div className="sc">

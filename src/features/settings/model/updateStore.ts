@@ -142,6 +142,8 @@ interface UpdateState {
   dismiss: () => void
   /** Открыть модалку-анонс для доступной версии (кнопка «Подробнее»). */
   openNotes: () => Promise<void>
+  /** Загрузить заметку доступной версии в стор БЕЗ открытия модалки (для превью в попапе тайтлбара). */
+  ensureNote: () => Promise<void>
   closeNotes: () => void
   /** Показать «Что нового» для текущей версии (один раз после обновления). */
   showWhatsNew: (version: string) => Promise<void>
@@ -266,6 +268,21 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
   },
 
   closeNotes: () => set({ notesOpen: false }),
+
+  ensureNote: async () => {
+    const version = get().info?.latest || get().version
+    if (!version || get().note?.version === version) return
+    set({ notesLoading: true })
+    try {
+      const manifest = await loadManifest()
+      const locale = useI18nStore.getState().locale
+      set({ note: resolveNote(manifest, version, locale) })
+    } catch {
+      /* офлайн/нет манифеста — превью без карусели */
+    } finally {
+      set({ notesLoading: false })
+    }
+  },
 
   showWhatsNew: async (version) => {
     try {

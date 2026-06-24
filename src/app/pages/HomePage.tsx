@@ -5,12 +5,12 @@ import {
   useLibStore,
   useHistoryStore,
   usePlaylistStore,
+  usePlEditStore,
   TrackCtxMenu,
-  NewPlaylistModal,
   TagEditor,
   PlMenu,
   AddFromLibModal,
-  saveTrackToLibrary,
+  createPlaylistInline,
   tracksLabel,
   type Playlist,
 } from '@features/library'
@@ -27,6 +27,7 @@ import {
 } from '@features/player'
 import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
 import { useGamesStore, GamepadIcon } from '@features/games'
+import { VinylCover } from '@shared/ui'
 import { useNavStore } from '../navigationStore'
 import { StatsModal } from './StatsModal'
 
@@ -38,19 +39,16 @@ import { StatsModal } from './StatsModal'
  * дня», «Недавно слушали», авто-резюм (bloom_resume), статистика-модалка, игры.
  */
 export const HomePage = ({ active }: { active: boolean }) => {
-  const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
-
   // ПКМ по треку (продолжить / трек дня / недавнее) → TrackCtxMenu.
   const [trackCtx, setTrackCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(null)
-  const [pendingNewPl, setPendingNewPl] = useState<string | null>(null)
   const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
   // ПКМ по плейлисту → PlMenu (cursor-mode).
   const [plCtx, setPlCtx] = useState<{ x: number; y: number; pl: Playlist } | null>(null)
-  const [editPlId, setEditPlId] = useState<string | null>(null)
   const [addToPlId, setAddToPlId] = useState<string | null>(null)
-  const [newPlOpen, setNewPlOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
+  const goNav = useNavStore((s) => s.goNav)
+  const startEdit = usePlEditStore((s) => s.startEdit)
   // Блок «Моя волна + Продолжить» скрыт на пустой библиотеке.
   const hasTracks = useLibStore((s) => s.tracks.length > 0)
 
@@ -79,7 +77,13 @@ export const HomePage = ({ active }: { active: boolean }) => {
         <TrackOfDay onTrackCtx={onTrackCtx} />
         <GamesCard />
         <RecentSection onTrackCtx={onTrackCtx} />
-        <PlaylistsSection onPlCtx={onPlCtx} onNewPl={() => setNewPlOpen(true)} />
+        <PlaylistsSection
+          onPlCtx={onPlCtx}
+          onNewPl={() => {
+            goNav('lib')
+            createPlaylistInline()
+          }}
+        />
       </div>
 
       {/* ПКМ-меню трека (продолжить / трек дня / недавнее) */}
@@ -87,20 +91,12 @@ export const HomePage = ({ active }: { active: boolean }) => {
         pos={trackCtx?.pos ?? null}
         track={trackCtx?.track ?? null}
         onClose={() => setTrackCtx(null)}
-        onCreatePlaylistForTrack={(id) => setPendingNewPl(id)}
-        onEditTags={(t) => setTagEditTrack(t)}
-      />
-      <NewPlaylistModal
-        open={pendingNewPl !== null}
-        onClose={() => setPendingNewPl(null)}
-        onCreated={(plId) => {
-          if (pendingNewPl) {
-            const t = trackRegistry.get(pendingNewPl)
-            if (t && !useLibStore.getState().tracks.some((x) => x.id === t.id)) saveTrackToLibrary(t)
-            addTrackToPl(plId, pendingNewPl)
-            setPendingNewPl(null)
-          }
+        onCreatePlaylistForTrack={(id) => {
+          const tr = trackRegistry.get(id)
+          goNav('lib')
+          createPlaylistInline(tr ? { track: tr } : { trackId: id })
         }}
+        onEditTags={(t) => setTagEditTrack(t)}
       />
       <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
 
@@ -115,18 +111,14 @@ export const HomePage = ({ active }: { active: boolean }) => {
         heroSub={plCtx ? tracksLabel(plCtx.pl.trs.length) : ''}
         playlist={plCtx?.pl ?? null}
         folderPath={null}
-        onEdit={(id) => setEditPlId(id)}
+        onEdit={(id) => {
+          goNav('lib')
+          selectPlaylist(id)
+          startEdit(id)
+        }}
         onAddTracks={(id) => setAddToPlId(id)}
       />
-      <NewPlaylistModal open={editPlId !== null} onClose={() => setEditPlId(null)} editPlaylistId={editPlId} />
       <AddFromLibModal open={addToPlId !== null} onClose={() => setAddToPlId(null)} playlistId={addToPlId} />
-
-      {/* «Новый» плейлист с главной — после создания открываем его в библиотеке */}
-      <NewPlaylistModal
-        open={newPlOpen}
-        onClose={() => setNewPlOpen(false)}
-        onCreated={(id) => selectPlaylist(id)}
-      />
 
       <StatsModal open={statsOpen} onClose={() => setStatsOpen(false)} />
     </div>
@@ -660,8 +652,8 @@ const PlaylistsSection = ({
       <div className="home-pl-grid" id="homePlGrid">
         {playlists.map((pl) => (
           <div className="home-pl-card" key={pl.id} onClick={() => openPl(pl.id)} onContextMenu={(e) => onPlCtx(e, pl)}>
-            <div className="hpc-cover">
-              {pl.cover ? <img src={pl.cover} alt="" /> : <NoteSvg size={24} />}
+            <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
+              {pl.cover ? <img src={pl.cover} alt="" /> : <VinylCover seed={pl.id} />}
               <CoverProviderBadge provider={playlistProvider(pl.trs, libTracks)} size={24} />
               <div className="hpc-play-overlay">
                 <div className="hpc-play-btn">

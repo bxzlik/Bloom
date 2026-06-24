@@ -5,11 +5,12 @@
 .stat-hero-card:hover{border-color:rgba(var(--accent-rgb),.35)}
 .shc-icon{width:32px;height:32px;border-radius:calc(var(--radius)*.6);background:rgba(var(--accent-rgb),.12);display:flex;align-items:center;justify-content:center;color:var(--accent);margin-bottom:2px;transition:.2s}
 .stat-hero-card:hover .shc-icon{background:rgba(var(--accent-rgb),.22)}
-.shc-val{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.shc-val{font-size:22px;font-weight:800;letter-spacing:-.5px;min-height:28px;display:flex;align-items:flex-end}
 .shc-lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
 
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.stats-card{background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);padding:16px 18px}
+.stats-card{background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);padding:16px 18px;transition:border-color .2s}
+.stats-card:hover{border-color:rgba(var(--accent-rgb),.35)}
 .stats-card-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .stats-card-title.has-actions{justify-content:space-between}
 .stats-card-title.has-actions .sct-left{display:flex;align-items:center;gap:6px}
@@ -53,6 +54,36 @@
 .top-artist-name{flex:1;min-width:0;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-artist-count{font-size:11px;color:var(--muted);flex-shrink:0}
 
+/* Страница профиля скроллится, но полосу прокрутки прячем (как home/library). */
+.account-scroll{scrollbar-width:none}
+.account-scroll::-webkit-scrollbar{display:none;width:0;height:0}
+
+/* ===== STATS HEADER (заголовок-сворачивание + действия) ===== */
+.stats-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stats-title{display:inline-flex;align-items:center;gap:8px;padding:4px 2px;color:var(--text);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px}
+.stats-title svg{color:var(--accent)}
+.stats-title-btn{display:inline-flex;align-items:center;gap:7px;background:none;border:none;cursor:pointer;padding:4px 2px;color:var(--text);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;transition:color .15s}
+.stats-title-btn:hover{color:var(--accent)}
+.stats-chevron{color:var(--muted);transition:transform .2s,color .15s;flex-shrink:0}
+.stats-title-btn:hover .stats-chevron{color:var(--accent)}
+.stats-title-btn.collapsed .stats-chevron{transform:rotate(-90deg)}
+.stats-toolbar{display:flex;justify-content:flex-end;gap:8px}
+.stats-tool-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius)*.55);color:var(--text2);font-size:11.5px;font-weight:600;padding:6px 11px;cursor:pointer;transition:.15s}
+.stats-tool-btn:hover{color:var(--text);border-color:rgba(var(--accent-rgb),.45);background:rgba(var(--accent-rgb),.08)}
+.stats-tool-btn.danger:hover{color:#ff6b6b;border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.1)}
+.stats-tool-btn.danger.confirm{color:#ff6b6b;border-color:rgba(255,107,107,.6);background:rgba(255,107,107,.14)}
+
+/* ===== SOURCE BREAKDOWN ===== */
+.src-list{display:flex;flex-direction:column;gap:11px}
+.src-row{display:flex;flex-direction:column;gap:5px}
+.src-head{display:flex;align-items:center;gap:8px;font-size:12px}
+.src-logo{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex-shrink:0}
+.src-name{font-weight:600}
+.src-pct{font-weight:700;color:var(--text2)}
+.src-meta{margin-left:auto;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.src-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
+.src-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+
 /* ===== HISTORY in library sidebar ===== */
 .hist-feed{display:flex;flex-direction:column;gap:1px;overflow-y:auto;flex:1;padding:0 12px 20px}
 .hist-feed::-webkit-scrollbar{width:2px}
@@ -90,3 +121,44 @@
 .sc-keys{display:flex;align-items:center;gap:4px}
 .sc-key{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px;background:var(--bg2);border:1px solid var(--border);border-bottom:2px solid rgba(255,255,255,.13);border-radius:5px;font-size:11px;font-weight:700;color:var(--text);min-width:28px;font-family:monospace;white-space:nowrap}
 .sc-plus{font-size:10px;color:var(--muted)}
+
+/* ===== ACCOUNT TABS (Статистика / Достижения) ===== */
+.acc-tabs{display:flex;gap:6px;padding:4px;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);flex-shrink:0}
+.acc-tab{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 14px;background:transparent;border:none;border-radius:calc(var(--radius)*.7);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
+.acc-tab:hover{color:var(--text)}
+.acc-tab.active{background:var(--accent);color:var(--accent-text)}
+.acc-tab.active svg{color:var(--accent-text)}
+
+/* ===== ACHIEVEMENTS ===== */
+.ach-page{display:flex;flex-direction:column;gap:14px;flex-shrink:0}
+.ach-summary{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text)}
+.ach-summary svg{color:var(--accent)}
+.ach-summary-count{margin-left:auto;font-size:12px;font-weight:700;letter-spacing:0;color:var(--text2);background:transparent;border:1px solid rgba(255,255,255,var(--wb));padding:3px 10px;border-radius:999px;text-transform:none}
+.ach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (max-width:720px){.ach-grid{grid-template-columns:1fr}}
+.ach-card{display:flex;gap:12px;padding:13px 14px;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);transition:opacity .2s,border-color .2s}
+.ach-card:not(.on){opacity:.5}
+.ach-card:hover{border-color:rgba(var(--accent-rgb),.35)}
+.ach-card[data-tier="none"] .ach-medal{transition:background .2s,color .2s}
+.ach-card[data-tier="none"]:hover .ach-medal{background:rgba(var(--accent-rgb),.18);color:var(--accent)}
+.ach-medal{flex-shrink:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(255,255,255,.05);color:var(--muted);border:1px solid rgba(255,255,255,var(--wb))}
+.ach-card.on .ach-medal{color:#fff}
+.ach-card[data-tier="bronze"] .ach-medal{background:rgba(205,127,50,.16);color:#cd7f32;border-color:rgba(205,127,50,.4)}
+.ach-card[data-tier="silver"] .ach-medal{background:rgba(200,200,210,.16);color:#c8c8d2;border-color:rgba(200,200,210,.4)}
+.ach-card[data-tier="gold"] .ach-medal{background:rgba(255,210,74,.16);color:#ffd24a;border-color:rgba(255,210,74,.45)}
+.ach-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.ach-head{display:flex;align-items:center;gap:8px}
+.ach-name{font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ach-pips{display:flex;gap:3px;margin-left:auto;flex-shrink:0}
+.ach-pip{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.14)}
+.ach-pip.on[data-tier="bronze"]{background:#cd7f32}
+.ach-pip.on[data-tier="silver"]{background:#c8c8d2}
+.ach-pip.on[data-tier="gold"]{background:#ffd24a}
+.ach-desc{font-size:11.5px;color:var(--text2)}
+.ach-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.ach-bar-fill{height:100%;border-radius:999px;background:var(--accent);transition:width .4s ease}
+.ach-card.maxed .ach-bar-fill{background:linear-gradient(90deg,#ffd24a,#ffb01f)}
+.ach-meta{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.ach-progress{font-weight:700;color:var(--text2)}
+.ach-maxed{font-weight:800;color:#ffd24a;text-transform:uppercase;letter-spacing:.5px}
+.ach-date{margin-left:auto;font-size:10.5px}

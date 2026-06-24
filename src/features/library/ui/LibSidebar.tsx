@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@shared/lib/cn'
-import { toast } from '@shared/ui'
+import { toast, VinylCover } from '@shared/ui'
 import { useT, useLocale } from '@shared/i18n'
 import { useSortable } from '@shared/lib/useSortable'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
@@ -9,6 +9,7 @@ import { playFromSource } from '@features/player'
 import {
   useLibStore,
   usePlaylistStore,
+  usePlEditStore,
   useFavStore,
   useFollowStore,
   useUnifiedOrderStore,
@@ -26,7 +27,6 @@ import {
 } from '../lib'
 import { LibAddMenu } from './LibAddMenu'
 import { LibSortMenu } from './LibSortMenu'
-import { NewPlaylistModal } from './NewPlaylistModal'
 import { PlMenu } from './PlMenu'
 import { AddFromLibModal } from './AddFromLibModal'
 
@@ -122,7 +122,6 @@ export const LibSidebar = () => {
   const sortBtnRef = useRef<HTMLButtonElement>(null)
   const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
-  const [newPlOpen, setNewPlOpen] = useState(false)
   const [sortMode, setSortMode] = useLibSidebarSort()
 
   // Тост-фидбек импорта.
@@ -142,7 +141,7 @@ export const LibSidebar = () => {
     | { type: 'folder'; id: string; x: number; y: number }
     | null
   >(null)
-  const [editPlId, setEditPlId] = useState<string | null>(null)
+  const startEdit = usePlEditStore((s) => s.startEdit)
   const [addToPlId, setAddToPlId] = useState<string | null>(null)
   // ПКМ по артисту в sidebar — отдельное меню (не PlMenu).
   const [artistCtx, setArtistCtx] = useState<{ id: string; x: number; y: number } | null>(null)
@@ -399,7 +398,6 @@ export const LibSidebar = () => {
         open={addMenuOpen}
         onClose={() => setAddMenuOpen(false)}
         anchorRef={addBtnRef}
-        onCreatePlaylist={() => setNewPlOpen(true)}
         onImported={handleImported}
       />
       <LibSortMenu
@@ -408,11 +406,6 @@ export const LibSidebar = () => {
         anchorRef={sortBtnRef}
         value={sortMode}
         onChange={setSortMode}
-      />
-      <NewPlaylistModal
-        open={newPlOpen}
-        onClose={() => setNewPlOpen(false)}
-        onCreated={(id) => selectPlaylist(id)}
       />
 
       {/* ПКМ-меню по плейлисту/папке в sidebar — reuse PlMenu в cursor-mode */}
@@ -431,13 +424,11 @@ export const LibSidebar = () => {
           if (ctxEntry?.type === 'playlist' && mode === 'pl') selectBuiltin('all')
           else if (ctxEntry?.type === 'folder') selectBuiltin('all')
         }}
-        onEdit={(id) => setEditPlId(id)}
+        onEdit={(id) => {
+          selectPlaylist(id)
+          startEdit(id)
+        }}
         onAddTracks={(id) => setAddToPlId(id)}
-      />
-      <NewPlaylistModal
-        open={editPlId !== null}
-        onClose={() => setEditPlId(null)}
-        editPlaylistId={editPlId}
       />
       <AddFromLibModal
         open={addToPlId !== null}
@@ -715,7 +706,7 @@ const UnifiedList = ({
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <div
                   className="lib-icon pl-icon"
-                  style={pl.cover ? { background: 'transparent' } : undefined}
+                  style={{ background: 'transparent' }}
                   {...iconHandle}
                 >
                   {pl.cover ? (
@@ -730,19 +721,7 @@ const UnifiedList = ({
                       }}
                     />
                   ) : (
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      strokeLinecap="round"
-                    >
-                      <path d="M9 18V5l12-2v13" />
-                      <circle cx="6" cy="18" r="3" />
-                      <circle cx="18" cy="16" r="3" />
-                    </svg>
+                    <VinylCover seed={pl.id} />
                   )}
                 </div>
                 {/* Бейдж площадки поверх обложки плейлиста (нижний-правый угол).

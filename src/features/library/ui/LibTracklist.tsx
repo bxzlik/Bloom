@@ -14,9 +14,9 @@ import {
 } from '../model'
 import { getCurrentView } from '../lib/currentView'
 import { historyLabel, historyTime } from '../lib/formatCount'
+import { createPlaylistInline } from '../lib/createPlaylistInline'
 import { playFromSource, useQueueStore, AddPopup } from '@features/player'
 import { TrackCtxMenu } from './TrackCtxMenu'
-import { NewPlaylistModal } from './NewPlaylistModal'
 import { TagEditor } from './TagEditor'
 
 /**
@@ -66,9 +66,7 @@ export const LibTracklist = () => {
   const [ctx, setCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(
     null,
   )
-  const [pendingTrackForNewPl, setPendingTrackForNewPl] = useState<string | null>(null)
   const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
-  const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
   const reorderPlTracks = usePlaylistStore((s) => s.reorderPlTracks)
   const reorderTracks = useLibStore((s) => s.reorderTracks)
 
@@ -227,18 +225,8 @@ export const LibTracklist = () => {
         pos={ctx?.pos ?? null}
         track={ctx?.track ?? null}
         onClose={() => setCtx(null)}
-        onCreatePlaylistForTrack={(id) => setPendingTrackForNewPl(id)}
+        onCreatePlaylistForTrack={(id) => createPlaylistInline({ trackId: id })}
         onEditTags={(t) => setTagEditTrack(t)}
-      />
-      <NewPlaylistModal
-        open={pendingTrackForNewPl !== null}
-        onClose={() => setPendingTrackForNewPl(null)}
-        onCreated={(plId) => {
-          if (pendingTrackForNewPl) {
-            addTrackToPl(plId, pendingTrackForNewPl)
-            setPendingTrackForNewPl(null)
-          }
-        }}
       />
       <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
       <AddPopup
@@ -249,7 +237,7 @@ export const LibTracklist = () => {
         canAddToLib={false}
         trackId={addPopupTrackId ?? undefined}
         onCreateNewPlaylist={() => {
-          if (addPopupTrackId) setPendingTrackForNewPl(addPopupTrackId)
+          if (addPopupTrackId) createPlaylistInline({ trackId: addPopupTrackId })
         }}
       />
     </div>

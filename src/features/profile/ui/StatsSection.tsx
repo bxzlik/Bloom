@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
-import { useLibStore, useHistoryStore, useActivityStore } from '@features/library'
+import { useLibStore, useHistoryStore, useActivityStore, useUsageStore } from '@features/library'
 import { playTrack } from '@features/player'
-import { trackRegistry, type Track } from '@entities/track'
+import { trackRegistry, type Track, ScLogo, YmLogo, YtmLogo, SpLogo, HddLogo, providerBrandColor } from '@entities/track'
+import { toast } from '@shared/ui'
 import { parseDur, fmtDurLong } from '../lib/formatStats'
 import { useArtistAvatars } from '../lib/useArtistAvatars'
+import { useAchievementsStore } from '../model/achievementsStore'
 import { useT, useLocale, t as tt } from '@shared/i18n'
 
 /**
@@ -20,6 +22,29 @@ import { useT, useLocale, t as tt } from '@shared/i18n'
 
 const findTrack = (id: string, libTracks: Track[]): Track | undefined =>
   libTracks.find((t) => t.id === id) ?? trackRegistry.get(id)
+
+/**
+ * Площадка трека по ПРЕФИКСУ его id (`sc_`/`ym_`/`ytm_`/`sp_`, иначе локальный).
+ * Берём из id, а не из флагов `_sc/_ym` объекта Track, чтобы разбивка считалась
+ * и для треков, которых уже нет в реестре/библиотеке (после перезапуска треки
+ * площадок живут только в памяти). Иначе в «где слушали чаще» оставался только
+ * SoundCloud — его треки чаще оседают в библиотеке и потому резолвятся.
+ */
+const sourceFromId = (id: string): string =>
+  id.startsWith('ytm_') ? 'ytmusic'
+    : id.startsWith('ym_') ? 'yandex'
+      : id.startsWith('sp_') ? 'spotify'
+        : id.startsWith('sc_') ? 'soundcloud'
+          : 'local'
+
+/** Метки + лого источников. local-метка локализуется (см. stats.localFiles). */
+const SOURCE_META: Record<string, { label: string; Logo: React.ComponentType<{ size: number }> }> = {
+  soundcloud: { label: 'SoundCloud', Logo: ScLogo },
+  yandex: { label: 'Yandex Music', Logo: YmLogo },
+  ytmusic: { label: 'YouTube Music', Logo: YtmLogo },
+  spotify: { label: 'Spotify', Logo: SpLogo },
+  local: { label: '', Logo: HddLogo }, // label берётся из i18n в рендере
+}
 
 const NoteIcon = ({ size = 12, style }: { size?: number; style?: React.CSSProperties }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={style}>
@@ -41,22 +66,36 @@ export const StatsSection = () => {
   const tracks = useLibStore((s) => s.tracks)
   const entries = useHistoryStore((s) => s.entries)
   const log = useActivityStore((s) => s.log)
+  const appMs = useUsageStore((s) => s.appMs)
 
   const [period, setPeriod] = useState<7 | 30 | 0>(7)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   const stats = useMemo(() => {
     let totalSec = 0
     let totalPlays = 0
     const artistMap = new Map<string, { count: number; cover: string; bestPlays: number }>()
+    // Разбивка прослушиваний по площадке (Yandex / SoundCloud / …). Считается из
+    // той же истории, что и топы — поэтому покрывает и прошлые прослушивания.
+    const sourceMap = new Map<string, { plays: number; sec: number }>()
     type Row = { track: Track; plays: number }
     const trackRows: Row[] = []
 
     for (const e of entries) {
-      const t = findTrack(e.id, tracks)
       const plays = e.count || 0
       totalPlays += plays
+      // Разбивку по площадке считаем ВСЕГДА (по префиксу id), даже если сам трек
+      // уже не резолвится — иначе теряются все площадки кроме SoundCloud.
+      const t = findTrack(e.id, tracks)
+      const sec = t ? parseDur(t.dur) * plays : 0
+      const src = sourceFromId(e.id)
+      const sc = sourceMap.get(src) || { plays: 0, sec: 0 }
+      sc.plays += plays
+      sc.sec += sec
+      sourceMap.set(src, sc)
+      // Дальше — топы/время прослушивания: им нужен сам трек.
       if (!t) continue
-      totalSec += parseDur(t.dur) * plays
+      totalSec += sec
       if (plays > 0) trackRows.push({ track: t, plays })
       const a = t.artist || tt('common.unknownArtist')
       const cur = artistMap.get(a) || { count: 0, cover: '', bestPlays: -1 }
@@ -67,6 +106,11 @@ export const StatsSection = () => {
       }
       artistMap.set(a, cur)
     }
+
+    const bySource = [...sourceMap.entries()]
+      .map(([source, v]) => ({ source, plays: v.plays, sec: v.sec }))
+      .filter((s) => s.plays > 0)
+      .sort((a, b) => b.plays - a.plays)
 
     const topTracks = trackRows.sort((a, b) => b.plays - a.plays).slice(0, 10)
     const topArtists = [...artistMap.entries()]
@@ -82,10 +126,67 @@ export const StatsSection = () => {
       ? new Date(recordDate).toLocaleDateString('ru', { day: 'numeric', month: 'short' })
       : ''
 
-    return { totalSec, totalPlays, topTracks, topArtists, favArtist, recordDay, recordDateFmt }
+    return { totalSec, totalPlays, topTracks, topArtists, favArtist, bySource, recordDay, recordDateFmt }
   }, [entries, tracks, log])
 
   const playTop = (id: string) => playTrack(id)
+
+  // Собрать красивое текстовое сообщение со статистикой и скопировать в буфер —
+  // чтобы можно было поделиться (в чат/соцсети). Топы/источники режем до 5 строк,
+  // чтобы сообщение не разрасталось.
+  const copyStats = () => {
+    const lines: string[] = [t('stats.shareTitle'), '']
+    lines.push(`📚 ${t('stats.tracks')}: ${tracks.length}`)
+    lines.push(`▶️ ${t('stats.plays')}: ${stats.totalPlays}`)
+    lines.push(`🎧 ${t('stats.time')}: ${fmtDurLong(stats.totalSec)}`)
+    lines.push(`⏱️ ${t('stats.appTime')}: ${fmtDurLong(Math.round(appMs / 1000))}`)
+    if (stats.favArtist) lines.push(`⭐ ${t('stats.favArtist')}: ${stats.favArtist}`)
+    if (stats.recordDay > 0)
+      lines.push(`🏆 ${t('stats.recordDay')}: ${stats.recordDay} ${t('stats.recordTracksDay', { date: stats.recordDateFmt })}`)
+
+    if (stats.bySource.length) {
+      lines.push('', `📡 ${t('stats.sources')}:`)
+      stats.bySource.slice(0, 5).forEach((s, i) => {
+        const label = s.source === 'local' ? t('stats.localFiles') : (SOURCE_META[s.source]?.label ?? s.source)
+        const pct = stats.totalPlays > 0 ? Math.round((s.plays / stats.totalPlays) * 100) : 0
+        lines.push(`  ${i + 1}. ${label} — ${s.plays} (${pct}%)`)
+      })
+    }
+    if (stats.topTracks.length) {
+      lines.push('', `🔥 ${t('stats.topTracks')}:`)
+      stats.topTracks.slice(0, 5).forEach(({ track, plays }, i) => {
+        lines.push(`  ${i + 1}. ${track.name}${track.artist ? ' — ' + track.artist : ''} (${tt('stats.playsCount', { n: plays })})`)
+      })
+    }
+    if (stats.topArtists.length) {
+      lines.push('', `👤 ${t('stats.topArtists')}:`)
+      stats.topArtists.slice(0, 5).forEach(([a, v], i) => {
+        lines.push(`  ${i + 1}. ${a} (${v.count})`)
+      })
+    }
+    lines.push('', '— Bloom')
+
+    navigator.clipboard
+      ?.writeText(lines.join('\n'))
+      .then(() => toast(t('stats.copied')))
+      .catch(() => toast(t('stats.copyError')))
+  }
+
+  // Очистка всей статистики: история прослушиваний + дневной журнал активности +
+  // время в приложении. Двойной клик — подтверждение (без отдельной модалки).
+  const clearStats = () => {
+    if (!confirmClear) {
+      setConfirmClear(true)
+      setTimeout(() => setConfirmClear(false), 3000)
+      return
+    }
+    setConfirmClear(false)
+    useHistoryStore.getState().clear()
+    useActivityStore.getState().clear()
+    useUsageStore.getState().clear()
+    useAchievementsStore.getState().clear()
+    toast(t('stats.cleared'))
+  }
 
   const artistAvas = useArtistAvatars(stats.topArtists.map(([a]) => a))
 
@@ -125,6 +226,7 @@ export const StatsSection = () => {
   }, [period, log])
 
   const maxBar = Math.max(1, ...bars.map((b) => b.count))
+  const maxSourcePlays = stats.bySource.length ? stats.bySource[0]!.plays : 1
 
   // — Activity heatmap (Всё) —
   const heatmap = useMemo(() => {
@@ -160,6 +262,24 @@ export const StatsSection = () => {
 
   return (
     <div className="stats-page" id="statsSection" style={{ padding: '0 0 8px', flexShrink: 0 }}>
+      {/* Заголовок секции + действия. */}
+      <div className="stats-header">
+        <div className="stats-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+          {t('stats.title')}
+        </div>
+        <div className="stats-toolbar">
+        <button className="stats-tool-btn" onClick={copyStats}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+          {t('stats.copy')}
+        </button>
+        <button className={`stats-tool-btn danger${confirmClear ? ' confirm' : ''}`} onClick={clearStats}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+          {confirmClear ? t('stats.clearConfirm') : t('stats.clear')}
+        </button>
+        </div>
+      </div>
+
       {/* Hero cards */}
       <div className="stats-hero" id="statsHeroCards">
         <div className="stat-hero-card">
@@ -183,10 +303,19 @@ export const StatsSection = () => {
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon"><UserIcon size={15} /></div>
-          <div className="shc-val" style={{ fontSize: 13, letterSpacing: 0 }}>{stats.favArtist || '—'}</div>
+          <div className="shc-val" style={{ fontSize: 16, letterSpacing: 0, minWidth: 0 }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{stats.favArtist || '—'}</span>
+          </div>
           <div className="shc-lbl">{t('stats.favArtist')}</div>
         </div>
-        <div className="stat-hero-card" style={{ gridColumn: '1/-1' }}>
+        <div className="stat-hero-card">
+          <div className="shc-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>
+          </div>
+          <div className="shc-val">{fmtDurLong(Math.round(appMs / 1000))}</div>
+          <div className="shc-lbl">{t('stats.appTime')}</div>
+        </div>
+        <div className="stat-hero-card" style={{ gridColumn: 'span 3' }}>
           <div className="shc-icon">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
           </div>
@@ -198,6 +327,39 @@ export const StatsSection = () => {
           </div>
           <div className="shc-lbl">{t('stats.recordDay')}</div>
         </div>
+      </div>
+
+      {/* Где слушали чаще — разбивка по площадкам */}
+      <div className="stats-card">
+        <div className="stats-card-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+          {t('stats.sources')}
+        </div>
+        {stats.bySource.length === 0 ? (
+          <div style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 0' }}>{t('stats.noDataYet')}</div>
+        ) : (
+          <div className="src-list">
+            {stats.bySource.map((s) => {
+              const meta = SOURCE_META[s.source] ?? { label: s.source, Logo: HddLogo }
+              const label = s.source === 'local' ? t('stats.localFiles') : meta.label
+              const color = providerBrandColor(s.source) ?? 'var(--accent)'
+              const Logo = meta.Logo
+              const pct = stats.totalPlays > 0 ? Math.round((s.plays / stats.totalPlays) * 100) : 0
+              const fill = maxSourcePlays > 0 ? Math.round((s.plays / maxSourcePlays) * 100) : 0
+              return (
+                <div className="src-row" key={s.source}>
+                  <div className="src-head">
+                    <span className="src-logo" style={{ color }}><Logo size={15} /></span>
+                    <span className="src-name">{label}</span>
+                    <span className="src-pct">{pct}%</span>
+                    <span className="src-meta">{t('lib.dups.plays', { n: s.plays })} · {fmtDurLong(s.sec)}</span>
+                  </div>
+                  <div className="src-bar"><div className="src-bar-fill" style={{ width: `${fill}%`, background: color }} /></div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Main grid */}
