@@ -3,13 +3,15 @@
 .ctx{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius) * 0.9);padding:5px;z-index:100000;min-width:195px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none}
 .ctx.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 .ci{padding:7px 10px;font-size:12.5px;cursor:pointer;border-radius:calc(var(--radius) * 0.5);display:flex;align-items:center;gap:8px;color:var(--text);transition:background .1s,box-shadow .1s}
-.ci:hover{background:var(--hover);box-shadow:inset 2.5px 0 0 var(--accent)}
-.ci-icon{width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .1s}
-.ci:hover .ci-icon{background:rgba(255,255,255,.11)}
+.ci:hover{background:var(--hover)}
+.ci-icon{width:22px;height:22px;border-radius:5px;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .1s}
+.ci-icon svg{width:14px;height:14px}
 .ci.red{color:#e03030}
-.ci.red .ci-icon{background:rgba(224,48,48,.12)}
-.ci.red:hover{background:rgba(224,48,48,.08);box-shadow:inset 2.5px 0 0 #e03030}
-.ci.red:hover .ci-icon{background:rgba(224,48,48,.18)}
+.ci.red:hover{background:rgba(224,48,48,.08)}
+/* Активный пункт (включённый режим): подсветка фоном всей кнопки. */
+.ci.ci-active{background:rgba(var(--accent-rgb,255,255,255),.13);color:var(--accent)}
+.ci.ci-active:hover{background:rgba(var(--accent-rgb,255,255,255),.18)}
+.ci.ci-active .ci-icon{color:var(--accent)}
 .cx-sep{height:1px;background:var(--border);margin:4px 3px;opacity:.65}
 .cx-label{padding:4px 10px 2px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);opacity:.55;pointer-events:none}
 .ctx--peek{display:block!important;visibility:hidden!important;pointer-events:none!important;animation:none!important}

@@ -14,7 +14,7 @@ import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, YtmL
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
-import { playFromSource, AddPopup } from '@features/player'
+import { playSingleTrack, AddPopup } from '@features/player'
 import { getAllProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
 import { toast } from '@shared/ui'
@@ -949,7 +949,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
   // scPlaySearchResult/_scPlayStream: клик по
   // результату поиска ставит очередь ИЗ ОДНОГО трека, а не из всей выдачи.
-  const playTrack = (id: string) => playFromSource([id], null, id)
+  const playTrack = (id: string) => playSingleTrack(id)
 
   // Проигрывание трека ИЗ ПОИСКА + запись в «недавно открытые».
   const playTrackFromSearch = (t: Track) => {
@@ -962,7 +962,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
       author: t.artist, // → подзаголовок «{артист} · Трек»
       round: false,
     })
-    playFromSource([t.id], null, t.id)
+    playSingleTrack(t.id)
   }
 
   // Клик по элементу «недавно открытые»: трек → играть (с ре-резолвом по id после
@@ -973,12 +973,12 @@ export const SearchPage = ({ active }: SearchPageProps) => {
       const found =
         useLibStore.getState().tracks.some((t) => t.id === it.id) || !!trackRegistry.get(it.id)
       if (found) {
-        playFromSource([it.id], null, it.id)
+        playSingleTrack(it.id)
         return
       }
       const prov = getProvider(it.providerId)
       void prov?.resolveTrackById?.(it.id).then((t) => {
-        if (t) playFromSource([t.id], null, t.id)
+        if (t) playSingleTrack(t.id)
       })
       return
     }

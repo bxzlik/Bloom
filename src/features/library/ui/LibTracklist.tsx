@@ -9,13 +9,15 @@ import {
   useFavStore,
   useHistoryStore,
   useSelectionStore,
+  useDupsStore,
   type TrackSortMode,
   type TrackSortDir,
 } from '../model'
 import { getCurrentView } from '../lib/currentView'
 import { historyLabel, historyTime } from '../lib/formatCount'
 import { createPlaylistInline } from '../lib/createPlaylistInline'
-import { playFromSource, useQueueStore, AddPopup } from '@features/player'
+import { deleteUploadedTrack } from '../lib'
+import { playFromSource, playTrack, useQueueStore, AddPopup } from '@features/player'
 import { TrackCtxMenu } from './TrackCtxMenu'
 import { TagEditor } from './TagEditor'
 
@@ -122,6 +124,15 @@ export const LibTracklist = () => {
     useSelectionStore.getState().clear()
   }, [mode, plId, folderPath, searchQuery])
 
+  // ── Инлайн-режим «Найти дубли» ──
+  const dupsActive = useDupsStore((s) => s.active)
+  const dupsPlId = useDupsStore((s) => s.plId)
+  const dupsExit = useDupsStore((s) => s.exit)
+  // Авто-выход при уходе с целевого плейлиста (выбор другого раздела/плейлиста).
+  useEffect(() => {
+    if (dupsActive && (mode !== 'pl' || plId !== dupsPlId)) dupsExit()
+  }, [dupsActive, mode, plId, dupsPlId, dupsExit])
+
   const onTrackCtx = (e: ReactMouseEvent<HTMLDivElement>, t: Track) => {
     e.preventDefault()
     e.stopPropagation()
@@ -159,6 +170,11 @@ export const LibTracklist = () => {
     }
     // Обычный клик — играть.
     onTrackClick(track)
+  }
+
+  // Инлайн-дубли: показываем вместо обычного треклиста (с фильтром по дублям).
+  if (dupsActive && mode === 'pl' && plId === dupsPlId) {
+    return <DupsInline pool={viewTracks} plId={plId} onExit={dupsExit} />
   }
 
   if (viewTracks.length === 0) {
@@ -240,6 +256,168 @@ export const LibTracklist = () => {
           if (addPopupTrackId) createPlaylistInline({ trackId: addPopupTrackId })
         }}
       />
+    </div>
+  )
+}
+
+// ── Инлайн-режим «Найти дубли» ───────────────────────────────────────
+// Группирует пул треков по нормализованному name+artist; группы из >1 трека —
+// дубли. В группе оставляем «лучший» (с обложкой → больше прослушиваний →
+// добавлен раньше), остальные можно удалить.
+
+const normStr = (s: string | undefined): string =>
+  (s || '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+/** Сортировка группы: с обложкой → больше playCount → раньше добавлен. Первый = keep. */
+const sortGroup = (group: Track[]): Track[] =>
+  [...group].sort((a, b) => {
+    if (!!a.cover !== !!b.cover) return a.cover ? -1 : 1
+    if ((b.playCount || 0) !== (a.playCount || 0)) return (b.playCount || 0) - (a.playCount || 0)
+    return (a.addedAt || 0) - (b.addedAt || 0)
+  })
+
+const computeDupGroups = (pool: Track[]): Track[][] => {
+  const map = new Map<string, Track[]>()
+  for (const t of pool) {
+    const key = normStr(t.name) + '|||' + normStr(t.artist)
+    const arr = map.get(key)
+    if (arr) arr.push(t)
+    else map.set(key, [t])
+  }
+  return [...map.values()].filter((g) => g.length > 1).map(sortGroup)
+}
+
+const DupNoteIcon = ({ size = 13 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ opacity: 0.3 }}>
+    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+  </svg>
+)
+
+const DupsInline = ({
+  pool,
+  plId,
+  onExit,
+}: {
+  pool: Track[]
+  /** null = вся библиотека; иначе — id плейлиста (удаление = убрать из плейлиста). */
+  plId: string | null
+  onExit: () => void
+}) => {
+  const t = useT()
+  const playlists = usePlaylistStore((s) => s.playlists)
+  const removeTrackFromPl = usePlaylistStore((s) => s.removeTrackFromPl)
+
+  // Реактивно: после удаления pool меняется → пересчёт → пустые группы пропадают.
+  const groups = useMemo(() => computeDupGroups(pool), [pool])
+  const totalDups = groups.reduce((s, g) => s + g.length - 1, 0)
+
+  // Удалить набор треков: из плейлиста (plId) либо из библиотеки целиком.
+  const deleteTracks = (toDelete: Track[]) => {
+    if (plId) {
+      toDelete.forEach((t) => removeTrackFromPl(plId, t.id))
+    } else {
+      toDelete.forEach((t) => {
+        void deleteUploadedTrack(t.id)
+        // deleteUploadedTrack не чистит плейлисты — убираем id отовсюду.
+        playlists.forEach((p) => {
+          if (p.trs.includes(t.id)) removeTrackFromPl(p.id, t.id)
+        })
+      })
+    }
+  }
+  const deleteGroup = (g: Track[]) => deleteTracks(sortGroup(g).slice(1))
+  const deleteAll = () => groups.forEach((g) => deleteTracks(g.slice(1)))
+
+  return (
+    <div className="lib-tracklist dups-inline" id="libTracklist">
+      <div className="dups-inline-bar">
+        <div className="dups-inline-info">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ flexShrink: 0 }}>
+            <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          </svg>
+          {groups.length > 0 ? (
+            <span>
+              {t('lib.dups.found.a')} <strong>{groups.length}</strong> {t('lib.dups.found.b')}{' '}
+              <strong>{totalDups}</strong> {t('lib.dups.found.c')}
+            </span>
+          ) : (
+            <span>{t('lib.dups.title')}</span>
+          )}
+        </div>
+        <div className="dups-inline-actions">
+          {groups.length > 0 && (
+            <button className="dups-delete-all" onClick={deleteAll}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" />
+              </svg>
+              {t('lib.dups.delAll')}
+            </button>
+          )}
+          <button className="dups-close" onClick={onExit} aria-label={t('common.close')}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {pool.length === 0 ? (
+        <div className="dups-empty">
+          <div className="dups-empty-icon"><DupNoteIcon size={22} /></div>
+          <span style={{ fontSize: 13 }}>{plId ? t('lib.dups.noTracksPl') : t('lib.dups.noTracksLib')}</span>
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="dups-empty">
+          <div className="dups-empty-icon" style={{ background: 'rgba(0,200,100,.08)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3dd68c" strokeWidth={2} strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+          </div>
+          <span style={{ fontSize: 13, color: 'var(--text2)' }}>{t('lib.dups.none')}!</span>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{t('lib.dups.checked', { n: pool.length })}</span>
+        </div>
+      ) : (
+        groups.map((group, gi) => (
+          <div className="dups-group" key={gi}>
+            <div className="dups-group-head">
+              <div className="dups-group-label">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+                {group[0]!.name} — {group[0]!.artist || t('common.unknownArtist')}
+                <span className="dups-group-badge">{t('lib.dups.copies', { n: group.length })}</span>
+              </div>
+              <button className="dups-del-btn" onClick={() => deleteGroup(group)}>{t('lib.dups.delGroup')}</button>
+            </div>
+            {group.map((tr, ti) => (
+              <div className={`dups-track${ti === 0 ? ' keep' : ''}`} key={tr.id} onClick={() => playTrack(tr.id)}>
+                <div className="dups-track-cov">{tr.cover ? <img src={tr.cover} alt="" /> : <DupNoteIcon />}</div>
+                <div className="dups-track-info">
+                  <div className="dups-track-name">{tr.name}</div>
+                  <div className="dups-track-artist">
+                    {(tr.artist || t('common.unknownArtist')) + (tr.playCount ? ` · ${t('lib.dups.plays', { n: tr.playCount })}` : '')}
+                  </div>
+                </div>
+                {ti === 0 ? (
+                  <span className="dups-keep-badge">{t('lib.dups.keep')}</span>
+                ) : (
+                  <button
+                    className="dups-track-del"
+                    aria-label={t('common.delete')}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteTracks([tr])
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" />
+                    </svg>
+                  </button>
+                )}
+                <div className="dups-track-dur">{tr.dur || '—'}</div>
+              </div>
+            ))}
+          </div>
+        ))
+      )}
     </div>
   )
 }

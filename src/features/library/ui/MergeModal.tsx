@@ -125,7 +125,7 @@ export const MergeModal = () => {
   return createPortal(
     <div
       id="mergePlOverlay"
-      className={opening ? 'open' : ''}
+      className={`spanel-backdrop${opening ? ' open' : ''}`}
       onClick={(e) => {
         if (e.target === e.currentTarget) close()
       }}
@@ -133,13 +133,8 @@ export const MergeModal = () => {
         if (!open && e.target === e.currentTarget) setMounted(false)
       }}
     >
-      <div className="mpl-modal">
+      <div className="spanel">
         <div className="mpl-hero">
-          <button className="mpl-close" onClick={close} aria-label={t('common.close')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
           <div className="mpl-cstack" id="mergePlCStack">
             {coverStack.map((p) => (
               <div className="mpl-cov" key={p.id}><PlCov pl={p} /></div>

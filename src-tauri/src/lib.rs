@@ -26,6 +26,36 @@ mod ytm;
 use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
 
+/// Отключает браузерные accelerator-клавиши WebView2 (Ctrl+F, Ctrl+P, F5, F12 и т.п.)
+/// для одного окна. Доступно только на Windows (WebView2).
+#[cfg(windows)]
+fn disable_browser_accelerator_keys(window: &tauri::WebviewWindow) {
+    let _ = window.with_webview(|webview| {
+        use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+        use windows_core_wv::Interface;
+        unsafe {
+            let controller = webview.controller();
+            if let Ok(core) = controller.CoreWebView2() {
+                if let Ok(settings) = core.Settings() {
+                    if let Ok(s3) = settings.cast::<ICoreWebView2Settings3>() {
+                        let _ = s3.SetAreBrowserAcceleratorKeysEnabled(false);
+                    }
+                }
+            }
+        }
+    });
+}
+
+/// Открыть DevTools для вызвавшего окна. В release-сборке метод недоступен — no-op.
+/// Нужна, т.к. отключение accelerator-клавиш WebView2 убирает штатный F12.
+#[tauri::command]
+fn open_devtools(window: tauri::WebviewWindow) {
+    #[cfg(debug_assertions)]
+    window.open_devtools();
+    #[cfg(not(debug_assertions))]
+    let _ = window;
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Инициализация логгера как можно раньше, до Tauri.
@@ -83,6 +113,7 @@ pub fn run() {
         ))
         // --- Команды ---
         .invoke_handler(tauri::generate_handler![
+            open_devtools,
             commands::get_app_settings,
             commands::setautostart,
             commands::getautostart,
@@ -187,6 +218,15 @@ pub fn run() {
             #[cfg(windows)]
             {
                 window_chrome::apply_to_main_window(app.handle());
+
+                // Отключаем браузерные accelerator-клавиши WebView2 (Ctrl+F «найти на
+                // странице», F5 reload, Ctrl+P print и т.п.) — Bloom это приложение, а не
+                // браузер. Применяем ко всем окнам (main, overlay, miniplayer, tray-popup).
+                // Обычные клавиши редактирования (Ctrl+C/V/X/A) не затрагиваются.
+                // F5/Ctrl+R возвращаем вручную во фронте, F12 DevTools — командой open_devtools.
+                for (_label, w) in app.webview_windows() {
+                    disable_browser_accelerator_keys(&w);
+                }
                 // Apply DWM rounded corners to mini player window too
                 if let Some(mp) = app.get_webview_window("miniplayer") {
                     use windows::Win32::Foundation::HWND;

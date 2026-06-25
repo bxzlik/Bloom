@@ -28,6 +28,7 @@ const DEFAULTS: AppSettings = {
   discord_custom_artwork: '',
   discord_show_small_img: false,
   discord_small_img_url: '',
+  discord_small_img_mode: 'default',
   discord_btn1_mode: '',
   discord_btn1_label: '',
   discord_btn1_url: '',
@@ -63,6 +64,7 @@ type DiscordFields = Pick<
   | 'discord_custom_artwork'
   | 'discord_show_small_img'
   | 'discord_small_img_url'
+  | 'discord_small_img_mode'
   | 'discord_btn1_mode'
   | 'discord_btn1_label'
   | 'discord_btn1_url'
@@ -112,6 +114,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         customArtwork: s.discord_custom_artwork,
         showSmallImg: s.discord_show_small_img,
         smallImgUrl: s.discord_small_img_url,
+        smallImgMode: s.discord_small_img_mode,
         btn1Mode: s.discord_btn1_mode,
         btn1Label: s.discord_btn1_label,
         btn1Url: s.discord_btn1_url,

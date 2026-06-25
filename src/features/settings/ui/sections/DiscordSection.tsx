@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useSettingsStore } from '../../model'
-import { usePlayerStore } from '@features/player'
+import { usePlayerStore, useQueueStore, trackProviderId } from '@features/player'
+import { useLibStore } from '@features/library'
+import { trackRegistry } from '@entities/track'
 import { useT } from '@shared/i18n'
+
+/** Площадка трека → public-бейдж для превью (local/неизвестно → лого приложения). */
+const PLATFORM_BADGE: Record<string, string> = {
+  soundcloud: '/logop/soundcloud.png',
+  ytmusic: '/logop/ytmusic.png',
+  spotify: '/logop/spotify.png',
+  yandex: '/logop/yandex.png',
+}
 
 /**
  * Раздел «Discord RPC» (`ssec-discord`) — полная конфигурация Rich
@@ -15,8 +25,16 @@ import { useT } from '@shared/i18n'
  */
 
 type CoverMode = 'auto' | 'custom'
-type SmallMode = 'off' | 'default' | 'custom'
+type SmallMode = 'off' | 'default' | 'custom' | 'platform'
 type BtnMode = 'off' | 'track' | 'artist' | 'custom'
+
+/** Текущий режим иконки: mode — источник правды; для legacy-конфигов (пусто)
+ * выводим из show/url как раньше. */
+const deriveSmallMode = (show: boolean, url: string, mode: string): SmallMode => {
+  if (!show) return 'off'
+  if (mode === 'default' || mode === 'custom' || mode === 'platform') return mode
+  return url ? 'custom' : 'default'
+}
 
 const fmtTime = (s: number): string => {
   const t = Math.max(0, Math.floor(s || 0))
@@ -33,6 +51,7 @@ export const DiscordSection = () => {
   const customArtwork = useSettingsStore((s) => s.discord_custom_artwork)
   const showSmallImg = useSettingsStore((s) => s.discord_show_small_img)
   const smallImgUrl = useSettingsStore((s) => s.discord_small_img_url)
+  const smallImgMode = useSettingsStore((s) => s.discord_small_img_mode)
   const b1mode = useSettingsStore((s) => s.discord_btn1_mode)
   const b1label = useSettingsStore((s) => s.discord_btn1_label)
   const b1url = useSettingsStore((s) => s.discord_btn1_url)
@@ -48,7 +67,7 @@ export const DiscordSection = () => {
     customArtwork && customArtwork !== 'off' ? 'custom' : 'auto',
   )
   const [smallMode, setSmallMode] = useState<SmallMode>(() =>
-    !showSmallImg ? 'off' : smallImgUrl ? 'custom' : 'default',
+    deriveSmallMode(showSmallImg, smallImgUrl, smallImgMode),
   )
   const [coverUrl, setCoverUrl] = useState(() => (customArtwork && customArtwork !== 'off' ? customArtwork : ''))
   const [smallUrl, setSmallUrl] = useState(() => smallImgUrl)
@@ -63,7 +82,7 @@ export const DiscordSection = () => {
     const st = useSettingsStore.getState()
     setCoverMode(st.discord_custom_artwork && st.discord_custom_artwork !== 'off' ? 'custom' : 'auto')
     setCoverUrl(st.discord_custom_artwork && st.discord_custom_artwork !== 'off' ? st.discord_custom_artwork : '')
-    setSmallMode(!st.discord_show_small_img ? 'off' : st.discord_small_img_url ? 'custom' : 'default')
+    setSmallMode(deriveSmallMode(st.discord_show_small_img, st.discord_small_img_url, st.discord_small_img_mode))
     setSmallUrl(st.discord_small_img_url)
     setL1(st.discord_btn1_label)
     setU1(st.discord_btn1_url)
@@ -96,13 +115,14 @@ export const DiscordSection = () => {
   }
   const pickSmall = (m: SmallMode) => {
     setSmallMode(m)
-    if (m === 'off') void setDiscordSettings({ discord_show_small_img: false, discord_small_img_url: '' })
-    else if (m === 'default') void setDiscordSettings({ discord_show_small_img: true, discord_small_img_url: '' })
-    else void setDiscordSettings({ discord_show_small_img: true, discord_small_img_url: smallUrl.trim() })
+    if (m === 'off') void setDiscordSettings({ discord_show_small_img: false, discord_small_img_url: '', discord_small_img_mode: 'off' })
+    else if (m === 'default') void setDiscordSettings({ discord_show_small_img: true, discord_small_img_url: '', discord_small_img_mode: 'default' })
+    else if (m === 'platform') void setDiscordSettings({ discord_show_small_img: true, discord_small_img_url: '', discord_small_img_mode: 'platform' })
+    else void setDiscordSettings({ discord_show_small_img: true, discord_small_img_url: smallUrl.trim(), discord_small_img_mode: 'custom' })
   }
   const applySmallUrl = () => {
     setSmallMode('custom')
-    void setDiscordSettings({ discord_show_small_img: true, discord_small_img_url: smallUrl.trim() })
+    void setDiscordSettings({ discord_show_small_img: true, discord_small_img_url: smallUrl.trim(), discord_small_img_mode: 'custom' })
   }
 
   // Превью: src обложки и иконки. Показываем обложку как есть (в т.ч. data: у
@@ -111,8 +131,20 @@ export const DiscordSection = () => {
   // — поведение Rust-стороны, превью его не отражает (показывает реальную обложку).
   const previewCover = coverMode === 'custom' && coverUrl ? coverUrl : artwork || ''
   const showCoverImg = !!previewCover && brokenCover !== previewCover
+  // Бейдж площадки текущего трека (для превью режима «Площадка»).
+  const curId = useQueueStore((s) => s.curId)
+  const curTrack =
+    useLibStore((s) => (curId ? s.tracks.find((t) => t.id === curId) ?? null : null)) ??
+    (curId ? trackRegistry.get(curId) ?? null : null)
+  const platformBadge = PLATFORM_BADGE[trackProviderId(curTrack)] ?? '/logo.png'
   const previewSmallSrc =
-    smallMode === 'custom' && smallUrl ? smallUrl : smallMode === 'default' ? '/logo.png' : ''
+    smallMode === 'custom' && smallUrl
+      ? smallUrl
+      : smallMode === 'platform'
+        ? platformBadge
+        : smallMode === 'default'
+          ? '/logo.png'
+          : ''
 
   const btnLabel = (m: BtnMode, label: string): string =>
     m === 'track' ? t('settings.discord.btnMode.track') : m === 'artist' ? t('settings.discord.btnMode.artist') : label || t('settings.discord.btnLabel.fallback')
@@ -229,6 +261,9 @@ export const DiscordSection = () => {
             </OptBtn>
             <OptBtn active={smallMode === 'custom'} onClick={() => pickSmall('custom')}>
               <LinkIcon /> {t('settings.discord.mode.custom')}
+            </OptBtn>
+            <OptBtn active={smallMode === 'platform'} onClick={() => pickSmall('platform')}>
+              <PlatformIcon /> {t('settings.discord.mode.platform')}
             </OptBtn>
           </div>
           {smallMode === 'custom' && (
@@ -409,6 +444,9 @@ const NoteIcon = () => (
 )
 const LinkIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+)
+const PlatformIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
 )
 const CloseIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>

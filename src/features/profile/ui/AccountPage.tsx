@@ -1,43 +1,24 @@
-import { useState } from 'react'
 import { useT } from '@shared/i18n'
 import { ProfileCard } from './ProfileCard'
 import { StatsSection } from './StatsSection'
 import { AchievementsSection } from './AchievementsSection'
 import { ProfileEditModal } from './ProfileEditModal'
 import { ProfileShareModal } from './ProfileShareModal'
+import { useAccountTabStore } from '../model/accountTabStore'
 
 /**
  * Страница профиля (`#page-account`). Карточка профиля (всегда сверху) + под ней
- * сегментированный таб-бар: «Статистика» / «Достижения». Активная вкладка
- * персистится в localStorage, чтобы пережить переход между страницами и
- * перезапуск. `.page` имеет overflow:hidden, поэтому внутренний контейнер
- * скроллится сам.
+ * сегментированный таб-бар: «Статистика» / «Достижения». Активная вкладка живёт
+ * в `useAccountTabStore` (персистится в localStorage) — чтобы её можно было
+ * переключать извне при смонтированной странице (напр. бар статистики на
+ * главной открывает профиль сразу на «Статистике»). `.page` имеет
+ * overflow:hidden, поэтому внутренний контейнер скроллится сам.
  */
-
-type AccTab = 'stats' | 'ach'
-
-const TAB_KEY = 'bloom_account_tab'
-
-const loadTab = (): AccTab => {
-  try {
-    return localStorage.getItem(TAB_KEY) === 'ach' ? 'ach' : 'stats'
-  } catch {
-    return 'stats'
-  }
-}
 
 export const AccountPage = ({ active }: { active: boolean }) => {
   const t = useT()
-  const [tab, setTab] = useState<AccTab>(loadTab)
-
-  const go = (next: AccTab) => {
-    setTab(next)
-    try {
-      localStorage.setItem(TAB_KEY, next)
-    } catch {
-      /* ignore */
-    }
-  }
+  const tab = useAccountTabStore((s) => s.tab)
+  const go = useAccountTabStore((s) => s.setTab)
 
   return (
     <div className={`page${active ? ' active' : ''}`} id="page-account">

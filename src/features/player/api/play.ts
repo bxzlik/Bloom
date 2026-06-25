@@ -596,8 +596,22 @@ export const playTrack = (id: string): void => {
   if (queue.includes(id)) {
     playFromCurrentQueue(id)
   } else {
-    void loadPlay(id)
+    playSingleTrack(id)
   }
+}
+
+/**
+ * Запустить одиночный трек как очередь из одного элемента. В отличие от голого
+ * `loadPlay`, наполняет очередь (трек виден в `#playerQueueBlock`) и ставит
+ * source `single` → в пилюле очереди пишется название трека с его обложкой.
+ * Используется для запуска трека вне коллекции (контекст-меню, поиск, топы).
+ */
+export const playSingleTrack = (id: string): void => {
+  const t = findTrack(id)
+  const source: PlaySource = t
+    ? { kind: 'single', name: t.name || '', cover: t.cover ?? null }
+    : null
+  playFromSource([id], source, id)
 }
 
 /** Добавить в конец очереди. */

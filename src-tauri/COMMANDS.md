@@ -27,7 +27,7 @@
 |---|---|---|
 | `setdiscordrpc` | `enabled: bool` | `()` |
 | `getdiscordrpc` | — | `bool` |
-| `set_discord_settings` | DiscordSettings (10 полей плоско) | `()` |
+| `set_discord_settings` | DiscordSettings (11 полей плоско) | `()` |
 | `get_discord_settings` | — | `DiscordSettings` |
 
 ### Player / Now playing → features/player/api

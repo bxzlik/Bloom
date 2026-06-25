@@ -3,28 +3,26 @@ import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
-import { useLibStore } from '../model'
+import { useLibStore, useTagEditStore } from '../model'
 import { compressCover, idbUpdateMeta } from '../lib'
 
 export interface TagEditorProps {
-  /** Track для редактирования; null = модалка закрыта. */
+  /** Track для редактирования; null = панель закрыта. */
   track: Track | null
   onClose: () => void
 }
 
 /**
- * Модалка редактирования тегов трека `#tagEditorOverlay`
- *.
- *
- * Использует CSS: `.tag-editor-overlay`, `.tag-editor-modal`,
- * `.te-head/.te-body/.te-foot/.te-cover-* /.te-field/.te-input/.te-label/.te-title/.te-close`.
+ * Редактор тегов трека — боковая панель-drawer (`.spanel-backdrop`/`.spanel`),
+ * выезжает справа, как редактирование профиля. Каркас/тело/футер переиспользуют
+ * общие классы `.spanel-*` (modals.css) и `.pedit-*`.
  *
  * Сохранение: обновляем меру в useLibStore.addTracks (merge by id) + idbUpdateMeta.
  * Если есть новая обложка — сжимаем через compressCover (300×300 JPEG 80%).
  *
  * Для треков из folder_watcher (без записи в IDB) idbUpdateMeta тихо вернёт —
  * меры обновляются только в runtime-сторе, persist отложен (folder-watcher
- * пере-присылает teги при следующем сканировании).
+ * пере-присылает теги при следующем сканировании).
  */
 export const TagEditor = ({ track, onClose }: TagEditorProps) => {
   const t = useT()
@@ -67,8 +65,8 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
 
   const handleClose = () => {
     setOpening(false)
-    // Ждём анимацию закрытия (260ms) и зовём родителя.
-    setTimeout(() => onClose(), 260)
+    // Ждём анимацию закрытия и зовём родителя (он обнулит track → демонтаж).
+    setTimeout(() => onClose(), 300)
   }
 
   const onCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,72 +121,50 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
 
   return createPortal(
     <div
-      className={`tag-editor-overlay${opening ? ' open' : ''}`}
+      className={`spanel-backdrop${opening ? ' open' : ''}`}
       id="tagEditorOverlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose()
       }}
     >
-      <div className="tag-editor-modal">
-        <div className="te-head">
-          <div className="te-title">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              style={{ marginRight: 7, verticalAlign: 'middle' }}
-            >
-              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            {t('lib.tag.editorTitle')}
+      <div className="spanel">
+        {/* HERO: крупная обложка по центру + название + подпись */}
+        <div className="spanel-hero">
+          <label className="spanel-cover">
+            {coverSrc ? (
+              <img src={coverSrc} alt="" />
+            ) : (
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" style={{ opacity: 0.3 }}>
+                <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+              </svg>
+            )}
+            <div className="spanel-cover-cam">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </div>
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onCoverChange} />
+          </label>
+          <div className={`spanel-hero-name${name.trim() ? '' : ' empty'}`}>
+            {name.trim() || t('lib.tag.titlePlaceholder')}
           </div>
-          <button className="te-close" onClick={handleClose} aria-label={t('common.close')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <div className="spanel-hero-sub">{t('lib.tag.editorTitle')}</div>
         </div>
 
-        <div className="te-body">
-          <div className="te-cover-wrap">
-            <label style={{ cursor: 'pointer' }}>
-              <div className="te-cover" id="teCover">
-                {coverSrc ? (
-                  <img src={coverSrc} alt="" />
-                ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" style={{ opacity: 0.3 }}>
-                    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-                  </svg>
-                )}
-              </div>
-              <div className="te-cover-overlay">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={onCoverChange}
-              />
-            </label>
-            <div style={{ fontSize: 9.5, color: 'var(--muted)', textAlign: 'center', marginTop: 6 }}>
-              {t('lib.tag.cover')}
+        <div className="pedit-body">
+          <div className="pedit-card">
+            <div className="pedit-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              {t('lib.tag.editorTitle')}
             </div>
-          </div>
 
-          <div className="te-fields">
             <Field label={t('lib.tag.title')}>
               <input
-                className="te-input"
+                className="pedit-nick-inp"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('lib.tag.titlePlaceholder')}
@@ -198,7 +174,7 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
             </Field>
             <Field label={t('lib.tag.artist')}>
               <input
-                className="te-input"
+                className="pedit-nick-inp"
                 value={artist}
                 onChange={(e) => setArtist(e.target.value)}
                 placeholder={t('lib.tag.artistPlaceholder')}
@@ -207,7 +183,7 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
             </Field>
             <Field label={t('lib.ti.album')}>
               <input
-                className="te-input"
+                className="pedit-nick-inp"
                 value={album}
                 onChange={(e) => setAlbum(e.target.value)}
                 placeholder={t('lib.tag.albumPlaceholder')}
@@ -225,27 +201,26 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
               }
             >
               <input
-                className="te-input"
+                className="pedit-nick-inp"
                 value={genres}
                 onChange={(e) => setGenres(e.target.value)}
                 placeholder="Rock, Pop, Electronic..."
                 maxLength={300}
               />
             </Field>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="spanel-row">
               <Field label={t('lib.ti.year')} style={{ flex: 1 }}>
                 <input
-                  className="te-input"
+                  className="pedit-nick-inp"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
                   placeholder="2024"
                   maxLength={4}
-                  style={{ width: '100%' }}
                 />
               </Field>
               <Field label={t('lib.ti.publisher')} style={{ flex: 2 }}>
                 <input
-                  className="te-input"
+                  className="pedit-nick-inp"
                   value={publisher}
                   onChange={(e) => setPublisher(e.target.value)}
                   placeholder={t('lib.tag.publisherPlaceholder')}
@@ -256,11 +231,11 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
           </div>
         </div>
 
-        <div className="te-foot">
-          <button className="btn btg" onClick={handleClose}>
+        <div className="pedit-foot">
+          <button className="pedit-btn-cancel" onClick={handleClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn bta" onClick={() => void onSave()}>
+          <button className="pedit-btn-save" onClick={() => void onSave()}>
             {t('common.save')}
           </button>
         </div>
@@ -268,6 +243,16 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
     </div>,
     document.body,
   )
+}
+
+/**
+ * Единый хост редактора тегов, управляемый глобальным стором `useTagEditStore`.
+ * Монтируется один раз в App — переживает закрытие BigPicture и других окон.
+ */
+export const TagEditorHost = () => {
+  const track = useTagEditStore((s) => s.track)
+  const close = useTagEditStore((s) => s.close)
+  return <TagEditor track={track} onClose={close} />
 }
 
 const Field = ({
@@ -279,8 +264,8 @@ const Field = ({
   children: React.ReactNode
   style?: React.CSSProperties
 }) => (
-  <div className="te-field" style={style}>
-    <div className="te-label">{label}</div>
+  <div className="pedit-eg" style={style}>
+    <div className="pedit-bio-label" style={{ marginBottom: 0 }}>{label}</div>
     {children}
   </div>
 )

@@ -4,8 +4,6 @@ import {
   useHistoryStore,
   useActivityStore,
   useUsageStore,
-  useFavStore,
-  usePlaylistStore,
 } from '@features/library'
 import { toast } from '@shared/ui'
 import { useT, useLocale, t as tt } from '@shared/i18n'
@@ -38,8 +36,6 @@ export const AchievementsSection = () => {
   const entries = useHistoryStore((s) => s.entries)
   const log = useActivityStore((s) => s.log)
   const appMs = useUsageStore((s) => s.appMs)
-  const favs = useFavStore((s) => s.favs)
-  const playlists = usePlaylistStore((s) => s.playlists)
   const unlocked = useAchievementsStore((s) => s.unlocked)
   const sync = useAchievementsStore((s) => s.sync)
 
@@ -49,11 +45,9 @@ export const AchievementsSection = () => {
       entries,
       log,
       appMs,
-      favCount: favs.size,
-      playlistCount: playlists.length,
     })
     return buildAchievements(ctx)
-  }, [tracks, entries, log, appMs, favs, playlists])
+  }, [tracks, entries, log, appMs])
 
   const done = list.reduce((n, a) => n + a.tierReached, 0)
   const total = list.length * TIER_ORDER.length

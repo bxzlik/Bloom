@@ -35,18 +35,13 @@ export interface AchDef {
 
 /** Данные для вычисления достижений — снимок из всех сторов. */
 export interface AchContext {
-  trackCount: number
   totalPlays: number
   listenSec: number
   appSec: number
-  favCount: number
-  playlistCount: number
   /** Текущий стрик — дней подряд с прослушиваниями (с грейсом на сегодня). */
   streak: number
   /** Рекорд прослушиваний за один день. */
   recordDay: number
-  /** Сколько разных площадок задействовано (по префиксу id в истории). */
-  sourceCount: number
   /** Всего дней с хотя бы одним прослушиванием. */
   activeDays: number
 }
@@ -77,12 +72,6 @@ const SVG = (path: string): string =>
 
 export const ACHIEVEMENTS: AchDef[] = [
   {
-    id: 'collector',
-    icon: SVG('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
-    nameKey: m('collector'), descKey: d('collector'), unit: 'count',
-    tiers: [50, 250, 1000], value: (c) => c.trackCount,
-  },
-  {
     id: 'listener',
     icon: SVG('<path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5z"/>'),
     nameKey: m('listener'), descKey: d('listener'), unit: 'count',
@@ -107,24 +96,6 @@ export const ACHIEVEMENTS: AchDef[] = [
     tiers: [20, 50, 100], value: (c) => c.recordDay,
   },
   {
-    id: 'explorer',
-    icon: SVG('<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>'),
-    nameKey: m('explorer'), descKey: d('explorer'), unit: 'count',
-    tiers: [2, 3, 5], value: (c) => c.sourceCount,
-  },
-  {
-    id: 'keeper',
-    icon: SVG('<path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>'),
-    nameKey: m('keeper'), descKey: d('keeper'), unit: 'count',
-    tiers: [10, 50, 200], value: (c) => c.favCount,
-  },
-  {
-    id: 'curator',
-    icon: SVG('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'),
-    nameKey: m('curator'), descKey: d('curator'), unit: 'count',
-    tiers: [1, 5, 20], value: (c) => c.playlistCount,
-  },
-  {
     id: 'veteran',
     icon: SVG('<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89L17 22l-5-3-5 3 1.52-9.11"/>'),
     nameKey: m('veteran'), descKey: d('veteran'), unit: 'time',
@@ -137,14 +108,6 @@ export const ACHIEVEMENTS: AchDef[] = [
     tiers: [7, 30, 100], value: (c) => c.activeDays,
   },
 ]
-
-/** Площадка трека по префиксу id (как в StatsSection). */
-const sourceFromId = (id: string): string =>
-  id.startsWith('ytm_') ? 'ytmusic'
-    : id.startsWith('ym_') ? 'yandex'
-      : id.startsWith('sp_') ? 'spotify'
-        : id.startsWith('sc_') ? 'soundcloud'
-          : 'local'
 
 const dayKey = (d: Date) => d.toISOString().slice(0, 10)
 
@@ -171,8 +134,6 @@ export interface AchSources {
   entries: { id: string; count?: number }[]
   log: Record<string, number>
   appMs: number
-  favCount: number
-  playlistCount: number
 }
 
 /** Собрать контекст достижений из снимка сторов. */
@@ -180,7 +141,6 @@ export const buildAchContext = (s: AchSources): AchContext => {
   let totalPlays = 0
   let listenSec = 0
   let recordDay = 0
-  const sources = new Set<string>()
 
   const findTrack = (id: string): Track | undefined =>
     s.tracks.find((t) => t.id === id) ?? trackRegistry.get(id)
@@ -188,7 +148,6 @@ export const buildAchContext = (s: AchSources): AchContext => {
   for (const e of s.entries) {
     const plays = e.count || 0
     totalPlays += plays
-    if (plays > 0) sources.add(sourceFromId(e.id))
     const t = findTrack(e.id)
     if (t) listenSec += parseDur(t.dur) * plays
   }
@@ -197,15 +156,11 @@ export const buildAchContext = (s: AchSources): AchContext => {
   const activeDays = Object.values(s.log).filter((v) => v > 0).length
 
   return {
-    trackCount: s.tracks.length,
     totalPlays,
     listenSec,
     appSec: Math.round(s.appMs / 1000),
-    favCount: s.favCount,
-    playlistCount: s.playlistCount,
     streak: computeStreak(s.log),
     recordDay,
-    sourceCount: sources.size,
     activeDays,
   }
 }

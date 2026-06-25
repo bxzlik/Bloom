@@ -88,6 +88,10 @@ pub struct AppSettings {
     pub discord_show_small_img: bool,
     #[serde(default)]
     pub discord_small_img_url: String,
+    /// Режим маленькой иконки: "off" | "default" | "custom" | "platform".
+    /// Пусто = legacy-конфиг (поведение выводится из url, см. discord_rpc).
+    #[serde(default)]
+    pub discord_small_img_mode: String,
     #[serde(default)]
     pub discord_btn1_mode: String,
     #[serde(default)]
@@ -119,6 +123,7 @@ impl Default for AppSettings {
             discord_custom_artwork: String::new(),
             discord_show_small_img: true,
             discord_small_img_url: String::new(),
+            discord_small_img_mode: "default".to_string(),
             discord_btn1_mode: String::new(),
             discord_btn1_label: String::new(),
             discord_btn1_url: String::new(),

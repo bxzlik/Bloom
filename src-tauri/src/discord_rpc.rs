@@ -28,6 +28,10 @@ pub struct PresenceState {
     pub custom_artwork: String,
     pub show_small_img: bool,
     pub small_img_url: String,
+    /// "off" | "default" | "custom" | "platform" ("" = legacy).
+    pub small_img_mode: String,
+    /// Площадка текущего трека: "soundcloud" | "ytmusic" | "spotify" | "yandex" | "".
+    pub source: String,
     pub btn1_mode: String,
     pub btn1_label: String,
     pub btn1_url: String,
@@ -49,6 +53,8 @@ impl PresenceState {
             custom_artwork: String::new(),
             show_small_img: true,
             small_img_url: String::new(),
+            small_img_mode: String::new(),
+            source: String::new(),
             btn1_mode: String::new(),
             btn1_label: String::new(),
             btn1_url: String::new(),
@@ -70,6 +76,8 @@ impl PresenceState {
             && self.custom_artwork == other.custom_artwork
             && self.show_small_img == other.show_small_img
             && self.small_img_url == other.small_img_url
+            && self.small_img_mode == other.small_img_mode
+            && self.source == other.source
             && self.btn1_mode == other.btn1_mode
             && self.btn2_mode == other.btn2_mode
             && (self.position_sec - other.position_sec).abs() < 6.0
@@ -232,14 +240,20 @@ fn send_activity(
         None => "bloom",
     };
 
-    // Small image
-    let small_img_custom = normalize_artwork_url(&state.small_img_url);
-    let small_image: Option<&str> = if !state.show_small_img {
+    // Small image: off | platform-бейдж | кастомный URL | дефолт (иконка приложения).
+    let small_image: Option<String> = if !state.show_small_img {
         None
-    } else if let Some(ref u) = small_img_custom {
-        Some(u.as_str())
     } else {
-        Some("bloom")
+        match state.small_img_mode.as_str() {
+            "platform" => Some(platform_asset_key(&state.source).to_string()),
+            "custom" => {
+                Some(normalize_artwork_url(&state.small_img_url).unwrap_or_else(|| "bloom".into()))
+            }
+            "default" => Some("bloom".into()),
+            // Legacy-конфиг (mode ещё не задан): старое поведение — URL если есть,
+            // иначе иконка приложения.
+            _ => Some(normalize_artwork_url(&state.small_img_url).unwrap_or_else(|| "bloom".into())),
+        }
     };
 
     let mut activity = Activity::new()
@@ -250,8 +264,10 @@ fn send_activity(
     }
 
     let mut assets = Assets::new().large_image(large_image);
-    if let Some(si) = small_image {
-        assets = assets.small_image(si).small_text("Bloom");
+    if let Some(ref si) = small_image {
+        assets = assets
+            .small_image(si.as_str())
+            .small_text(platform_label(&state.source, &state.small_img_mode));
     }
     activity = activity.assets(assets);
 
@@ -307,6 +323,32 @@ fn trim_128(s: &str) -> &str {
             end -= 1;
         }
         &s[..end]
+    }
+}
+
+/// Ключ ассета площадки (Art Assets в Discord Developer Portal). Локальные
+/// треки/неизвестная площадка → иконка приложения "bloom".
+fn platform_asset_key(source: &str) -> &'static str {
+    match source {
+        "soundcloud" => "soundcloud",
+        "ytmusic" => "ytmusic",
+        "spotify" => "spotify",
+        "yandex" => "yandex",
+        _ => "bloom",
+    }
+}
+
+/// Подпись (tooltip) для маленькой иконки. В режиме площадки — имя площадки.
+fn platform_label(source: &str, mode: &str) -> &'static str {
+    if mode != "platform" {
+        return "Bloom";
+    }
+    match source {
+        "soundcloud" => "SoundCloud",
+        "ytmusic" => "YouTube Music",
+        "spotify" => "Spotify",
+        "yandex" => "Яндекс Музыка",
+        _ => "Bloom",
     }
 }
 

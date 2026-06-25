@@ -338,7 +338,7 @@ body {
 
 /* Модалка игр: оконный тайтлбар (#winTitlebar, z-index:1001) остаётся видимым и
    перетаскиваемым поверх затемнения — как у прочих модалок (#settingsOverlay
-   z990, #statsModalOverlay z992). В #gamesOverlay был z-index:9100
+   z990, #dislikesModalOverlay z992). В #gamesOverlay был z-index:9100
    и накрывал тайтлбар; опускаем в тот же ряд, что и остальные модалки. */
 #gamesOverlay {
   z-index: 992;

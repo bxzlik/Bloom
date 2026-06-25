@@ -12,7 +12,7 @@ import { useT, useLocale, t as tt } from '@shared/i18n'
  * Полная секция статистики на странице профиля. `#statsSection`
  * / `_renderStats` + `_renderActivityChart`/`_renderActivityHeatmap`.
  *
- * Источник данных, как в StatsModal, — `useHistoryStore` (count = число
+ * Источник данных — `useHistoryStore` (count = число
  * прослушиваний) + `useActivityStore` (дневной журнал) + `useLibStore.tracks`
  * (количество треков). В старом считалось из `t.playCount`, но в bloom его нет.
  *
@@ -126,8 +126,32 @@ export const StatsSection = () => {
       ? new Date(recordDate).toLocaleDateString('ru', { day: 'numeric', month: 'short' })
       : ''
 
-    return { totalSec, totalPlays, topTracks, topArtists, favArtist, bySource, recordDay, recordDateFmt }
+    // Доп. метрики (перенесены из бывшей модалки статистики): уникальные треки,
+    // средняя длина трека и средние за день. Разброс дней — из временных меток
+    // истории (первое/последнее прослушивание).
+    const uniqueTracks = entries.length
+    const uniqueArtists = artistMap.size
+    const avgSec = totalPlays > 0 ? Math.round(totalSec / totalPlays) : 0
+    let firstTs = Date.now()
+    let lastTs = Date.now()
+    for (const e of entries) {
+      if (e.ts) {
+        if (e.ts < firstTs) firstTs = e.ts
+        if (e.ts > lastTs) lastTs = e.ts
+      }
+    }
+    const daySpan = Math.max(1, Math.ceil((lastTs - firstTs) / 86400000))
+
+    return { totalSec, totalPlays, topTracks, topArtists, favArtist, bySource, recordDay, recordDateFmt, uniqueTracks, uniqueArtists, avgSec, daySpan }
   }, [entries, tracks, log])
+
+  // Производные значения доп.метрик (для рендера): средняя длина трека mm:ss и
+  // средние за день (часы / треки).
+  const avgMin = Math.floor(stats.avgSec / 60)
+  const avgS = stats.avgSec % 60
+  const avgLenFmt = `${avgMin}:${String(avgS).padStart(2, '0')}`
+  const avgHoursDay = (stats.totalSec / 3600 / stats.daySpan).toFixed(1)
+  const avgTracksDay = (stats.totalPlays / stats.daySpan).toFixed(1)
 
   const playTop = (id: string) => playTrack(id)
 
@@ -137,12 +161,16 @@ export const StatsSection = () => {
   const copyStats = () => {
     const lines: string[] = [t('stats.shareTitle'), '']
     lines.push(`📚 ${t('stats.tracks')}: ${tracks.length}`)
+    lines.push(`🎵 ${t('stats.unique')}: ${stats.uniqueTracks}`)
     lines.push(`▶️ ${t('stats.plays')}: ${stats.totalPlays}`)
     lines.push(`🎧 ${t('stats.time')}: ${fmtDurLong(stats.totalSec)}`)
+    lines.push(`📏 ${t('stats.avgLength')}: ${avgLenFmt}`)
     lines.push(`⏱️ ${t('stats.appTime')}: ${fmtDurLong(Math.round(appMs / 1000))}`)
     if (stats.favArtist) lines.push(`⭐ ${t('stats.favArtist')}: ${stats.favArtist}`)
     if (stats.recordDay > 0)
       lines.push(`🏆 ${t('stats.recordDay')}: ${stats.recordDay} ${t('stats.recordTracksDay', { date: stats.recordDateFmt })}`)
+    lines.push('', `📈 ${t('stats.avgPerDay')}:`)
+    lines.push(`  ${avgHoursDay} ${t('stats.hoursDay')} · ${avgTracksDay} ${t('stats.tracksDay')} · ${stats.uniqueArtists} ${t('stats.artists')}`)
 
     if (stats.bySource.length) {
       lines.push('', `📡 ${t('stats.sources')}:`)
@@ -302,8 +330,22 @@ export const StatsSection = () => {
           <div className="shc-lbl">{t('stats.time')}</div>
         </div>
         <div className="stat-hero-card">
+          <div className="shc-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="m4.93 4.93 2.83 2.83" /><path d="m16.24 16.24 2.83 2.83" /><circle cx="12" cy="12" r="4" /></svg>
+          </div>
+          <div className="shc-val">{stats.uniqueTracks}</div>
+          <div className="shc-lbl">{t('stats.unique')}</div>
+        </div>
+        <div className="stat-hero-card">
+          <div className="shc-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+          </div>
+          <div className="shc-val">{avgLenFmt}</div>
+          <div className="shc-lbl">{t('stats.avgLength')}</div>
+        </div>
+        <div className="stat-hero-card">
           <div className="shc-icon"><UserIcon size={15} /></div>
-          <div className="shc-val" style={{ fontSize: 16, letterSpacing: 0, minWidth: 0 }}>
+          <div className="shc-val" style={{ minWidth: 0 }}>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{stats.favArtist || '—'}</span>
           </div>
           <div className="shc-lbl">{t('stats.favArtist')}</div>
@@ -315,17 +357,25 @@ export const StatsSection = () => {
           <div className="shc-val">{fmtDurLong(Math.round(appMs / 1000))}</div>
           <div className="shc-lbl">{t('stats.appTime')}</div>
         </div>
-        <div className="stat-hero-card" style={{ gridColumn: 'span 3' }}>
+        <div className="stat-hero-card">
           <div className="shc-icon">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <div className="shc-val">{stats.recordDay}</div>
-            <div style={{ fontSize: 12, color: 'var(--text2)' }}>
-              {stats.recordDay > 0 ? t('stats.recordTracksDay', { date: stats.recordDateFmt }) : t('stats.noData')}
-            </div>
-          </div>
-          <div className="shc-lbl">{t('stats.recordDay')}</div>
+          <div className="shc-val">{stats.recordDay}</div>
+          <div className="shc-lbl">{stats.recordDay > 0 ? `${t('stats.recordDay')} · ${stats.recordDateFmt}` : t('stats.recordDay')}</div>
+        </div>
+      </div>
+
+      {/* В среднем за день (перенесено из бывшей модалки статистики) */}
+      <div className="stats-card">
+        <div className="stats-card-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+          {t('stats.avgPerDay')}
+        </div>
+        <div className="stats-daily">
+          <div className="sd-item"><div className="sd-num">{avgHoursDay}</div><div className="sd-sub">{t('stats.hoursDay')}</div></div>
+          <div className="sd-item"><div className="sd-num">{avgTracksDay}</div><div className="sd-sub">{t('stats.tracksDay')}</div></div>
+          <div className="sd-item"><div className="sd-num">{stats.uniqueArtists}</div><div className="sd-sub">{t('stats.artists')}</div></div>
         </div>
       </div>
 

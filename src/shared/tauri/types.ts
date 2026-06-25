@@ -15,6 +15,7 @@ export interface AppSettings {
   discord_custom_artwork: string
   discord_show_small_img: boolean
   discord_small_img_url: string
+  discord_small_img_mode: string
   discord_btn1_mode: string
   discord_btn1_label: string
   discord_btn1_url: string

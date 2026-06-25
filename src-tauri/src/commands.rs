@@ -132,6 +132,7 @@ pub struct DiscordSettings {
     pub custom_artwork: String,
     pub show_small_img: bool,
     pub small_img_url: String,
+    pub small_img_mode: String,
     pub btn1_mode: String,
     pub btn1_label: String,
     pub btn1_url: String,
@@ -147,6 +148,7 @@ pub fn set_discord_settings(
     custom_artwork: String,
     show_small_img: bool,
     small_img_url: String,
+    small_img_mode: String,
     btn1_mode: String,
     btn1_label: String,
     btn1_url: String,
@@ -159,6 +161,7 @@ pub fn set_discord_settings(
     s.discord_custom_artwork = custom_artwork;
     s.discord_show_small_img = show_small_img;
     s.discord_small_img_url  = small_img_url;
+    s.discord_small_img_mode = small_img_mode;
     s.discord_btn1_mode      = btn1_mode;
     s.discord_btn1_label     = btn1_label;
     s.discord_btn1_url       = btn1_url;
@@ -176,6 +179,7 @@ pub fn get_discord_settings() -> Result<DiscordSettings, String> {
         custom_artwork: s.discord_custom_artwork,
         show_small_img: s.discord_show_small_img,
         small_img_url: s.discord_small_img_url,
+        small_img_mode: s.discord_small_img_mode,
         btn1_mode: s.discord_btn1_mode,
         btn1_label: s.discord_btn1_label,
         btn1_url: s.discord_btn1_url,
@@ -361,6 +365,8 @@ pub fn now_playing(
                 custom_artwork: settings.discord_custom_artwork.clone(),
                 show_small_img: settings.discord_show_small_img,
                 small_img_url:  settings.discord_small_img_url.clone(),
+                small_img_mode: settings.discord_small_img_mode.clone(),
+                source:         source.clone().unwrap_or_default(),
                 btn1_mode:  settings.discord_btn1_mode.clone(),
                 btn1_label: settings.discord_btn1_label.clone(),
                 btn1_url:   resolve_btn_url(&settings.discord_btn1_mode, &settings.discord_btn1_url),

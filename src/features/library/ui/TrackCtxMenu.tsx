@@ -9,7 +9,6 @@ import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import {
-  playTrack,
   addToQueue,
   playNextInQueue,
   removeFromQueue,
@@ -176,6 +175,11 @@ export const TrackCtxMenu = ({
   const inCurrentPl = mode === 'pl' && plId
     ? playlists.find((p) => p.id === plId)?.trs.includes(track.id) ?? false
     : false
+  // Платформенные действия (share/wave/download) — общий флаг для разделителя.
+  const hasShare = track.scId != null || track.scPermalink != null
+  const hasWave = track.scId != null || track.scTrackId != null
+  const hasDl = !!(track._sc || track._ym || track._ytm || track._sp)
+  const hasTools = hasShare || hasWave || hasDl
 
   const onAddEnter = () => {
     cancelHide()
@@ -229,62 +233,44 @@ export const TrackCtxMenu = ({
           </div>
         </div>
 
-        {/* cxplay — играть этот трек */}
+        {/* ── Очередь ── */}
         <div
           className="ci"
-          id="cxplay"
+          id="cxq"
           onClick={() => {
-            playTrack(track.id)
-            onClose()
-          }}
-        >
-          <span className="ci-icon">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-            </svg>
-          </span>{' '}
-          {t('player.aria.play')}
-        </div>
-
-        {inLib && onEditTags && (
-        <div
-          className="ci"
-          id="cxedit"
-          onClick={() => {
-            if (onEditTags && track) onEditTags(track)
-            onClose()
-          }}
-        >
-          <span className="ci-icon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </span>{' '}
-          {t('lib.ctx.editTags')}
-        </div>
-        )}
-
-        <div
-          className="ci"
-          id="cxinfo"
-          onClick={() => {
-            openTrackInfo(track)
+            addToQueue(track.id)
             onClose()
           }}
         >
           <span className="ci-icon">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </span>{' '}
-          {t('lib.ctx.trackInfo')}
+          {t('lib.ctx.toQueue')}
         </div>
 
-        <div className="cx-sep" id="cxSep1" />
+        <div
+          className="ci"
+          id="cxqnext"
+          onClick={() => {
+            playNextInQueue(track.id)
+            onClose()
+          }}
+        >
+          <span className="ci-icon">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="13 17 18 12 13 7" />
+              <polyline points="6 17 11 12 6 7" />
+            </svg>
+          </span>{' '}
+          {t('lib.ctx.playNext')}
+        </div>
 
+        <div className="cx-sep" />
+
+        {/* ── Коллекции: любимое / плейлист ── */}
         <div
           className="ci"
           id="cxfav"
@@ -351,8 +337,11 @@ export const TrackCtxMenu = ({
           </svg>
         </div>
 
+        {/* ── Действия площадок: поделиться / волна / скачать ── */}
+        {hasTools && <div className="cx-sep" />}
+
         {/* cxshare — «Поделиться», только для треков с SC-данными. */}
-        {(track.scId != null || track.scPermalink != null) && (
+        {hasShare && (
           <div
             className="ci"
             id="cxshare"
@@ -379,7 +368,7 @@ export const TrackCtxMenu = ({
         )}
 
         {/* cxwave — «Волна по треку», только для SC-треков */}
-        {(track.scId != null || track.scTrackId != null) && (
+        {hasWave && (
           <div
             className="ci"
             id="cxwave"
@@ -402,7 +391,7 @@ export const TrackCtxMenu = ({
         )}
 
         {/* cxdl — «Скачать», только для треков площадок (SC/Yandex/YTM/Spotify). */}
-        {(track._sc || track._ym || track._ytm || track._sp) && (
+        {hasDl && (
           <div
             className="ci"
             id="cxdl"
@@ -424,38 +413,42 @@ export const TrackCtxMenu = ({
 
         <div className="cx-sep" />
 
+        {/* ── Метаданные: теги / инфо ── */}
+        {inLib && onEditTags && (
         <div
           className="ci"
-          id="cxq"
+          id="cxedit"
           onClick={() => {
-            addToQueue(track.id)
+            if (onEditTags && track) onEditTags(track)
+            onClose()
+          }}
+        >
+          <span className="ci-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </span>{' '}
+          {t('lib.ctx.editTags')}
+        </div>
+        )}
+
+        <div
+          className="ci"
+          id="cxinfo"
+          onClick={() => {
+            openTrackInfo(track)
             onClose()
           }}
         >
           <span className="ci-icon">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </span>{' '}
-          {t('lib.ctx.toQueue')}
-        </div>
-
-        <div
-          className="ci"
-          id="cxqnext"
-          onClick={() => {
-            playNextInQueue(track.id)
-            onClose()
-          }}
-        >
-          <span className="ci-icon">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="13 17 18 12 13 7" />
-              <polyline points="6 17 11 12 6 7" />
-            </svg>
-          </span>{' '}
-          {t('lib.ctx.playNext')}
+          {t('lib.ctx.trackInfo')}
         </div>
 
         {(inCurrentPl || isInQueue || isDeletable) && <div className="cx-sep" />}

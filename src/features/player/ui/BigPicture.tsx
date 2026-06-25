@@ -13,7 +13,7 @@ import {
   saveTrackToLibrary,
   createPlaylistInline,
   TrackCtxMenu,
-  TagEditor,
+  useTagEditStore,
 } from '@features/library'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks } from '@entities/track'
@@ -197,7 +197,6 @@ const BpCover = ({ artwork }: { artwork: string | null }) => {
     (curId ? trackRegistry.get(curId) ?? null : null)
 
   const [coverCtx, setCoverCtx] = useState<{ x: number; y: number } | null>(null)
-  const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
 
   useEffect(() => {
     if (!parallax && coverRef.current) coverRef.current.style.transform = ''
@@ -250,9 +249,13 @@ const BpCover = ({ artwork }: { artwork: string | null }) => {
         onCreatePlaylistForTrack={(id) =>
           createPlFromBp(curTrack && curTrack.id === id ? curTrack : trackRegistry.get(id) ?? null, id)
         }
-        onEditTags={(t) => setTagEditTrack(t)}
+        onEditTags={(t) => {
+          // Выходим из фуллскрина и открываем редактор через глобальный хост
+          // (TagEditor внутри BigPicInner размонтировался бы при закрытии).
+          useBigPicStore.getState().closeBig()
+          useTagEditStore.getState().open(t)
+        }}
       />
-      <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
     </>
   )
 }

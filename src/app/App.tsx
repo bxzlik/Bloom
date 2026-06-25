@@ -10,7 +10,7 @@ import { useGlobalHotkeys } from './useGlobalHotkeys'
 import { useFullscreenHotkey } from './useFullscreenHotkey'
 import { useDeepLinkBridge } from './useDeepLinkBridge'
 import { useOverlayBridge } from './useOverlayBridge'
-import { LibPage, TrackInfoModal, DupsModal, MergeModal, MpNewPlaylistHost, DeepLinkModal, useTrackInfoStore, useLibStore, startUsageTracking } from '@features/library'
+import { LibPage, TrackInfoModal, MergeModal, MpNewPlaylistHost, DeepLinkModal, TagEditorHost, useTrackInfoStore, useLibStore, startUsageTracking } from '@features/library'
 import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects } from '@features/player'
 import { useQueueStore } from '@features/player/model/queueStore'
 import { trackRegistry } from '@entities/track'
@@ -383,11 +383,11 @@ export const App = () => {
       {/* «Поделиться» — единая модалка (страница артиста/альбома + ПКМ-меню трека) */}
       <ShareCardModal />
 
-      {/* «Дубликаты треков» — единая модалка, открывается из PlMenu */}
-      <DupsModal />
-
       {/* «Объединение плейлистов» — единая модалка, открывается из PlMenu */}
       <MergeModal />
+
+      {/* Редактор тегов — единый хост (drawer), переживает закрытие BigPicture */}
+      <TagEditorHost />
 
       {/* «Новый плейлист» из «+» miniplayer/tray (кросс-оконный сценарий) */}
       <MpNewPlaylistHost />

@@ -1,21 +1,25 @@
 import { create } from 'zustand'
 
 /**
- * Состояние модалки «Дубликаты треков» (#dupsOverlay / openDups).
- * `plId === null` — искать дубли по всей библиотеке; иначе — внутри плейлиста.
- * Открывается из PlMenu («Найти дубли»). Единственный `<DupsModal>` в App.
+ * Состояние инлайн-режима «Найти дубли». Не модалка: когда `active`, треклист
+ * библиотеки (`LibTracklist`) показывает только дубли выбранного плейлиста,
+ * сгруппированные, с пометкой «оставить» и кнопками удаления.
+ *
+ * `plId === null` — дубли по всей библиотеке; иначе — внутри плейлиста.
+ * Включается из PlMenu («Найти дубли»). Авто-выход при уходе с этого плейлиста
+ * (см. эффект в LibTracklist).
  */
 interface DupsState {
-  open: boolean
+  active: boolean
   /** null = вся библиотека; строка = id плейлиста. */
   plId: string | null
-  openDups: (plId?: string | null) => void
-  close: () => void
+  enter: (plId?: string | null) => void
+  exit: () => void
 }
 
 export const useDupsStore = create<DupsState>((set) => ({
-  open: false,
+  active: false,
   plId: null,
-  openDups: (plId = null) => set({ open: true, plId: plId ?? null }),
-  close: () => set({ open: false, plId: null }),
+  enter: (plId = null) => set({ active: true, plId: plId ?? null }),
+  exit: () => set({ active: false, plId: null }),
 }))

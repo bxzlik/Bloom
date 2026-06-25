@@ -18,7 +18,7 @@ import {
   usePlayerStore,
   useQueueStore,
   togglePlay,
-  playFromSource,
+  playSingleTrack,
   loadPlay,
   loadResume,
   restoreResumeQueue,
@@ -27,16 +27,17 @@ import {
 } from '@features/player'
 import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
 import { useGamesStore, GamepadIcon } from '@features/games'
+import { useAccountTabStore } from '@features/profile'
 import { VinylCover } from '@shared/ui'
 import { useNavStore } from '../navigationStore'
-import { StatsModal } from './StatsModal'
 
 /**
  * Главная страница (#page-home) — макет.
  *
  * Секции: «Моя волна» (WaveCard) + «Продолжить» (если есть трек) | Любимые/История
- * | статистика | Игры | Плейлисты. Отложено (скрыты по дефолту): «Трек
- * дня», «Недавно слушали», авто-резюм (bloom_resume), статистика-модалка, игры.
+ * | статистика | Игры | Плейлисты. Бар статистики ведёт на страницу профиля,
+ * вкладку «Статистика» (StatsSection). Отложено (скрыты по дефолту): «Трек
+ * дня», «Недавно слушали», авто-резюм (bloom_resume), игры.
  */
 export const HomePage = ({ active }: { active: boolean }) => {
   // ПКМ по треку (продолжить / трек дня / недавнее) → TrackCtxMenu.
@@ -45,7 +46,6 @@ export const HomePage = ({ active }: { active: boolean }) => {
   // ПКМ по плейлисту → PlMenu (cursor-mode).
   const [plCtx, setPlCtx] = useState<{ x: number; y: number; pl: Playlist } | null>(null)
   const [addToPlId, setAddToPlId] = useState<string | null>(null)
-  const [statsOpen, setStatsOpen] = useState(false)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
   const goNav = useNavStore((s) => s.goNav)
   const startEdit = usePlEditStore((s) => s.startEdit)
@@ -73,7 +73,12 @@ export const HomePage = ({ active }: { active: boolean }) => {
           </div>
         )}
         <QuickGrid />
-        <StatsBar onOpen={() => setStatsOpen(true)} />
+        <StatsBar
+          onOpen={() => {
+            useAccountTabStore.getState().setTab('stats')
+            goNav('account')
+          }}
+        />
         <TrackOfDay onTrackCtx={onTrackCtx} />
         <GamesCard />
         <RecentSection onTrackCtx={onTrackCtx} />
@@ -119,8 +124,6 @@ export const HomePage = ({ active }: { active: boolean }) => {
         onAddTracks={(id) => setAddToPlId(id)}
       />
       <AddFromLibModal open={addToPlId !== null} onClose={() => setAddToPlId(null)} playlistId={addToPlId} />
-
-      <StatsModal open={statsOpen} onClose={() => setStatsOpen(false)} />
     </div>
   )
 }
@@ -163,6 +166,7 @@ const sourceLabel = (s: PlaySource): string => {
     case 'folder': return s.name
     case 'sc': return s.label
     case 'wave': return s.label
+    case 'single': return s.name
   }
 }
 
@@ -544,7 +548,7 @@ const TrackOfDay = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track)
   if (!tod) return null
 
   const play = () => {
-    playFromSource([tod.id], { kind: 'lib-all' }, tod.id)
+    playSingleTrack(tod.id)
     goNav('player')
   }
   return (
@@ -603,7 +607,7 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
           <div
             className="home-card"
             key={t.id}
-            onClick={() => playFromSource([t.id], { kind: 'lib-all' }, t.id)}
+            onClick={() => playSingleTrack(t.id)}
             onContextMenu={(e) => onTrackCtx(e, t)}
           >
             <div className="hc-cover">

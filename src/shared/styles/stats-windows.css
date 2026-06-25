@@ -8,6 +8,13 @@
 .shc-val{font-size:22px;font-weight:800;letter-spacing:-.5px;min-height:28px;display:flex;align-items:flex-end}
 .shc-lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
 
+/* «В среднем за день» — три метрики в ряд с разделителями (перенос из модалки) */
+.stats-daily{display:flex;gap:0}
+.sd-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border-right:1px solid rgba(255,255,255,var(--wb))}
+.sd-item:last-child{border-right:none}
+.sd-num{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.sd-sub{font-size:10px;color:var(--muted)}
+
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .stats-card{background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);padding:16px 18px;transition:border-color .2s}
 .stats-card:hover{border-color:rgba(var(--accent-rgb),.35)}

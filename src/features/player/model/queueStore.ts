@@ -15,6 +15,8 @@ export type PlaySource =
   | { kind: 'folder'; path: string; name: string }
   | { kind: 'sc'; label: string; cover?: string | null; round?: boolean }
   | { kind: 'wave'; label: string }
+  /** Одиночный трек, запущенный вне коллекции (клик «играть» в меню/поиске). */
+  | { kind: 'single'; name: string; cover?: string | null }
   | null
 
 /**

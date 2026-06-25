@@ -160,20 +160,11 @@ export const ProfileEditModal = () => {
       }}
     >
       <div id="peditModal">
-        <div className="pedit-head">
-          <span className="pedit-head-title">{t('profile.edit.title')}</span>
-          <button className="pedit-close" onClick={closeEdit}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
         <div id="peditMainView" style={{ display: crop ? 'none' : 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <div className="pedit-body">
-            {/* Баннер */}
-            <div className="pedit-banner-section" style={{ background: bannerBg }}>
-              {draft.banner && <img src={draft.banner} alt="" style={{ display: 'block' }} />}
+          {/* HERO: баннер + крупный аватар по центру + имя заголовком */}
+          <div className="pedit-hero">
+            <div className="pedit-hero-banner" style={{ background: bannerBg }}>
+              {draft.banner && <img src={draft.banner} alt="" />}
               <div className="pedit-banner-overlay">
                 <label className="pedit-banner-overlay-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -185,44 +176,56 @@ export const ProfileEditModal = () => {
               </div>
               {draft.banner && (
                 <button className="pedit-banner-remove" style={{ display: 'flex' }} onClick={() => patch({ banner: null })}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                     <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
                   </svg>
                 </button>
               )}
             </div>
 
-            {/* Аватар + ник */}
-            <div className="pedit-identity">
-              <div className="pedit-ava-wrap" onClick={() => avaInputRef.current?.click()}>
-                {draft.avatar ? (
-                  <div className="pedit-ava"><img src={draft.avatar} alt="" /></div>
-                ) : (
-                  <DiscAvatar idx={draft.discIdx} color={draft.discColor} className="pedit-ava" />
-                )}
-                <div className="pedit-ava-cam">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round">
-                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" />
-                  </svg>
-                </div>
-                {draft.avatar && (
-                  <button
-                    className="pedit-banner-remove"
-                    style={{ display: 'flex', top: 0, right: 0 }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      patch({ avatar: null })
-                    }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                    </svg>
-                  </button>
-                )}
-                <input ref={avaInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvaFile} />
+            <div className="pedit-hero-ava-wrap" onClick={() => avaInputRef.current?.click()}>
+              {draft.avatar ? (
+                <div className="pedit-hero-ava"><img src={draft.avatar} alt="" /></div>
+              ) : (
+                <DiscAvatar idx={draft.discIdx} color={draft.discColor} className="pedit-hero-ava" />
+              )}
+              <div className="pedit-ava-cam">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" />
+                </svg>
               </div>
-              <div className="pedit-nick-field">
-                <div className="pedit-nick-label">{t('profile.nick')}</div>
+              {draft.avatar && (
+                <button
+                  className="pedit-ava-remove"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    patch({ avatar: null })
+                  }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+              <input ref={avaInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvaFile} />
+            </div>
+
+            <div className={`pedit-hero-name${draft.name.trim() ? '' : ' empty'}`}>
+              {draft.name.trim() || t('profile.nickPlaceholder')}
+            </div>
+            <div className="pedit-hero-sub">{t('profile.edit.title')}</div>
+          </div>
+
+          <div className="pedit-body">
+            {/* Карточка: Профиль */}
+            <div className="pedit-card">
+              <div className="pedit-card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                {t('profile.section.profile')}
+              </div>
+
+              <div className="pedit-eg">
+                <div className="pedit-bio-label">{t('profile.nick')}</div>
                 <div className="pedit-inp-wrap">
                   <input
                     className="pedit-nick-inp"
@@ -235,59 +238,66 @@ export const ProfileEditModal = () => {
                   <span className="pedit-char-count">{draft.name.length}/32</span>
                 </div>
               </div>
-            </div>
 
-            {/* Био + статус */}
-            <div className="pedit-bio-section">
-              <div className="pedit-bio-label">{t('profile.about')}</div>
-              <div className="pedit-inp-wrap">
-                <textarea
-                  className="pedit-bio-inp"
-                  maxLength={300}
-                  placeholder={t('profile.aboutPlaceholder')}
-                  style={{ paddingBottom: 22 }}
-                  value={draft.bio}
-                  onChange={(e) => patch({ bio: e.target.value })}
-                />
-                <span className="pedit-char-count area">{draft.bio.length}/300</span>
-              </div>
-              <div className="pedit-bio-label" style={{ marginTop: 8 }}>{t('profile.status')}</div>
-              <div className="pedit-inp-wrap">
-                <input
-                  className="pedit-nick-inp"
-                  maxLength={80}
-                  placeholder={t('profile.statusPlaceholder')}
-                  style={{ fontStyle: 'italic', paddingRight: 46 }}
-                  value={draft.status}
-                  onChange={(e) => patch({ status: e.target.value })}
-                />
-                <span className="pedit-char-count">{draft.status.length}/80</span>
-              </div>
-            </div>
-
-            {/* Пластинка */}
-            <div className="pedit-disc-section">
-              <div className="pedit-bio-label">{t('profile.disc')}</div>
-              <div className="pedit-disc-row">
-                {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <div
-                    key={i}
-                    className={`pedit-disc-opt${i === draft.discIdx && !draft.discColor ? ' active' : ''}`}
-                    onClick={() => patch({ discIdx: i, discColor: null })}
-                  >
-                    <DiscAvatar idx={i} color={null} style={{ width: '100%', height: '100%' }} />
-                  </div>
-                ))}
-                <DiscColorSwatch
-                  idx={draft.discIdx}
-                  color={draft.discColor}
-                  onChange={(hex) => patch({ discColor: hex })}
-                />
+              {/* Био + статус */}
+              <div className="pedit-bio-section">
+                <div className="pedit-bio-label">{t('profile.about')}</div>
+                <div className="pedit-inp-wrap">
+                  <textarea
+                    className="pedit-bio-inp"
+                    maxLength={300}
+                    placeholder={t('profile.aboutPlaceholder')}
+                    style={{ paddingBottom: 22 }}
+                    value={draft.bio}
+                    onChange={(e) => patch({ bio: e.target.value })}
+                  />
+                  <span className="pedit-char-count area">{draft.bio.length}/300</span>
+                </div>
+                <div className="pedit-bio-label" style={{ marginTop: 8 }}>{t('profile.status')}</div>
+                <div className="pedit-inp-wrap">
+                  <input
+                    className="pedit-nick-inp"
+                    maxLength={80}
+                    placeholder={t('profile.statusPlaceholder')}
+                    style={{ fontStyle: 'italic', paddingRight: 46 }}
+                    value={draft.status}
+                    onChange={(e) => patch({ status: e.target.value })}
+                  />
+                  <span className="pedit-char-count">{draft.status.length}/80</span>
+                </div>
               </div>
             </div>
 
-            {/* Цвета: обложка + обводка */}
-            <div className="pedit-colors-section">
+            {/* Карточка: Внешний вид */}
+            <div className="pedit-card">
+              <div className="pedit-card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
+                {t('profile.section.appearance')}
+              </div>
+
+              {/* Пластинка */}
+              <div className="pedit-disc-section">
+                <div className="pedit-bio-label">{t('profile.disc')}</div>
+                <div className="pedit-disc-row">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className={`pedit-disc-opt${i === draft.discIdx && !draft.discColor ? ' active' : ''}`}
+                      onClick={() => patch({ discIdx: i, discColor: null })}
+                    >
+                      <DiscAvatar idx={i} color={null} style={{ width: '100%', height: '100%' }} />
+                    </div>
+                  ))}
+                  <DiscColorSwatch
+                    idx={draft.discIdx}
+                    color={draft.discColor}
+                    onChange={(hex) => patch({ discColor: hex })}
+                  />
+                </div>
+              </div>
+
+              {/* Цвета: обложка + обводка */}
+              <div className="pedit-colors-section">
               <div className="pedit-color-field">
                 <div className="pedit-banner-color-header">
                   <div className="pedit-bio-label" style={{ margin: 0 }}>{t('profile.coverColor')}</div>
@@ -333,6 +343,7 @@ export const ProfileEditModal = () => {
                 )}
               </div>
             </div>
+          </div>
           </div>
 
           <div className="pedit-foot">

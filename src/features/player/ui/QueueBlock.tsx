@@ -306,6 +306,7 @@ const sourceLabel = (s: PlaySource, t: TFunc): string => {
     case 'folder': return s.name
     case 'sc': return s.label
     case 'wave': return s.label
+    case 'single': return s.name || '—'
   }
 }
 
@@ -322,7 +323,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
     overflow: 'hidden',
   }
   if (!source) return <div id="qpSourceIcon" style={box} />
-  if ((source.kind === 'playlist' || source.kind === 'sc') && source.cover) {
+  if ((source.kind === 'playlist' || source.kind === 'sc' || source.kind === 'single') && source.cover) {
     const round = source.kind === 'sc' && source.round
     return (
       <div id="qpSourceIcon" style={round ? { ...box, borderRadius: '50%' } : box}>
@@ -392,7 +393,8 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
         </div>
       )
     case 'sc':
-      // SC-источник без cover — note-icon на var(--card).
+    case 'single':
+      // SC/одиночный трек без cover — note-icon на var(--card).
       return (
         <div id="qpSourceIcon" style={box}>
           <div style={{ ...innerStyle, background: 'var(--card)' }}>

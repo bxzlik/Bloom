@@ -4,12 +4,11 @@ import {
   useMemo,
   useRef,
   useState,
-  type ChangeEvent,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { cn } from '@shared/lib/cn'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT, useLocale } from '@shared/i18n'
+import { VinylCover } from '@shared/ui'
 import type { Track } from '@entities/track'
 import { useLibStore, usePlaylistStore } from '../model'
 
@@ -19,7 +18,8 @@ export interface AddFromLibModalProps {
   playlistId: string | null
 }
 
-const ANIM_MS = 320
+// Длительность slide-out (.spanel transform .42s) перед демонтажем.
+const ANIM_MS = 440
 
 type SortMode = 'default' | 'name' | 'artist' | 'dur' | 'date'
 
@@ -37,24 +37,27 @@ const fmtMSS = (sec: number): string => {
 }
 
 /**
- * Модалка «Добавить треки в плейлист»
- * (#addFromLibOverlay / #addFromLibBox).
- *
- * Намеренно НЕ использует классы .modal/.modal-head/.modal-foot — собрана
- * на inline-стилях.
+ * Модалка «Добавить треки в плейлист» — боковая панель-drawer
+ * (`.spanel-backdrop`/`.spanel`), выезжает справа, как редактор тегов и
+ * объединение плейлистов. Содержимое переиспользует `.mpl-*` классы
+ * (merge-playlists.css) + локальные `.afs-*` (там же).
  */
 export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalProps) => {
   const t = useT()
   const locale = useLocale()
   const tracks = useLibStore((s) => s.tracks)
-  const playlist = usePlaylistStore((s) =>
-    playlistId ? s.playlists.find((p) => p.id === playlistId) : undefined,
-  )
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
 
-  const [mounted, setMounted] = useState(open)
-  const [openClass, setOpenClass] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [opening, setOpening] = useState(false)
   const closeTimer = useRef<number | null>(null)
+
+  // Удерживаем id плейлиста на время slide-out (родитель обнуляет playlistId
+  // одновременно с open → иначе содержимое «мигнёт» всей библиотекой).
+  const [actId, setActId] = useState<string | null>(null)
+  const playlist = usePlaylistStore((s) =>
+    actId ? s.playlists.find((p) => p.id === actId) : undefined,
+  )
 
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -86,21 +89,25 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
     return () => window.removeEventListener('mousedown', onDown)
   }, [sortMenuOpen])
 
-  // open/close anim.
+  // open/close: enter-анимация `.open` + отложенный демонтаж под slide-out.
   useEffect(() => {
     if (open) {
       if (closeTimer.current !== null) {
         window.clearTimeout(closeTimer.current)
         closeTimer.current = null
       }
-      setMounted(true)
-      return runEnterAnimation(setOpenClass)
-    }
-    setOpenClass(false)
-    closeTimer.current = window.setTimeout(() => {
-      setMounted(false)
+      setActId(playlistId)
       setQuery('')
       setSelected(new Set())
+      setSortMode('default')
+      setSortDir('asc')
+      setMounted(true)
+      return runEnterAnimation(setOpening)
+    }
+    setOpening(false)
+    setSortMenuOpen(false)
+    closeTimer.current = window.setTimeout(() => {
+      setMounted(false)
       closeTimer.current = null
     }, ANIM_MS)
     return () => {
@@ -109,6 +116,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
         closeTimer.current = null
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   useEffect(() => {
@@ -123,18 +131,18 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
   // `_afsAvail`: исключаем треки уже в плейлисте.
   const alreadyInPl = useMemo(() => new Set(playlist?.trs ?? []), [playlist])
   const available = useMemo<Track[]>(
-    () => tracks.filter((t) => !alreadyInPl.has(t.id)),
+    () => tracks.filter((tr) => !alreadyInPl.has(tr.id)),
     [tracks, alreadyInPl],
   )
 
   // Фильтр + сортировка `_afsFiltered` / `_afsSortFn`.
   const filtered = useMemo<Track[]>(() => {
     const q = query.trim().toLowerCase()
-    let arr = q
+    const arr = q
       ? available.filter(
-          (t) =>
-            (t.name || '').toLowerCase().includes(q) ||
-            (t.artist || '').toLowerCase().includes(q),
+          (tr) =>
+            (tr.name || '').toLowerCase().includes(q) ||
+            (tr.artist || '').toLowerCase().includes(q),
         )
       : available.slice()
     const sd = sortDir === 'asc' ? 1 : -1
@@ -151,16 +159,17 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
       arr.sort((a, b) => sd * (parseDurSec(a.dur) - parseDurSec(b.dur)))
     } else if (sortMode === 'date') {
       arr.sort((a, b) => sd * ((a.addedAt || 0) - (b.addedAt || 0)))
+    } else {
+      // default: addedAt desc.
+      arr.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))
     }
-    // default: addedAt desc.
-    if (sortMode === 'default') arr.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))
     return arr
   }, [available, query, sortMode, sortDir])
 
   const allSelected =
-    filtered.length > 0 && filtered.every((t) => selected.has(t.id))
+    filtered.length > 0 && filtered.every((tr) => selected.has(tr.id))
   const someSelected =
-    filtered.length > 0 && filtered.some((t) => selected.has(t.id))
+    filtered.length > 0 && filtered.some((tr) => selected.has(tr.id))
 
   const toggleOne = (id: string) => {
     setSelected((prev) => {
@@ -177,386 +186,197 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
     } else {
       setSelected((prev) => {
         const next = new Set(prev)
-        filtered.forEach((t) => next.add(t.id))
+        filtered.forEach((tr) => next.add(tr.id))
         return next
       })
     }
   }
 
   const onConfirm = () => {
-    if (!playlistId) return
+    if (!actId) return
     // addTrackToPl prepend'ит по одному — реверсим, чтобы выбранные легли наверх
     // плейлиста в исходном порядке.
-    for (const id of [...selected].reverse()) addTrackToPl(playlistId, id)
+    for (const id of [...selected].reverse()) addTrackToPl(actId, id)
     onClose()
-  }
-
-  const onBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose()
   }
 
   // ── Labels _afsUpdateChrome ────────────────────────
   const n = selected.size
   const totalAvail = available.length
 
-  const chipText = t('lib.addModal.selected', { n })
   const availLabel = totalAvail
     ? locale === 'ru'
-      ? `${totalAvail} ${plural(totalAvail, 'трек', 'трека', 'треков')} доступно`
-      : `${totalAvail} ${totalAvail === 1 ? 'track' : 'tracks'} available`
+      ? `${totalAvail} ${plural(totalAvail, 'трек', 'трека', 'треков')}`
+      : `${totalAvail} ${totalAvail === 1 ? 'track' : 'tracks'}`
     : ''
-  const sumLabel = (() => {
-    if (n === 0) return ''
+  const sumSec = useMemo(() => {
+    if (!n) return 0
     let sec = 0
     for (const id of selected) {
-      const t = tracks.find((x) => x.id === id)
-      if (t) sec += parseDurSec(t.dur)
+      const tr = tracks.find((x) => x.id === id)
+      if (tr) sec += parseDurSec(tr.dur)
     }
-    return `${n} · ${fmtMSS(sec)}`
-  })()
+    return sec
+  }, [selected, tracks, n])
   const confirmText = n ? t('lib.addModal.addN', { n }) : t('lib.addModal.add')
 
   if (!mounted) return null
 
+  const cover = playlist?.cover
+  const plName = playlist?.name ?? ''
+
   return createPortal(
     <div
-      className={cn('mover', openClass && 'open')}
-      onClick={onBackdrop}
-      style={{ zIndex: 9000 }}
+      id="addFromLibOverlay"
+      className={`spanel-backdrop${opening ? ' open' : ''}`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
     >
-      <div
-        id="addFromLibBox"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'color-mix(in srgb, var(--card-solid, var(--card)) 40%, #000 60%)',
-          border: '1px solid rgba(255,255,255,.08)',
-          borderRadius: 'var(--radius)',
-          width: 460,
-          maxWidth: '95vw',
-          maxHeight: '74vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow:
-            '0 40px 120px rgba(0,0,0,.98), 0 0 0 1px rgba(255,255,255,.04) inset',
-          transform: openClass ? 'scale(1) translateY(0)' : 'scale(.91) translateY(24px)',
-          transition: '.32s cubic-bezier(.34,1.38,.64,1)',
-        }}
-      >
-        {/* HEADER — inline, БЕЗ .modal-head (нет border-bottom) */}
-        <div
-          style={{
-            padding: '16px 18px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-            gap: 10,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{t('lib.addModal.title')}</div>
-            <span
-              id="afsCountChip"
+      <div className="spanel">
+        {/* HERO: обложка плейлиста + заголовок + имя + статистика */}
+        <div className="mpl-hero">
+          <div className="mpl-cstack" style={{ width: 56, height: 56 }}>
+            <div className="mpl-cov" style={{ width: 56, height: 56, top: 0, left: 0 }}>
+              {cover ? <img src={cover} alt="" /> : <VinylCover seed={actId ?? ''} />}
+            </div>
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="mpl-htitle">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              {t('lib.addModal.title')}
+            </div>
+            <div
               style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--text2)',
-                padding: '3px 8px',
-                borderRadius: 999,
-                background: 'rgba(255,255,255,.06)',
-                display: n ? 'inline-flex' : 'none',
+                fontSize: 18,
+                fontWeight: 800,
+                letterSpacing: '-.2px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
-              {chipText}
-            </span>
+              {plName}
+            </div>
+            <div className="mpl-stats">
+              <span className="mpl-chip accent">{t('lib.addModal.selected', { n })}</span>
+              {availLabel && <span className="mpl-chip">{availLabel}</span>}
+              {n > 0 && <span className="mpl-chip"><b>{fmtMSS(sumSec)}</b></span>}
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label={t('common.close')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text2)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 28,
-              height: 28,
-              borderRadius: 'calc(var(--radius) * 0.7)',
-              transition: '.15s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.07)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
         </div>
 
-        {/* SEARCH ROW */}
-        <div
-          style={{
-            padding: '0 16px 8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.2}
-              strokeLinecap="round"
-              style={{
-                position: 'absolute',
-                left: 10,
-                color: 'var(--text2)',
-                pointerEvents: 'none',
-              }}
+        {/* BODY */}
+        <div className="mpl-body" style={{ overflow: 'hidden', paddingBottom: 14 }}>
+          <div className="mpl-section-title" style={{ marginBottom: 0 }}>
+            <button
+              className="afs-selall"
+              onClick={toggleAll}
+              disabled={filtered.length === 0}
             >
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              id="afsSearch"
-              type="text"
-              placeholder={t('lib.searchTrackArtist')}
-              value={query}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'rgba(255,255,255,.05)',
-                border: '1px solid rgba(255,255,255,.07)',
-                borderRadius: 'calc(var(--radius) * 0.7)',
-                padding: '7px 10px 7px 28px',
-                fontSize: 12.5,
-                color: 'var(--text)',
-                fontFamily: 'var(--font)',
-                outline: 'none',
-                transition: '.15s',
-              }}
-              onFocus={(e) =>
-                (e.currentTarget.style.borderColor = 'rgba(255,255,255,.18)')
-              }
-              onBlur={(e) =>
-                (e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)')
-              }
-            />
-          </div>
-          <button
-            ref={sortBtnRef}
-            id="afsSortBtn"
-            onClick={(e) => {
-              e.stopPropagation()
-              setSortMenuOpen((v) => !v)
-            }}
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 'calc(var(--radius) * 0.7)',
-              background: 'rgba(255,255,255,.05)',
-              border: '1px solid rgba(255,255,255,.07)',
-              color: sortMode !== 'default' ? 'var(--accent)' : 'var(--text2)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              transition: '.15s',
-            }}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="15" y2="12" />
-              <line x1="3" y1="18" x2="9" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        {/* SELECT ALL + AVAIL LABEL */}
-        <div
-          style={{
-            padding: '0 18px 8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-            fontSize: 11.5,
-            color: 'var(--text2)',
-          }}
-        >
-          <button
-            id="afsSelAllBtn"
-            onClick={toggleAll}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text2)',
-              cursor: 'pointer',
-              fontSize: 11.5,
-              fontWeight: 600,
-              padding: '2px 0',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: '.15s',
-              fontFamily: 'var(--font)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text2)')}
-          >
-            <span
-              id="afsSelAllChk"
-              style={{
-                width: 13,
-                height: 13,
-                borderRadius: 'calc(var(--radius)*0.3)',
-                border: `1.5px solid ${
-                  allSelected || someSelected ? 'var(--accent)' : 'var(--border)'
-                }`,
-                background: allSelected ? 'var(--accent)' : 'transparent',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              {allSelected ? (
-                <svg
-                  width="9"
-                  height="9"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--accent-text)"
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : someSelected ? (
-                <div
-                  style={{
-                    width: 7,
-                    height: 1.5,
-                    background: 'var(--accent)',
-                    borderRadius: 1,
-                  }}
-                />
-              ) : null}
-            </span>
-            <span id="afsSelAllLbl">
+              <span className={`afs-chk${allSelected ? ' on' : someSelected ? ' part' : ''}`}>
+                {allSelected ? (
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : someSelected ? (
+                  <span style={{ width: 7, height: 1.5, background: 'var(--accent)', borderRadius: 1 }} />
+                ) : null}
+              </span>
               {allSelected ? t('lib.deselectAll') : t('lib.selectAll')}
-            </span>
-          </button>
-          <span id="afsAvailLbl">{availLabel}</span>
-        </div>
+            </button>
+          </div>
 
-        {/* LIST */}
-        <div
-          id="addFromLibList"
-          style={{ overflowY: 'auto', padding: '0 10px 12px', flex: 1 }}
-        >
-          {available.length === 0 ? (
-            <div
-              style={{
-                padding: 24,
-                textAlign: 'center',
-                color: 'var(--text2)',
-                fontSize: 13,
-              }}
-            >
-              {t('lib.addModal.allAdded')}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div
-              style={{
-                padding: 24,
-                textAlign: 'center',
-                color: 'var(--text2)',
-                fontSize: 13,
-              }}
-            >
-              {t('lib.merge.nothingFound')}
-            </div>
-          ) : (
-            filtered.map((t) => (
-              <AfsRow
-                key={t.id}
-                track={t}
-                selected={selected.has(t.id)}
-                onToggle={() => toggleOne(t.id)}
+          <div className="afs-searchrow">
+            <div className="mpl-search">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                id="afsSearch"
+                type="text"
+                placeholder={t('lib.searchTrackArtist')}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
-            ))
-          )}
+            </div>
+            <button
+              ref={sortBtnRef}
+              id="afsSortBtn"
+              className={`afs-sortbtn${sortMode !== 'default' ? ' active' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                setSortMenuOpen((v) => !v)
+              }}
+              aria-label={t('lib.sort.name')}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="15" y2="12" />
+                <line x1="3" y1="18" x2="9" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mpl-list afs-list" id="addFromLibList">
+            {available.length === 0 ? (
+              <div className="mpl-empty">{t('lib.addModal.allAdded')}</div>
+            ) : filtered.length === 0 ? (
+              <div className="mpl-empty">{t('lib.merge.nothingFound')}</div>
+            ) : (
+              filtered.map((tr) => {
+                const isSel = selected.has(tr.id)
+                return (
+                  <div
+                    className={`mpl-item${isSel ? ' sel' : ''}`}
+                    key={tr.id}
+                    onClick={() => toggleOne(tr.id)}
+                  >
+                    <div className="mpl-item-cov">
+                      {tr.cover ? (
+                        <img src={tr.cover} alt="" />
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ opacity: 0.4 }}>
+                          <path d="M9 18V5l12-2v13" />
+                          <circle cx="6" cy="18" r="3" />
+                          <circle cx="18" cy="16" r="3" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="mpl-item-info">
+                      <div className="mpl-item-name">{tr.name || ''}</div>
+                      <div className="mpl-item-sub">{tr.artist || ''}</div>
+                    </div>
+                    {tr.dur && <span className="afs-dur">{tr.dur}</span>}
+                    <div className="mpl-item-check">
+                      {isSel && (
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
         </div>
 
         {/* FOOTER */}
-        <div
-          style={{
-            padding: '10px 18px 14px',
-            borderTop: '1px solid rgba(255,255,255,.07)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 8,
-            flexShrink: 0,
-          }}
-        >
-          <span
-            id="afsSumLbl"
-            style={{ fontSize: 11.5, color: 'var(--text2)' }}
-          >
-            {sumLabel}
-          </span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btg" onClick={onClose}>
-              {t('common.cancel')}
-            </button>
-            <button
-              className="btn bta"
-              id="afsConfirmBtn"
-              disabled={n === 0}
-              onClick={onConfirm}
-              style={n === 0 ? { opacity: 0.45, pointerEvents: 'none' } : undefined}
-            >
-              {confirmText}
-            </button>
+        <div className="mpl-foot">
+          <div className="mpl-foot-hint">
+            {n > 0 ? `${t('lib.addModal.selected', { n })} · ${fmtMSS(sumSec)}` : availLabel}
           </div>
+          <button className="mpl-btn ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </button>
+          <button className="mpl-btn primary" onClick={onConfirm} disabled={n === 0}>
+            {confirmText}
+          </button>
         </div>
       </div>
 
@@ -580,15 +400,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                 k: 'name',
                 l: t('lib.sort.name'),
                 ico: (
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                    strokeLinecap="round"
-                  >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                     <line x1="3" y1="6" x2="21" y2="6" />
                     <line x1="3" y1="12" x2="15" y2="12" />
                     <line x1="3" y1="18" x2="9" y2="18" />
@@ -599,15 +411,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                 k: 'artist',
                 l: t('lib.sort.artist'),
                 ico: (
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                  >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
@@ -617,15 +421,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                 k: 'dur',
                 l: t('lib.sort.dur'),
                 ico: (
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                  >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
@@ -635,15 +431,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                 k: 'date',
                 l: t('lib.sort.date'),
                 ico: (
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                  >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
                     <line x1="8" y1="2" x2="8" y2="6" />
@@ -660,7 +448,6 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                 className={`ci${active ? ' sort-active' : ''}`}
                 onClick={() => {
                   if (active) {
-                    // Toggle direction on second click.
                     setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
                   } else {
                     setSortMode(o.k as SortMode)
@@ -669,22 +456,12 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                   setSortMenuOpen(false)
                 }}
               >
-                <span
-                  className="ci-icon"
-                  style={active ? { color: 'var(--accent)' } : undefined}
-                >
+                <span className="ci-icon" style={active ? { color: 'var(--accent)' } : undefined}>
                   {o.ico}
                 </span>{' '}
                 {o.l}
                 {active && (
-                  <span
-                    style={{
-                      marginLeft: 'auto',
-                      fontSize: 11,
-                      color: 'var(--accent)',
-                      flexShrink: 0,
-                    }}
-                  >
+                  <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--accent)', flexShrink: 0 }}>
                     {sortDir === 'asc' ? '↑' : '↓'}
                   </span>
                 )}
@@ -697,139 +474,6 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
     document.body,
   )
 }
-
-// ── Row _afsRenderList ────────────────────────────────
-
-const AfsRow = ({
-  track,
-  selected,
-  onToggle,
-}: {
-  track: Track
-  selected: boolean
-  onToggle: () => void
-}) => (
-  <div
-    onClick={onToggle}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      padding: '7px 8px',
-      borderRadius: 'calc(var(--radius) * 0.55)',
-      cursor: 'pointer',
-      transition: '.15s',
-      marginBottom: 2,
-      background: selected ? 'var(--hover)' : 'transparent',
-    }}
-    onMouseEnter={(e) => {
-      if (!selected) e.currentTarget.style.background = 'rgba(255,255,255,.04)'
-    }}
-    onMouseLeave={(e) => {
-      if (!selected) e.currentTarget.style.background = 'transparent'
-    }}
-  >
-    <div
-      style={{
-        width: 16,
-        height: 16,
-        borderRadius: 'calc(var(--radius) * 0.3)',
-        border: `1.5px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
-        background: selected ? 'var(--accent)' : 'transparent',
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--accent-text)',
-      }}
-    >
-      {selected && (
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={3}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      )}
-    </div>
-    <div
-      style={{
-        width: 34,
-        height: 34,
-        borderRadius: 'calc(var(--radius) * 0.4)',
-        overflow: 'hidden',
-        flexShrink: 0,
-        background: 'var(--card)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 16,
-      }}
-    >
-      {track.cover ? (
-        <img
-          src={track.cover}
-          alt=""
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      ) : (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-        >
-          <path d="M9 18V5l12-2v13" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="18" cy="16" r="3" />
-        </svg>
-      )}
-    </div>
-    <div style={{ minWidth: 0, flex: 1 }}>
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 500,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {track.name || ''}
-      </div>
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--text2)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {track.artist || ''}
-      </div>
-    </div>
-    <div
-      style={{
-        fontSize: 11,
-        color: 'var(--text2)',
-        flexShrink: 0,
-        fontVariantNumeric: 'tabular-nums',
-      }}
-    >
-      {track.dur || ''}
-    </div>
-  </div>
-)
 
 // Русская плюрализация (1 трек / 2 трека / 5 треков).
 const plural = (n: number, one: string, few: string, many: string): string => {

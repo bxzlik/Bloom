@@ -8,6 +8,7 @@ import {
   type RefObject,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavStore } from '@app/navigationStore'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
@@ -77,6 +78,9 @@ export const PlMenu = ({
   const deletePl = usePlaylistStore((s) => s.deletePl)
   const togglePin = useUnifiedOrderStore((s) => s.togglePin)
   const pinOrder = useUnifiedOrderStore((s) => s.order)
+  // Режим «Найти дубли» активен для этого плейлиста → пункт становится «Закрыть».
+  const dupsActive = useDupsStore((s) => s.active)
+  const dupsPlId = useDupsStore((s) => s.plId)
 
   const menuRef = useRef<HTMLDivElement>(null)
   // Позиция: либо anchor-based (top + right), либо cursor-based (top + left).
@@ -305,12 +309,6 @@ export const PlMenu = ({
     if (!ids.length) return
     playShuffledFromSource(ids, source)
   }
-  const openCtx = () => {
-    onClose()
-    if (mode === 'pl' && playlist) useLibStore.getState().selectPlaylist(playlist.id)
-    else if (mode === 'folder' && folderPath) useLibStore.getState().selectFolder(folderPath)
-  }
-
   // ── Header иконка ────────────────────────────────────────────────
   const headerIcon = (() => {
     if (mode === 'pl' && playlist?.cover) {
@@ -351,47 +349,32 @@ export const PlMenu = ({
   })()
 
   // ── Опции по режиму ─────────────────────────────────────────────
-  const items: ReactNode[] = []
-
-  // Cursor-mode = ПКМ из sidebar (по плейлисту/папке). Добавляем
-  // «Воспроизвести» и «Открыть» в самое начало.
+  // Cursor-mode = ПКМ из sidebar (по плейлисту/папке).
   const isCursorMode = cursorX != null && cursorY != null
-  if (isCursorMode && (mode === 'pl' || mode === 'folder')) {
-    const pinType = mode === 'folder' ? 'folder' : 'playlist'
-    const pinId = mode === 'folder' ? folderPath : playlist?.id
-    const pinned = !!pinOrder.find((o) => o.type === pinType && o.id === pinId)?.pinned
-    items.push(
-      <Item key="play" icon={<PlayIcon />} label={t('player.aria.play')} onClick={playCtx} />,
-      <Item key="open" icon={<OpenIcon />} label={t('common.open')} onClick={openCtx} />,
-      <div key="sep-cursor" className="cx-sep" />,
-      <Item
-        key="pin"
-        icon={<PinIcon />}
-        label={pinned ? t('lib.sidebar.unpin') : t('lib.sidebar.pin')}
-        onClick={() => {
-          if (pinId) togglePin(pinType, pinId)
-          onClose()
-        }}
-      />,
-    )
-  }
+  // Логические группы пунктов: пустые отбрасываются, между непустыми
+  // автоматически вставляется разделитель (см. склейку в `items` ниже).
+  const groups: ReactNode[][] = []
 
-  // «Перемешать и запустить» — универсальный пункт для всех режимов с треками
-  //. Скрывается только для history (отдельная
-  // логика очистки) и cursor-mode (для ПКМ-меню уже есть «Воспроизвести»).
-  if (!isCursorMode && mode !== 'history') {
-    items.push(
+  // 1. Воспроизведение: ПКМ из sidebar — «Воспроизвести», иначе —
+  //    «Перемешать и запустить» (для всех режимов с треками, кроме history).
+  if (isCursorMode && (mode === 'pl' || mode === 'folder')) {
+    groups.push([
+      <Item key="play" icon={<PlayIcon />} label={t('player.aria.play')} onClick={playCtx} />,
+    ])
+  } else if (!isCursorMode && mode !== 'history') {
+    groups.push([
       <Item
         key="shuffle-play"
         icon={<ShuffleIcon />}
         label={t('lib.plmenu.shuffleStart')}
         onClick={shufflePlayCtx}
       />,
-    )
+    ])
   }
 
   if (mode === 'pl' && playlist) {
-    items.push(
+    // 2. Содержимое плейлиста: добавить треки / изменить.
+    groups.push([
       <Item
         key="add"
         icon={<PlusIcon />}
@@ -410,6 +393,24 @@ export const PlMenu = ({
           onEdit?.(playlist.id)
         }}
       />,
+    ])
+
+    // 3. Сортировка — отдельной секцией. Относится к открытому tracklist'у,
+    //    поэтому скрыта для ПКМ из sidebar.
+    if (!isCursorMode) {
+      groups.push([
+        <Item
+          key="sort"
+          icon={<SortLinesIcon />}
+          label={t('lib.plmenu.sort')}
+          onClick={() => setSortPage(true)}
+          chevron
+        />,
+      ])
+    }
+
+    // 4. Инструменты: объединить / дубли / обновить с площадки.
+    const tools: ReactNode[] = [
       <Item
         key="merge"
         icon={<MergeIcon />}
@@ -419,48 +420,76 @@ export const PlMenu = ({
           useMergeStore.getState().openMerge(playlist.id)
         }}
       />,
-      <Item
-        key="dups"
-        icon={<DupsIcon />}
-        label={t('lib.plmenu.findDups')}
-        onClick={() => {
-          onClose()
-          useDupsStore.getState().openDups(playlist.id)
-        }}
-      />,
-      ...(playlist.scSource || playlist.scLikes
-        ? [
-            <Item
-              key="refresh-sc"
-              icon={<RefreshIcon />}
-              label={t('lib.plmenu.refreshTracks')}
-              onClick={() => {
-                onClose()
-                void refreshScPlaylist(playlist.id)
-              }}
-            />,
-          ]
-        : []),
+      dupsActive && dupsPlId === playlist.id ? (
+        <Item
+          key="dups"
+          icon={<DupsIcon />}
+          label={t('common.close')}
+          active
+          onClick={() => {
+            onClose()
+            useDupsStore.getState().exit()
+          }}
+        />
+      ) : (
+        <Item
+          key="dups"
+          icon={<DupsIcon />}
+          label={t('lib.plmenu.findDups')}
+          onClick={() => {
+            onClose()
+            // Инлайн-режим: открываем плейлист в библиотеке и включаем показ дублей
+            // прямо в треклисте (вместо модалки).
+            useNavStore.getState().goNav('lib')
+            useLibStore.getState().selectPlaylist(playlist.id)
+            useDupsStore.getState().enter(playlist.id)
+          }}
+        />
+      ),
+    ]
+    if (playlist.scSource || playlist.scLikes) {
+      tools.push(
+        <Item
+          key="refresh-sc"
+          icon={<RefreshIcon />}
+          label={t('lib.plmenu.refreshTracks')}
+          onClick={() => {
+            onClose()
+            void refreshScPlaylist(playlist.id)
+          }}
+        />,
+      )
+    }
+    groups.push(tools)
+
+    // 5. Экспорт / скачивание.
+    groups.push([
       <Item key="export" icon={<ExportIcon />} label={t('lib.plmenu.exportPlaylist')} onClick={exportPl} />,
       <Item key="download" icon={<DownloadIcon />} label={t('lib.plmenu.downloadPlaylist')} onClick={downloadPl} />,
-    )
+    ])
   } else if (mode === 'folder' && folderPath) {
-    items.push(
+    const content: ReactNode[] = [
       <Item key="rescan" icon={<RefreshIcon />} label={t('lib.plmenu.rescan')} onClick={rescanFolder} />,
-    )
+    ]
+    if (!isCursorMode) {
+      content.push(
+        <Item
+          key="sort"
+          icon={<SortLinesIcon />}
+          label={t('lib.plmenu.sort')}
+          onClick={() => setSortPage(true)}
+          chevron
+        />,
+      )
+    }
+    groups.push(content)
   } else if (mode === 'history') {
-    items.push(
+    groups.push([
       <Item key="clear" danger icon={<TrashIcon />} label={t('lib.plmenu.clearHistory')} onClick={clearHistory} />,
-    )
-  }
-
-  // Сортировка треков — доступна во всех режимах кроме history (порядок там
-  // диктует время прослушивания). В ПКМ-меню sidebar (cursor-mode) — не
-  // показываем: оно относится к открытому виду tracklist'а, а ПКМ из sidebar
-  // ничего не открывает.
-  if (mode !== 'history' && !isCursorMode) {
-    if (items.length > 0) items.push(<div key="sep-sort" className="cx-sep" />)
-    items.push(
+    ])
+  } else if (!isCursorMode) {
+    // Системные виды (all/fav) — только сортировка.
+    groups.push([
       <Item
         key="sort"
         icon={<SortLinesIcon />}
@@ -468,13 +497,30 @@ export const PlMenu = ({
         onClick={() => setSortPage(true)}
         chevron
       />,
-    )
+    ])
   }
 
-  // Удаление — всегда последним пунктом.
+  // 6. Закрепление (только ПКМ из sidebar по плейлисту/папке).
+  if (isCursorMode && (mode === 'pl' || mode === 'folder')) {
+    const pinType = mode === 'folder' ? 'folder' : 'playlist'
+    const pinId = mode === 'folder' ? folderPath : playlist?.id
+    const pinned = !!pinOrder.find((o) => o.type === pinType && o.id === pinId)?.pinned
+    groups.push([
+      <Item
+        key="pin"
+        icon={<PinIcon />}
+        label={pinned ? t('lib.sidebar.unpin') : t('lib.sidebar.pin')}
+        onClick={() => {
+          if (pinId) togglePin(pinType, pinId)
+          onClose()
+        }}
+      />,
+    ])
+  }
+
+  // 7. Удаление — всегда последней группой.
   if (mode === 'pl' && playlist) {
-    items.push(
-      <div key="sep-del" className="cx-sep" />,
+    groups.push([
       <Item key="delete" danger icon={<TrashIcon />} label={t('lib.plmenu.deletePlaylist')} onClick={removePl} />,
       <Item
         key="delete-tracks"
@@ -483,13 +529,21 @@ export const PlMenu = ({
         label={t('lib.plmenu.deletePlaylistWithTracks')}
         onClick={removePlWithTracks}
       />,
-    )
+    ])
   } else if (mode === 'folder' && folderPath) {
-    items.push(
-      <div key="sep-del" className="cx-sep" />,
+    groups.push([
       <Item key="delete" danger icon={<TrashIcon />} label={t('lib.plmenu.deleteFolder')} onClick={removeFolder} />,
-    )
+    ])
   }
+
+  // Склеиваем непустые группы, вставляя разделитель между соседними.
+  const items: ReactNode[] = []
+  groups
+    .filter((g) => g.length > 0)
+    .forEach((g, gi) => {
+      if (gi > 0) items.push(<div key={`sep-${gi}`} className="cx-sep" />)
+      items.push(...g)
+    })
 
   return createPortal(
     <div
@@ -557,14 +611,17 @@ const Item = ({
   onClick,
   danger,
   chevron,
+  active,
 }: {
   icon: ReactNode
   label: ReactNode
   onClick: () => void
   danger?: boolean
   chevron?: boolean
+  /** Подсветка акцентом (активный режим/выбор). */
+  active?: boolean
 }) => (
-  <div className={`ci${danger ? ' red' : ''}`} onClick={onClick}>
+  <div className={`ci${danger ? ' red' : ''}${active ? ' ci-active' : ''}`} onClick={onClick}>
     <span className="ci-icon">{icon}</span>
     <span style={{ flex: 1 }}>{label}</span>
     {chevron && (
@@ -765,13 +822,6 @@ const ShuffleIcon = () => (
     <path d="M2 6h1.9c1.5 0 2.9.9 3.5 2.2" />
     <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.7l-.5-.8" />
     <path d="m18 14 4 4-4 4" strokeLinejoin="round" />
-  </svg>
-)
-
-const OpenIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <path d="M3 9h18M9 21V9" />
   </svg>
 )
 

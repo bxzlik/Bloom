@@ -1,16 +1,13 @@
-/* ===== DUPLICATES MODAL ===== */
-#dupsOverlay{position:fixed;inset:0;z-index:991;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;pointer-events:none;transition:.26s}
-#dupsOverlay.open{opacity:1;pointer-events:all}
-.dups-modal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);width:520px;max-height:80%;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
-#dupsOverlay.open .dups-modal{transform:translateY(0)}
-.dups-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
-.dups-title{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px}
-.dups-close{width:28px;height:28px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+/* ===== DUPLICATES (инлайн в треклисте) ===== */
+.dups-inline{display:flex;flex-direction:column;gap:10px}
+/* Закреплённый баннер режима поверх списка дублей. */
+.dups-inline-bar{position:sticky;top:-8px;z-index:5;margin:-8px -12px 0;padding:12px 16px;background:color-mix(in srgb,var(--block-color),var(--text) 2%);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.dups-inline-info{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;min-width:0}
+.dups-inline-info strong{color:var(--text);font-weight:800}
+.dups-inline-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.dups-close{width:28px;height:28px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
 .dups-close:hover{background:rgba(255,255,255,.08);color:var(--text)}
-.dups-body{overflow-y:auto;flex:1;padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
-.dups-body::-webkit-scrollbar{width:2px}
-.dups-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.dups-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 0;color:var(--muted)}
+.dups-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px 0;color:var(--muted)}
 .dups-empty-icon{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center}
 .dups-group{background:var(--card-solid,var(--card));border:1px solid var(--border);border-radius:calc(var(--radius)*.75);overflow:hidden}
 .dups-group-head{padding:9px 12px;background:var(--sni-hover);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -28,11 +25,14 @@
 .dups-track-info{flex:1;min-width:0}
 .dups-track-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dups-track-artist{font-size:10.5px;color:var(--text2);margin-top:1px}
-.dups-track-dur{font-size:10.5px;color:var(--muted);flex-shrink:0}
-.dups-foot{padding:12px 16px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
-.dups-foot-info{font-size:11.5px;color:var(--text2)}
-.dups-foot-info strong{color:var(--text)}
-.dups-delete-all{display:flex;align-items:center;gap:6px;padding:7px 16px;border-radius:calc(var(--radius)*.6);font-size:12px;font-weight:700;background:rgba(224,48,48,.12);border:1px solid rgba(224,48,48,.3);color:#e03030;cursor:pointer;transition:.15s;font-family:var(--font)}
+.dups-track-dur{font-size:10.5px;color:var(--muted);flex-shrink:0;width:34px;text-align:right}
+/* Бейдж «оставить» у лучшего трека группы. */
+.dups-keep-badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(var(--accent-rgb),.16);color:var(--accent);letter-spacing:.3px;flex-shrink:0;text-transform:uppercase}
+/* Кнопка удаления одного дубля (на hover ряда). */
+.dups-track-del{width:26px;height:26px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0;opacity:0}
+.dups-track:hover .dups-track-del{opacity:1}
+.dups-track-del:hover{background:rgba(224,48,48,.14);color:#e03030}
+.dups-delete-all{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:calc(var(--radius)*.6);font-size:11.5px;font-weight:700;background:rgba(224,48,48,.12);border:1px solid rgba(224,48,48,.3);color:#e03030;cursor:pointer;transition:.15s;font-family:var(--font);white-space:nowrap}
 .dups-delete-all:hover{background:rgba(224,48,48,.22)}
 
 /* ===== SOUNDCLOUD MODAL ===== */

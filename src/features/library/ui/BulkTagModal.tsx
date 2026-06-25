@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
 import { toast } from '@shared/ui'
@@ -8,17 +8,14 @@ import { useSelectionStore, useLibStore } from '../model'
 import { compressCover, idbUpdateMeta } from '../lib'
 
 export interface BulkTagModalProps {
-  /** true = модалка открыта. */
+  /** true = панель открыта. */
   open: boolean
   onClose: () => void
 }
 
 /**
- * Модалка массового редактирования тегов `#bulkTagOverlay`
- *.
- *
- * Использует CSS: `.bulk-tag-overlay`, `.bulk-tag-modal`, `.bt-head/.bt-body/
- * .bt-foot/.bt-info` + общие `.te-title/.te-close/.te-field/.te-label/.te-input/.te-cover`.
+ * Массовое редактирование тегов — боковая панель-drawer (`.spanel-*`), как
+ * редактирование профиля. Каркас/тело/футер общие с TagEditor.
  *
  * Применяет к выделенным трекам (useSelectionStore.selected) одно из:
  *   - исполнитель (если поле непустое)
@@ -34,7 +31,6 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
   const [album, setAlbum] = useState('')
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null)
   const [opening, setOpening] = useState(false)
-  const fileRef = useRef<HTMLInputElement | null>(null)
 
   // Сброс полей + анимация открытия.
   useEffect(() => {
@@ -61,7 +57,7 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
 
   const handleClose = () => {
     setOpening(false)
-    setTimeout(() => onClose(), 260)
+    setTimeout(() => onClose(), 300)
   }
 
   const onCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,101 +119,73 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
 
   return createPortal(
     <div
-      className={`bulk-tag-overlay${opening ? ' open' : ''}`}
+      className={`spanel-backdrop${opening ? ' open' : ''}`}
       id="bulkTagOverlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose()
       }}
     >
-      <div className="bulk-tag-modal">
-        <div className="bt-head">
-          <div className="te-title">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              style={{ marginRight: 7, verticalAlign: 'middle' }}
-            >
-              <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-            </svg>
-            {t('lib.bulk.title')}
-          </div>
-          <button className="te-close" onClick={handleClose} aria-label={t('common.close')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+      <div className="spanel">
+        {/* HERO: обложка-для-всех (клик = выбрать) + заголовок + кол-во треков */}
+        <div className="spanel-hero">
+          <label className="spanel-cover" id="bulkCoverPreview">
+            {coverDataUrl ? (
+              <img src={coverDataUrl} alt="" />
+            ) : (
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" style={{ opacity: 0.3 }}>
+                <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+              </svg>
+            )}
+            <div className="spanel-cover-cam">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </div>
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onCoverChange} />
+          </label>
+          <div className="spanel-hero-name">{t('lib.bulk.title')}</div>
+          <div className="spanel-hero-sub" id="bulkTagInfo">{t('lib.bulk.selected', { n: count })}</div>
         </div>
 
-        <div className="bt-body">
-          <div className="bt-info" id="bulkTagInfo">
-            {t('lib.bulk.selected', { n: count })}
-          </div>
+        <div className="pedit-body">
+          <div className="pedit-card">
+            <div className="pedit-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+              </svg>
+              {t('lib.bulk.title')}
+            </div>
 
-          <div className="te-field">
-            <div className="te-label">{t('lib.bulk.setArtist')}</div>
-            <input
-              className="te-input"
-              value={artist}
-              onChange={(e) => setArtist(e.target.value)}
-              placeholder={t('lib.bulk.placeholderKeep')}
-              maxLength={200}
-            />
-          </div>
-
-          <div className="te-field">
-            <div className="te-label">{t('lib.bulk.setAlbum')}</div>
-            <input
-              className="te-input"
-              value={album}
-              onChange={(e) => setAlbum(e.target.value)}
-              placeholder={t('lib.bulk.placeholderKeep')}
-              maxLength={200}
-            />
-          </div>
-
-          <div className="te-field">
-            <div className="te-label">{t('lib.bulk.setCover')}</div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <div
-                className="te-cover"
-                id="bulkCoverPreview"
-                style={{ width: 44, height: 44, borderRadius: 'calc(var(--radius)*.5)' }}
-              >
-                {coverDataUrl ? (
-                  <img
-                    src={coverDataUrl}
-                    alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
-                  />
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" style={{ opacity: 0.3 }}>
-                    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-                  </svg>
-                )}
-              </div>
-              <span style={{ fontSize: 11.5, color: 'var(--text2)' }}>{t('lib.bulk.chooseCover')}</span>
+            <div className="pedit-eg">
+              <div className="pedit-bio-label" style={{ marginBottom: 0 }}>{t('lib.bulk.setArtist')}</div>
               <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={onCoverChange}
+                className="pedit-nick-inp"
+                value={artist}
+                onChange={(e) => setArtist(e.target.value)}
+                placeholder={t('lib.bulk.placeholderKeep')}
+                maxLength={200}
               />
-            </label>
+            </div>
+
+            <div className="pedit-eg">
+              <div className="pedit-bio-label" style={{ marginBottom: 0 }}>{t('lib.bulk.setAlbum')}</div>
+              <input
+                className="pedit-nick-inp"
+                value={album}
+                onChange={(e) => setAlbum(e.target.value)}
+                placeholder={t('lib.bulk.placeholderKeep')}
+                maxLength={200}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="bt-foot">
-          <button className="btn btg" onClick={handleClose}>
+        <div className="pedit-foot">
+          <button className="pedit-btn-cancel" onClick={handleClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn bta" onClick={() => void onSave()}>
+          <button className="pedit-btn-save" onClick={() => void onSave()}>
             {t('common.apply')}
           </button>
         </div>

@@ -7,7 +7,7 @@ import { t } from '@shared/i18n'
  *
  * Хранит только данные карточки профиля (ник/био/статус/аватар/баннер/цвета).
  * Счётчики (playCount) в bloom НЕ ведутся — статистика считается из
- * `useHistoryStore`/`useActivityStore` (см. StatsModal). Поле `playCount` из
+ * `useHistoryStore`/`useActivityStore` (см. StatsSection). Поле `playCount` из
  * старого формата при загрузке игнорируем, при сохранении не пишем.
  *
  * `editOpen`/`shareOpen` — флаги модалок профиля (редактирование/шаринг);

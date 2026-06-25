@@ -48,6 +48,7 @@ const toLegacySource = (s: PlaySource): LegacySource => {
     case 'folder': return { type: 'folder', folderPath: s.path, label: s.name }
     case 'sc': return { type: 'sc', label: s.label }
     case 'wave': return { type: 'wave', label: s.label }
+    case 'single': return { type: 'single', label: s.name }
   }
 }
 
@@ -67,6 +68,8 @@ const fromLegacySource = (s: LegacySource | undefined): PlaySource => {
     case 'folder': return s.folderPath ? { kind: 'folder', path: s.folderPath, name: s.label ?? '' } : { kind: 'lib-all' }
     case 'sc': return { kind: 'sc', label: s.label ?? 'SoundCloud' }
     case 'wave': return { kind: 'wave', label: s.label ?? i18nT('wave.title') }
+    // Обложку для пилюли резолвим в restoreResumeQueue (в legacy-формате её нет).
+    case 'single': return { kind: 'single', name: s.label ?? '' }
     default: return { kind: 'lib-all' }
   }
 }
@@ -156,7 +159,10 @@ export const restoreResumeQueue = (r: ResumeData): string | null => {
     queue.unshift(r.id)
     qIdx = 0
   }
-  useQueueStore.getState().setQueue(queue, qIdx, fromLegacySource(r.source))
+  const source = fromLegacySource(r.source)
+  // Одиночный трек: обложку для пилюли подставляем из трека (в legacy её нет).
+  if (source?.kind === 'single') source.cover = findTrack(r.id)?.cover ?? null
+  useQueueStore.getState().setQueue(queue, qIdx, source)
   setPendingResumeSeek(r.pos || 0)
   return r.id
 }

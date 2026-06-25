@@ -11,6 +11,18 @@ import '@shared/styles/eq.css'
 // Отключаем браузерное контекстное меню (кастомные меню рисуем сами через oncontextmenu).
 window.addEventListener('contextmenu', (e) => e.preventDefault())
 
+// Браузерные accelerator-клавиши WebView2 отключены нативно (см. lib.rs). Возвращаем
+// перезагрузку по F5 / Ctrl+R и DevTools по F12 / Ctrl+Shift+I вручную.
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) {
+    e.preventDefault()
+    window.location.reload()
+  } else if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i'))) {
+    e.preventDefault()
+    import('@tauri-apps/api/core').then(({ invoke }) => invoke('open_devtools')).catch(() => {})
+  }
+})
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

@@ -1,4 +1,30 @@
 {
+  "1.3.1": {
+    "title": { "ru": "Что нового в 1.3.1", "en": "What's new in 1.3.1" },
+    "pages": [
+      {
+        "title": { "ru": "Профиль", "en": "Profile" },
+        "body": {
+          "ru": "- Переработано редактирование профиля",
+          "en": "- Reworked profile editing"
+        }
+      },
+      {
+        "title": { "ru": "Теги", "en": "Tags" },
+        "body": {
+          "ru": "- Переработано редактирование тегов\n- Переработан массовый редактор тегов",
+          "en": "- Reworked tag editing\n- Reworked bulk tag editing"
+        }
+      },
+      {
+        "title": { "ru": "Плейлисты", "en": "Playlists" },
+        "body": {
+          "ru": "- Переработано объединение плейлистов\n- Переработан модал добавления в плейлист\n- Переработан поиск дублей",
+          "en": "- Reworked merging playlists\n- Updated the add-to-playlist modal\n- Updated duplicate search"
+        }
+      }
+    ]
+  },
   "1.3.0": {
     "title": { "ru": "Что нового в 1.3.0", "en": "What's new in 1.3.0" },
     "pages": [
