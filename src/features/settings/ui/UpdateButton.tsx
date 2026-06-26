@@ -103,30 +103,12 @@ export const UpdateButton = () => {
             <span className="tbu-ver">Bloom v{info?.latest}</span>
           </div>
 
-          {/* Превью-карусель страниц заметки релиза */}
-          {pages.length > 0 && (
+          {/* Превью текущей страницы — только если есть картинка */}
+          {cur?.image && (
             <div className="tbu-preview">
               <div className="tbu-frame" key={idx}>
-                {cur?.image ? (
-                  <img src={cur.image} alt="" loading="lazy" className="tbu-img" />
-                ) : (
-                  <div className="tbu-noimg">
-                    <img src="/logo.png" alt="" />
-                  </div>
-                )}
+                <img src={cur.image} alt="" loading="lazy" className="tbu-img" />
               </div>
-              {multi && (
-                <div className="tbu-dots">
-                  {pages.map((_, i) => (
-                    <button
-                      key={i}
-                      className={`tbu-dot${i === idx ? ' on' : ''}`}
-                      aria-label={`${i + 1}`}
-                      onClick={() => setIdx(i)}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
@@ -136,6 +118,20 @@ export const UpdateButton = () => {
               ? t('update.downloading')
               : cur?.title || cur?.body || t('update.available')}
           </div>
+
+          {/* Точки-индикаторы — под текстом */}
+          {multi && (
+            <div className="tbu-dots">
+              {pages.map((_, i) => (
+                <button
+                  key={i}
+                  className={`tbu-dot${i === idx ? ' on' : ''}`}
+                  aria-label={`${i + 1}`}
+                  onClick={() => setIdx(i)}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Действия / прогресс */}
           {downloading ? (

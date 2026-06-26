@@ -109,10 +109,16 @@ const BigPicInner = () => {
   const frozenCover = useOptStore((s) => s.frozenCover)
   const artwork = frozenCover ?? coverOverride ?? artworkRaw
 
+  const lyrView = useBigPicStore((s) => s.lyrView)
+
   // Выравнивание заголовка/артиста/текста следует настройке titleAlign плеера.
   const titleAlign = usePlayerViewStore((s) => s.titleAlign)
   const modeClass =
-    panel === 'lyrics' ? ' bp-lyr-mode' : panel === 'queue' ? ' bp-q-mode' : ''
+    panel === 'lyrics'
+      ? ` bp-lyr-mode${lyrView === 'text' ? ' bp-lv-text' : ''}`
+      : panel === 'queue'
+        ? ' bp-q-mode'
+        : ''
   const innerClass = `bp-inner bp-align-${titleAlign}${modeClass}`
 
   return (
@@ -484,11 +490,24 @@ const BpLyrics = () => {
 // ── Попап настроек шрифта/оффсета ───────────────────────────────────────────
 
 const BpFontPanel = () => {
+  const t = useT()
   const fontSize = useBigPicStore((s) => s.fontSize)
   const offset = useBigPicStore((s) => s.offset)
+  const panel = useBigPicStore((s) => s.panel)
+  const lyrView = useBigPicStore((s) => s.lyrView)
   const setFontSize = useBigPicStore((s) => s.setFontSize)
+  const setView = useBigPicStore((s) => s.setView)
   const adjustOffset = useBigPicStore((s) => s.adjustOffset)
   const resetOffset = useBigPicStore((s) => s.resetOffset)
+
+  // Активный вид: «Обложка» = без панели текста, иначе раскладка текста.
+  const view = panel === 'lyrics' ? lyrView : 'cover'
+  const views = [
+    { id: 'all', icon: 'eye', label: t('player.view.all') },
+    { id: 'cover', icon: 'gallery', label: t('player.view.cover') },
+    { id: 'text', icon: 'text', label: t('player.view.text') },
+  ] as const
+
   return (
     <div id="bpFontPanel" className="bp-font-panel">
       <div className="bp-font-sizes">
@@ -503,6 +522,21 @@ const BpFontPanel = () => {
           </button>
         ))}
       </div>
+      <div className="bp-panel-sep" />
+      <div className="bp-view">
+        <div className="bp-view-label">{t('player.view.label')}</div>
+        {views.map((v) => (
+          <button
+            key={v.id}
+            className={`bp-view-opt${view === v.id ? ' bp-view-opt-active' : ''}`}
+            onClick={() => setView(v.id)}
+          >
+            <Ico name={v.icon} width={16} height={16} />
+            {v.label}
+          </button>
+        ))}
+      </div>
+      <div className="bp-panel-sep" />
       <div className="bp-font-offset">
         <button className="bp-font-off-btn" onClick={() => adjustOffset(-0.5)}>
           −

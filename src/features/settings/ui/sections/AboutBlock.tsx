@@ -23,6 +23,7 @@ export const AboutBlock = () => {
   const check = useUpdateStore((s) => s.check)
   const downloadInstall = useUpdateStore((s) => s.downloadInstall)
   const openWhatsNew = useUpdateStore((s) => s.openWhatsNew)
+  const openHistory = useUpdateStore((s) => s.openHistory)
 
   // На случай, если секция открыта до завершения стартового init() — он идемпотентен.
   useEffect(() => {
@@ -85,22 +86,38 @@ export const AboutBlock = () => {
             <div style={{ marginTop: 3, fontSize: 12.5, fontWeight: 500, color: 'var(--text2)' }}>
               {t('settings.about.version')} <span style={{ color: 'var(--muted)' }}>v</span>{version || '—'}
             </div>
-            <button
-              onClick={() => void openWhatsNew()}
-              style={{
-                marginTop: 6,
-                padding: 0,
-                background: 'none',
-                border: 'none',
-                color: 'var(--accent)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'var(--font)',
-              }}
-            >
-              {t('update.notesTitle')}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6 }}>
+              <button
+                onClick={() => void openWhatsNew()}
+                style={{
+                  padding: 0,
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--accent)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                }}
+              >
+                {t('update.notesTitle')}
+              </button>
+              <button
+                onClick={() => void openHistory()}
+                style={{
+                  padding: 0,
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text2)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                }}
+              >
+                {t('update.history')}
+              </button>
+            </div>
           </div>
         </div>
 

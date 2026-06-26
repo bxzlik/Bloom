@@ -39,7 +39,7 @@ export const LibSortMenu = ({
 }: LibSortMenuProps) => {
   const t = useT()
   const menuRef = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
 
   // Плавная open-анимация (вместо ctxIn).
   usePopupOpenAnimation(menuRef, pos)
@@ -53,7 +53,11 @@ export const LibSortMenu = ({
       const a = anchorRef.current
       if (!a) return
       const r = a.getBoundingClientRect()
-      setPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
+      // Центрируем попап по горизонтали относительно кнопки сортировки — как «+».
+      const W = menuRef.current?.offsetWidth || 175
+      const centerX = r.left + r.width / 2
+      const left = Math.max(8, Math.min(centerX - W / 2, window.innerWidth - W - 8))
+      setPos({ top: r.bottom + 6, left })
     }
     recalc()
     window.addEventListener('resize', recalc)
@@ -83,7 +87,7 @@ export const LibSortMenu = ({
       ref={menuRef}
       id="libSortMenu"
       className="open"
-      style={{ top: pos.top, right: pos.right, left: 'auto' }}
+      style={{ top: pos.top, left: pos.left, right: 'auto' }}
     >
       {OPTIONS.map((opt) => {
         const active = value === opt.value

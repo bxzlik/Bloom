@@ -160,8 +160,8 @@
    строки (63px без margin), чтобы скролл-позиции были корректны. */
 .tr{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:calc(var(--radius) * 0.7);cursor:pointer;transition:.15s;margin-bottom:5px;border:1px solid rgba(255,255,255,var(--wb));min-height:63px;content-visibility:auto;contain-intrinsic-size:auto 63px}
 .tr:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,var(--wb2))}
-.tr.playing{background:rgba(var(--accent-rgb),.08);border-color:rgba(var(--accent-rgb),calc(var(--wb)*4))}
-.tr.playing .trn{color:var(--accent)}
+.tr.playing{background:rgba(var(--accent-rgb),.04);border-color:rgba(var(--accent-rgb),calc(var(--wb)*2))}
+.tr.playing .trn{color:color-mix(in srgb,var(--accent) 55%,var(--text))}
 .trcov{position:relative;width: 45px;height: 45px;;border-radius:calc(var(--radius) * 0.6);background:var(--hover);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:12px}
 .trcov img{width:100%;height:100%;object-fit:cover}
 

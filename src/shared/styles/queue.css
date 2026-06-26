@@ -101,7 +101,7 @@
 #speedPicker .sp-label{font-size:10px;font-weight:700;color:var(--text2,#999)}
 #speedPicker .sp-item.active .sp-label{color:var(--text)}
 #speedPicker .sp-num{font-size:9.5px;font-weight:800;letter-spacing:-.3px}
-#libSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top right;display:none}
+#libSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
 #libSortMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libSortMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #libSortMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}

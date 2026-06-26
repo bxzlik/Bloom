@@ -52,6 +52,17 @@ const resolveNote = (
   return { version, title: resolveText(raw.title, locale), pages }
 }
 
+/** Сравнение версий по убыванию (новые сверху) для списка истории. */
+const cmpVerDesc = (a: string, b: string): number => {
+  const pa = a.split('.').map(Number)
+  const pb = b.split('.').map(Number)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pb[i] || 0) - (pa[i] || 0)
+    if (d) return d
+  }
+  return 0
+}
+
 /** Есть ли на странице что показывать. */
 const pageHasContent = (p: UpdateNotePage): boolean =>
   !!p.title || !!p.body || !!p.image || p.icons.length > 0
@@ -99,8 +110,19 @@ const loadManifest = (): Promise<Record<string, UpdateNoteRaw>> => {
 
 export type UpdatePhase = 'idle' | 'checking' | 'uptodate' | 'available' | 'downloading' | 'error'
 
-/** Режим модалки заметок: анонс новой версии vs «Что нового» после обновления. */
-export type NotesMode = 'announce' | 'whatsnew'
+/**
+ * Режим модалки заметок:
+ *   - 'announce' — анонс доступной новой версии (с кнопкой «Обновить»);
+ *   - 'whatsnew' — «Что нового» после обновления / по кнопке в «О приложении»;
+ *   - 'history'  — список прошлых версий с возможностью открыть заметку любой.
+ */
+export type NotesMode = 'announce' | 'whatsnew' | 'history'
+
+/** Пункт списка истории: версия + локализованный заголовок заметки. */
+export interface HistoryEntry {
+  version: string
+  title: string
+}
 
 const LS_DISMISSED = 'bloom_update_dismissed'
 /** Версия прошлого запуска — чтобы показать «Что нового» один раз после апдейта. */
@@ -132,6 +154,8 @@ interface UpdateState {
   notesLoading: boolean
   /** Режим показа модалки. */
   notesMode: NotesMode
+  /** Список версий для режима истории (новые сверху). */
+  historyVersions: HistoryEntry[]
   /** Защита от повторного init() (стор — синглтон на всё окно). */
   _started: boolean
   _unlisten: UnlistenFn | null
@@ -149,6 +173,12 @@ interface UpdateState {
   showWhatsNew: (version: string) => Promise<void>
   /** Открыть «Что нового» для текущей версии вручную (кнопка в «О приложении»). */
   openWhatsNew: () => Promise<void>
+  /** Открыть список истории обновлений (все версии из манифеста). */
+  openHistory: () => Promise<void>
+  /** Открыть заметку конкретной версии из списка истории. */
+  openHistoryNote: (version: string) => Promise<void>
+  /** Вернуться из заметки к списку истории. */
+  backToHistory: () => void
 }
 
 export const useUpdateStore = create<UpdateState>((set, get) => ({
@@ -162,6 +192,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
   notesOpen: false,
   notesLoading: false,
   notesMode: 'announce',
+  historyVersions: [],
   _started: false,
   _unlisten: null,
 
@@ -311,6 +342,39 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
       set({ notesLoading: false })
     }
   },
+
+  openHistory: async () => {
+    // Открываем список (note=null), показываем спиннер до загрузки манифеста.
+    set({ notesOpen: true, notesMode: 'history', note: null, notesLoading: true })
+    try {
+      const manifest = await loadManifest()
+      const locale = useI18nStore.getState().locale
+      const list = Object.keys(manifest)
+        .sort(cmpVerDesc)
+        .map((version) => ({ version, title: resolveText(manifest[version].title, locale) }))
+      set({ historyVersions: list })
+    } catch {
+      set({ historyVersions: [] })
+    } finally {
+      set({ notesLoading: false })
+    }
+  },
+
+  openHistoryNote: async (version) => {
+    if (get().note?.version === version) return
+    set({ notesLoading: true, note: null })
+    try {
+      const manifest = await loadManifest()
+      const locale = useI18nStore.getState().locale
+      set({ note: resolveNote(manifest, version, locale) })
+    } catch {
+      set({ note: null })
+    } finally {
+      set({ notesLoading: false })
+    }
+  },
+
+  backToHistory: () => set({ note: null }),
 }))
 
 /** Старт авто-проверки обновлений при монтировании App (идемпотентно). */

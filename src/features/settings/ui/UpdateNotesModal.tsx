@@ -38,8 +38,11 @@ export const UpdateNotesModal = () => {
   const mode = useUpdateStore((s) => s.notesMode)
   const note = useUpdateStore((s) => s.note)
   const phase = useUpdateStore((s) => s.phase)
+  const historyVersions = useUpdateStore((s) => s.historyVersions)
   const close = useUpdateStore((s) => s.closeNotes)
   const downloadInstall = useUpdateStore((s) => s.downloadInstall)
+  const openHistoryNote = useUpdateStore((s) => s.openHistoryNote)
+  const backToHistory = useUpdateStore((s) => s.backToHistory)
 
   // Монтирование с enter/exit-анимацией (как ShareCardModal): .open включаем
   // на следующем кадре, при закрытии снимаем и размонтируем после перехода.
@@ -83,7 +86,9 @@ export const UpdateNotesModal = () => {
 
   if (!mounted) return null
 
-  const title = note?.title || t('update.notesTitle')
+  // В режиме истории без выбранной заметки показываем список версий.
+  const historyList = mode === 'history' && !note
+  const title = historyList ? t('update.history') : note?.title || t('update.notesTitle')
   const multi = total > 1
 
   return createPortal(
@@ -96,7 +101,13 @@ export const UpdateNotesModal = () => {
       <div className="unm-modal" role="dialog" aria-label={title}>
         {/* Шапка */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px 12px' }}>
-          <img src="/logo.png" alt="" style={{ width: 34, height: 34, objectFit: 'contain', flexShrink: 0 }} />
+          {mode === 'history' && note ? (
+            <button className="unm-close" aria-label={t('update.back')} onClick={backToHistory}>
+              <Ico name="arrowLeft" width={16} height={16} />
+            </button>
+          ) : (
+            <img src="/logo.png" alt="" style={{ width: 34, height: 34, objectFit: 'contain', flexShrink: 0 }} />
+          )}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {title}
@@ -122,6 +133,24 @@ export const UpdateNotesModal = () => {
                 }}
               />
             </div>
+          ) : historyList ? (
+            historyVersions.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>{t('update.historyEmpty')}</div>
+            ) : (
+              <div className="unm-history">
+                {historyVersions.map((h) => (
+                  <button
+                    key={h.version}
+                    className="unm-history-item"
+                    onClick={() => void openHistoryNote(h.version)}
+                  >
+                    <span className="unm-history-ver">v{h.version}</span>
+                    {h.title && <span className="unm-history-title">{h.title}</span>}
+                    <Ico name="arrowRight" width={16} height={16} className="unm-history-chev" />
+                  </button>
+                ))}
+              </div>
+            )
           ) : !cur ? (
             <div style={{ fontSize: 13, color: 'var(--text2)' }}>{t('update.notesEmpty')}</div>
           ) : (
@@ -195,7 +224,7 @@ export const UpdateNotesModal = () => {
 
         {/* Подвал: действия */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, padding: '12px 18px 16px' }}>
-          {mode === 'whatsnew' ? (
+          {mode === 'whatsnew' || mode === 'history' ? (
             <button className="btn bta" onClick={close} style={{ fontSize: 12.5, padding: '7px 18px' }}>
               {t('update.gotIt')}
             </button>

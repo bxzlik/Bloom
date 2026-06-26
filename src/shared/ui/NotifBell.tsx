@@ -49,7 +49,7 @@ export const NotifBell = () => {
         aria-label={t('titlebar.notifs')}
         aria-expanded={open}
       >
-        <Ico name="bell" width={14} height={14} />
+        <Ico name="bell" variant={open ? 'bold' : 'linear'} width={14} height={14} />
         {unread > 0 && <span className="notif-badge">{unread > 9 ? '9+' : unread}</span>}
       </button>
 

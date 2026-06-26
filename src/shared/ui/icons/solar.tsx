@@ -74,6 +74,7 @@ import LoginLinear from '~icons/solar/login-2-linear'
 import ChartLinear from '~icons/solar/chart-2-linear'
 import FilterLinear from '~icons/solar/filter-linear'
 import PinLinear from '~icons/solar/pin-linear'
+import PinBold from '~icons/solar/pin-bold'
 import ShareLinear from '~icons/solar/share-linear'
 import PlayNextLinear from '~icons/solar/double-alt-arrow-right-linear'
 import MenuLinear from '~icons/solar/hamburger-menu-linear'
@@ -99,6 +100,7 @@ import SaveLinear from '~icons/solar/diskette-linear'
 import CodeLinear from '~icons/solar/code-linear'
 import StarsLinear from '~icons/solar/stars-linear'
 import MinSquareLinear from '~icons/solar/minimize-square-linear'
+import RestoreLinear from '~icons/solar/minimize-square-minimalistic-linear'
 import MaxSquareLinear from '~icons/solar/maximize-square-linear'
 import LinkLinear from '~icons/solar/link-minimalistic-linear'
 import GlobeLinear from '~icons/solar/global-linear'
@@ -196,7 +198,7 @@ const ICONS = {
   login: { linear: LoginLinear },
   chart: { linear: ChartLinear },
   filter: { linear: FilterLinear },
-  pin: { linear: PinLinear },
+  pin: { linear: PinLinear, bold: PinBold },
   share: { linear: ShareLinear },
   playNext: { linear: PlayNextLinear },
   menu: { linear: MenuLinear },
@@ -221,6 +223,7 @@ const ICONS = {
   code: { linear: CodeLinear },
   stars: { linear: StarsLinear },
   minSquare: { linear: MinSquareLinear },
+  restore: { linear: RestoreLinear },
   maxSquare: { linear: MaxSquareLinear },
   text: { linear: LyricsLinear },
   link: { linear: LinkLinear },

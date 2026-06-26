@@ -5,7 +5,7 @@ import { getProvider } from '../model/registry'
 /**
  * Общий «бридж на SoundCloud» для площадок без собственного стрима (YouTube
  * Music, Spotify). YouTube требует PoToken/cookies, Spotify не отдаёт стрим в
- * принципе — поэтому, как и референсы (mimose / bedrock-api), мы берём
+ * принципе — поэтому, мы берём
  * метаданные площадки, а звук — из SoundCloud: ищем тот же трек по «название +
  * артист» и берём лучший матч по пересечению токенов.
  *

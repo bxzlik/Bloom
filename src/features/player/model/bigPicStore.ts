@@ -4,6 +4,13 @@ import { create } from 'zustand'
 export type BpPanel = 'none' | 'queue' | 'lyrics'
 
 /**
+ * Раскладка зоны текста: «Всё» (обложка + текст), «Обложка» (только обложка),
+ * «Текст» (только текст на весь экран). Управляется селектором «Вид» в попапе
+ * настроек. Значение `lyrView` актуально только когда `panel === 'lyrics'`.
+ */
+export type BpView = 'all' | 'cover' | 'text'
+
+/**
  * Размеры шрифта текста в BigPicture: 4 пресета `{normal, active}` (px).
  * `_bpFontSizes`. По умолчанию — индекс 3.
  */
@@ -29,6 +36,8 @@ export interface BigPicState {
   panel: BpPanel
   /** Открыт попап настроек шрифта/оффсета (правый верхний угол). */
   fontPanelOpen: boolean
+  /** Раскладка зоны текста в режиме текста ('all' | 'text'); 'cover' = panel 'none'. */
+  lyrView: 'all' | 'text'
   /** Индекс размера шрифта текста (0..3, см. BP_FONT_SIZES). */
   fontSize: number
   /** Сдвиг синхронизации текста в секундах (только для BigPicture, _bpOffset). */
@@ -39,6 +48,8 @@ export interface BigPicState {
   toggleQueue: () => void
   toggleLyrics: () => void
   toggleFontPanel: () => void
+  /** Переключить вид зоны текста (см. BpView). */
+  setView: (v: BpView) => void
   setFontSize: (n: number) => void
   adjustOffset: (delta: number) => void
   resetOffset: () => void
@@ -48,6 +59,7 @@ export const useBigPicStore = create<BigPicState>((set) => ({
   open: false,
   panel: 'none',
   fontPanelOpen: false,
+  lyrView: 'all',
   fontSize: 3,
   offset: 0,
 
@@ -55,8 +67,13 @@ export const useBigPicStore = create<BigPicState>((set) => ({
   // Закрытие сбрасывает панели/попап шрифта.
   closeBig: () => set({ open: false, panel: 'none', fontPanelOpen: false }),
   toggleQueue: () => set((s) => ({ panel: s.panel === 'queue' ? 'none' : 'queue' })),
-  toggleLyrics: () => set((s) => ({ panel: s.panel === 'lyrics' ? 'none' : 'lyrics' })),
+  // Открытие текста через кнопку всегда даёт раскладку «Всё».
+  toggleLyrics: () =>
+    set((s) => (s.panel === 'lyrics' ? { panel: 'none' } : { panel: 'lyrics', lyrView: 'all' })),
   toggleFontPanel: () => set((s) => ({ fontPanelOpen: !s.fontPanelOpen })),
+  // «Обложка» = просто без боковой панели; «Всё»/«Текст» открывают текст с нужной раскладкой.
+  setView: (v) =>
+    set(v === 'cover' ? { panel: 'none' } : { panel: 'lyrics', lyrView: v }),
   setFontSize: (n) => set({ fontSize: n }),
   adjustOffset: (delta) =>
     set((s) => ({ offset: Math.round((s.offset + delta) * 10) / 10 })),

@@ -313,12 +313,12 @@ const PlayerContent = () => {
   )
   const favOverlayBtn = (
     <button onClick={toggleCurFav} className={`cov-fav${isFav ? '' : ' off'}`} aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}>
-      <HeartSvg size={18} filled={isFav} />
+      <HeartSvg size={22} filled={isFav} />
     </button>
   )
   const addOverlayBtn = (
     <button className="cov-add" aria-label={t('player.aria.add')} onClick={openAddPopup}>
-      <Ico name="addCircle" width={17} height={17} />
+      <Ico name="addCircle" width={24} height={24} />
     </button>
   )
   // Кнопка «на весь экран» по центру обложки (появляется по наведению) — как в

@@ -116,7 +116,7 @@ const STREAM_TTL = 4 * 60 * 1000
 /**
  * Резолвер стрима YTM — **бридж на SoundCloud**. YouTube с 2024 требует
  * PoToken/cookies для прямого стрима (server-side запрос ловит «Sign in to
- * confirm you're not a bot»), поэтому, как и референсы (mimose / bedrock-api),
+ * confirm you're not a bot»),
  * мы отдаём метаданные YTM, а звук берём из SoundCloud: ищем тот же трек по
  * «название + артист», берём лучший матч и резолвим его стрим общим
  * `resolvePlayableUrl` (его подхватывает зарегистрированный SC-резолвер).

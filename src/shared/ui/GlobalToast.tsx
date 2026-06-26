@@ -84,7 +84,7 @@ export const GlobalToast = () => {
   return (
     <div
       id="toast"
-      className={`toast-${kind}${action ? ' has-action' : ''}${visible ? ' show' : ''}`}
+      className={`toast-${kind}${action && visible ? ' has-action' : ''}${visible ? ' show' : ''}`}
     >
       <span className="toast-ico">{KIND_ICON[kind]}</span>
       <span className="toast-text">{text}</span>

@@ -605,6 +605,10 @@ export const ru = {
   'player.aria.close': 'Закрыть',
   'player.aria.textSettings': 'Настройки текста',
   'player.aria.bigPic': 'На весь экран',
+  'player.view.label': 'Вид',
+  'player.view.all': 'Всё',
+  'player.view.cover': 'Обложка',
+  'player.view.text': 'Текст',
   'player.lyrics': 'Текст песни',
   'player.queueEmpty': 'Очередь пуста',
   'player.queue.section.played': 'Прослушано',
@@ -1155,6 +1159,9 @@ export const ru = {
   'update.notesTitle': 'Что нового',
   'update.notesEmpty': 'Подробности появятся позже.',
   'update.gotIt': 'Готово',
+  'update.history': 'История обновлений',
+  'update.historyEmpty': 'Прошлых версий пока нет.',
+  'update.back': 'Назад',
 
   // Пропущенный многострочный JSX-текст
   'common.delete': 'Удалить',
@@ -1960,6 +1967,10 @@ export const en: Record<TranslationKey, string> = {
   'player.aria.close': 'Close',
   'player.aria.textSettings': 'Text settings',
   'player.aria.bigPic': 'Fullscreen',
+  'player.view.label': 'View',
+  'player.view.all': 'All',
+  'player.view.cover': 'Cover',
+  'player.view.text': 'Text',
   'player.lyrics': 'Lyrics',
   'player.queueEmpty': 'Queue is empty',
   'player.queue.section.played': 'Played',
@@ -2510,6 +2521,9 @@ export const en: Record<TranslationKey, string> = {
   'update.notesTitle': "What's new",
   'update.notesEmpty': 'Details will be available later.',
   'update.gotIt': 'Got it',
+  'update.history': 'Update history',
+  'update.historyEmpty': 'No previous versions yet.',
+  'update.back': 'Back',
 
   // Missed multi-line JSX text
   'common.delete': 'Delete',

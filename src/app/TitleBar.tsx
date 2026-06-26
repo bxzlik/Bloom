@@ -83,8 +83,8 @@ export const TitleBar = () => {
             aria-label={tbPinned ? t('titlebar.unpinWin') : t('titlebar.pinWin')}
             aria-pressed={tbPinned}
           >
-            {/* Канцелярская кнопка (pin) */}
-            <Ico name="pin" width={12} height={12} />
+            {/* Канцелярская кнопка (pin) — bold, когда окно закреплено. */}
+            <Ico name="pin" variant={tbPinned ? 'bold' : 'linear'} width={12} height={12} />
           </button>
         )}
         {tbMin && (
@@ -94,9 +94,7 @@ export const TitleBar = () => {
             onClick={onMin}
             aria-label={t('titlebar.min')}
           >
-            <svg width="10" height="1" viewBox="0 0 10 1">
-              <rect width="10" height="1" fill="currentColor" />
-            </svg>
+            <Ico name="minus" width={16} height={16} />
           </button>
         )}
         {tbMax && (
@@ -107,23 +105,16 @@ export const TitleBar = () => {
             aria-label={maximized ? t('titlebar.restore') : t('titlebar.max')}
           >
             {maximized ? (
-              // Restore icon — (__bloomSetMaximized): квадрат + L-подложка.
-              <svg id="winMaxIcon" width="10" height="10" viewBox="0 0 10 10">
-                <path d="M3 3h6v6H3zM5 1h6v6" fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" />
-              </svg>
+              // Restore — Solar minimize-square-minimalistic.
+              <Ico name="restore" width={14} height={14} />
             ) : (
-              <svg id="winMaxIcon" width="10" height="10" viewBox="0 0 10 10">
-                <rect x=".5" y=".5" width="9" height="9" rx="1" fill="none" stroke="currentColor" />
-              </svg>
+              <Ico name="square" width={14} height={14} />
             )}
           </button>
         )}
         {tbClose && (
           <button className="win-btn win-close" onClick={onClose} aria-label={t('common.close')}>
-            <svg width="10" height="10" viewBox="0 0 10 10">
-              <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth={1.2} />
-              <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth={1.2} />
-            </svg>
+            <Ico name="close" width={16} height={16} />
           </button>
         )}
       </div>
