@@ -6,6 +6,7 @@ import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
 import { ScBadge, YmBadge, YtmBadge, SpBadge } from '@entities/track'
 import { useUpdateStore } from '../model/updateStore'
+import { Ico } from '@shared/ui/icons/solar'
 
 /** Бренд-бейдж площадки по строковому id (для строки иконок на странице). */
 const BRAND_BADGE: Record<string, (p: { size: number }) => React.ReactNode> = {
@@ -102,10 +103,7 @@ export const UpdateNotesModal = () => {
             </div>
           </div>
           <button className="unm-close" aria-label={t('common.close')} onClick={close}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-            </svg>
+            <Ico name="close" width={16} height={16} />
           </button>
         </div>
 
@@ -177,9 +175,7 @@ export const UpdateNotesModal = () => {
         {multi && !loading && (
           <div className="unm-nav">
             <button className="unm-arrow" aria-label="←" onClick={() => go(-1)} disabled={idx === 0}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
+              <Ico name="arrowLeft" width={18} height={18} />
             </button>
             <div className="unm-dots">
               {pages.map((_, i) => (
@@ -192,9 +188,7 @@ export const UpdateNotesModal = () => {
               ))}
             </div>
             <button className="unm-arrow" aria-label="→" onClick={() => go(1)} disabled={idx === total - 1}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              <Ico name="arrowRight" width={18} height={18} />
             </button>
           </div>
         )}

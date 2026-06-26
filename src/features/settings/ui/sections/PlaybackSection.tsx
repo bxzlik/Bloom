@@ -13,6 +13,7 @@ import { TeleToggleRow } from '../controls/TeleToggleRow'
 import { resetSettings, hardReset } from '../../lib/reset'
 import { AboutBlock } from './AboutBlock'
 import { LogsViewerModal } from './LogsViewerModal'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Секция «Воспроизведение» — флаги AppSettings + Windows autostart.
@@ -97,13 +98,7 @@ export const PlaybackSection = () => {
       <div className="sc">
         <h3>{t('settings.system.startup')}</h3>
         <TeleToggleRow
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-            </svg>
-          }
+          icon={<Ico name="refresh" width={16} height={16} />}
           title={t('settings.system.autostart.title')}
           sub={t('settings.system.autostart.sub')}
           checked={autostart === true}
@@ -111,11 +106,7 @@ export const PlaybackSection = () => {
           onChange={(v) => void setAutostart(v)}
         />
         <TeleToggleRow
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-            </svg>
-          }
+          icon={<Ico name="play" width={16} height={16} />}
           title={t('settings.system.autoplay.title')}
           sub={t('settings.system.autoplay.sub')}
           checked={autoplay}
@@ -123,13 +114,7 @@ export const PlaybackSection = () => {
           onChange={(v) => void setAutoplay(v)}
         />
         <TeleToggleRow
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3" />
-              <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" />
-              <rect x="8" y="8" width="8" height="8" rx="1" />
-            </svg>
-          }
+          icon={<Ico name="inbox" width={16} height={16} />}
           title={t('settings.system.tray.title')}
           sub={t('settings.system.tray.sub')}
           checked={minimizeToTray}
@@ -141,12 +126,7 @@ export const PlaybackSection = () => {
       <div className="sc">
         <h3>{t('settings.system.windowTray')}</h3>
         <TeleToggleRow
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <line x1="3" y1="9" x2="21" y2="9" />
-            </svg>
-          }
+          icon={<Ico name="windowFrame" width={16} height={16} />}
           title={t('settings.system.titlebarTrack.title')}
           sub={t('settings.system.titlebarTrack.sub')}
           checked={changeTitlebar}
@@ -154,13 +134,7 @@ export const PlaybackSection = () => {
           onChange={(v) => void setChangeTitlebar(v)}
         />
         <TeleToggleRow
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="12" cy="12" r="1" fill="currentColor" />
-            </svg>
-          }
+          icon={<Ico name="gallery" width={16} height={16} />}
           title={t('settings.system.trayCover.title')}
           sub={t('settings.system.trayCover.sub')}
           checked={changeTrayCover}
@@ -173,7 +147,7 @@ export const PlaybackSection = () => {
         <h3>{t('settings.system.importExport')}</h3>
         <div className="sr">
           <div className="tele-toggle-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+            <Ico name="export" width={16} height={16} />
           </div>
           <div className="tele-toggle-info">
             <div className="tele-toggle-title">{t('settings.system.exportAll.title')}</div>
@@ -183,7 +157,7 @@ export const PlaybackSection = () => {
         </div>
         <div className="sr">
           <div className="tele-toggle-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 16 12 21 17 16" /><line x1="12" y1="21" x2="12" y2="9" /></svg>
+            <Ico name="import" width={16} height={16} />
           </div>
           <div className="tele-toggle-info">
             <div className="tele-toggle-title">{t('settings.system.import.title')}</div>
@@ -210,7 +184,7 @@ export const PlaybackSection = () => {
 
       <div className="sc">
         <h3 style={{ color: '#e03030' }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e03030" strokeWidth={2} strokeLinecap="round" style={{ marginRight: 6, verticalAlign: 'middle' }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+          <Ico name="danger" width={13} height={13} style={{ color: '#e03030', marginRight: 6, verticalAlign: 'middle' }} />
           {t('settings.system.dangerZone')}
         </h3>
         <div className="sr">

@@ -318,22 +318,32 @@ body {
    аффорданс «открыть на весь экран» (BigPicture), как у .ps-cover на странице
    плеера ( main.css .ps-cover::after). Добавление поверх по просьбе. */
 #mpCover::after {
-  content: '⤢';
+  content: '';
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0);
-  color: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: background .18s, color .18s;
+  transition: background .18s;
   border-radius: inherit;
   pointer-events: none;
 }
 #mpCover:hover::after {
   background: rgba(0, 0, 0, .45);
-  color: rgba(255, 255, 255, .85);
+}
+/* Solar-иконка «на весь экран» по центру обложки бара (появляется по наведению). */
+.mp-cover-bigpic {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, .9);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s, transform .12s;
+  z-index: 2;
+}
+#mpCover:hover .mp-cover-bigpic {
+  opacity: .92;
 }
 
 /* Модалка игр: оконный тайтлбар (#winTitlebar, z-index:1001) остаётся видимым и

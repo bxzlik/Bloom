@@ -10,6 +10,7 @@ import { usePlaylistStore } from '@features/library/model/playlistStore'
 import { mpAddToLib, mpAddToPlaylist, mpOpenNewPlaylist } from '@features/player'
 import { useT } from '@shared/i18n'
 import { VinylCover } from '@shared/ui'
+import { Ico } from '@shared/ui/icons/solar'
 
 export interface AddPopupProps {
   open: boolean
@@ -167,11 +168,7 @@ export const AddPopup = ({
             }}
           >
             <span className="ci-icon">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <Ico name="download" width={12} height={12} />
             </span>{' '}
             {t('player.add.toLib')}
           </div>
@@ -187,10 +184,7 @@ export const AddPopup = ({
           }}
         >
           <span className="ci-icon">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <Ico name="add" width={11} height={11} />
           </span>{' '}
           {t('player.add.createPlaylist')}
         </div>
@@ -224,10 +218,7 @@ export const AddPopup = ({
             }}
           >
             <span className="ci-icon">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <Ico name="add" width={11} height={11} />
             </span>{' '}
             {t('player.add.newPlaylist')}
           </div>

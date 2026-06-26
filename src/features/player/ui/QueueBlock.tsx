@@ -13,6 +13,7 @@ import {
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
 import { VinylCover } from '@shared/ui'
+import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
 import { usePlayerViewStore } from '@features/settings'
@@ -348,9 +349,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
       return (
         <div id="qpSourceIcon" style={box}>
           <div style={{ ...innerStyle, background: 'linear-gradient(135deg,#1a3a4a,#0d2535)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={1.8} strokeLinecap="round">
-              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-            </svg>
+            <Ico name="note" width={13} height={13} style={{ color: 'rgba(255,255,255,0.8)' }} />
           </div>
         </div>
       )
@@ -358,9 +357,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
       return (
         <div id="qpSourceIcon" style={box}>
           <div style={{ ...innerStyle, background: 'linear-gradient(135deg,#c0144e,#7a0030)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth={1.5}>
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-            </svg>
+            <Ico name="heart" variant="bold" width={13} height={13} style={{ color: '#fff' }} />
           </div>
         </div>
       )
@@ -369,9 +366,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
       return (
         <div id="qpSourceIcon" style={box}>
           <div style={{ ...innerStyle, background: 'linear-gradient(135deg,#3a3a3a,#1a1a1a)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={1.8} strokeLinecap="round">
-              <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-            </svg>
+            <Ico name="clock" width={13} height={13} style={{ color: 'rgba(255,255,255,0.8)' }} />
           </div>
         </div>
       )
@@ -379,9 +374,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
       return (
         <div id="qpSourceIcon" style={box}>
           <div style={{ ...innerStyle, background: 'linear-gradient(135deg,#1a3a2a,#0d2518)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth={1.8} strokeLinecap="round">
-              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-            </svg>
+            <Ico name="folder" width={13} height={13} style={{ color: 'rgba(255,255,255,0.75)' }} />
           </div>
         </div>
       )
@@ -398,9 +391,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
       return (
         <div id="qpSourceIcon" style={box}>
           <div style={{ ...innerStyle, background: 'var(--card)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-            </svg>
+            <Ico name="note" width={13} height={13} />
           </div>
         </div>
       )
@@ -408,9 +399,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
       // Волна — эквалайзер-бары акцентного цвета, без фоновой плашки.
       return (
         <div id="qpSourceIcon" style={box}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)">
-            <rect x="2" y="9" width="2.6" height="6" rx="1.3" /><rect x="6.4" y="6" width="2.6" height="12" rx="1.3" /><rect x="10.8" y="3" width="2.6" height="18" rx="1.3" /><rect x="15.2" y="7" width="2.6" height="10" rx="1.3" /><rect x="19.6" y="10" width="2.6" height="4" rx="1.3" />
-          </svg>
+          <Ico name="wave" variant="bold" width={16} height={16} style={{ color: 'var(--accent)' }} />
         </div>
       )
   }
@@ -482,13 +471,7 @@ const QueueHeader = ({
             borderRadius: 20,
           }}
         >
-          <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" strokeLinecap="round" />
-            <path d="m18 2 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M2 6h1.9c1.5 0 2.9.9 3.5 2.2" strokeLinecap="round" />
-            <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.7l-.5-.8" strokeLinecap="round" />
-            <path d="m18 14 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Ico name="shuffle" width={10} height={10} />
         </span>
       )}
       <span style={{ width: 1, height: 10, background: 'rgba(255,255,255,.08)', borderRadius: 1 }} />
@@ -539,13 +522,7 @@ const QueueHeader = ({
             e.currentTarget.style.color = 'var(--text2)'
           }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-            <path d="M10 11v6" />
-            <path d="M14 11v6" />
-            <path d="M9 6V4h6v2" />
-          </svg>
+          <Ico name="trash" width={13} height={13} />
         </button>
       )}
       {count > 0 && <SimilarButton icon={similarIcon} />}
@@ -558,15 +535,7 @@ const QueueHeader = ({
 /** «Похожие на очередь» (волна). icon=true — компактная иконка (узкая панель). */
 const SimilarButton = ({ icon }: { icon?: boolean }) => {
   const t = useT()
-  const eq = (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-      <rect x="2" y="9" width="2.6" height="6" rx="1.3" />
-      <rect x="6.4" y="6" width="2.6" height="12" rx="1.3" />
-      <rect x="10.8" y="3" width="2.6" height="18" rx="1.3" />
-      <rect x="15.2" y="7" width="2.6" height="10" rx="1.3" />
-      <rect x="19.6" y="10" width="2.6" height="4" rx="1.3" />
-    </svg>
-  )
+  const eq = <Ico name="wave" variant="bold" width={12} height={12} />
   const base: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -727,9 +696,7 @@ const QueueRow = ({
         {track?.cover ? (
           <img src={track.cover} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" style={{ opacity: 0.4 }}>
-            <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-          </svg>
+          <Ico name="note" width={20} height={20} style={{ opacity: 0.4 }} />
         )}
         {/* Эквалайзер на обложке играющего трека очереди.
             Пока грузится — только спиннер (ниже), бары не рисуем. */}
@@ -775,9 +742,7 @@ const QueueRow = ({
             toggleFav(track.id)
           }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-          </svg>
+          <Ico name="heart" variant={isFav ? 'bold' : 'linear'} width={13} height={13} />
         </button>
         <button
           className="ib"
@@ -785,10 +750,7 @@ const QueueRow = ({
           aria-label={t('player.aria.add')}
           onClick={(e) => onAddClick(e, id)}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Ico name="add" width={13} height={13} />
         </button>
         <button
           className="ib ib-rmq"
@@ -799,9 +761,7 @@ const QueueRow = ({
             onRemove(e)
           }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Ico name="minus" width={13} height={13} />
         </button>
       </div>
       <div className="trd">{track?.dur || '—'}</div>

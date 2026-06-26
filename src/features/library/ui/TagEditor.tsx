@@ -4,6 +4,7 @@ import type { Track } from '@entities/track'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
 import { useLibStore, useTagEditStore } from '../model'
+import { Ico } from '@shared/ui/icons/solar'
 import { compressCover, idbUpdateMeta } from '../lib'
 
 export interface TagEditorProps {
@@ -134,15 +135,10 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
             {coverSrc ? (
               <img src={coverSrc} alt="" />
             ) : (
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" style={{ opacity: 0.3 }}>
-                <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-              </svg>
+              <Ico name="note" width={34} height={34} style={{ opacity: 0.3 }} />
             )}
             <div className="spanel-cover-cam">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
+              <Ico name="camera" width={20} height={20} />
             </div>
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onCoverChange} />
           </label>
@@ -155,10 +151,7 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
         <div className="pedit-body">
           <div className="pedit-card">
             <div className="pedit-card-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
+              <Ico name="edit" width={14} height={14} />
               {t('lib.tag.editorTitle')}
             </div>
 

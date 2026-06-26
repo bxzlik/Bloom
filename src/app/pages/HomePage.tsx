@@ -29,6 +29,7 @@ import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type 
 import { useGamesStore, GamepadIcon } from '@features/games'
 import { useAccountTabStore } from '@features/profile'
 import { VinylCover } from '@shared/ui'
+import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '../navigationStore'
 
 /**
@@ -150,11 +151,7 @@ const playlistProvider = (trs: string[], libTracks: Track[]): string | null => {
 
 // ── Продолжить ─────────────────────────────────────────────────────────────
 
-const NoteSvg = ({ size = 22 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-  </svg>
-)
+const NoteSvg = ({ size = 22 }: { size?: number }) => <Ico name="note" width={size} height={size} />
 
 const sourceLabel = (s: PlaySource): string => {
   if (!s) return tt('lib.allTracks')
@@ -189,25 +186,13 @@ const ContinueSourceIcon = ({ kind, cover }: { kind: SrcIconKind; cover: string 
     return <img src={cover} alt="" style={{ width: 16, height: 16, borderRadius: 'calc(var(--radius)*0.4)', objectFit: 'cover', flexShrink: 0 }} />
   }
   if (kind === 'fav') {
-    return (
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-      </svg>
-    )
+    return <Ico name="heart" variant="bold" width={11} height={11} />
   }
   if (kind === 'wave') {
-    return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--accent)' }}>
-        <rect x="2" y="9" width="2.6" height="6" rx="1.3" /><rect x="6.4" y="6" width="2.6" height="12" rx="1.3" /><rect x="10.8" y="3" width="2.6" height="18" rx="1.3" /><rect x="15.2" y="7" width="2.6" height="10" rx="1.3" /><rect x="19.6" y="10" width="2.6" height="4" rx="1.3" />
-      </svg>
-    )
+    return <Ico name="wave" variant="bold" width={12} height={12} style={{ color: 'var(--accent)' }} />
   }
   if (kind === 'pl') {
-    return (
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-        <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-      </svg>
-    )
+    return <Ico name="list" width={11} height={11} />
   }
   return <NoteSvg size={11} />
 }
@@ -397,9 +382,9 @@ const ContinueView = ({
           aria-label={playing ? t('player.aria.pause') : t('home.resume')}
         >
           {playing ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+            <Ico name="pause" variant="bold" width={14} height={14} />
           ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
+            <Ico name="play" variant="bold" width={14} height={14} />
           )}
         </button>
       </div>
@@ -421,9 +406,7 @@ const QuickGrid = () => {
     <div className="home-quick-grid">
       <div className="home-quick-card home-quick-card-fav" onClick={() => open('fav')}>
         <div className="hqc-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={1.5}>
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-          </svg>
+          <Ico name="heart" variant="bold" width={18} height={18} />
         </div>
         <div className="hqc-info">
           <div className="hqc-title">{t('home.favTracks')}</div>
@@ -432,9 +415,7 @@ const QuickGrid = () => {
       </div>
       <div className="home-quick-card home-quick-card-hist" onClick={() => open('history')}>
         <div className="hqc-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-          </svg>
+          <Ico name="clock" width={18} height={18} />
         </div>
         <div className="hqc-info">
           <div className="hqc-title">{t('lib.history')}</div>
@@ -477,9 +458,7 @@ const StatsBar = ({ onOpen }: { onOpen: () => void }) => {
     <div className="home-stats-bar" id="homeStatsBar" onClick={onOpen}>
       <div className="hsb-item">
         <span className="hsb-num">{totalPlays || tracks.length}</span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" style={{ opacity: 0.5 }}>
-          <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-        </svg>
+        <Ico name="note" width={13} height={13} style={{ opacity: 0.5 }} />
       </div>
       <span className="hsb-sep">{t('home.per')}</span>
       <div className="hsb-item"><span className="hsb-num">{h}</span><span className="hsb-unit">{t('home.hShort')}</span></div>
@@ -517,11 +496,7 @@ const GamesCard = () => {
 
 // ── Трек дня ───────────────────────────────────────────────────────────────
 
-const PlaySmall = ({ size = 14 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-  </svg>
-)
+const PlaySmall = ({ size = 14 }: { size?: number }) => <Ico name="play" variant="bold" width={size} height={size} />
 
 /** Номер суток по МСК (UTC+3). Меняется ровно в 00:00 МСК. */
 const mskDayNumber = (): number => Math.floor((Date.now() + 3 * 3600 * 1000) / 86400000)
@@ -615,9 +590,7 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
               <CoverSourceBadge track={t} size={24} />
               <div className="hc-play-overlay">
                 <div className="hc-play-btn">
-                  <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1" strokeLinejoin="round" style={{ marginLeft: 2 }}>
-                    <path d="M7.5 4.5C7.5 3.4 8.7 2.7 9.6 3.3l11 7.5c.9.5.9 1.9 0 2.4l-11 7.5C8.7 21.3 7.5 20.6 7.5 19.5V4.5z" />
-                  </svg>
+                  <Ico name="play" width="100%" height="100%" style={{ color: '#fff', marginLeft: 2 }} />
                 </div>
               </div>
             </div>
@@ -661,9 +634,7 @@ const PlaylistsSection = ({
               <CoverProviderBadge provider={playlistProvider(pl.trs, libTracks)} size={24} />
               <div className="hpc-play-overlay">
                 <div className="hpc-play-btn">
-                  <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1" strokeLinejoin="round" style={{ marginLeft: 2 }}>
-                    <path d="M7.5 4.5C7.5 3.4 8.7 2.7 9.6 3.3l11 7.5c.9.5.9 1.9 0 2.4l-11 7.5C8.7 21.3 7.5 20.6 7.5 19.5V4.5z" />
-                  </svg>
+                  <Ico name="play" width="100%" height="100%" style={{ color: '#fff', marginLeft: 2 }} />
                 </div>
               </div>
             </div>
@@ -678,9 +649,7 @@ const PlaylistsSection = ({
             onNewPl()
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Ico name="add" width={18} height={18} />
           {t('common.new')}
         </button>
       </div>

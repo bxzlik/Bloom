@@ -29,7 +29,7 @@ import {
 import { audioEngine } from '../lib/audioEngine'
 import { MarqueeTitle } from './MarqueeTitle'
 import { useT } from '@shared/i18n'
-import { SkipBack, SkipForward, Play, Pause, Volume1, Volume2, VolumeX } from 'lucide-react'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Нижний #miniPlayer в main окне — (≈2897-2960).
@@ -292,6 +292,10 @@ export const PlayerBar = () => {
                 <NoteSvg size={16} />
               )}
               {curTrack && <CoverSourceBadge track={curTrack} />}
+              {/* Иконка «на весь экран» по центру обложки (появляется по наведению) — Solar bigpic. */}
+              <span className="mp-cover-bigpic">
+                <Ico name="bigpic" width={18} height={18} />
+              </span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
@@ -428,7 +432,7 @@ export const PlayerBar = () => {
               style={{ flexShrink: 0 }}
               onClick={() => openGrp('queue')}
             >
-              <QueueSvg size={15} />
+              <QueueSvg size={18} />
             </button>
           )}
           {!mpHide.lyrics && (
@@ -836,39 +840,20 @@ const VertVolPopup = ({
   )
 }
 
-// ── SVG icons (inline) ─────────────────────────────────────
+// ── SVG icons (Solar) ─────────────────────────────────────
+// Тонкие обёртки над централизованным набором Solar (см. @shared/ui/icons/solar).
+// Сигнатуры сохранены, чтобы не трогать места вызова.
 
-const NoteSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-  </svg>
-)
+const NoteSvg = ({ size }: { size: number }) => <Ico name="note" size={size} />
 const HeartSvg = ({ size, filled }: { size: number; filled: boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
-    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-  </svg>
+  <Ico name="heart" variant={filled ? 'bold' : 'linear'} size={size} />
 )
-const PrevSvg = ({ size }: { size: number }) => <SkipBack size={size} fill="currentColor" />
-const NextSvg = ({ size }: { size: number }) => <SkipForward size={size} fill="currentColor" />
-const PlaySvg = ({ size }: { size: number }) => <Play size={size} fill="currentColor" strokeWidth={0} />
-const PauseSvg = ({ size }: { size: number }) => <Pause size={size} fill="currentColor" strokeWidth={0} />
-const ShuffleSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-    <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" strokeLinecap="round" />
-    <path d="m18 2 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 6h1.9c1.5 0 2.9.9 3.5 2.2" strokeLinecap="round" />
-    <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.7l-.5-.8" strokeLinecap="round" />
-    <path d="m18 14 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-const RepeatSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-    <polyline points="17 1 21 5 17 9" />
-    <path d="M3 11V9a4 4 0 014-4h14" />
-    <polyline points="7 23 3 19 7 15" />
-    <path d="M21 13v2a4 4 0 01-4 4H3" />
-  </svg>
-)
+const PrevSvg = ({ size }: { size: number }) => <Ico name="prev" size={size} />
+const NextSvg = ({ size }: { size: number }) => <Ico name="next" size={size} />
+const PlaySvg = ({ size }: { size: number }) => <Ico name="play" size={size} />
+const PauseSvg = ({ size }: { size: number }) => <Ico name="pause" size={size} />
+const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={size} />
+const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (
   <span
     style={{
@@ -891,22 +876,10 @@ const RepeatOneBadge = () => (
   </span>
 )
 const VolSvg = ({ size, v }: { size: number; v: number }) => {
-  if (v === 0) return <VolumeX size={size} fill="currentColor" strokeWidth={1.8} />
-  if (v < 50) return <Volume1 size={size} fill="currentColor" strokeWidth={1.8} />
-  return <Volume2 size={size} fill="currentColor" strokeWidth={1.8} />
+  if (v === 0) return <Ico name="muted" size={size} />
+  if (v < 50) return <Ico name="volumeSmall" size={size} />
+  return <Ico name="volumeLoud" size={size} />
 }
-const QueueSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-    <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="15" y2="18" /><circle cx="20" cy="18" r="2" />
-  </svg>
-)
-const LyricsSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-    <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="11" y2="18" />
-  </svg>
-)
-const BigPicSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M8 3H5a2 2 0 00-2 2v3" /><path d="M21 8V5a2 2 0 00-2-2h-3" /><path d="M3 16v3a2 2 0 002 2h3" /><path d="M16 21h3a2 2 0 002-2v-3" />
-  </svg>
-)
+const QueueSvg = ({ size }: { size: number }) => <Ico name="queue" size={size} />
+const LyricsSvg = ({ size }: { size: number }) => <Ico name="lyrics" size={size} />
+const BigPicSvg = ({ size }: { size: number }) => <Ico name="bigpic" size={size} />

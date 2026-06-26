@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useDownloadBannerStore } from '@shared/ui'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Тост прогресса скачивания плейлиста — карточка сверху по центру в стиле
@@ -11,13 +12,7 @@ import { useT } from '@shared/i18n'
  * из не-React кода загрузчика. Рендерится один раз в App. По завершении
  * автоскрывается через таймер (если пользователь не закрыл).
  */
-const DownloadGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-)
+const DownloadGlyph = () => <Ico name="download" width={16} height={16} />
 
 export const DownloadBanner = () => {
   const t = useT()
@@ -72,10 +67,7 @@ export const DownloadBanner = () => {
           <div className="dlt-sub">{subtitle}</div>
         </div>
         <button onClick={hide} className="dlt-close" aria-label={t('common.close')}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <Ico name="close" width={13} height={13} />
         </button>
       </div>
 

@@ -10,6 +10,7 @@ import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT, useLocale } from '@shared/i18n'
 import { VinylCover } from '@shared/ui'
 import type { Track } from '@entities/track'
+import { Ico } from '@shared/ui/icons/solar'
 import { useLibStore, usePlaylistStore } from '../model'
 
 export interface AddFromLibModalProps {
@@ -243,10 +244,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="mpl-htitle">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <Ico name="add" width={11} height={11} />
               {t('lib.addModal.title')}
             </div>
             <div
@@ -279,9 +277,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
             >
               <span className={`afs-chk${allSelected ? ' on' : someSelected ? ' part' : ''}`}>
                 {allSelected ? (
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <Ico name="check" variant="bold" width={9} height={9} />
                 ) : someSelected ? (
                   <span style={{ width: 7, height: 1.5, background: 'var(--accent)', borderRadius: 1 }} />
                 ) : null}
@@ -292,10 +288,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
 
           <div className="afs-searchrow">
             <div className="mpl-search">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <Ico name="search" width={13} height={13} />
               <input
                 id="afsSearch"
                 type="text"
@@ -314,11 +307,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
               }}
               aria-label={t('lib.sort.name')}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="15" y2="12" />
-                <line x1="3" y1="18" x2="9" y2="18" />
-              </svg>
+              <Ico name="sort" width={14} height={14} />
             </button>
           </div>
 
@@ -340,11 +329,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                       {tr.cover ? (
                         <img src={tr.cover} alt="" />
                       ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ opacity: 0.4 }}>
-                          <path d="M9 18V5l12-2v13" />
-                          <circle cx="6" cy="18" r="3" />
-                          <circle cx="18" cy="16" r="3" />
-                        </svg>
+                        <Ico name="note" width={16} height={16} style={{ opacity: 0.4 }} />
                       )}
                     </div>
                     <div className="mpl-item-info">
@@ -354,9 +339,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
                     {tr.dur && <span className="afs-dur">{tr.dur}</span>}
                     <div className="mpl-item-check">
                       {isSel && (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                        <Ico name="check" variant="bold" width={11} height={11} />
                       )}
                     </div>
                   </div>
@@ -399,45 +382,22 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
               {
                 k: 'name',
                 l: t('lib.sort.name'),
-                ico: (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <line x1="3" y1="12" x2="15" y2="12" />
-                    <line x1="3" y1="18" x2="9" y2="18" />
-                  </svg>
-                ),
+                ico: <Ico name="sort" width={11} height={11} />,
               },
               {
                 k: 'artist',
                 l: t('lib.sort.artist'),
-                ico: (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                ),
+                ico: <Ico name="user" width={11} height={11} />,
               },
               {
                 k: 'dur',
                 l: t('lib.sort.dur'),
-                ico: (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                ),
+                ico: <Ico name="clock" width={11} height={11} />,
               },
               {
                 k: 'date',
                 l: t('lib.sort.date'),
-                ico: (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                ),
+                ico: <Ico name="calendar" width={11} height={11} />,
               },
             ] as const
           ).map((o) => {

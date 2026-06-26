@@ -4,6 +4,7 @@ import { useDetailStore } from '@features/search'
 import { useUiPrefsStore, UpdateButton } from '@features/settings'
 import { useNavStore, type PageId } from './navigationStore'
 import { NotifBell } from '@shared/ui'
+import { Ico } from '@shared/ui/icons/solar'
 import { useT, useLocale, t as tt } from '@shared/i18n'
 
 /** Ключ метки тайтлбара: страница ИЛИ открытая детальная сущность. */
@@ -83,10 +84,7 @@ export const TitleBar = () => {
             aria-pressed={tbPinned}
           >
             {/* Канцелярская кнопка (pin) */}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 17v5" />
-              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
-            </svg>
+            <Ico name="pin" width={12} height={12} />
           </button>
         )}
         {tbMin && (
@@ -177,70 +175,12 @@ const pageIcon = (key: LabelKey) => {
   }
 }
 
-// Иконки со старых wtcIcon (stroke 1.8, viewBox 24).
-const baseIconProps = {
-  className: 'wtc-icon',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.8,
-  viewBox: '0 0 24 24',
-} as const
-
-const HomeIcon = () => (
-  <svg {...baseIconProps}>
-    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-)
-
-const PlayerIcon = () => (
-  <svg className="wtc-icon" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-  </svg>
-)
-
-const LibIcon = () => (
-  <svg {...baseIconProps}>
-    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-  </svg>
-)
-
-const SearchIcon = () => (
-  <svg {...baseIconProps}>
-    <circle cx="11" cy="11" r="8" />
-    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-  </svg>
-)
-
-const AccountIcon = () => (
-  <svg {...baseIconProps}>
-    <circle cx="12" cy="8" r="4" />
-    <path d="M4 21v-1a7 7 0 0114 0v1" />
-  </svg>
-)
-
-// Детальные сущности — иконки со старых _updateTitlebarLabel svgs.
-const ArtistIcon = () => (
-  <svg {...baseIconProps}>
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-)
-
-const AlbumIcon = () => (
-  <svg {...baseIconProps}>
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-)
-
-const PlaylistIcon = () => (
-  <svg {...baseIconProps}>
-    <line x1="8" y1="6" x2="21" y2="6" />
-    <line x1="8" y1="12" x2="21" y2="12" />
-    <line x1="8" y1="18" x2="21" y2="18" />
-    <polyline points="3 6 4 7 6 5" />
-    <polyline points="3 12 4 13 6 11" />
-    <polyline points="3 18 4 19 6 17" />
-  </svg>
-)
+// Иконки метки тайтлбара (Solar) — наследуют размер/цвет через класс wtc-icon.
+const HomeIcon = () => <Ico name="home" className="wtc-icon" />
+const PlayerIcon = () => <Ico name="play" className="wtc-icon" />
+const LibIcon = () => <Ico name="library" className="wtc-icon" />
+const SearchIcon = () => <Ico name="search" className="wtc-icon" />
+const AccountIcon = () => <Ico name="user" className="wtc-icon" />
+const ArtistIcon = () => <Ico name="user" className="wtc-icon" />
+const AlbumIcon = () => <Ico name="vinyl" className="wtc-icon" />
+const PlaylistIcon = () => <Ico name="list" className="wtc-icon" />

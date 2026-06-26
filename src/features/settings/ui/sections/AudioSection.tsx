@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAudioStore, type NormStatus } from '../../model/audioStore'
 import { useT, useLocale, type TranslationKey } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Секция «Аудио»: кроссфейд, нормализация громкости, устройство вывода.
@@ -88,7 +89,7 @@ export const AudioSection = () => {
     <div className="s-section active" id="ssec-audio">
       <div className="s-section-head">
         <div className="s-section-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polyline points="22 8 22 16" /><polyline points="18 10 18 14" /><polyline points="14 4 14 20" /><polyline points="10 8 10 16" /><polyline points="6 11 6 13" /><polyline points="2 10 2 14" /></svg>{' '}
+          <Ico name="eq" width={15} height={15} />{' '}
           {t('settings.nav.audio')}
         </div>
       </div>

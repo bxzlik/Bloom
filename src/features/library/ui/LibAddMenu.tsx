@@ -11,6 +11,7 @@ import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import { toast, VinylCover } from '@shared/ui'
 import { ScLogo, YmLogo, YtmLogo, SpLogo, providerBrandColor } from '@entities/track'
+import { Ico } from '@shared/ui/icons/solar'
 import { folderAdd, importPlaylistFile } from '../api'
 import {
   importPlaylistData,
@@ -49,27 +50,19 @@ const ProviderLogo = ({ provider }: { provider: LinkProvider }) => {
   )
 }
 
-const CheckIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-)
+const CheckIcon = () => <Ico name="check" variant="bold" width={14} height={14} />
 
 /** Цель «Создать» — плюс в 22px-боксе (чтобы метки строк выровнялись по тумбам). */
 const CreateThumb = () => (
   <span className="lam-icon-box">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
+    <Ico name="add" width={15} height={15} />
   </span>
 )
 
 /** Цель «Все треки» — фирменная обложка раздела (синий градиент + нота). */
 const AllTracksThumb = () => (
   <span className="lam-all-thumb">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
-      <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-    </svg>
+    <Ico name="note" width={13} height={13} style={{ color: '#fff' }} />
   </span>
 )
 
@@ -82,9 +75,7 @@ const PlThumb = ({ pl }: { pl: Playlist }) => (
 
 /** Галочка-маркер выбранной цели. */
 const ActiveCheck = () => (
-  <svg className="lam-active-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
+  <Ico name="check" variant="bold" className="lam-active-check" width={13} height={13} />
 )
 
 /**
@@ -250,15 +241,9 @@ export const LibAddMenu = ({
           </div>
 
           <button onClick={() => setView('import')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
+            <Ico name="export" width={13} height={13} />
             {t('lib.add.import')}
-            <svg className="lam-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <Ico name="arrowRight" className="lam-chevron" width={11} height={11} />
           </button>
 
           <button
@@ -267,9 +252,7 @@ export const LibAddMenu = ({
               folderAdd().catch((e) => console.warn('folderAdd failed', e))
             }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-            </svg>
+            <Ico name="folder" width={13} height={13} />
             {t('lib.linkFolder')}
           </button>
         </>
@@ -315,9 +298,7 @@ export const LibAddMenu = ({
                 <CreateThumb />
               )}
               <span className="lam-target-label">{targetLabel()}</span>
-              <svg className="lam-target-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <Ico name="arrowDown" className="lam-target-caret" width={11} height={11} />
             </button>
             {targetOpen && (
               <div className="lam-target-menu">
@@ -366,17 +347,12 @@ export const LibAddMenu = ({
           </div>
 
           <button onClick={onImportFile}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
+            <Ico name="file" width={13} height={13} />
             {t('lib.import.fromFile')}
           </button>
 
           <button className="lam-back" onClick={() => setView('main')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <Ico name="arrowLeft" width={13} height={13} />
             {t('common.back')}
           </button>
         </>

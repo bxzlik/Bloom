@@ -6,6 +6,7 @@ import { useT, useLocale } from '@shared/i18n'
 import { useSortable } from '@shared/lib/useSortable'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
 import { playFromSource } from '@features/player'
+import { Ico } from '@shared/ui/icons/solar'
 import {
   useLibStore,
   usePlaylistStore,
@@ -198,19 +199,7 @@ export const LibSidebar = () => {
             onClick={() => selectBuiltin('all')}
           >
             <div className="lib-icon off-icon">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-              >
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
+              <Ico name="note" width={18} height={18} />
             </div>
             <div className="lib-item-info">
               <div className="lib-item-name">{t('lib.allTracks')}</div>
@@ -222,9 +211,7 @@ export const LibSidebar = () => {
               className="lib-item-play"
               onClick={stopAnd(playAllFromStore)}
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-              </svg>
+              <Ico name="play" variant="bold" width={11} height={11} />
             </button>
           </div>
 
@@ -237,16 +224,7 @@ export const LibSidebar = () => {
             onClick={() => selectBuiltin('fav')}
           >
             <div className="lib-icon fav-icon">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="white"
-                stroke="white"
-                strokeWidth={1.5}
-              >
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-              </svg>
+              <Ico name="heart" variant="bold" width={16} height={16} style={{ color: '#fff' }} />
             </div>
             <div className="lib-item-info">
               <div className="lib-item-name">{t('lib.liked')}</div>
@@ -258,9 +236,7 @@ export const LibSidebar = () => {
               className="lib-item-play"
               onClick={stopAnd(playFavFromStore)}
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-              </svg>
+              <Ico name="play" variant="bold" width={11} height={11} />
             </button>
           </div>
 
@@ -276,18 +252,7 @@ export const LibSidebar = () => {
               className="lib-icon"
               style={{ background: 'rgba(255,180,0,.15)' }}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+              <Ico name="clock" width={16} height={16} />
             </div>
             <div className="lib-item-info">
               <div className="lib-item-name">{t('lib.history')}</div>
@@ -308,19 +273,7 @@ export const LibSidebar = () => {
           {t('lib.myLibrary')}
           <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <button id="libSbCompactBtn" onClick={toggleSbCompact}>
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.2}
-                strokeLinecap="round"
-              >
-                <line x1="3" y1="7" x2="21" y2="7" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="17" x2="21" y2="17" />
-              </svg>
+              <Ico name="menu" width={13} height={13} />
             </button>
             <button
               ref={sortBtnRef}
@@ -331,20 +284,7 @@ export const LibSidebar = () => {
                 setSortMenuOpen((v) => !v)
               }}
             >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="15" y2="12" />
-                <line x1="3" y1="18" x2="9" y2="18" />
-              </svg>
+              <Ico name="sort" width={13} height={13} />
             </button>
             <div
               style={{
@@ -363,18 +303,7 @@ export const LibSidebar = () => {
                   setAddMenuOpen((v) => !v)
                 }}
               >
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
+                <Ico name="add" width={13} height={13} />
               </button>
             </div>
           </div>
@@ -498,7 +427,7 @@ export const ArtistCtxMenu = ({
     >
       <div className="ci" onClick={open}>
         <span className="ci-icon">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
+          <Ico name="play" width={11} height={11} />
         </span>{' '}
         {t('common.open')}
       </div>
@@ -510,7 +439,7 @@ export const ArtistCtxMenu = ({
         }}
       >
         <span className="ci-icon">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14l-1.5-9H6.5L5 17z" /><path d="M9 8V4a3 3 0 0 1 6 0v4" /></svg>
+          <Ico name="pin" width={11} height={11} />
         </span>{' '}
         {pinned ? t('lib.sidebar.unpin') : t('lib.sidebar.pin')}
       </div>
@@ -523,7 +452,7 @@ export const ArtistCtxMenu = ({
         }}
       >
         <span className="ci-icon">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="17" y1="8" x2="22" y2="13" /><line x1="22" y1="8" x2="17" y2="13" /></svg>
+          <Ico name="unfollow" width={11} height={11} />
         </span>{' '}
         {t('search.unfollow')}
       </div>
@@ -748,9 +677,7 @@ const UnifiedList = ({
                 className="lib-item-play"
                 onClick={stopAnd(() => playPlaylistFromStore(pl.id))}
               >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-                </svg>
+                <Ico name="play" variant="bold" width={11} height={11} />
               </button>
             </div>
           )
@@ -829,17 +756,7 @@ const UnifiedList = ({
                 style={{ background: 'rgba(var(--accent-rgb),.12)' }}
                 {...iconHandle}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--accent)"
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                >
-                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-                </svg>
+                <Ico name="folder" width={16} height={16} style={{ color: 'var(--accent)' }} />
               </div>
               {isPinnedEntry && <span className="lib-pin-dot" />}
             </div>
@@ -859,9 +776,7 @@ const UnifiedList = ({
               className="lib-item-play"
               onClick={stopAnd(() => playFolderFromStore(path))}
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-              </svg>
+              <Ico name="play" variant="bold" width={11} height={11} />
             </button>
           </div>
         )

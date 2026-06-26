@@ -4,6 +4,7 @@ import { usePlayerStore, useQueueStore, trackProviderId } from '@features/player
 import { useLibStore } from '@features/library'
 import { trackRegistry } from '@entities/track'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /** Площадка трека → public-бейдж для превью (local/неизвестно → лого приложения). */
 const PLATFORM_BADGE: Record<string, string> = {
@@ -329,7 +330,7 @@ export const DiscordSection = () => {
                 />
               ) : (
                 <div className="drpc-preview-cover-ph">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" strokeWidth={1.5} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+                  <Ico name="note" width={24} height={24} style={{ color: 'rgba(255,255,255,.3)' }} />
                 </div>
               )}
               {smallMode !== 'off' && (
@@ -337,7 +338,7 @@ export const DiscordSection = () => {
                   {previewSmallSrc ? (
                     <img src={previewSmallSrc} alt="" style={{ width: '100%', height: '100%' }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
                   ) : (
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+                    <Ico name="note" width={11} height={11} style={{ color: '#fff' }} />
                   )}
                 </div>
               )}
@@ -439,21 +440,9 @@ const DiscordIcon = ({ size = 15 }: { size?: number }) => (
     <path d="M8.5 17c0 1-1.4 3-1.9 3-1.5 0-2.833-1.667-3.5-3-.667-1.333-.5-5.833 1.5-11.5 1.457-1.015 3-1.5 4.5-1.5l1 2.5" />
   </svg>
 )
-const NoteIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
-)
-const LinkIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-)
-const PlatformIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-)
-const CloseIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-)
-const UserIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-)
-const EditIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-)
+const NoteIcon = () => <Ico name="note" width={16} height={16} />
+const LinkIcon = () => <Ico name="link" width={16} height={16} />
+const PlatformIcon = () => <Ico name="globe" width={16} height={16} />
+const CloseIcon = () => <Ico name="close" width={16} height={16} />
+const UserIcon = () => <Ico name="user" width={16} height={16} />
+const EditIcon = () => <Ico name="edit" width={16} height={16} />

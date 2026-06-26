@@ -8,6 +8,7 @@ import {
   type HotkeyMod,
 } from '../../model/hotkeysStore'
 import { TeleToggleRow } from '../controls/TeleToggleRow'
+import { Ico } from '@shared/ui/icons/solar'
 
 /** Метки действий хоткеев — переводимые (имена в сторе не используются для отображения). */
 const HOTKEY_LABEL_KEYS: Record<HotkeyAction, TranslationKey> = {
@@ -110,12 +111,7 @@ export const HotkeysSection = () => {
       <div className="sc">
         <h3>{t('settings.hotkeys.heading')}</h3>
         <TeleToggleRow
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <rect x="2" y="6" width="20" height="12" rx="2" />
-              <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
-            </svg>
-          }
+          icon={<Ico name="keyboard" width={16} height={16} />}
           title={t('settings.hotkeys.enabled.title')}
           sub={t('settings.hotkeys.enabled.sub')}
           checked={enabled}
@@ -182,7 +178,7 @@ export const HotkeysSection = () => {
 
               {!isCap && (
                 <button className="hk-edit-btn" onClick={() => startCapture(k)} disabled={!enabled}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                  <Ico name="edit" width={10} height={10} />
                 </button>
               )}
             </div>
@@ -191,7 +187,7 @@ export const HotkeysSection = () => {
 
         <div style={{ marginTop: 10 }}>
           <button className="btn btg" style={{ fontSize: 11, padding: '5px 11px', display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={onResetAll}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" /></svg>
+            <Ico name="refresh" width={11} height={11} />
             {t('settings.hotkeys.resetAll')}
           </button>
         </div>

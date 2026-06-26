@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Минималистичные строительные блоки для вкладок интеграций в настройках
@@ -11,18 +12,9 @@ import { usePopupOpenAnimation } from '@shared/hooks'
  * одно поле с инлайн-«глазом» и кнопкой-галочкой «сохранить».
  */
 
-const EyeIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-)
+const EyeIcon = () => <Ico name="eye" width={14} height={14} />
 
-const CheckIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-)
+const CheckIcon = () => <Ico name="check" width={16} height={16} />
 
 /**
  * Кнопка «?» с попапом-подсказкой. Попап рендерится порталом в body и

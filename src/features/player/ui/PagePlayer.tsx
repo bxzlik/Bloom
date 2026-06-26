@@ -48,7 +48,7 @@ import { LyricsPanel, LyricsToggleButton, useLyricsStore } from '@features/lyric
 import { DislikeButton } from '@features/wave'
 import { usePlayerViewStore, useThemeStore, useOptStore } from '@features/settings'
 import { toast } from '@shared/ui'
-import { SkipBack, SkipForward, Play, Pause, Volume1, Volume2, VolumeX } from 'lucide-react'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * «Новый плейлист» из плеера: закрываем фуллскрин (если открыт), уходим в
@@ -308,9 +308,7 @@ const PlayerContent = () => {
     <img src={artwork} alt="" />
   ) : (
     <div className="ps-cover-empty">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" style={{ opacity: 0.12 }}>
-        <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-      </svg>
+      <Ico name="note" width={48} height={48} style={{ opacity: 0.12 }} />
     </div>
   )
   const favOverlayBtn = (
@@ -320,9 +318,22 @@ const PlayerContent = () => {
   )
   const addOverlayBtn = (
     <button className="cov-add" aria-label={t('player.aria.add')} onClick={openAddPopup}>
-      <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
+      <Ico name="addCircle" width={17} height={17} />
+    </button>
+  )
+  // Кнопка «на весь экран» по центру обложки (появляется по наведению) — как в
+  // стиле «Кино» (cn-bigpic). В кино она живёт в cn-hover-actions, поэтому здесь
+  // её рендерим для всех остальных стилей.
+  const bigPicOverlayBtn = (
+    <button
+      className="cov-bigpic"
+      aria-label={t('player.aria.bigPic')}
+      onClick={(e) => {
+        e.stopPropagation()
+        useBigPicStore.getState().openBig()
+      }}
+    >
+      <Ico name="bigpic" width={26} height={26} />
     </button>
   )
   // Клик по обложке открывает полноэкранный режим: кроме кликов по fav/add и когда открыта панель текста.
@@ -357,6 +368,8 @@ const PlayerContent = () => {
       )}
       {withBtns && favOverlayBtn}
       {withBtns && addOverlayBtn}
+      {/* Кнопка «на весь экран» (в кино — отдельно, в cn-hover-actions). */}
+      {!cinema && bigPicOverlayBtn}
       {/* Панель текста — overlay поверх обложки (#lyricsPanel). При «тексте
           вместо очереди» overlay не нужен — текст уходит в область очереди. */}
       {!lyricsInQueue && <LyricsPanel />}
@@ -387,11 +400,7 @@ const PlayerContent = () => {
         setDlOpen((v) => !v)
       }}
     >
-      <svg width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-        <polyline points="7 10 12 15 17 10" />
-        <line x1="12" y1="15" x2="12" y2="3" />
-      </svg>
+      <Ico name="download" width={18} height={18} />
     </button>
   )
   const speedBtnNode = (
@@ -439,12 +448,7 @@ const PlayerContent = () => {
         setEqOpen((v) => !v)
       }}
     >
-      <svg width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round">
-        <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
-        <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
-        <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
-        <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
-      </svg>
+      <Ico name="eq" width={18} height={18} />
     </button>
   )
 
@@ -613,9 +617,7 @@ const PlayerContent = () => {
                 useBigPicStore.getState().openBig()
               }}
             >
-              <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
-              </svg>
+              <Ico name="bigpic" width={24} height={24} />
             </button>
             {addOverlayBtn}
           </div>
@@ -753,9 +755,7 @@ const PlayerContent = () => {
                     onClick={openAddPopup}
                     aria-label={t('player.aria.add')}
                   >
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
+                    <Ico name="addCircle" width={14} height={14} />
                   </button>
                 </div>
                 {ctrlGroupsNode}
@@ -848,9 +848,7 @@ const NextTrackBlock = ({
           {track.cover ? (
             <img src={track.cover} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" style={{ opacity: 0.4 }}>
-              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-            </svg>
+            <Ico name="note" width={20} height={20} style={{ opacity: 0.4 }} />
           )}
         </div>
         <div className="tri">
@@ -871,15 +869,10 @@ const NextTrackBlock = ({
               toggleFav(track.id)
             }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-            </svg>
+            <Ico name="heart" variant={isFav ? 'bold' : 'linear'} width={13} height={13} />
           </button>
           <button className="ib" type="button" aria-label={t('player.aria.add')} onClick={openAdd}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <Ico name="add" width={13} height={13} />
           </button>
         </div>
         <div className="trd">{track.dur}</div>
@@ -1289,34 +1282,17 @@ const fmt = (sec: number): string => {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-// ── svg (часть дублей с PlayerBar; рефакторинг — на полировке) ───────────
+// ── svg (Solar; тонкие обёртки над @shared/ui/icons/solar) ───────────────
 
 const HeartSvg = ({ size, filled }: { size: number; filled: boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
-    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-  </svg>
+  <Ico name="heart" variant={filled ? 'bold' : 'linear'} size={size} />
 )
-const PrevSvg = ({ size }: { size: number }) => <SkipBack size={size} fill="currentColor" />
-const NextSvg = ({ size }: { size: number }) => <SkipForward size={size} fill="currentColor" />
-const PlaySvg = ({ size }: { size: number }) => <Play size={size} fill="currentColor" strokeWidth={0} />
-const PauseSvg = ({ size }: { size: number }) => <Pause size={size} fill="currentColor" strokeWidth={0} />
-const ShuffleSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-    <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" strokeLinecap="round" />
-    <path d="m18 2 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 6h1.9c1.5 0 2.9.9 3.5 2.2" strokeLinecap="round" />
-    <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.7l-.5-.8" strokeLinecap="round" />
-    <path d="m18 14 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-const RepeatSvg = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-    <polyline points="17 1 21 5 17 9" />
-    <path d="M3 11V9a4 4 0 014-4h14" />
-    <polyline points="7 23 3 19 7 15" />
-    <path d="M21 13v2a4 4 0 01-4 4H3" />
-  </svg>
-)
+const PrevSvg = ({ size }: { size: number }) => <Ico name="prev" size={size} />
+const NextSvg = ({ size }: { size: number }) => <Ico name="next" size={size} />
+const PlaySvg = ({ size }: { size: number }) => <Ico name="play" size={size} />
+const PauseSvg = ({ size }: { size: number }) => <Ico name="pause" size={size} />
+const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={size} />
+const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (
   <span style={{
     position: 'absolute', top: -2, right: -2, background: 'var(--accent)', borderRadius: '50%',
@@ -1325,7 +1301,7 @@ const RepeatOneBadge = () => (
   }}>1</span>
 )
 const VolSvg = ({ size, v }: { size: number; v: number }) => {
-  if (v === 0) return <VolumeX size={size} fill="currentColor" strokeWidth={1.8} />
-  if (v < 50) return <Volume1 size={size} fill="currentColor" strokeWidth={1.8} />
-  return <Volume2 size={size} fill="currentColor" strokeWidth={1.8} />
+  if (v === 0) return <Ico name="muted" size={size} />
+  if (v < 50) return <Ico name="volumeSmall" size={size} />
+  return <Ico name="volumeLoud" size={size} />
 }

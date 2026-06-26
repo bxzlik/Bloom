@@ -7,6 +7,7 @@ import { GamepadIcon } from './GamepadIcon'
 import { PetMark } from './PetMark'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT, useLocale } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 import './gamesShell.css'
 
 /**
@@ -99,10 +100,7 @@ export const GamesModal = () => {
                 {t('home.games')}
               </div>
               <button className="games-launcher-close" onClick={close} aria-label={t('common.close')}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <Ico name="close" width={14} height={14} />
               </button>
             </div>
             <div className="games-launcher-grid">
@@ -114,9 +112,7 @@ export const GamesModal = () => {
                     <div className="gl-card-tag">{t(g.tagKey)}</div>
                   </div>
                   <div className="gl-card-play">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
+                    <Ico name="play" width={13} height={13} />
                   </div>
                 </button>
               ))}

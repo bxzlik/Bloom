@@ -6,6 +6,7 @@ import { usePopupOpenAnimation } from '@shared/hooks'
 import { ScLogo, YmLogo, providerBrandColor } from '@entities/track'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 import { DislikesModal } from './DislikesModal'
 
 /**
@@ -103,9 +104,7 @@ export const WaveCard = () => {
           onClick={start}
           aria-label={t('wave.start')}
         >
-          <svg width={56} height={56} viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-          </svg>
+          <Ico name="play" width={56} height={56} />
           <div className="hwb-spinner" aria-hidden="true" />
         </button>
         <div className="hwb-title">{t('wave.title')}</div>
@@ -120,10 +119,7 @@ export const WaveCard = () => {
           aria-haspopup="menu"
           aria-expanded={menuPos !== null}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <line x1="4" y1="6" x2="14" y2="6" /><line x1="4" y1="12" x2="10" y2="12" /><line x1="4" y1="18" x2="18" y2="18" />
-            <circle cx="17" cy="6" r="2" /><circle cx="13" cy="12" r="2" />
-          </svg>
+          <Ico name="tuning" width={18} height={18} />
         </button>
       </div>
       <DislikesModal open={dislikesOpen} onClose={() => setDislikesOpen(false)} />
@@ -251,10 +247,7 @@ export const WaveCard = () => {
                   textAlign: 'left',
                 }}
               >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z" />
-                  <path d="M22 2h-4v13" />
-                </svg>
+                <Ico name="dislike" width={17} height={17} />
                 <span>{t('wave.dislikes')}</span>
               </button>
             </div>

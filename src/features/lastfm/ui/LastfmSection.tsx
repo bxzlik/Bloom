@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { IntegrationCard, HelpTitle } from '@shared/ui'
 import { useLastfmStore } from '../model/lastfmStore'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 const LastfmIcon = () => (
   <svg width="20" height="13" viewBox="0 0 220 140" xmlns="http://www.w3.org/2000/svg">
@@ -30,10 +31,7 @@ const EyeBtn = ({ onClick }: { onClick: () => void }) => (
       padding: 2,
     }}
   >
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
+    <Ico name="eye" width={14} height={14} />
   </button>
 )
 
@@ -142,11 +140,7 @@ export const LastfmSection = () => {
                 onClick={() => void startOAuth()}
                 style={{ background: '#d51007', display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
+                <Ico name="export" width={13} height={13} />
                 {t('settings.lastfm.login')}
               </button>
               {oauthPending && (

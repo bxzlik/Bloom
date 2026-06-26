@@ -2,6 +2,7 @@ import { useQueueStore } from '@features/player/model/queueStore'
 import { useLibStore } from '@features/library/model/store'
 import { toast } from '@shared/ui'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 import waveApi from '@/wave'
 import { useDislikesStore } from '../model/dislikesStore'
 
@@ -36,10 +37,7 @@ export const DislikeButton = () => {
       onClick={onClick}
       aria-label={disliked ? t('wave.unlike') : t('wave.dislike')}
     >
-      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z" />
-        <path d="M22 2h-4v13" />
-      </svg>
+      <Ico name="dislike" width={16} height={16} />
     </button>
   )
 }

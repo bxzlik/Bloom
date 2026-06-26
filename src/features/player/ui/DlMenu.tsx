@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
+import { Ico } from '@shared/ui/icons/solar'
 import { downloadTrack, downloadCover } from '../lib/download'
 
 /**
@@ -12,20 +13,8 @@ import { downloadTrack, downloadCover } from '../lib/download'
  * и у SpeedPicker, ради единообразия попапов в ряду транспорта ( CSS
  * `libMenuIn` от класса `.open` гасится хуком).
  */
-const iconTr = (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
-  </svg>
-)
-const iconIm = (
-  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <circle cx="8.5" cy="8.5" r="1.5" />
-    <path d="m21 15-5-5L5 21" />
-  </svg>
-)
+const iconTr = <Ico name="note" width={15} height={15} />
+const iconIm = <Ico name="gallery" width={15} height={15} />
 
 export const DlMenu = ({
   open,

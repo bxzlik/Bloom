@@ -1,6 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react'
 import { ScLogo, YmLogo, SpLogo, YtmLogo, providerBrandColor } from '@entities/track'
 import { useT, type TranslationKey } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Идентификаторы секций SM_CATS.
@@ -63,68 +64,32 @@ const GROUPS: GroupDef[] = [
       {
         id: 'system',
         labelKey: 'settings.nav.system',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" />
-            <line x1="8" y1="21" x2="16" y2="21" />
-            <line x1="12" y1="17" x2="12" y2="21" />
-          </svg>
-        ),
+        icon: <Ico name="monitor" width={13} height={13} />,
       },
       {
         id: 'overlay',
         labelKey: 'settings.nav.overlay',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="14" rx="2" />
-            <rect x="13" y="6" width="6" height="4" rx="1.2" fill="currentColor" stroke="none" />
-          </svg>
-        ),
+        icon: <Ico name="widget" width={13} height={13} />,
       },
       {
         id: 'audio',
         labelKey: 'settings.nav.audio',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <polyline points="22 8 22 16" />
-            <polyline points="18 10 18 14" />
-            <polyline points="14 4 14 20" />
-            <polyline points="10 8 10 16" />
-            <polyline points="6 11 6 13" />
-            <polyline points="2 10 2 14" />
-          </svg>
-        ),
+        icon: <Ico name="eq" width={13} height={13} />,
       },
       {
         id: 'efficiency',
         labelKey: 'settings.nav.efficiency',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3.34 19a10 10 0 1 1 17.32 0" />
-            <path d="m12 12 4-3" />
-          </svg>
-        ),
+        icon: <Ico name="cpu" width={13} height={13} />,
       },
       {
         id: 'hotkeys',
         labelKey: 'settings.nav.hotkeys',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <rect x="2" y="6" width="20" height="12" rx="2" />
-            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
-          </svg>
-        ),
+        icon: <Ico name="keyboard" width={13} height={13} />,
       },
       {
         id: 'tele-storage',
         labelKey: 'settings.nav.storage',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <ellipse cx="12" cy="5" rx="9" ry="3" />
-            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-          </svg>
-        ),
+        icon: <Ico name="database" width={13} height={13} />,
       },
     ],
   },
@@ -134,57 +99,27 @@ const GROUPS: GroupDef[] = [
       {
         id: 'view',
         labelKey: 'settings.nav.player',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 18V5l12-2v13" />
-            <circle cx="6" cy="18" r="3" />
-            <circle cx="18" cy="16" r="3" />
-          </svg>
-        ),
+        icon: <Ico name="note" width={13} height={13} />,
       },
       {
         id: 'interface',
         labelKey: 'settings.nav.interface',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M3 9h18M9 21V9" />
-          </svg>
-        ),
+        icon: <Ico name="sidebar" width={13} height={13} />,
       },
       {
         id: 'tabs',
         labelKey: 'settings.nav.tabs',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M3 9h18M9 9V3" />
-          </svg>
-        ),
+        icon: <Ico name="windowFrame" width={13} height={13} />,
       },
       {
         id: 'background',
         labelKey: 'settings.nav.background',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <polyline points="21 15 16 10 5 21" />
-          </svg>
-        ),
+        icon: <Ico name="gallery" width={13} height={13} />,
       },
       {
         id: 'medialib',
         labelKey: 'settings.nav.customization',
-        icon: (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" />
-            <circle cx="13.5" cy="6.5" r=".75" fill="currentColor" stroke="none" />
-            <circle cx="17.5" cy="10.5" r=".75" fill="currentColor" stroke="none" />
-            <circle cx="6.5" cy="12.5" r=".75" fill="currentColor" stroke="none" />
-            <circle cx="8.5" cy="7.5" r=".75" fill="currentColor" stroke="none" />
-          </svg>
-        ),
+        icon: <Ico name="album" width={13} height={13} />,
       },
     ],
   },
@@ -264,10 +199,7 @@ export const SettingsNav = ({
   return (
     <div className="settings-modal-nav" id="smNav">
       <div className="s-nav-search" style={{ marginBottom: 6 }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <Ico name="search" width={13} height={13} />
         <input
           type="text"
           placeholder={t('settings.nav.search')}

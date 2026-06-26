@@ -27,6 +27,7 @@ import { LibGridOverview } from './LibGridOverview'
 import { PlMenu } from './PlMenu'
 import { AddFromLibModal } from './AddFromLibModal'
 import { SelBar } from './SelBar'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Правая часть библиотеки `.lib-content`.
@@ -204,19 +205,7 @@ export const LibContent = () => {
                   <img className="pl-cov-img" src={editCover} alt="" />
                 ) : (
                   <div className="pl-cov-hint">
-                    <svg
-                      width="22"
-                      height="22"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.6}
-                      strokeLinecap="round"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="3" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
+                    <Ico name="gallery" width={22} height={22} />
                     <span>{t('lib.newpl.addCover')}</span>
                   </div>
                 )}
@@ -236,19 +225,7 @@ export const LibContent = () => {
                   aria-label={t('lib.newpl.removeCover')}
                   style={{ display: 'flex' }}
                 >
-                  <svg
-                    width="8"
-                    height="8"
-                    viewBox="0 0 8 8"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    style={{ display: 'block', flexShrink: 0 }}
-                  >
-                    <line x1="1.5" y1="1.5" x2="6.5" y2="6.5" />
-                    <line x1="6.5" y1="1.5" x2="1.5" y2="6.5" />
-                  </svg>
+                  <Ico name="close" width={8} height={8} style={{ display: 'block', flexShrink: 0, color: 'white' }} />
                 </button>
               )}
             </div>
@@ -323,19 +300,7 @@ export const LibContent = () => {
               style={{ display: 'flex', flex: 1, minWidth: 0, alignItems: 'center' }}
             >
               <div className="lib-isp-wrap">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  style={{ flexShrink: 0, opacity: 0.4 }}
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+                <Ico name="search" width={13} height={13} style={{ flexShrink: 0, opacity: 0.4 }} />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -366,18 +331,7 @@ export const LibContent = () => {
                   aria-label={t('common.cancel')}
                   onClick={cancelEdit}
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                    strokeLinecap="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <Ico name="close" width={14} height={14} />
                 </button>
                 <button
                   key="edit-save"
@@ -387,18 +341,7 @@ export const LibContent = () => {
                   onClick={saveEdit}
                   disabled={!editName.trim()}
                 >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.6}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <Ico name="check" variant="bold" width={15} height={15} />
                 </button>
               </>
             ) : (
@@ -411,18 +354,7 @@ export const LibContent = () => {
                 id="libBackToGrid"
                 onClick={backToGrid}
               >
-                <svg
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  viewBox="0 0 24 24"
-                >
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
+                <Ico name="arrowLeft" width={14} height={14} />
               </button>
             )}
             <button
@@ -434,9 +366,7 @@ export const LibContent = () => {
                 playFromSource(view.tracks.map((t) => t.id), view.source)
               }}
             >
-              <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-              </svg>
+              <Ico name="play" variant="bold" width={12} height={12} />
               {t('lib.playAll')}
             </button>
             <button
@@ -448,13 +378,7 @@ export const LibContent = () => {
                 playShuffledFromSource(view.tracks.map((t) => t.id), view.source)
               }}
             >
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" strokeLinecap="round" />
-                <path d="m18 2 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M2 6h1.9c1.5 0 2.9.9 3.5 2.2" strokeLinecap="round" />
-                <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.7l-.5-.8" strokeLinecap="round" />
-                <path d="m18 14 4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Ico name="shuffle" width={13} height={13} />
             </button>
             <label
               key="upload"
@@ -465,18 +389,7 @@ export const LibContent = () => {
                 cursor: 'pointer',
               }}
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <Ico name="add" width={14} height={14} />
               <input
                 type="file"
                 accept="audio/*"
@@ -500,32 +413,9 @@ export const LibContent = () => {
               }
             >
               {searchOpen ? (
-                <svg
-                  id="libInlineSearchBtnIcon"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  viewBox="0 0 24 24"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <Ico name="close" width={14} height={14} />
               ) : (
-                <svg
-                  id="libInlineSearchBtnIcon"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+                <Ico name="search" width={14} height={14} />
               )}
             </button>
             {mode === 'pl' && activePlaylist && (
@@ -536,18 +426,7 @@ export const LibContent = () => {
                 aria-label={t('lib.plmenu.editPlaylist')}
                 onClick={() => startEdit(activePlaylist.id)}
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                </svg>
+                <Ico name="edit" width={14} height={14} />
               </button>
             )}
             <button
@@ -560,11 +439,7 @@ export const LibContent = () => {
                 setPlMenuOpen((v) => !v)
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="5" cy="12" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <circle cx="19" cy="12" r="2" />
-              </svg>
+              <Ico name="kebab" width={14} height={14} />
             </button>
             </>
             )}
@@ -684,45 +559,13 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
 }
 
 const NoteHeroIcon = () => (
-  <svg
-    width="44"
-    height="44"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="rgba(255,255,255,0.7)"
-    strokeWidth={1.5}
-    strokeLinecap="round"
-  >
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
-  </svg>
+  <Ico name="note" width={44} height={44} style={{ color: 'rgba(255,255,255,0.7)' }} />
 )
 
 const HeartHeroIcon = () => (
-  <svg
-    width="44"
-    height="44"
-    viewBox="0 0 24 24"
-    fill="white"
-    stroke="white"
-    strokeWidth={1.5}
-  >
-    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-  </svg>
+  <Ico name="heart" variant="bold" width={44} height={44} style={{ color: 'white' }} />
 )
 
 const HistoryHeroIcon = () => (
-  <svg
-    width="44"
-    height="44"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="#ffb400"
-    strokeWidth={1.5}
-    strokeLinecap="round"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="12 6 12 12 16 14" />
-  </svg>
+  <Ico name="clock" width={44} height={44} style={{ color: '#ffb400' }} />
 )

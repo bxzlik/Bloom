@@ -20,6 +20,7 @@ import { deleteUploadedTrack } from '../lib'
 import { playFromSource, playTrack, useQueueStore, AddPopup } from '@features/player'
 import { TrackCtxMenu } from './TrackCtxMenu'
 import { TagEditor } from './TagEditor'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Tracklist `#libTracklist` + `function trHTML()`.
@@ -288,9 +289,7 @@ const computeDupGroups = (pool: Track[]): Track[][] => {
 }
 
 const DupNoteIcon = ({ size = 13 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ opacity: 0.3 }}>
-    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-  </svg>
+  <Ico name="note" size={size} style={{ opacity: 0.3 }} />
 )
 
 const DupsInline = ({
@@ -332,9 +331,7 @@ const DupsInline = ({
     <div className="lib-tracklist dups-inline" id="libTracklist">
       <div className="dups-inline-bar">
         <div className="dups-inline-info">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ flexShrink: 0 }}>
-            <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-          </svg>
+          <Ico name="copy" width={14} height={14} style={{ flexShrink: 0 }} />
           {groups.length > 0 ? (
             <span>
               {t('lib.dups.found.a')} <strong>{groups.length}</strong> {t('lib.dups.found.b')}{' '}
@@ -347,16 +344,12 @@ const DupsInline = ({
         <div className="dups-inline-actions">
           {groups.length > 0 && (
             <button className="dups-delete-all" onClick={deleteAll}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" />
-              </svg>
+              <Ico name="trash" width={13} height={13} />
               {t('lib.dups.delAll')}
             </button>
           )}
           <button className="dups-close" onClick={onExit} aria-label={t('common.close')}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <Ico name="close" width={14} height={14} />
           </button>
         </div>
       </div>
@@ -369,7 +362,7 @@ const DupsInline = ({
       ) : groups.length === 0 ? (
         <div className="dups-empty">
           <div className="dups-empty-icon" style={{ background: 'rgba(0,200,100,.08)' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3dd68c" strokeWidth={2} strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+            <Ico name="check" variant="bold" width={22} height={22} style={{ color: '#3dd68c' }} />
           </div>
           <span style={{ fontSize: 13, color: 'var(--text2)' }}>{t('lib.dups.none')}!</span>
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>{t('lib.dups.checked', { n: pool.length })}</span>
@@ -379,9 +372,7 @@ const DupsInline = ({
           <div className="dups-group" key={gi}>
             <div className="dups-group-head">
               <div className="dups-group-label">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                </svg>
+                <Ico name="copy" width={12} height={12} />
                 {group[0]!.name} — {group[0]!.artist || t('common.unknownArtist')}
                 <span className="dups-group-badge">{t('lib.dups.copies', { n: group.length })}</span>
               </div>
@@ -407,9 +398,7 @@ const DupsInline = ({
                       deleteTracks([tr])
                     }}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" />
-                    </svg>
+                    <Ico name="trash" width={13} height={13} />
                   </button>
                 )}
                 <div className="dups-track-dur">{tr.dur || '—'}</div>
@@ -648,17 +637,7 @@ const TrackRow = ({
           toggleFav(track.id)
         }}
       >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill={isFav ? 'currentColor' : 'none'}
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-        >
-          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-        </svg>
+        <Ico name="heart" variant={isFav ? 'bold' : 'linear'} width={13} height={13} />
       </button>
       <button
         className="ib"
@@ -666,18 +645,7 @@ const TrackRow = ({
         aria-label={t('player.aria.add')}
         onClick={(e) => onAddClick?.(e, track.id)}
       >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
+        <Ico name="add" width={13} height={13} />
       </button>
     </div>
     <div className="trd">{track.dur || '—'}</div>
@@ -703,22 +671,7 @@ const HistoryHeader = ({ label }: { label: string }) => (
   </div>
 )
 
-const MusicNoteIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.6}
-    strokeLinecap="round"
-    style={{ opacity: 0.4 }}
-  >
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
-  </svg>
-)
+const MusicNoteIcon = () => <Ico name="note" width={20} height={20} style={{ opacity: 0.4 }} />
 
 // ── Пустые состояния ─────────────────
 
@@ -729,93 +682,28 @@ const EmptyState = ({ mode }: { mode: string }) => {
   let sub = ''
   switch (mode) {
     case 'fav':
-      icon = (
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.3}
-          style={{ opacity: 0.3 }}
-        >
-          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-        </svg>
-      )
+      icon = <Ico name="heart" width={48} height={48} style={{ opacity: 0.3 }} />
       title = t('lib.empty.favTitle')
       sub = t('lib.empty.favSub')
       break
     case 'history':
-      icon = (
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.3}
-          style={{ opacity: 0.3 }}
-        >
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      )
+      icon = <Ico name="clock" width={48} height={48} style={{ opacity: 0.3 }} />
       title = t('lib.empty.historyTitle')
       sub = ''
       break
     case 'folder':
-      icon = (
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.3}
-          style={{ opacity: 0.3 }}
-        >
-          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-        </svg>
-      )
+      icon = <Ico name="folder" width={48} height={48} style={{ opacity: 0.3 }} />
       title = t('lib.empty.folderTitle')
       sub = ''
       break
     case 'pl':
-      icon = (
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.3}
-          style={{ opacity: 0.3 }}
-        >
-          <path d="M9 18V5l12-2v13" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="18" cy="16" r="3" />
-        </svg>
-      )
+      icon = <Ico name="note" width={48} height={48} style={{ opacity: 0.3 }} />
       title = t('lib.empty.plTitle')
       sub = t('lib.empty.plSub')
       break
     case 'all':
     default:
-      icon = (
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.3}
-          style={{ opacity: 0.3 }}
-        >
-          <path d="M9 18V5l12-2v13" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="18" cy="16" r="3" />
-        </svg>
-      )
+      icon = <Ico name="note" width={48} height={48} style={{ opacity: 0.3 }} />
       title = t('lib.empty.noTracksTitle')
       sub = t('lib.empty.noTracksSub')
   }

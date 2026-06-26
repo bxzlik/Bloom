@@ -13,6 +13,7 @@ import {
 } from '../../model/telemetryStore'
 import { useSettingsStore } from '../../model/settingsStore'
 import { useT, useLocale, type TranslationKey } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /** Метки TTL-политик — переводимые (метки в сторе не используются для отображения). */
 const TTL_KEY: Record<TtlPolicy, TranslationKey> = {
@@ -127,11 +128,11 @@ export const TelemetrySection = () => {
     <div className="s-section active" id="ssec-tele-storage">
       <div className="s-section-head">
         <div className="s-section-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg>{' '}
+          <Ico name="database" width={15} height={15} />{' '}
           {t('settings.nav.storage')}
         </div>
         <button className="btn btg" style={{ fontSize: 10, padding: '3px 9px', display: 'flex', alignItems: 'center', gap: 5 }} onClick={refresh}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" /></svg>{' '}
+          <Ico name="refresh" width={10} height={10} />{' '}
           {t('settings.storage.refresh')}
         </button>
       </div>
@@ -150,7 +151,7 @@ export const TelemetrySection = () => {
       <div className="tele-data-head">
         <div className="tele-data-head-title">{t('settings.storage.manage')}</div>
         <button className="tele-clear-all" onClick={clearAll}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /></svg>
+          <Ico name="trash" width={12} height={12} />
           {t('settings.storage.clearAll')}
         </button>
       </div>
@@ -158,7 +159,7 @@ export const TelemetrySection = () => {
       {/* Строка: Тексты */}
       <div className="tele-data-row">
         <div className="tele-data-icon">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+          <Ico name="note" width={17} height={17} />
         </div>
         <div className="tele-data-info">
           <span className="tele-data-name">{t('settings.storage.lyrics')}</span>
@@ -184,7 +185,7 @@ export const TelemetrySection = () => {
         <div className="tele-ttl" ref={ttlRef} style={diskCache ? undefined : { opacity: 0.4, pointerEvents: 'none' }}>
           <button className="tele-ttl-btn" onClick={() => setTtlOpen((v) => !v)}>
             {t(TTL_KEY[ttl])}
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+            <Ico name="arrowDown" width={11} height={11} />
           </button>
           {ttlOpen && (
             <div className="tele-ttl-pop">
@@ -202,7 +203,7 @@ export const TelemetrySection = () => {
         </div>
 
         <button className="tele-trash" onClick={clearLyrics} disabled={lyrics.count === 0}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /></svg>
+          <Ico name="trash" width={15} height={15} />
         </button>
       </div>
     </div>

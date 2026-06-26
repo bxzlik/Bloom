@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useT, useLocale } from '@shared/i18n'
 import { useUpdateStore } from '../model/updateStore'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Кнопка обновления в тайтлбаре (`.tb-update-*`) + выпадающий попап-анонс.
@@ -85,10 +86,7 @@ export const UpdateButton = () => {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12a9 9 0 1 1-3-6.7" />
-          <polyline points="21 4 21 9 16 9" />
-        </svg>
+        <Ico name="refresh" width={13} height={13} />
         <span>{downloading ? `${percent}%` : t('settings.about.update')}</span>
       </button>
 

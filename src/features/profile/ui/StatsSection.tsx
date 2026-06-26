@@ -7,6 +7,7 @@ import { parseDur, fmtDurLong } from '../lib/formatStats'
 import { useArtistAvatars } from '../lib/useArtistAvatars'
 import { useAchievementsStore } from '../model/achievementsStore'
 import { useT, useLocale, t as tt } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Полная секция статистики на странице профиля. `#statsSection`
@@ -47,15 +48,11 @@ const SOURCE_META: Record<string, { label: string; Logo: React.ComponentType<{ s
 }
 
 const NoteIcon = ({ size = 12, style }: { size?: number; style?: React.CSSProperties }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={style}>
-    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-  </svg>
+  <Ico name="note" width={size} height={size} style={style} />
 )
 
 const UserIcon = ({ size = 11, style }: { size?: number; style?: React.CSSProperties }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={style}>
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
-  </svg>
+  <Ico name="user" width={size} height={size} style={style} />
 )
 
 const dayKey = (d: Date) => d.toISOString().slice(0, 10)
@@ -293,16 +290,16 @@ export const StatsSection = () => {
       {/* Заголовок секции + действия. */}
       <div className="stats-header">
         <div className="stats-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+          <Ico name="chart" width={15} height={15} />
           {t('stats.title')}
         </div>
         <div className="stats-toolbar">
         <button className="stats-tool-btn" onClick={copyStats}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+          <Ico name="copy" width={13} height={13} />
           {t('stats.copy')}
         </button>
         <button className={`stats-tool-btn danger${confirmClear ? ' confirm' : ''}`} onClick={clearStats}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+          <Ico name="trash" width={13} height={13} />
           {confirmClear ? t('stats.clearConfirm') : t('stats.clear')}
         </button>
         </div>
@@ -317,28 +314,28 @@ export const StatsSection = () => {
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" /></svg>
+            <Ico name="play" width={15} height={15} />
           </div>
           <div className="shc-val">{stats.totalPlays}</div>
           <div className="shc-lbl">{t('stats.plays')}</div>
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            <Ico name="clock" width={15} height={15} />
           </div>
           <div className="shc-val">{fmtDurLong(stats.totalSec)}</div>
           <div className="shc-lbl">{t('stats.time')}</div>
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="m4.93 4.93 2.83 2.83" /><path d="m16.24 16.24 2.83 2.83" /><circle cx="12" cy="12" r="4" /></svg>
+            <Ico name="stars" width={15} height={15} />
           </div>
           <div className="shc-val">{stats.uniqueTracks}</div>
           <div className="shc-lbl">{t('stats.unique')}</div>
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+            <Ico name="chart" width={15} height={15} />
           </div>
           <div className="shc-val">{avgLenFmt}</div>
           <div className="shc-lbl">{t('stats.avgLength')}</div>
@@ -352,14 +349,14 @@ export const StatsSection = () => {
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>
+            <Ico name="clock" width={15} height={15} />
           </div>
           <div className="shc-val">{fmtDurLong(Math.round(appMs / 1000))}</div>
           <div className="shc-lbl">{t('stats.appTime')}</div>
         </div>
         <div className="stat-hero-card">
           <div className="shc-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+            <Ico name="star" width={15} height={15} />
           </div>
           <div className="shc-val">{stats.recordDay}</div>
           <div className="shc-lbl">{stats.recordDay > 0 ? `${t('stats.recordDay')} · ${stats.recordDateFmt}` : t('stats.recordDay')}</div>
@@ -369,7 +366,7 @@ export const StatsSection = () => {
       {/* В среднем за день (перенесено из бывшей модалки статистики) */}
       <div className="stats-card">
         <div className="stats-card-title">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+          <Ico name="clock" width={12} height={12} />
           {t('stats.avgPerDay')}
         </div>
         <div className="stats-daily">
@@ -382,7 +379,7 @@ export const StatsSection = () => {
       {/* Где слушали чаще — разбивка по площадкам */}
       <div className="stats-card">
         <div className="stats-card-title">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+          <Ico name="note" width={12} height={12} />
           {t('stats.sources')}
         </div>
         {stats.bySource.length === 0 ? (
@@ -417,7 +414,7 @@ export const StatsSection = () => {
         {/* Top tracks */}
         <div className="stats-card">
           <div className="stats-card-title">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+            <Ico name="star" width={12} height={12} />
             {t('stats.topTracks')}
           </div>
           <div id="statsTopTracks">
@@ -446,7 +443,7 @@ export const StatsSection = () => {
           <div className="stats-card">
             <div className="stats-card-title has-actions">
               <div className="sct-left">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+                <Ico name="chart" width={12} height={12} />
                 {t('stats.activity')}
               </div>
               <div className="act-period-switcher">

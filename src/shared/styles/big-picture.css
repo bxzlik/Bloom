@@ -74,5 +74,3 @@
 #bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.5);font-size:var(--bp-lyr-fs,36px)}
 #bigPicOverlay .bp-lyr-scroll .lyrics-status{color:rgba(255,255,255,.25);font-size:14px;text-align:left;padding:0 10px;line-height:1.6}
 .ps-cover{cursor:pointer}
-.ps-cover::after{content:'⤢';position:absolute;inset:0;background:rgba(0,0,0,0);color:transparent;display:flex;align-items:center;justify-content:center;font-size:28px;transition:background .18s,color .18s;border-radius:var(--radius);pointer-events:none}
-.ps-cover:hover::after{background:rgba(0,0,0,.35);color:rgba(255,255,255,.8)}

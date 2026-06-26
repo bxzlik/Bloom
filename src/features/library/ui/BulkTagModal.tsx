@@ -5,6 +5,7 @@ import { toast } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useSelectionStore, useLibStore } from '../model'
+import { Ico } from '@shared/ui/icons/solar'
 import { compressCover, idbUpdateMeta } from '../lib'
 
 export interface BulkTagModalProps {
@@ -132,15 +133,10 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
             {coverDataUrl ? (
               <img src={coverDataUrl} alt="" />
             ) : (
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" style={{ opacity: 0.3 }}>
-                <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-              </svg>
+              <Ico name="note" width={34} height={34} style={{ opacity: 0.3 }} />
             )}
             <div className="spanel-cover-cam">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
+              <Ico name="camera" width={20} height={20} />
             </div>
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onCoverChange} />
           </label>
@@ -151,9 +147,7 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
         <div className="pedit-body">
           <div className="pedit-card">
             <div className="pedit-card-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-              </svg>
+              <Ico name="edit" width={14} height={14} />
               {t('lib.bulk.title')}
             </div>
 

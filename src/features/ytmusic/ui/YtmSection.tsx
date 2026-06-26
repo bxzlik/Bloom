@@ -1,6 +1,7 @@
 import { YtmLogo } from '@entities/track'
 import { IntegrationCard, HelpTitle } from '@shared/ui'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Секция настроек «YouTube Music» `#ssec-ytmusic`. Настраивать нечего —
@@ -28,10 +29,7 @@ export const YtmSection = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ display: 'flex', color: '#1ED760', flexShrink: 0 }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="m9 12 2 2 4-4" />
-            </svg>
+            <Ico name="check" width={26} height={26} />
           </span>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{t('settings.ytm.status')}</div>

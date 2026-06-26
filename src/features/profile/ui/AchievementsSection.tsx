@@ -16,6 +16,7 @@ import {
   type AchUnit,
 } from '../lib/achievements'
 import { useAchievementsStore, tierKey } from '../model/achievementsStore'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Вкладка «Достижения» на странице профиля. Считает прогресс реактивно из тех же
@@ -74,7 +75,7 @@ export const AchievementsSection = () => {
   return (
     <div className="ach-page">
       <div className="ach-summary">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6" /><path d="M15.48 12.89L17 22l-5-3-5 3 1.52-9.11" /></svg>
+        <Ico name="award" width={15} height={15} />
         {t('ach.title')}
         <span className="ach-summary-count">{done}/{total}</span>
       </div>

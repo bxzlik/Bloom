@@ -24,6 +24,7 @@ import {
 import { useNavStore } from '@app/navigationStore'
 import { toast, useShareStore } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 import { useDetailStore, type DetailTarget } from '../model/detailStore'
 
 /* ── Форматтеры ───── */
@@ -53,29 +54,17 @@ const totalSec = (tracks: Track[]): number =>
   tracks.reduce((s, t) => s + durToSec(t.dur), 0)
 
 /* ── Иконки ───────────────────────────────────────────────────────────── */
-const PhTrack = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.3 }}>
-    <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-  </svg>
-)
-const PhAlbum = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.3 }}>
-    <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" />
-  </svg>
-)
+const PhTrack = () => <Ico name="note" width={20} height={20} style={{ opacity: 0.3 }} />
+const PhAlbum = () => <Ico name="vinyl" width={20} height={20} style={{ opacity: 0.3 }} />
 const PlayBadge = () => (
   <div className="sp-tc-play">
     <div className="sp-tc-play-btn">
-      <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1" strokeLinejoin="round" style={{ marginLeft: 2 }}>
-        <path d="M7.5 4.5C7.5 3.4 8.7 2.7 9.6 3.3l11 7.5c.9.5.9 1.9 0 2.4l-11 7.5C8.7 21.3 7.5 20.6 7.5 19.5V4.5z" />
-      </svg>
+      <Ico name="play" width="100%" height="100%" style={{ color: '#fff', marginLeft: 2 }} />
     </div>
   </div>
 )
 const HeartSvg = ({ filled }: { filled: boolean }) => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill={filled ? '#e03030' : 'none'} stroke={filled ? '#e03030' : 'currentColor'} strokeWidth="2" strokeLinecap="round">
-    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-  </svg>
+  <Ico name="heart" variant={filled ? 'bold' : 'linear'} width={13} height={13} style={{ color: filled ? '#e03030' : 'currentColor' }} />
 )
 
 /** Сырой SC-id из entity id (`sc_123` → `123`) для share-ссылки. */
@@ -107,18 +96,7 @@ const FollowBtn = ({
       onClick={toggle}
       aria-label={following ? t('search.unfollow') : t('search.follow')}
     >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        {following ? (
-          <polyline points="16 11 18 13 22 9" />
-        ) : (
-          <>
-            <line x1="19" y1="8" x2="19" y2="14" />
-            <line x1="22" y1="11" x2="16" y2="11" />
-          </>
-        )}
-      </svg>
+      <Ico name={following ? 'check' : 'user'} width={15} height={15} />
     </button>
   )
 }
@@ -433,16 +411,12 @@ export const DetailView = () => {
       <>
         {!!artist.followers && (
           <span className="sp-am-stat">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
-            </svg>
+            <Ico name="user" width={12} height={12} />
             {fmtNum(artist.followers)}
           </span>
         )}
         <span className="sp-am-stat">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-          </svg>
+          <Ico name="note" width={12} height={12} />
           {tracks.length} треков{secs ? ' · ' + fmtDurLong(secs) : ''}
         </span>
       </>
@@ -528,9 +502,7 @@ export const DetailView = () => {
         />
         <div className="sp-am-hero-grad" />
         <button className="sp-dv-back" onClick={stack.length > 1 ? back : close} aria-label={t('common.back')}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <Ico name="arrowLeft" width={15} height={15} />
         </button>
         <div className="sp-am-hero-content" style={{ paddingTop: 52 }}>
           <div className="sp-am-hero-info">
@@ -547,9 +519,7 @@ export const DetailView = () => {
           {loaded && (
             <div className="sp-am-actions" style={{ display: 'flex' }}>
               <button className="sp-am-play-btn" onClick={onPlayAll}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-                </svg>
+                <Ico name="play" variant="bold" width={14} height={14} />
                 {t('search.playAll')}
               </button>
               {/* Follow — сразу после «Воспроизвести всё». */}
@@ -562,24 +532,13 @@ export const DetailView = () => {
                 />
               )}
               <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
-                  <path d="m18 2 4 4-4 4" strokeLinejoin="round" />
-                  <path d="M2 6h1.9c1.5 0 2.9.9 3.5 2.2" />
-                  <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.7l-.5-.8" />
-                  <path d="m18 14 4 4-4 4" strokeLinejoin="round" />
-                </svg>
+                <Ico name="shuffle" width={15} height={15} />
               </button>
               <button className="sp-am-icon-btn" onClick={onImport} aria-label={t('search.import')}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
+                <Ico name="import" width={14} height={14} />
               </button>
               <button className="sp-am-icon-btn" onClick={onShare} aria-label={t('lib.ctx.share')}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
+                <Ico name="share" width={14} height={14} />
               </button>
             </div>
           )}
@@ -695,9 +654,7 @@ const ArtistBody = ({
           {artist.website && (
             <div className="sp-am-socials">
               <a className="sp-am-social-btn" href={artist.website} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
+                <Ico name="globe" width={13} height={13} />
               </a>
             </div>
           )}

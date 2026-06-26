@@ -4,6 +4,7 @@ import type { Track } from '@entities/track'
 import { useThemeStore } from '@features/settings'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Модалка «Инфо о треке» — `#trackInfoOverlay` / `openTrackInfo`
@@ -106,10 +107,7 @@ export const TrackInfoModal = ({
         <div className="ti-modal" id="tiModal">
           <div className="ti-head">
             <button className="ti-close" onClick={onClose} aria-label={tr('common.close')}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <Ico name="close" width={12} height={12} />
             </button>
           </div>
           <div className="ti-hero">
@@ -123,9 +121,7 @@ export const TrackInfoModal = ({
               {t?.cover ? (
                 <img src={t.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" style={{ opacity: 0.3 }}>
-                  <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-                </svg>
+                <Ico name="note" width={24} height={24} style={{ opacity: 0.3 }} />
               )}
             </div>
             <div className="ti-hero-info">
@@ -148,9 +144,7 @@ export const TrackInfoModal = ({
                 </a>
                 {t?.artistVerified && (
                   <span className="ti-verified" id="tiVerified">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                    </svg>
+                    <Ico name="check" variant="bold" width={12} height={12} />
                   </span>
                 )}
               </div>

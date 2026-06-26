@@ -1,5 +1,6 @@
 import { useOptStore, type OptMode, type OptEffects } from '../../model/optStore'
 import { useT, type TranslationKey } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Раздел «Эффективность» (`ssec-unfocus` + `ssec-minimized`) —
@@ -24,7 +25,7 @@ export const OptimizationSection = () => {
     <div className="s-section active" id="ssec-unfocus">
       <div className="s-section-head">
         <div className="s-section-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>{' '}
+          <Ico name="cpu" width={15} height={15} />{' '}
           {t('settings.nav.efficiency')}
         </div>
       </div>
@@ -148,20 +149,20 @@ const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 // ── Иконки ─────────────────────────────────────────────────
 function ImgIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+  return <Ico name="gallery" width={16} height={16} />
 }
 function GifIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" /><path d="m16 5 3 3-7 7-3 1 1-3 7-7z" /></svg>
+  return <Ico name="video" width={16} height={16} />
 }
 function DiscIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
+  return <Ico name="vinyl" width={16} height={16} />
 }
 function BarsIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polyline points="22 8 22 16" /><polyline points="18 10 18 14" /><polyline points="14 4 14 20" /><polyline points="10 8 10 16" /><polyline points="6 11 6 13" /><polyline points="2 10 2 14" /></svg>
+  return <Ico name="eq" width={16} height={16} />
 }
 function BlurIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /></svg>
+  return <Ico name="blur" width={16} height={16} />
 }
 function LinesIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M21 10H7" /><path d="M21 6H3" /><path d="M21 14H3" /><path d="M21 18H7" /></svg>
+  return <Ico name="text" width={16} height={16} />
 }

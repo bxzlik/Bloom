@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 import { EQ_LABELS, EQ_MAX_DB, EQ_PRESETS, EQ_PRESET_LABELS, useEqStore } from '../model/eqStore'
 
 /**
@@ -180,7 +181,7 @@ export const EqPanel = ({
               }}
             />
             <button className="eq-confirm" onClick={confirmAdd}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              <Ico name="check" variant="bold" width={13} height={13} />
             </button>
           </div>
         ) : (
@@ -205,7 +206,7 @@ export const EqPanel = ({
                     deleteCustom(name)
                   }}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <Ico name="close" width={11} height={11} />
                 </span>
               </span>
             )

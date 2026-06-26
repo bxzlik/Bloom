@@ -5,6 +5,7 @@ import { useMergeStore, usePlaylistStore, useLibStore } from '../model'
 import { toast, VinylCover } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Модалка «Объединение плейлистов» (#mergePlOverlay). Источник (A) +
@@ -36,7 +37,16 @@ export const MergeModal = () => {
   const [search, setSearch] = useState('')
 
   const open = srcId !== null
-  const src = srcId ? playlists.find((p) => p.id === srcId) ?? null : null
+  const liveSrc = srcId ? playlists.find((p) => p.id === srcId) ?? null : null
+  // Держим последний валидный src на время slide-out: close() обнуляет srcId
+  // → liveSrc=null, и без этого `if (!src) return null` размонтировал бы панель
+  // мгновенно, до анимации закрытия (как в AddFromLibModal с actId).
+  const [heldSrc, setHeldSrc] = useState<Playlist | null>(null)
+  const src = liveSrc ?? heldSrc
+
+  useEffect(() => {
+    if (liveSrc) setHeldSrc(liveSrc)
+  }, [liveSrc])
 
   // Сброс локального стейта при открытии.
   useEffect(() => {
@@ -88,7 +98,7 @@ export const MergeModal = () => {
   const nameValue = nameTouched ? name : autoName
 
   const others = playlists.filter(
-    (p) => p.id !== srcId && (!search.trim() || p.name.toLowerCase().includes(search.toLowerCase().trim())),
+    (p) => p.id !== src.id && (!search.trim() || p.name.toLowerCase().includes(search.toLowerCase().trim())),
   )
 
   const toggleSel = (id: string) => {
@@ -142,9 +152,7 @@ export const MergeModal = () => {
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="mpl-htitle">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-                <circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M13 6h3a2 2 0 0 1 2 2v7" /><line x1="6" y1="9" x2="6" y2="21" />
-              </svg>
+              <Ico name="merge" width={11} height={11} />
               {t('lib.merge.title')}
             </div>
             <input
@@ -187,9 +195,7 @@ export const MergeModal = () => {
               <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{t('lib.addModal.selected', { n: sel.size })}</span>
             </div>
             <div className="mpl-search">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <Ico name="search" width={13} height={13} />
               <input type="text" placeholder={t('lib.merge.searchPlaylists')} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <div className="mpl-list">
@@ -207,9 +213,7 @@ export const MergeModal = () => {
                       </div>
                       <div className="mpl-item-check">
                         {isSel && (
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <Ico name="check" variant="bold" width={11} height={11} />
                         )}
                       </div>
                     </div>

@@ -6,6 +6,7 @@ import {
   type RefObject,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { Ico } from '@shared/ui/icons/solar'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { SPEEDS, useSpeedStore } from '../model/speedStore'
 
@@ -106,9 +107,7 @@ export const SpeedPicker = ({
           >
             <span className="sp-circle">
               {isPlay ? (
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 4.5C7 3.4 8.2 2.7 9.1 3.3l12 7.5c.9.5.9 1.9 0 2.4l-12 7.5C8.2 21.3 7 20.6 7 19.5V4.5z" />
-                </svg>
+                <Ico name="play" width={14} height={14} />
               ) : (
                 <span className="sp-num">{label(s)}</span>
               )}

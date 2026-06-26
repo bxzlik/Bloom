@@ -19,6 +19,7 @@ import waveApi from '@/wave'
 import { useShareStore, VinylCover } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { useFavStore, useLibStore, usePlaylistStore, useTrackInfoStore } from '../model'
+import { Ico } from '@shared/ui/icons/solar'
 import { deleteUploadedTrack, saveTrackToLibrary } from '../lib'
 
 export interface TrackCtxMenuProps {
@@ -212,19 +213,7 @@ export const TrackCtxMenu = ({
             {track.cover ? (
               <img src={track.cover} alt="" />
             ) : (
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-              >
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
+              <Ico name="note" width={14} height={14} />
             )}
           </div>
           <div style={{ minWidth: 0 }}>
@@ -243,10 +232,7 @@ export const TrackCtxMenu = ({
           }}
         >
           <span className="ci-icon">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <Ico name="add" width={11} height={11} />
           </span>{' '}
           {t('lib.ctx.toQueue')}
         </div>
@@ -260,10 +246,7 @@ export const TrackCtxMenu = ({
           }}
         >
           <span className="ci-icon">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="13 17 18 12 13 7" />
-              <polyline points="6 17 11 12 6 7" />
-            </svg>
+            <Ico name="playNext" width={11} height={11} />
           </span>{' '}
           {t('lib.ctx.playNext')}
         </div>
@@ -281,16 +264,7 @@ export const TrackCtxMenu = ({
           }}
         >
           <span className="ci-icon">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill={isFav ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-            </svg>
+            <Ico name="heart" variant={isFav ? 'bold' : 'linear'} width={13} height={13} />
           </span>{' '}
           {isFav ? t('lib.ctx.favRemove') : t('lib.ctx.favAdd')}
         </div>
@@ -307,34 +281,10 @@ export const TrackCtxMenu = ({
           }}
         >
           <span className="ci-icon">
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              strokeLinecap="round"
-            >
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
+            <Ico name="note" width={11} height={11} />
           </span>{' '}
           {t('lib.ctx.toPlaylist')}
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }}
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
         </div>
 
         {/* ── Действия площадок: поделиться / волна / скачать ── */}
@@ -358,10 +308,7 @@ export const TrackCtxMenu = ({
             }}
           >
             <span className="ci-icon">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
+              <Ico name="share" width={11} height={11} />
             </span>{' '}
             {t('lib.ctx.share')}
           </div>
@@ -378,13 +325,7 @@ export const TrackCtxMenu = ({
             }}
           >
             <span className="ci-icon" style={{ color: 'var(--accent)' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="2" y="9" width="2.6" height="6" rx="1.3" />
-                <rect x="6.4" y="6" width="2.6" height="12" rx="1.3" />
-                <rect x="10.8" y="3" width="2.6" height="18" rx="1.3" />
-                <rect x="15.2" y="7" width="2.6" height="10" rx="1.3" />
-                <rect x="19.6" y="10" width="2.6" height="4" rx="1.3" />
-              </svg>
+              <Ico name="wave" variant="bold" width={13} height={13} />
             </span>{' '}
             {t('lib.ctx.waveByTrack')}
           </div>
@@ -401,11 +342,7 @@ export const TrackCtxMenu = ({
             }}
           >
             <span className="ci-icon">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <Ico name="download" width={12} height={12} />
             </span>{' '}
             {t('lib.ctx.download')}
           </div>
@@ -424,10 +361,7 @@ export const TrackCtxMenu = ({
           }}
         >
           <span className="ci-icon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
+            <Ico name="edit" width={13} height={13} />
           </span>{' '}
           {t('lib.ctx.editTags')}
         </div>
@@ -442,11 +376,7 @@ export const TrackCtxMenu = ({
           }}
         >
           <span className="ci-icon">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <Ico name="info" width={11} height={11} />
           </span>{' '}
           {t('lib.ctx.trackInfo')}
         </div>
@@ -463,18 +393,7 @@ export const TrackCtxMenu = ({
             }}
           >
             <span className="ci-icon">
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <Ico name="close" width={11} height={11} />
             </span>{' '}
             {t('lib.ctx.removeFromPl')}
           </div>
@@ -490,10 +409,7 @@ export const TrackCtxMenu = ({
             }}
           >
             <span className="ci-icon">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <Ico name="close" width={11} height={11} />
             </span>{' '}
             {t('player.aria.removeFromQueue')}
           </div>
@@ -510,20 +426,7 @@ export const TrackCtxMenu = ({
             }}
           >
             <span className="ci-icon">
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                <path d="M10 11v6M14 11v6" />
-                <path d="M9 6V4h6v2" />
-              </svg>
+              <Ico name="trash" width={11} height={11} />
             </span>{' '}
             {t('lib.ctx.deleteTrack')}
           </div>
@@ -557,11 +460,7 @@ export const TrackCtxMenu = ({
                 }}
               >
                 <span className="ci-icon">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
+                  <Ico name="download" width={12} height={12} />
                 </span>{' '}
                 {t('lib.ctx.toLibrary')}
               </div>
@@ -577,18 +476,7 @@ export const TrackCtxMenu = ({
               }}
             >
               <span className="ci-icon">
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
+                <Ico name="add" width={11} height={11} />
               </span>{' '}
               {t('lib.ctx.createPlaylist')}
             </div>
@@ -627,18 +515,7 @@ export const TrackCtxMenu = ({
                 }}
               >
                 <span className="ci-icon">
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                    strokeLinecap="round"
-                  >
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
+                  <Ico name="add" width={11} height={11} />
                 </span>{' '}
                 {t('player.add.newPlaylist')}
               </div>

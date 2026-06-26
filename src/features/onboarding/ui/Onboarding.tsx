@@ -6,6 +6,7 @@ import { makeDiscSvg } from '@features/profile'
 import { compressCover } from '@features/library'
 import { useOnboardingStore } from '../model/onboardingStore'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Онбординг первого запуска `#onboarding`. Шаг 1 — карточка профиля (обложка-баннер + аватар +
@@ -167,11 +168,7 @@ export const Onboarding = () => {
                   cursor: 'pointer',
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <rect x="3" y="3" width="18" height="18" rx="3" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
+                <Ico name="gallery" width={20} height={20} />
                 <span style={{ fontSize: 11, fontWeight: 600 }}>{t('onb.addCover')}</span>
               </div>
               <div
@@ -196,10 +193,7 @@ export const Onboarding = () => {
                   }}
                   style={obCoverBtnStyle}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
+                  <Ico name="camera" width={11} height={11} />
                   {t('common.change')}
                 </button>
                 <button
@@ -210,10 +204,7 @@ export const Onboarding = () => {
                   }}
                   style={{ ...obCoverBtnStyle, background: 'rgba(224,48,48,.25)', border: '1px solid rgba(224,48,48,.5)', color: '#ff7070' }}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <Ico name="close" width={11} height={11} />
                   {t('common.remove')}
                 </button>
               </div>
@@ -249,10 +240,7 @@ export const Onboarding = () => {
                     {avatar ? (
                       <img src={avatar} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted,#555)" strokeWidth="1.6" strokeLinecap="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
+                      <Ico name="user" width={22} height={22} style={{ color: 'var(--muted,#555)' }} />
                     )}
                     <div
                       id="obAvaOverlay"
@@ -267,10 +255,7 @@ export const Onboarding = () => {
                         transition: '.2s',
                       }}
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                        <circle cx="12" cy="13" r="4" />
-                      </svg>
+                      <Ico name="camera" width={12} height={12} />
                     </div>
                   </div>
                   {!avatar && (
@@ -292,10 +277,7 @@ export const Onboarding = () => {
                         zIndex: 3,
                       }}
                     >
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="var(--accent,#888)" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                        <circle cx="12" cy="13" r="4" />
-                      </svg>
+                      <Ico name="camera" width={8} height={8} style={{ color: 'var(--accent,#888)' }} />
                     </div>
                   )}
                   <input
@@ -331,10 +313,7 @@ export const Onboarding = () => {
                       padding: 0,
                     }}
                   >
-                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <Ico name="close" width={7} height={7} />
                   </button>
                 )}
               </div>
@@ -380,10 +359,7 @@ export const Onboarding = () => {
                   gap: 6,
                 }}
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41" />
-                </svg>
+                <Ico name="palette" width={10} height={10} />
                 {t('onb.theme')}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 7 }}>
@@ -432,10 +408,7 @@ export const Onboarding = () => {
             }}
           >
             {t('onb.start')}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
+            <Ico name="arrowRight" width={13} height={13} />
           </button>
         </div>
       ) : (
@@ -456,11 +429,7 @@ export const Onboarding = () => {
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text, #fff)' }}>{t('onb.welcome', { name: welcomeName })}</div>
           <div style={{ fontSize: 13, color: 'var(--text2, #999)', display: 'flex', alignItems: 'center', gap: 5 }}>
             {t('onb.welcomeSub')}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
+            <Ico name="note" width={13} height={13} />
           </div>
         </div>
       )}

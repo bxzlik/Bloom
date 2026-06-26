@@ -1,5 +1,6 @@
 import { LyricsView, useLyricsStore } from '@features/lyrics'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 import { usePlayerViewStore } from '@features/settings'
 
 /**
@@ -50,9 +51,7 @@ export const LyricsQueueBlock = ({ active }: { active: boolean }) => {
               border: '1px solid rgba(255,255,255,var(--wb2))',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
-              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="11" y2="18" />
-            </svg>
+            <Ico name="lyrics" width={14} height={14} style={{ flexShrink: 0, opacity: 0.7 }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{t('player.lyrics')}</span>
             <span id="lqSourceBadge" style={{ fontSize: 10, color: 'var(--text2)' }}>
               {source}

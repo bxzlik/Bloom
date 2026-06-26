@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useLibStore } from '@features/library/model/store'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 import waveApi from '@/wave'
 import { useDislikesStore } from '../model/dislikesStore'
 
@@ -78,16 +79,11 @@ export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () =>
       <div className="stats-modal">
         <div className="stats-modal-head">
           <div className="stats-modal-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
-              <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z" />
-              <path d="M22 2h-4v13" />
-            </svg>
+            <Ico name="dislike" width={14} height={14} style={{ opacity: 0.7 }} />
             {t('wave.dislikesTitle')}
           </div>
           <button className="stats-modal-close" onClick={onClose} aria-label={t('common.close')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <Ico name="close" width={13} height={13} />
           </button>
         </div>
         <div className="stats-modal-body" id="dislikesModalBody">
@@ -102,9 +98,7 @@ export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () =>
                   {t.cover ? (
                     <img src={t.cover} alt="" />
                   ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ opacity: 0.35 }}>
-                      <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-                    </svg>
+                    <Ico name="note" width={15} height={15} style={{ opacity: 0.35 }} />
                   )}
                 </div>
                 <div className="dlk-body">
@@ -112,9 +106,7 @@ export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () =>
                   <div className="dlk-artist">{t.artist}</div>
                 </div>
                 <button className="dlk-rm" onClick={() => undislike(t.id)}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <Ico name="close" width={12} height={12} />
                 </button>
               </div>
             ))

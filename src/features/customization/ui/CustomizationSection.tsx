@@ -5,6 +5,7 @@ import { useMediaLibStore } from '../model/mediaLibStore'
 import { useCustomizationStore } from '../model/customizationStore'
 import { usePresetsStore } from '../model/presetsStore'
 import type { MediaItem } from '../lib/mediaIdb'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Раздел «Кастомизация» (`ssec-medialib`) — медиа-библиотека картинок
@@ -92,7 +93,7 @@ export const CustomizationSection = () => {
     <div className="s-section active" id="ssec-medialib">
       <div className="s-section-head">
         <div className="s-section-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".75" fill="currentColor" stroke="none" /><circle cx="17.5" cy="10.5" r=".75" fill="currentColor" stroke="none" /><circle cx="6.5" cy="12.5" r=".75" fill="currentColor" stroke="none" /><circle cx="8.5" cy="7.5" r=".75" fill="currentColor" stroke="none" /></svg>{' '}
+          <Ico name="album" width={15} height={15} />{' '}
           {t('settings.nav.customization')}
         </div>
       </div>
@@ -124,11 +125,11 @@ export const CustomizationSection = () => {
           />
           {urlVal.trim() ? (
             <button className="mlm-icon-btn" onClick={addUrlAndClear}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              <Ico name="check" width={15} height={15} />
             </button>
           ) : (
             <label className="mlm-icon-btn" style={{ cursor: 'pointer' }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><circle cx="8.5" cy="9.5" r="1.5" /><polyline points="3 17 9 11 13 15" /><line x1="18" y1="3" x2="18" y2="9" /><line x1="15" y1="6" x2="21" y2="6" /></svg>
+              <Ico name="gallery" width={15} height={15} />
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
@@ -155,7 +156,7 @@ export const CustomizationSection = () => {
                   className="mlm-card-del"
                   onClick={(e) => { e.stopPropagation(); removeItem(it.id) }}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <Ico name="close" width={11} height={11} />
                 </button>
                 <div className="mlm-card-info">{it.name}</div>
               </div>
@@ -200,11 +201,11 @@ const PresetsCard = () => {
         </span>
         {adding ? (
           <button className="mlm-icon-btn" onClick={cancelAdd}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            <Ico name="close" width={14} height={14} />
           </button>
         ) : (
           <button className="mlm-icon-btn" onClick={() => setAdding(true)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            <Ico name="add" width={14} height={14} />
           </button>
         )}
       </div>
@@ -223,7 +224,7 @@ const PresetsCard = () => {
             style={{ maxWidth: 360 }}
           />
           <button className="mlm-icon-btn" onClick={onSave}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            <Ico name="check" width={15} height={15} />
           </button>
         </div>
       ) : presets.length === 0 ? (
@@ -240,7 +241,7 @@ const PresetsCard = () => {
                     <img src={thumb} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />
                   ) : (
                     <div className="preset-thumb-empty">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" style={{ opacity: 0.3 }}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                      <Ico name="gallery" width={18} height={18} style={{ opacity: 0.3 }} />
                     </div>
                   )}
                 </div>
@@ -249,7 +250,7 @@ const PresetsCard = () => {
                 </div>
                 <div className="preset-name">{p.name || t('settings.custom.presets.untitled')}</div>
                 <button className="preset-del-btn" onClick={(e) => { e.stopPropagation(); deletePreset(p.id) }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <Ico name="close" width={9} height={9} />
                 </button>
               </div>
             )
@@ -297,25 +298,15 @@ const CtxCard = ({
     </div>
     {current && !disabled && (
       <button className="mls-del-btn" style={{ opacity: 1 }} onClick={(e) => { e.stopPropagation(); onClear?.() }}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        <Ico name="close" width={10} height={10} />
       </button>
     )}
   </div>
   )
 }
 
-const BgIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-)
-const CoverIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" /><line x1="12" y1="9" x2="12" y2="3" /></svg>
-)
-const VizIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><polyline points="22 8 22 16" /><polyline points="18 10 18 14" /><polyline points="14 4 14 20" /><polyline points="10 8 10 16" /><polyline points="6 11 6 13" /><polyline points="2 10 2 14" /></svg>
-)
-const CursorIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round"><path d="M4 3l6.5 16 2-7 7-2L4 3z" /></svg>
-)
-const SliderIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12" /><circle cx="9" cy="12" r="3.2" fill="currentColor" stroke="none" /></svg>
-)
+const BgIcon = () => <Ico name="galleryWide" width={24} height={24} />
+const CoverIcon = () => <Ico name="gallery" width={24} height={24} />
+const VizIcon = () => <Ico name="wave" width={24} height={24} />
+const CursorIcon = () => <Ico name="cursor" width={24} height={24} />
+const SliderIcon = () => <Ico name="slider" width={24} height={24} />

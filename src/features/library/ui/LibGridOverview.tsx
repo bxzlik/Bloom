@@ -26,6 +26,7 @@ import { LibSortMenu } from './LibSortMenu'
 import { PlMenu } from './PlMenu'
 import { AddFromLibModal } from './AddFromLibModal'
 import { ArtistCtxMenu } from './LibSidebar'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Grid-обзор библиотеки.
@@ -46,9 +47,7 @@ const cardSub = (count: number, sec: number): string =>
 const PlayOverlay = () => (
   <div className="hpc-play-overlay">
     <div className="hpc-play-btn">
-      <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1" strokeLinejoin="round" style={{ marginLeft: 2 }}>
-        <path d="M7.5 4.5C7.5 3.4 8.7 2.7 9.6 3.3l11 7.5c.9.5.9 1.9 0 2.4l-11 7.5C8.7 21.3 7.5 20.6 7.5 19.5V4.5z" />
-      </svg>
+      <Ico name="play" width="100%" height="100%" style={{ marginLeft: 2, color: '#fff' }} />
     </div>
   </div>
 )
@@ -184,7 +183,7 @@ export const LibGridOverview = () => {
       <div className="lib-grid-sys-row">
         <div className="lib-grid-sys-card lib-grid-sys-card-all" onClick={() => selectBuiltin('all')}>
           <div className="lib-grid-sys-card-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5} strokeLinecap="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+            <Ico name="note" width={20} height={20} style={{ color: 'rgba(255,255,255,0.9)' }} />
           </div>
           <div className="lib-grid-sys-card-info">
             <div className="lib-grid-sys-card-name">{t('lib.allTracks')}</div>
@@ -193,7 +192,7 @@ export const LibGridOverview = () => {
         </div>
         <div className="lib-grid-sys-card lib-grid-sys-card-fav" onClick={() => selectBuiltin('fav')}>
           <div className="lib-grid-sys-card-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+            <Ico name="heart" variant="bold" width={20} height={20} style={{ color: 'rgba(255,255,255,0.9)' }} />
           </div>
           <div className="lib-grid-sys-card-info">
             <div className="lib-grid-sys-card-name">{t('lib.liked')}</div>
@@ -202,7 +201,7 @@ export const LibGridOverview = () => {
         </div>
         <div className="lib-grid-sys-card lib-grid-sys-card-hist" onClick={() => selectBuiltin('history')}>
           <div className="lib-grid-sys-card-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            <Ico name="clock" width={20} height={20} style={{ color: 'rgba(255,255,255,0.9)' }} />
           </div>
           <div className="lib-grid-sys-card-info">
             <div className="lib-grid-sys-card-name">{t('lib.history')}</div>
@@ -217,10 +216,10 @@ export const LibGridOverview = () => {
           {t('lib.myLibrary')}
           <div style={{ display: 'flex', gap: 2 }}>
             <button ref={sortBtnRef} className="ib" onClick={(e) => { e.stopPropagation(); setSortMenuOpen((v) => !v) }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="15" y2="12" /><line x1="3" y1="18" x2="9" y2="18" /></svg>
+              <Ico name="sort" width={13} height={13} />
             </button>
             <button ref={addBtnRef} className="ib" onClick={(e) => { e.stopPropagation(); setAddMenuOpen((v) => !v) }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              <Ico name="add" width={14} height={14} />
             </button>
           </div>
         </div>
@@ -281,7 +280,7 @@ export const LibGridOverview = () => {
               <div key={`f_${path}`} className="home-pl-card" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
                 <div style={{ position: 'relative' }}>
                   <div className="hpc-cover" style={{ background: 'rgba(var(--accent-rgb),.1)' }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeLinecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
+                    <Ico name="folder" width={32} height={32} style={{ color: 'var(--accent)' }} />
                     <PlayOverlay />
                   </div>
                   {pinned && <span className="lib-pin-dot" />}
