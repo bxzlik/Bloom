@@ -36,6 +36,8 @@ export interface Track {
   scTrackId?: string | number
   scPermalink?: string | null
   scMedia?: unknown
+  /** Глобальное число прослушиваний на SoundCloud (для UI; только SC). */
+  scPlaybackCount?: number | null
   artistAvatar?: string | null
   artistPermalink?: string | null
   /** SC user id артиста (для клика по имени артиста → страница артиста). */

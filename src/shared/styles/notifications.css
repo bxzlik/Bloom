@@ -235,10 +235,21 @@
   font-weight: 800;
   color: var(--text);
 }
+.tbu-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex-shrink: 0;
+}
 .tbu-ver {
   font-size: 11px;
   color: var(--text2);
   flex-shrink: 0;
+}
+.tbu-date {
+  font-size: 10px;
+  color: var(--muted);
 }
 .tbu-preview {
   margin-bottom: 10px;

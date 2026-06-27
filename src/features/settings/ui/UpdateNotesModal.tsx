@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom'
 import ReactMarkdown from 'react-markdown'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
-import { useT } from '@shared/i18n'
+import { useT, useI18nStore } from '@shared/i18n'
 import { ScBadge, YmBadge, YtmBadge, SpBadge } from '@entities/track'
-import { useUpdateStore } from '../model/updateStore'
+import { useUpdateStore, formatNoteDate } from '../model/updateStore'
 import { Ico } from '@shared/ui/icons/solar'
 
 /** Бренд-бейдж площадки по строковому id (для строки иконок на странице). */
@@ -33,6 +33,7 @@ const BRAND_BADGE: Record<string, (p: { size: number }) => React.ReactNode> = {
  */
 export const UpdateNotesModal = () => {
   const t = useT()
+  const locale = useI18nStore((s) => s.locale)
   const open = useUpdateStore((s) => s.notesOpen)
   const loading = useUpdateStore((s) => s.notesLoading)
   const mode = useUpdateStore((s) => s.notesMode)
@@ -112,6 +113,9 @@ export const UpdateNotesModal = () => {
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {title}
             </div>
+            {!historyList && note?.date && (
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{formatNoteDate(note.date, locale)}</div>
+            )}
           </div>
           <button className="unm-close" aria-label={t('common.close')} onClick={close}>
             <Ico name="close" width={16} height={16} />
@@ -146,6 +150,7 @@ export const UpdateNotesModal = () => {
                   >
                     <span className="unm-history-ver">v{h.version}</span>
                     {h.title && <span className="unm-history-title">{h.title}</span>}
+                    {h.date && <span className="unm-history-date">{h.date}</span>}
                     <Ico name="arrowRight" width={16} height={16} className="unm-history-chev" />
                   </button>
                 ))}

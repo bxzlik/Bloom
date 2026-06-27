@@ -171,21 +171,6 @@ export const InterfaceSection = () => {
         </div>
       </div>
 
-      <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.interface.libSys.title')}</div>
-        <div className="sc-desc">{t('settings.interface.libSys.desc')}</div>
-        <div className="s-opt-row">
-          <OptBtn active={p.libSysStyle === 'accent'} onClick={() => p.set('libSysStyle', 'accent')}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8" cy="10" r="1.5" fill="currentColor" stroke="none" /><path d="M3 17l5-5 4 4 3-3 6 4" /></svg>
-            {t('settings.interface.libSys.accent')}
-          </OptBtn>
-          <OptBtn active={p.libSysStyle === 'classic'} onClick={() => p.set('libSysStyle', 'classic')}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3" /><line x1="8" y1="9" x2="16" y2="9" /><line x1="8" y1="13" x2="14" y2="13" /></svg>
-            {t('settings.interface.libSys.classic')}
-          </OptBtn>
-        </div>
-      </div>
-
       <div className="s-cat-label">{t('settings.interface.cat.scaling')}</div>
       <ZoomCard title={t('settings.interface.zoom.fullscreen')} value={p.fullZoom} onChange={(v) => p.set('fullZoom', v)} />
       <ZoomCard title={t('settings.interface.zoom.windowed')} value={p.winZoom} onChange={(v) => p.set('winZoom', v)} />

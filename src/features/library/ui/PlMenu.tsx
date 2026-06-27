@@ -40,6 +40,9 @@ export interface PlMenuProps {
    *  бесконечный re-render у родителя через useLayoutEffect deps). */
   cursorX?: number | null
   cursorY?: number | null
+  /** ПКМ по шапке плейлиста: позиционируем у курсора, но показываем ПОЛНЫЙ
+   *  набор пунктов (как у кнопки «…»), а не урезанный sidebar-вариант. */
+  forceFullMenu?: boolean
   mode: LibMode
   heroName: string
   heroSub: string
@@ -66,6 +69,7 @@ export const PlMenu = ({
   anchorRef,
   cursorX,
   cursorY,
+  forceFullMenu,
   mode,
   heroName,
   heroSub,
@@ -331,19 +335,22 @@ export const PlMenu = ({
   })()
 
   // ── Опции по режиму ─────────────────────────────────────────────
-  // Cursor-mode = ПКМ из sidebar (по плейлисту/папке).
+  // Cursor-mode = меню позиционируется у курсора (ПКМ из sidebar или по шапке).
   const isCursorMode = cursorX != null && cursorY != null
+  // Compact = урезанный sidebar-вариант пунктов. ПКМ по шапке (forceFullMenu)
+  // позиционируется у курсора, но показывает полный набор как у кнопки «…».
+  const compact = isCursorMode && !forceFullMenu
   // Логические группы пунктов: пустые отбрасываются, между непустыми
   // автоматически вставляется разделитель (см. склейку в `items` ниже).
   const groups: ReactNode[][] = []
 
   // 1. Воспроизведение: ПКМ из sidebar — «Воспроизвести», иначе —
   //    «Перемешать и запустить» (для всех режимов с треками, кроме history).
-  if (isCursorMode && (mode === 'pl' || mode === 'folder')) {
+  if (compact && (mode === 'pl' || mode === 'folder')) {
     groups.push([
       <Item key="play" icon={<PlayIcon />} label={t('player.aria.play')} onClick={playCtx} />,
     ])
-  } else if (!isCursorMode && mode !== 'history') {
+  } else if (!compact && mode !== 'history') {
     groups.push([
       <Item
         key="shuffle-play"
@@ -379,7 +386,7 @@ export const PlMenu = ({
 
     // 3. Сортировка — отдельной секцией. Относится к открытому tracklist'у,
     //    поэтому скрыта для ПКМ из sidebar.
-    if (!isCursorMode) {
+    if (!compact) {
       groups.push([
         <Item
           key="sort"
@@ -453,7 +460,7 @@ export const PlMenu = ({
     const content: ReactNode[] = [
       <Item key="rescan" icon={<RefreshIcon />} label={t('lib.plmenu.rescan')} onClick={rescanFolder} />,
     ]
-    if (!isCursorMode) {
+    if (!compact) {
       content.push(
         <Item
           key="sort"
@@ -469,7 +476,7 @@ export const PlMenu = ({
     groups.push([
       <Item key="clear" danger icon={<TrashIcon />} label={t('lib.plmenu.clearHistory')} onClick={clearHistory} />,
     ])
-  } else if (!isCursorMode) {
+  } else if (!compact) {
     // Системные виды (all/fav) — только сортировка.
     groups.push([
       <Item
@@ -483,7 +490,7 @@ export const PlMenu = ({
   }
 
   // 6. Закрепление (только ПКМ из sidebar по плейлисту/папке).
-  if (isCursorMode && (mode === 'pl' || mode === 'folder')) {
+  if (compact && (mode === 'pl' || mode === 'folder')) {
     const pinType = mode === 'folder' ? 'folder' : 'playlist'
     const pinId = mode === 'folder' ? folderPath : playlist?.id
     const pinned = !!pinOrder.find((o) => o.type === pinType && o.id === pinId)?.pinned

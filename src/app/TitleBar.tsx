@@ -167,11 +167,11 @@ const pageIcon = (key: LabelKey) => {
 }
 
 // Иконки метки тайтлбара (Solar) — наследуют размер/цвет через класс wtc-icon.
-const HomeIcon = () => <Ico name="home" className="wtc-icon" />
-const PlayerIcon = () => <Ico name="play" className="wtc-icon" />
-const LibIcon = () => <Ico name="library" className="wtc-icon" />
-const SearchIcon = () => <Ico name="search" className="wtc-icon" />
-const AccountIcon = () => <Ico name="user" className="wtc-icon" />
-const ArtistIcon = () => <Ico name="user" className="wtc-icon" />
-const AlbumIcon = () => <Ico name="vinyl" className="wtc-icon" />
-const PlaylistIcon = () => <Ico name="list" className="wtc-icon" />
+const HomeIcon = () => <Ico name="home" variant="bold" className="wtc-icon" />
+const PlayerIcon = () => <Ico name="play" variant="bold" className="wtc-icon" />
+const LibIcon = () => <Ico name="library" variant="bold" className="wtc-icon" />
+const SearchIcon = () => <Ico name="search" variant="bold" className="wtc-icon" />
+const AccountIcon = () => <Ico name="user" variant="bold" className="wtc-icon" />
+const ArtistIcon = () => <Ico name="user" variant="bold" className="wtc-icon" />
+const AlbumIcon = () => <Ico name="vinyl" variant="bold" className="wtc-icon" />
+const PlaylistIcon = () => <Ico name="list" variant="bold" className="wtc-icon" />

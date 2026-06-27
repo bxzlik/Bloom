@@ -7,8 +7,6 @@ import type { ComponentType, SVGProps } from 'react'
 // Импорты `~icons/solar/*` резолвит unplugin-icons на этапе сборки из
 // `@iconify-json/solar`, поэтому в бандл попадают ТОЛЬКО используемые иконки
 // (без рантайма и без обращений к сети — важно для офлайн-десктопа Tauri).
-//
-// Чтобы заменить начертание иконки — поменяй имя в одном месте здесь.
 
 import HomeLinear from '~icons/solar/home-angle-2-linear'
 import HomeBold from '~icons/solar/home-angle-2-bold'
@@ -58,8 +56,6 @@ import UserBold from '~icons/solar/user-bold'
 import GalleryLinear from '~icons/solar/gallery-linear'
 import PaletteLinear from '~icons/solar/palette-linear'
 import RefreshLinear from '~icons/solar/refresh-linear'
-import CheckLinear from '~icons/solar/check-circle-linear'
-import CheckBold from '~icons/solar/check-circle-bold'
 import ArrowLeftLinear from '~icons/solar/alt-arrow-left-linear'
 import ArrowRightLinear from '~icons/solar/alt-arrow-right-linear'
 import ArrowDownLinear from '~icons/solar/alt-arrow-down-linear'
@@ -108,11 +104,13 @@ import ImportLinear from '~icons/solar/import-linear'
 import DangerLinear from '~icons/solar/danger-triangle-linear'
 import InboxLinear from '~icons/solar/inbox-linear'
 import VinylLinear from '~icons/solar/vinyl-linear'
+import VinylBold from '~icons/solar/vinyl-bold'
 import VideoLinear from '~icons/solar/videocamera-linear'
 import BlurLinear from '~icons/solar/radial-blur-linear'
 import GalleryWideLinear from '~icons/solar/gallery-wide-linear'
 import GridLinear from '~icons/solar/widget-2-linear'
 import ListLinear from '~icons/solar/list-linear'
+import ListBold from '~icons/solar/list-bold'
 import DangerCircleLinear from '~icons/solar/danger-circle-linear'
 import DislikeLinear from '~icons/solar/dislike-linear'
 import TuningLinear from '~icons/solar/tuning-linear'
@@ -136,11 +134,17 @@ const MinusBare: SvgComp = (p) => (
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 )
-// Голый «×» — у Solar только обведённый `close-circle`, его пользователь не хочет.
+// Голый «×» — у Solar только обведённый `close-circle`.
 const CloseBare: SvgComp = (p) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" {...p}>
     <line x1="6" y1="6" x2="18" y2="18" />
     <line x1="18" y1="6" x2="6" y2="18" />
+  </svg>
+)
+// Голая галочка — у Solar только `check-circle` (в кружке).
+const CheckBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M5 13l4 4L19 7" />
   </svg>
 )
 
@@ -185,7 +189,7 @@ const ICONS = {
   gallery: { linear: GalleryLinear },
   palette: { linear: PaletteLinear },
   refresh: { linear: RefreshLinear },
-  check: { linear: CheckLinear, bold: CheckBold },
+  check: { linear: CheckBare },
   arrowLeft: { linear: ArrowLeftLinear },
   arrowRight: { linear: ArrowRightLinear },
   arrowDown: { linear: ArrowDownLinear },
@@ -231,12 +235,12 @@ const ICONS = {
   import: { linear: ImportLinear },
   danger: { linear: DangerLinear },
   inbox: { linear: InboxLinear },
-  vinyl: { linear: VinylLinear },
+  vinyl: { linear: VinylLinear, bold: VinylBold },
   video: { linear: VideoLinear },
   blur: { linear: BlurLinear },
   galleryWide: { linear: GalleryWideLinear },
   grid: { linear: GridLinear },
-  list: { linear: ListLinear },
+  list: { linear: ListLinear, bold: ListBold },
   dangerCircle: { linear: DangerCircleLinear },
   dislike: { linear: DislikeLinear },
   tuning: { linear: TuningLinear },

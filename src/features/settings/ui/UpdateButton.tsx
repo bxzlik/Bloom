@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useT, useLocale } from '@shared/i18n'
-import { useUpdateStore } from '../model/updateStore'
+import { useT, useLocale, useI18nStore } from '@shared/i18n'
+import { useUpdateStore, formatNoteDate } from '../model/updateStore'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -20,6 +20,7 @@ const AUTO_MS = 3600
 export const UpdateButton = () => {
   const t = useT()
   useLocale()
+  const locale = useI18nStore((s) => s.locale)
   const phase = useUpdateStore((s) => s.phase)
   const info = useUpdateStore((s) => s.info)
   const percent = useUpdateStore((s) => s.percent)
@@ -100,7 +101,10 @@ export const UpdateButton = () => {
         >
           <div className="tbu-head">
             <span className="tbu-title">{t('update.available')}</span>
-            <span className="tbu-ver">Bloom v{info?.latest}</span>
+            <span className="tbu-meta">
+              <span className="tbu-ver">Bloom v{info?.latest}</span>
+              {note?.date && <span className="tbu-date">{formatNoteDate(note.date, locale)}</span>}
+            </span>
           </div>
 
           {/* Превью текущей страницы — только если есть картинка */}

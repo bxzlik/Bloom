@@ -693,6 +693,9 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const reorderPlTracks = usePlaylistStore((s) => s.reorderPlTracks)
   const profile = useSearchStore((s) => s.profile)
   const openDetail = useDetailStore((s) => s.open)
+  // Открыт ли оверлей детального вида — пока он есть, история под строкой поиска
+  // не должна всплывать поверх него (см. blurInput при переходе из истории).
+  const detailOpen = useDetailStore((s) => s.stack.length > 0)
 
   // Открытие детального вида + запись в «недавно открытые» (author — в подзаголовок).
   const openTarget = (t: DetailTarget, author?: string) => {
@@ -778,6 +781,15 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
   // Фокус инпута — управляет показом выпадающей истории.
   const [focused, setFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Снять фокус с инпута при переходе из истории. `.sp-hist` гасит mousedown
+  // (чтобы клик по строке не закрывал список через onBlur), поэтому инпут
+  // сохраняет реальный DOM-фокус — без явного blur стрелочное событие фокуса
+  // позже вернуло бы `focused=true`, и список всплыл бы поверх DetailView.
+  const blurInput = () => {
+    setFocused(false)
+    inputRef.current?.blur()
+  }
 
   // Контекстное меню трека + создание плейлиста под трек.
   const [ctx, setCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(null)
@@ -924,7 +936,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   ]
     .sort((a, b) => b.ts - a.ts)
     .slice(0, 12)
-  const showHistory = focused && !hasQuery && mergedRecents.length > 0
+  const showHistory = focused && !hasQuery && !detailOpen && mergedRecents.length > 0
   // Фильтрация секций по активному табу.
   const showTracks = (tab === 'all' || tab === 'tracks') && filteredTracks.length > 0
   const showArtists = (tab === 'all' || tab === 'artists') && artists.length > 0
@@ -945,6 +957,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
           <div className="sp-inp-wrap">
             <IconSearch />
             <input
+              ref={inputRef}
               id="spInput"
               value={query}
               onChange={(e) => onChange(e.target.value)}
@@ -965,11 +978,11 @@ export const SearchPage = ({ active }: SearchPageProps) => {
               <SearchHistoryDropdown
                 rows={mergedRecents}
                 onOpenItem={(it) => {
-                  setFocused(false)
+                  blurInput()
                   onRecentItem(it)
                 }}
                 onApplySearch={(q) => {
-                  setFocused(false)
+                  blurInput()
                   setQuery(q)
                   void runSearch(q)
                 }}

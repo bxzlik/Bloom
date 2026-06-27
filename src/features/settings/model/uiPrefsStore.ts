@@ -8,8 +8,8 @@ import { invoke } from '@shared/tauri'
  * применяются классами на `.app` и CSS-переменными. Persist в
  * `localStorage['bloom_ui_prefs']`.
  *
- * Методы: setSidebarPos/setSidebarCompact/toggleSbSep/setLibSysStyle
- * (`.app.sidebar-top|sidebar-right|sidebar-compact|no-sb-sep|lib-sys-classic`),
+ * Методы: setSidebarPos/setSidebarCompact/toggleSbSep
+ * (`.app.sidebar-top|sidebar-right|sidebar-compact|no-sb-sep`),
  * toggleNavIndicator (`.app.no-nav-indicator`), setBorderAlpha
  * (`--wb`/`--wb2`), toggleTitlebarLabel (`#winTitleCenter`), toggleNavBtn
  * (видимость кнопок мини-плеера/хоткеев в сайдбаре).
@@ -22,7 +22,6 @@ import { invoke } from '@shared/tauri'
  */
 
 export type SidebarPos = 'left' | 'top' | 'right'
-export type LibSysStyle = 'accent' | 'classic'
 export type LibView = 'list' | 'grid'
 
 export interface UiPrefs {
@@ -35,7 +34,6 @@ export interface UiPrefs {
   /** Авто-скрытие тайтлбара — спрятан за верхним краем, выезжает при наведении. */
   titlebarAutohide: boolean
   sbSep: boolean
-  libSysStyle: LibSysStyle
   /** Вид библиотеки: список (сайдбар) или сетка карточек. */
   libView: LibView
   navIndicator: boolean
@@ -74,7 +72,6 @@ const DEFAULTS: UiPrefs = {
   sidebarAutohide: false,
   titlebarAutohide: false,
   sbSep: true,
-  libSysStyle: 'accent',
   libView: 'list',
   navIndicator: true,
   titlebarLabel: true,
@@ -105,7 +102,6 @@ const load = (): UiPrefs => {
       sidebarAutohide: !!p.sidebarAutohide,
       titlebarAutohide: !!p.titlebarAutohide,
       sbSep: p.sbSep !== false,
-      libSysStyle: p.libSysStyle === 'classic' ? 'classic' : 'accent',
       libView: p.libView === 'grid' ? 'grid' : 'list',
       navIndicator: p.navIndicator !== false,
       titlebarLabel: p.titlebarLabel !== false,
@@ -162,7 +158,6 @@ const persist = (s: UiPrefs): void => {
         sidebarAutohide: s.sidebarAutohide,
         titlebarAutohide: s.titlebarAutohide,
         sbSep: s.sbSep,
-        libSysStyle: s.libSysStyle,
         libView: s.libView,
         navIndicator: s.navIndicator,
         titlebarLabel: s.titlebarLabel,
@@ -219,7 +214,6 @@ export const appClassesFromPrefs = (p: UiPrefs): string[] => {
   // разруливает позиционирование для каждого случая.
   if (p.sidebarAutohide) out.push('sidebar-autohide')
   if (!p.sbSep) out.push('no-sb-sep')
-  if (p.libSysStyle === 'classic') out.push('lib-sys-classic')
   if (!p.navIndicator) out.push('no-nav-indicator')
   return out
 }

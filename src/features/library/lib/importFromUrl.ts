@@ -2,6 +2,7 @@ import type { Track } from '@entities/track'
 import { resolveUrlAny, getProvider } from '@features/providers'
 import { t as tFn } from '@shared/i18n'
 import { usePlaylistStore } from '../model/playlistStore'
+import { useFavStore } from '../model/favStore'
 import { saveTrackToLibrary } from './saveToLibrary'
 
 /** Площадка по виду ссылки — для бейджа в инпуте импорта (детект без сети). */
@@ -22,11 +23,74 @@ export const detectLinkProvider = (url: string): LinkProvider | null => {
   return null
 }
 
-/** Куда импортировать: новый плейлист / во все треки / в существующий плейлист. */
+/** Куда импортировать: новый плейлист / во все треки / в любимые / в существующий плейлист. */
 export type ImportTarget =
   | { kind: 'create' }
   | { kind: 'library' }
+  | { kind: 'favorites' }
   | { kind: 'playlist'; id: string }
+
+/** Уже разрешённый набор треков для импорта в выбранную цель. */
+export interface ImportSource {
+  title: string
+  cover?: string | null
+  tracks: Track[]
+  /** permalink источника — для «Обновить треки» (только SC-коллекции). */
+  scSource?: string
+}
+
+export interface ApplyImportResult {
+  /** Сколько треков реально добавлено (без дублей). */
+  added: number
+  /** id созданного/целевого плейлиста (для `create` и `playlist`). */
+  createdId?: string
+}
+
+/**
+ * Применить импорт уже загруженных треков к цели. Чистая операция над сторами
+ * (без сети) — общая для импорта по ссылке и импорта с детальной страницы.
+ */
+export const applyImport = (target: ImportTarget, src: ImportSource): ApplyImportResult => {
+  const { title, cover, tracks, scSource } = src
+  const ps = usePlaylistStore.getState()
+
+  if (target.kind === 'create') {
+    const pl = ps.createPl(title, undefined, cover ?? undefined, scSource ? { scSource } : undefined)
+    tracks.forEach((t) => saveTrackToLibrary(t))
+    // Точный порядок источника (addTrackToPl prepend'ит по одному — перевернул бы список).
+    ps.reorderPlTracks(pl.id, tracks.map((t) => t.id))
+    return { added: tracks.length, createdId: pl.id }
+  }
+
+  if (target.kind === 'library') {
+    let added = 0
+    tracks.forEach((t) => {
+      if (saveTrackToLibrary(t)) added++
+    })
+    return { added }
+  }
+
+  if (target.kind === 'favorites') {
+    const fav = useFavStore.getState()
+    let added = 0
+    tracks.forEach((t) => {
+      saveTrackToLibrary(t)
+      if (!fav.isFav(t.id)) {
+        fav.setFav(t.id, true)
+        added++
+      }
+    })
+    return { added }
+  }
+
+  // Существующий плейлист — добавляем в конец, сохраняя порядок и без дублей.
+  const pl = ps.playlists.find((p) => p.id === target.id)
+  tracks.forEach((t) => saveTrackToLibrary(t))
+  const existing = pl ? pl.trs : []
+  const newIds = tracks.map((t) => t.id).filter((id) => !existing.includes(id))
+  ps.reorderPlTracks(target.id, [...existing, ...newIds])
+  return { added: newIds.length, createdId: target.id }
+}
 
 export interface UrlImportResult {
   /** Название источника (для тоста). */
@@ -92,34 +156,11 @@ export const importFromUrl = async (
   const src = await resolveSource(url)
   if (!src.tracks.length) throw new Error(tFn('lib.import.toast.empty'))
 
-  const ps = usePlaylistStore.getState()
-
-  if (target.kind === 'create') {
-    const pl = ps.createPl(
-      src.title,
-      undefined,
-      src.cover ?? undefined,
-      src.sourceUrl ? { scSource: src.sourceUrl } : undefined,
-    )
-    src.tracks.forEach((t) => saveTrackToLibrary(t))
-    // Точный порядок источника (addTrackToPl prepend'ит по одному — перевернул бы список).
-    ps.reorderPlTracks(pl.id, src.tracks.map((t) => t.id))
-    return { title: src.title, added: src.tracks.length, total: src.tracks.length, createdId: pl.id }
-  }
-
-  if (target.kind === 'library') {
-    let added = 0
-    src.tracks.forEach((t) => {
-      if (saveTrackToLibrary(t)) added++
-    })
-    return { title: src.title, added, total: src.tracks.length }
-  }
-
-  // Существующий плейлист — добавляем в конец, сохраняя порядок и без дублей.
-  const pl = ps.playlists.find((p) => p.id === target.id)
-  src.tracks.forEach((t) => saveTrackToLibrary(t))
-  const existing = pl ? pl.trs : []
-  const newIds = src.tracks.map((t) => t.id).filter((id) => !existing.includes(id))
-  ps.reorderPlTracks(target.id, [...existing, ...newIds])
-  return { title: src.title, added: newIds.length, total: src.tracks.length, createdId: target.id }
+  const res = applyImport(target, {
+    title: src.title,
+    cover: src.cover,
+    tracks: src.tracks,
+    scSource: src.sourceUrl,
+  })
+  return { title: src.title, added: res.added, total: src.tracks.length, createdId: res.createdId }
 }

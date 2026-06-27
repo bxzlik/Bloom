@@ -42,6 +42,7 @@ export const toTrack = (t: ScRawTrack): Track => ({
   scTrackId: t.id,
   scPermalink: t.permalink ?? null,
   scMedia: t.media,
+  scPlaybackCount: t.playbackCount,
 })
 
 export const toArtist = (a: ScRawArtist): Artist => ({

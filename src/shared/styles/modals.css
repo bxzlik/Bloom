@@ -5,7 +5,7 @@
 .logs-backdrop.open .logs-modal{transform:translateY(0)}
 
 /* ===== PROFILE EDIT DRAWER ===== */
-#peditBackdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.55);display:flex;align-items:stretch;justify-content:flex-end;padding:48px 16px 16px;opacity:0;pointer-events:none;transition:opacity .22s}
+#peditBackdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.55);display:flex;align-items:stretch;justify-content:flex-end;padding:calc(var(--tb-h,32px) + 16px) 16px 16px;opacity:0;pointer-events:none;transition:opacity .22s}
 #peditBackdrop.open{opacity:1;pointer-events:all}
 #peditModal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.09);border-radius:var(--radius);width:min(420px,calc(100vw - 32px));display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.95);overflow:hidden;transform:translateX(calc(100% + 24px));will-change:auto;transition:transform .42s cubic-bezier(.22,1,.36,1)}
 #peditBackdrop.open #peditModal{transform:translateX(0)}
@@ -88,7 +88,7 @@
 /* ===== SIDE PANEL DRAWER (теги трека / массовые теги / объединение) ===== */
 /* Общий каркас, как у редактирования профиля (#peditModal): затемнение + панель,
    выезжающая справа на всю высоту. Тело/футер/поля переиспользуют .pedit-*. */
-.spanel-backdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.55);display:flex;align-items:stretch;justify-content:flex-end;padding:48px 16px 16px;opacity:0;pointer-events:none;transition:opacity .22s}
+.spanel-backdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.55);display:flex;align-items:stretch;justify-content:flex-end;padding:calc(var(--tb-h,32px) + 16px) 16px 16px;opacity:0;pointer-events:none;transition:opacity .22s}
 .spanel-backdrop.open{opacity:1;pointer-events:all}
 .spanel{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.09);border-radius:var(--radius);width:min(420px,calc(100vw - 32px));display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.95);overflow:hidden;transform:translateX(calc(100% + 24px));will-change:auto;transition:transform .42s cubic-bezier(.22,1,.36,1)}
 .spanel-backdrop.open .spanel{transform:translateX(0)}
@@ -347,4 +347,6 @@
   text-overflow:ellipsis;
   white-space:nowrap;
 }
+.unm-history-date{font-size:11.5px;color:var(--muted);flex-shrink:0;margin-left:auto}
+.unm-history-date + .unm-history-chev{margin-left:8px}
 .unm-history-chev{margin-left:auto;flex-shrink:0;color:var(--muted)}

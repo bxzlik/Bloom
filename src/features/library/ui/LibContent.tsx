@@ -75,6 +75,9 @@ export const LibContent = () => {
   // plMenu state (только для mode='pl')
   const plMenuBtnRef = useRef<HTMLButtonElement>(null)
   const [plMenuOpen, setPlMenuOpen] = useState(false)
+  // ПКМ по шапке: координаты курсора для позиционирования меню (null = меню
+  // открыто от кнопки «…» в anchor-режиме).
+  const [plMenuCursor, setPlMenuCursor] = useState<{ x: number; y: number } | null>(null)
   const [addToPlId, setAddToPlId] = useState<string | null>(null)
 
   // Inline-редактирование плейлиста (вместо модалки).
@@ -196,6 +199,14 @@ export const LibContent = () => {
       <div
         className={`lib-content-head${heroCover ? ' has-cover' : ''}`}
         style={heroCover ? ({ '--hero-cover': `url("${heroCover}")` } as CSSProperties) : undefined}
+        onContextMenu={(e) => {
+          // ПКМ по шапке открывает то же меню, что и кнопка «…», но у курсора.
+          // В режиме редактирования — отдаём нативное меню (для полей ввода).
+          if (editing) return
+          e.preventDefault()
+          setPlMenuCursor({ x: e.clientX, y: e.clientY })
+          setPlMenuOpen(true)
+        }}
       >
         <div className="lib-content-hero">
           {editing ? (
@@ -241,7 +252,7 @@ export const LibContent = () => {
                       background: `center / cover no-repeat url(${heroCover})`,
                     }
                   : mode === 'history'
-                    ? { background: 'rgba(255,180,0,.15)' }
+                    ? { background: 'linear-gradient(135deg,#3d300f,#231a06)' }
                     : {}),
               }}
             >
@@ -436,6 +447,7 @@ export const LibContent = () => {
               id="plMenuBtn"
               onClick={(e) => {
                 e.stopPropagation()
+                setPlMenuCursor(null)
                 setPlMenuOpen((v) => !v)
               }}
             >
@@ -454,8 +466,14 @@ export const LibContent = () => {
 
       <PlMenu
         open={plMenuOpen}
-        onClose={() => setPlMenuOpen(false)}
+        onClose={() => {
+          setPlMenuOpen(false)
+          setPlMenuCursor(null)
+        }}
         anchorRef={plMenuBtnRef}
+        cursorX={plMenuCursor?.x ?? null}
+        cursorY={plMenuCursor?.y ?? null}
+        forceFullMenu
         mode={mode}
         heroName={heroName}
         heroSub={heroSub}

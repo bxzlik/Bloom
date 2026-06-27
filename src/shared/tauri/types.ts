@@ -59,6 +59,8 @@ export interface UpdateNotePageRaw {
 export interface UpdateNoteRaw {
   /** Общий заголовок модалки (шапка). */
   title?: LocalizedText
+  /** Дата релиза в формате ISO (YYYY-MM-DD), одна на все языки. */
+  date?: string
   /** Страницы-слайды (переключаются стрелками). */
   pages?: UpdateNotePageRaw[]
   // Легаси-формат одной страницы (если pages не задан):
@@ -78,6 +80,8 @@ export interface UpdateNotePage {
 export interface UpdateNote {
   version: string
   title: string
+  /** Дата релиза в ISO (YYYY-MM-DD) или null, если не задана в манифесте. */
+  date: string | null
   pages: UpdateNotePage[]
 }
 

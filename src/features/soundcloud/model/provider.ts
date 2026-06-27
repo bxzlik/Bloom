@@ -3,7 +3,7 @@ import { trackRegistry } from '@entities/track'
 import { t as i18nT } from '@shared/i18n'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
-import type { MusicProvider, SearchResults, ArtistPageData, ResolvedUrl } from '@features/providers'
+import type { MusicProvider, SearchResults, ArtistPageData, ResolvedUrl, RepostItem } from '@features/providers'
 import type { PlayableSource } from '@features/player'
 import {
   searchTracks,
@@ -13,6 +13,9 @@ import {
   getStreamUrl,
   getArtistData,
   getArtistTopTracks,
+  getArtistReposts,
+  getArtistTracksPage,
+  getArtistRepostsPage,
   getPlaylistTracks,
   getPlaylistById,
   getTrackById,
@@ -23,6 +26,7 @@ import {
   type ScMedia,
   type ScRawArtist,
   type ScRawPlaylist,
+  type ScRepostItem,
 } from '../api/scClient'
 import { toTrack, toArtist, toPlaylist } from './mappers'
 
@@ -77,6 +81,27 @@ const putPlaylistHandle = (
     ownerName: p.artist || '',
     trackCount: p.trackCount || 0,
   })
+}
+
+/**
+ * Сырые репосты SC → `RepostItem[]` (+ собранные треки для регистрации в
+ * trackRegistry). Плейлистам/альбомам кладём handle, чтобы открывались.
+ */
+const mapReposts = (raw: ScRepostItem[]): { reposts: RepostItem[]; tracks: Track[] } => {
+  const reposts: RepostItem[] = []
+  const tracks: Track[] = []
+  for (const r of raw) {
+    if (r.kind === 'track' && r.track) {
+      const tr = toTrack(r.track)
+      tracks.push(tr)
+      reposts.push({ kind: 'track', track: tr })
+    } else if (r.playlist) {
+      const p = toPlaylist(r.playlist)
+      putPlaylistHandle(p.id, r.playlist, r.kind === 'album' ? 'album' : 'playlist')
+      reposts.push({ kind: r.kind, playlist: p })
+    }
+  }
+  return { reposts, tracks }
 }
 
 /** Провайдер SoundCloud. Реализует контракт `MusicProvider`. */
@@ -238,15 +263,19 @@ export const scProvider: MusicProvider = {
       else throw new Error(i18nT('search.err.artistNotFound'))
     }
 
-    const [dataR, userR, topR] = await Promise.allSettled([
+    const [dataR, userR, topR, repostR] = await Promise.allSettled([
       getArtistData(ref, hintName),
       getUser(ref),
       getArtistTopTracks(ref, hintName),
+      getArtistReposts(ref),
     ])
-    const { tracks: rawTracks, albums: rawAlbums } =
-      dataR.status === 'fulfilled' ? dataR.value : { tracks: [], albums: [] }
+    const { tracks: rawTracks, tracksNext, albums: rawAlbums } =
+      dataR.status === 'fulfilled'
+        ? dataR.value
+        : { tracks: [], tracksNext: null, albums: [] }
     const user = userR.status === 'fulfilled' ? userR.value : null
     const rawTop = topR.status === 'fulfilled' ? topR.value : []
+    const rawReposts = repostR.status === 'fulfilled' ? repostR.value : { items: [], next: null }
 
     const tracks = rawTracks.map(toTrack)
     const topTracks = rawTop.map(toTrack)
@@ -256,8 +285,10 @@ export const scProvider: MusicProvider = {
       return p
     })
 
-    if (tracks.length || topTracks.length)
-      trackRegistry.put([...topTracks, ...tracks], { temp: true })
+    const { reposts, tracks: repostTracks } = mapReposts(rawReposts.items)
+
+    if (tracks.length || topTracks.length || repostTracks.length)
+      trackRegistry.put([...topTracks, ...tracks, ...repostTracks], { temp: true })
 
     const artist: Artist = {
       id,
@@ -271,7 +302,30 @@ export const scProvider: MusicProvider = {
       bannerUrl: user?.banner ?? null,
     }
 
-    return { artist, topTracks, tracks, albums, playlists: [] }
+    return {
+      artist,
+      topTracks,
+      tracks,
+      albums,
+      playlists: [],
+      reposts,
+      tracksCursor: tracksNext,
+      repostsCursor: rawReposts.next,
+    }
+  },
+
+  async getArtistTracksPage(cursor): Promise<{ tracks: Track[]; cursor: string | null }> {
+    const { tracks: raw, next } = await getArtistTracksPage(cursor)
+    const tracks = raw.map(toTrack)
+    if (tracks.length) trackRegistry.put(tracks, { temp: true })
+    return { tracks, cursor: next }
+  },
+
+  async getArtistRepostsPage(cursor): Promise<{ reposts: RepostItem[]; cursor: string | null }> {
+    const { items, next } = await getArtistRepostsPage(cursor)
+    const { reposts, tracks } = mapReposts(items)
+    if (tracks.length) trackRegistry.put(tracks, { temp: true })
+    return { reposts, cursor: next }
   },
 
   async getAlbum(id): Promise<{ album: Playlist; tracks: Track[] }> {

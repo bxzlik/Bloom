@@ -189,6 +189,8 @@ export interface ScRawTrack {
   artistPermalink: string | null
   artistVerified: boolean
   year: string
+  /** Глобальное число прослушиваний на SC (`playback_count`); null если скрыто. */
+  playbackCount: number | null
 }
 export interface ScRawArtist {
   id: number
@@ -234,6 +236,7 @@ const mapRawTrack = (t: any): ScRawTrack => ({
   artistPermalink: t.user ? t.user.permalink_url || null : null,
   artistVerified: !!(t.user && t.user.verified),
   year: t.release_date ? t.release_date.slice(0, 4) : t.created_at ? t.created_at.slice(0, 4) : '',
+  playbackCount: typeof t.playback_count === 'number' ? t.playback_count : null,
 })
 
 export const searchTracks = async (
@@ -371,6 +374,72 @@ export const getUserLikes = async (userId: number | string): Promise<ScRawTrack[
   }
 }
 
+/** Элемент ленты репостов артиста: репостнутый трек ИЛИ плейлист/альбом. */
+export interface ScRepostItem {
+  kind: 'track' | 'playlist' | 'album'
+  track?: ScRawTrack
+  playlist?: ScRawPlaylist
+}
+
+/**
+ * Репосты пользователя (вкладка «Репосты» на странице артиста) — то, что артист
+ * репостнул к себе на профиль. `/users/{id}/reposts` отдаёт смешанную ленту:
+ * `type: 'track-repost' | 'playlist-repost'` + поле `track`/`playlist`.
+ */
+/**
+ * Разбор страницы ленты репостов в наши элементы + курсор следующей.
+ * `minFull` — размер запрошенной страницы: если пришло меньше, дальше пусто
+ * (SC отдаёт «висячий» next_href на последней/неполной странице).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const parseReposts = (d: any, minFull: number): { items: ScRepostItem[]; next: string | null } => {
+  const items: ScRepostItem[] = []
+  const rawLen = d?.collection?.length ?? 0
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const x of (d?.collection || []) as any[]) {
+    if (!x) continue
+    // У некоторых ответов сущность лежит прямо в item, у других — в .track/.playlist.
+    const tr = x.track || (x.type && x.type.includes('track') ? x : null)
+    const pl = x.playlist || (x.type && x.type.includes('playlist') ? x : null)
+    if (tr && tr.id && tr.title) {
+      items.push({ kind: 'track', track: mapRawTrack(tr) })
+    } else if (pl && pl.id) {
+      items.push({
+        kind: pl.is_album || pl.set_type === 'album' ? 'album' : 'playlist',
+        playlist: mapRawPlaylist(pl),
+      })
+    }
+  }
+  return { items, next: rawLen >= minFull ? d?.next_href || null : null }
+}
+
+export const getArtistReposts = async (
+  idOrUrl: number | string,
+): Promise<{ items: ScRepostItem[]; next: string | null }> => {
+  try {
+    const id = await resolveUserId(idOrUrl)
+    const d = await apiFetch(
+      'https://api-v2.soundcloud.com/stream/users/' + id + '/reposts?limit=30&linked_partitioning=1',
+    )
+    return parseReposts(d, 30)
+  } catch {
+    return { items: [], next: null }
+  }
+}
+
+/** Следующая страница репостов по курсору (`next_href`). */
+export const getArtistRepostsPage = async (
+  cursor: string,
+): Promise<{ items: ScRepostItem[]; next: string | null }> => {
+  try {
+    // Размер страницы кодируется в курсоре (limit=N) — берём его для проверки полноты.
+    const lim = Number(/[?&]limit=(\d+)/.exec(cursor)?.[1]) || 1
+    return parseReposts(await apiFetch(cursor), lim)
+  } catch {
+    return { items: [], next: null }
+  }
+}
+
 /** Данные пользователя SC (для hero артиста). `apiFetch('/users/'+id)`. */
 export const getUser = async (idOrUrl: number | string): Promise<ScRawUser | null> => {
   try {
@@ -468,7 +537,7 @@ export const getPlaylistById = async (id: number): Promise<ScPlaylistFull> => {
 }
 
 /**
- * Популярные треки артиста: /spotlight → /tracks → поиск по имени.
+ * Популярные треки артиста: /toptracks → /spotlight → /tracks → поиск по имени.
  * `getArtistTopTracks`.
  */
 export const getArtistTopTracks = async (
@@ -483,7 +552,18 @@ export const getArtistTopTracks = async (
   }
 
   if (userId) {
-    // 1. /spotlight — публичный, без авторизации.
+    // 1. /toptracks — настоящие «популярные» (отсортированы по прослушиваниям).
+    try {
+      const tt = await apiFetch(
+        'https://api-v2.soundcloud.com/users/' + userId + '/toptracks?limit=20&linked_partitioning=1',
+      )
+      if (tt && tt.collection && tt.collection.length)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return tt.collection.filter((t: any) => t && t.id).map(mapRawTrack)
+    } catch {
+      /* next */
+    }
+    // 2. /spotlight — закреплённые артистом (фолбэк, публичный).
     try {
       const sp = await apiFetch(
         'https://api-v2.soundcloud.com/users/' + userId + '/spotlight?limit=10&linked_partitioning=1',
@@ -496,7 +576,7 @@ export const getArtistTopTracks = async (
     } catch {
       /* next */
     }
-    // 2. /tracks (может требовать сессию).
+    // 3. /tracks (может требовать сессию).
     try {
       const d = await apiFetch(
         'https://api-v2.soundcloud.com/users/' + userId + '/tracks?limit=50&linked_partitioning=1',
@@ -509,7 +589,7 @@ export const getArtistTopTracks = async (
     }
   }
 
-  // 3. Фолбэк: поиск по имени артиста.
+  // 4. Фолбэк: поиск по имени артиста.
   if (artistName) {
     try {
       const sr = await apiFetch(
@@ -540,7 +620,7 @@ export const getArtistTopTracks = async (
 export const getArtistData = async (
   idOrUrl: number | string,
   artistName?: string,
-): Promise<{ tracks: ScRawTrack[]; albums: ScRawPlaylist[]; userId: number }> => {
+): Promise<{ tracks: ScRawTrack[]; tracksNext: string | null; albums: ScRawPlaylist[]; userId: number }> => {
   let userId = 0
   try {
     userId = await resolveUserId(idOrUrl)
@@ -548,21 +628,22 @@ export const getArtistData = async (
     /* остаётся 0 → пойдём на фолбэк поиска */
   }
 
+  // Только первая страница — остальное догружается по `tracksNext` (см.
+  // getArtistTracksPage). Раньше тут жёстко тянулись 2 страницы и обрезалось.
   let tracks: ScRawTrack[] = []
+  let tracksNext: string | null = null
   if (userId) {
     try {
-      let nextUrl: string | null =
-        'https://api-v2.soundcloud.com/users/' + userId + '/tracks?limit=100&linked_partitioning=1'
-      let pages = 0
-      while (nextUrl && pages < 2) {
-        const d = await apiFetch(nextUrl)
-        if (d && d.collection)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          tracks = tracks.concat(d.collection.filter((t: any) => t && t.id).map(mapRawTrack))
-        nextUrl = d.next_href || null
-        pages++
-        if (pages < 2 && nextUrl) await new Promise((r) => setTimeout(r, 80))
-      }
+      const d = await apiFetch(
+        'https://api-v2.soundcloud.com/users/' + userId + '/tracks?limit=50&linked_partitioning=1',
+      )
+      const rawLen = d?.collection?.length ?? 0
+      if (d && d.collection)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        tracks = d.collection.filter((t: any) => t && t.id).map(mapRawTrack)
+      // SC отдаёт next_href даже на неполной/последней странице — считаем
+      // последней, если пришло меньше лимита (или пусто).
+      tracksNext = rawLen >= 50 ? d?.next_href || null : null
     } catch {
       /* next */
     }
@@ -605,7 +686,26 @@ export const getArtistData = async (
     }
   }
 
-  return { tracks, albums, userId }
+  return { tracks, tracksNext, albums, userId }
+}
+
+/**
+ * Следующая страница треков артиста по курсору (`next_href` из getArtistData/
+ * предыдущей страницы). Курсор непрозрачен для вызывающего.
+ */
+export const getArtistTracksPage = async (
+  cursor: string,
+): Promise<{ tracks: ScRawTrack[]; next: string | null }> => {
+  try {
+    const d = await apiFetch(cursor)
+    const rawLen = d?.collection?.length ?? 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tracks = (d?.collection || []).filter((t: any) => t && t.id).map(mapRawTrack)
+    // Пустая страница — конец (next_href от SC может быть «висячим»).
+    return { tracks, next: rawLen ? d?.next_href || null : null }
+  } catch {
+    return { tracks: [], next: null }
+  }
 }
 
 /** Нормализованный результат резолва SC-ссылки (`/resolve?url=`). */

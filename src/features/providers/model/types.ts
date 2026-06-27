@@ -38,6 +38,15 @@ export type ResolvedUrl =
   | { type: 'album' | 'playlist'; playlist: Playlist }
   | { type: 'profile'; profile: ProfileData }
 
+/**
+ * Элемент ленты репостов артиста (вкладка «Репосты») — репостнутый трек ИЛИ
+ * плейлист/альбом. Лента смешанная, порядок важен, поэтому это union, а не
+ * раздельные массивы.
+ */
+export type RepostItem =
+  | { kind: 'track'; track: Track }
+  | { kind: 'playlist' | 'album'; playlist: Playlist }
+
 /** Контент страницы артиста — те же общие сущности. */
 export interface ArtistPageData {
   /** Артист, обогащённый followers/description/website/genres/bannerUrl. */
@@ -48,6 +57,12 @@ export interface ArtistPageData {
   tracks: Track[]
   albums: Playlist[]
   playlists: Playlist[]
+  /** Репосты артиста (вкладка «Репосты»); пусто/undefined у провайдеров без них. */
+  reposts?: RepostItem[]
+  /** Непрозрачный курсор следующей страницы треков (null/undefined — больше нет). */
+  tracksCursor?: string | null
+  /** Непрозрачный курсор следующей страницы репостов. */
+  repostsCursor?: string | null
 }
 
 /**
@@ -115,6 +130,14 @@ export interface MusicProvider {
   getArtist?(id: string): Promise<ArtistPageData>
   getAlbum?(id: string): Promise<{ album: Playlist; tracks: Track[] }>
   getPlaylist?(id: string): Promise<{ playlist: Playlist; tracks: Track[] }>
+
+  /**
+   * Догрузка следующей страницы треков/репостов артиста по курсору из
+   * ArtistPageData (`tracksCursor`/`repostsCursor`). Возвращает порцию + новый
+   * курсор (null — больше нет). Опциональны — провайдеры без пагинации их не имеют.
+   */
+  getArtistTracksPage?(cursor: string): Promise<{ tracks: Track[]; cursor: string | null }>
+  getArtistRepostsPage?(cursor: string): Promise<{ reposts: RepostItem[]; cursor: string | null }>
 
   /**
    * Резолв играбельного URL для трека этого провайдера (опц.). Локальному не

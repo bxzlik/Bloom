@@ -150,6 +150,12 @@
 .sys-kbd{display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:5px;background:var(--hover);border:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text2);font-family:var(--font);min-width:24px;line-height:1.6;white-space:nowrap}
 
 /* ===== WINDOW TITLEBAR ===== */
+/* --tb-h: реальная высота тайтлбара. На неё опираются боковые drawer-панели
+   (.spanel-backdrop / #peditBackdrop в modals.css), чтобы их верхний отступ
+   совпадал с тайтлбаром, а в fullscreen / autohide (где тайтлбара нет) панель
+   уходила под самый верх окна без «висящего» зазора. */
+body{--tb-h:32px}
+body.fullscreen,body.titlebar-autohide{--tb-h:0px}
 #winTitlebar{height:32px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;flex-shrink:0;user-select:none;-webkit-user-select:none;position:relative;z-index:1001}
 body.fullscreen #winTitlebar{display:none}
 /* ===== TITLEBAR AUTO-HIDE (в потоке: прячется вверх, выезжает на своё место) =====

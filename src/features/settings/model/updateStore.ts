@@ -22,6 +22,18 @@ const resolveText = (v: LocalizedText | undefined, locale: Locale): string => {
 const resolveImg = (s: string): string =>
   /^https?:\/\//i.test(s) ? s : ASSETS_BASE + s.replace(/^\/+/, '')
 
+/** ISO-дата (YYYY-MM-DD) → читаемая под локаль строка («27 июня 2026»). Кривую дату отдаём как есть. */
+export const formatNoteDate = (iso: string | null, locale: Locale): string => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(d)
+}
+
 /** Запись манифеста под версию → готовая к показу заметка (или null, если нет). */
 const resolveNote = (
   manifest: Record<string, UpdateNoteRaw>,
@@ -49,7 +61,7 @@ const resolveNote = (
       },
     ]
   }
-  return { version, title: resolveText(raw.title, locale), pages }
+  return { version, title: resolveText(raw.title, locale), date: raw.date ?? null, pages }
 }
 
 /** Сравнение версий по убыванию (новые сверху) для списка истории. */
@@ -118,10 +130,12 @@ export type UpdatePhase = 'idle' | 'checking' | 'uptodate' | 'available' | 'down
  */
 export type NotesMode = 'announce' | 'whatsnew' | 'history'
 
-/** Пункт списка истории: версия + локализованный заголовок заметки. */
+/** Пункт списка истории: версия + локализованный заголовок заметки + дата релиза. */
 export interface HistoryEntry {
   version: string
   title: string
+  /** Готовая к показу дата под локаль (пустая строка, если не задана). */
+  date: string
 }
 
 const LS_DISMISSED = 'bloom_update_dismissed'
@@ -351,7 +365,11 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
       const locale = useI18nStore.getState().locale
       const list = Object.keys(manifest)
         .sort(cmpVerDesc)
-        .map((version) => ({ version, title: resolveText(manifest[version].title, locale) }))
+        .map((version) => ({
+          version,
+          title: resolveText(manifest[version].title, locale),
+          date: formatNoteDate(manifest[version].date ?? null, locale),
+        }))
       set({ historyVersions: list })
     } catch {
       set({ historyVersions: [] })

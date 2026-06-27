@@ -74,7 +74,6 @@ const APP_PREF_CLASSES = [
   'sidebar-floating',
   'sidebar-autohide',
   'no-sb-sep',
-  'lib-sys-classic',
   'no-nav-indicator',
   'cov-btns-in-bar',
 ] as const

@@ -66,6 +66,13 @@ const AllTracksThumb = () => (
   </span>
 )
 
+/** Цель «Любимые» — красный градиент + сердце. */
+const FavThumb = () => (
+  <span className="lam-all-thumb" style={{ background: 'linear-gradient(135deg,#c0144e,#7a0030)' }}>
+    <Ico name="heart" variant="bold" width={12} height={12} style={{ color: '#fff' }} />
+  </span>
+)
+
 /** Обложка плейлиста для строки выбора цели импорта. */
 const PlThumb = ({ pl }: { pl: Playlist }) => (
   <span className="lam-pl-thumb">
@@ -139,7 +146,10 @@ export const LibAddMenu = ({
       const W = menuRef.current?.offsetWidth || 248
       const centerX = r.left + r.width / 2
       const left = Math.max(8, Math.min(centerX - W / 2, window.innerWidth - W - 8))
-      setPos({ top: r.bottom + 6, left })
+      const top = r.bottom + 6
+      // Обновляем pos только при реальном изменении — иначе скролл колесом внутри
+      // меню целей пересоздаёт объект pos и перезапускает open-анимацию (мигание).
+      setPos((prev) => (prev && prev.top === top && prev.left === left ? prev : { top, left }))
     }
     recalc()
     window.addEventListener('resize', recalc)
@@ -188,6 +198,7 @@ export const LibAddMenu = ({
   const targetLabel = (): string => {
     if (target.kind === 'create') return t('lib.import.target.create')
     if (target.kind === 'library') return t('lib.import.target.library')
+    if (target.kind === 'favorites') return t('lib.import.target.favorites')
     return playlists.find((p) => p.id === target.id)?.name ?? t('lib.import.target.create')
   }
 
@@ -201,6 +212,8 @@ export const LibAddMenu = ({
         toast(t('search.toast.plImported', { name: res.title, n: res.added }))
       } else if (target.kind === 'library') {
         toast(res.added ? t('search.toast.added', { n: res.added }) : t('search.toast.allInLib'))
+      } else if (target.kind === 'favorites') {
+        toast(res.added ? t('lib.import.toast.toFavorites', { n: res.added }) : t('search.toast.allInLib'))
       } else {
         const name = playlists.find((p) => p.id === target.id)?.name ?? ''
         toast(t('lib.import.toast.toPlaylist', { name, n: res.added }))
@@ -294,6 +307,8 @@ export const LibAddMenu = ({
                 <PlThumb pl={selPl} />
               ) : target.kind === 'library' ? (
                 <AllTracksThumb />
+              ) : target.kind === 'favorites' ? (
+                <FavThumb />
               ) : (
                 <CreateThumb />
               )}
@@ -323,6 +338,17 @@ export const LibAddMenu = ({
                   <AllTracksThumb />
                   <span className="lam-target-label">{t('lib.import.target.library')}</span>
                   {target.kind === 'library' && <ActiveCheck />}
+                </button>
+                <button
+                  className={target.kind === 'favorites' ? 'active' : undefined}
+                  onClick={() => {
+                    setTarget({ kind: 'favorites' })
+                    setTargetOpen(false)
+                  }}
+                >
+                  <FavThumb />
+                  <span className="lam-target-label">{t('lib.import.target.favorites')}</span>
+                  {target.kind === 'favorites' && <ActiveCheck />}
                 </button>
                 {playlists.length > 0 && <div className="lam-target-sep" />}
                 {playlists.map((p) => {

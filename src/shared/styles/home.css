@@ -116,19 +116,11 @@ body.bars-hidden .hwb-wave{animation-play-state:paused}
 .home-pl-new:hover{background:rgba(255,255,255,.08);color:var(--text)}
 /* ===== LIB SIDEBAR SYSTEM ITEM GRADIENTS ===== */
 .lib-item-sys{position:relative;isolation:isolate}
-.lib-item-sys::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius)*0.55);pointer-events:none;z-index:0}
 .lib-item-sys .lib-icon,.lib-item-sys .lib-item-info{position:relative;z-index:1}
-.app:not(.lib-sys-classic) .lib-item-sys{background:var(--block-bg,#2a2a2a)}
-.app:not(.lib-sys-classic) .lib-item-sys .lib-icon{background:transparent!important}
-.app:not(.lib-sys-classic) .lib-item-sys .lib-icon svg{width:22px;height:22px}
-.lib-item-sys-all::before{background:radial-gradient(ellipse 70% 100% at 0% 50%,rgba(26,79,160,.6) 0%,transparent 100%)}
-.lib-item-sys-fav::before{background:radial-gradient(ellipse 70% 100% at 0% 50%,rgba(192,20,78,.6) 0%,transparent 100%)}
-.lib-item-sys-hist::before{background:radial-gradient(ellipse 70% 100% at 0% 50%,rgba(184,134,11,.6) 0%,transparent 100%)}
-.app.lib-sys-classic .lib-item-sys::before{display:none}
-.app.lib-sys-classic #libItemAll .lib-icon{background:linear-gradient(135deg,#1a3a4a,#0d2535)!important}
-.app.lib-sys-classic #libItemFav .lib-icon{background:linear-gradient(135deg,#c0144e,#7a0030)!important}
-.app.lib-sys-classic #libItemHistory .lib-icon{background:rgba(255,180,0,.15)!important}
-.app.lib-sys-classic #libItemHistory .lib-icon svg{color:#ffb400}
+#libItemAll .lib-icon{background:linear-gradient(135deg,#1a3a4a,#0d2535)!important}
+#libItemFav .lib-icon{background:linear-gradient(135deg,#c0144e,#7a0030)!important}
+#libItemHistory .lib-icon{background:linear-gradient(135deg,#3d300f,#231a06)!important}
+#libItemHistory .lib-icon svg{color:#ffb400}
 /* ===== HOME QUICK CARDS (История / Любимые) ===== */
 .home-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .home-quick-card{display:flex;flex-direction:column;justify-content:space-between;border-radius:var(--radius);overflow:hidden;border:1px solid rgba(255,255,255,var(--wb));cursor:pointer;transition:.15s;position:relative;height:80px;padding:11px 14px;isolation:isolate}

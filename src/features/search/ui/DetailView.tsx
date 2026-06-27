@@ -8,24 +8,27 @@ import {
 import type { Track } from '@entities/track'
 import { ArtistLinks, CoverSourceBadge } from '@entities/track'
 import type { Playlist } from '@entities/playlist'
-import type { ArtistPageData } from '@features/providers'
+import type { ArtistPageData, RepostItem } from '@features/providers'
 import { getProvider } from '@features/providers'
 import { AddPopup, playFromSource, playShuffledFromSource, type PlaySource } from '@features/player'
 import {
   TrackCtxMenu,
   saveTrackToLibrary,
   createPlaylistInline,
+  applyImport,
   usePlaylistStore,
   useFavStore,
   useFollowStore,
   useLibStore,
   tracksLabel,
+  type ImportTarget,
 } from '@features/library'
 import { useNavStore } from '@app/navigationStore'
 import { toast, useShareStore } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { useDetailStore, type DetailTarget } from '../model/detailStore'
+import { ImportPopup } from './ImportPopup'
 
 /* ── Форматтеры ───── */
 const fmtNum = (n: number): string => {
@@ -124,11 +127,14 @@ const TrackRow = ({
   onPlay,
   onCtxMenu,
   onAddClick,
+  reposter,
 }: {
   track: Track
   onPlay: () => void
   onCtxMenu: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>) => void
+  /** Имя репостнувшего (для вкладки «Репосты»): «⟲ name» рядом с заголовком. */
+  reposter?: string
 }) => {
   const tt = useT()
   const isFav = useFavStore((s) => s.favs.has(track.id))
@@ -151,6 +157,12 @@ const TrackRow = ({
             {/* Внутренний бегунок hover-marquee (useTrackRowMarquee). */}
             <span>{track.name}</span>
           </span>
+          {reposter && (
+            <span className="tr-repost">
+              <Ico name="repeat" width={12} height={12} />
+              {reposter}
+            </span>
+          )}
         </div>
         <div className="tra">
           <ArtistLinks artist={track.artist} scId={track.artistScId} permalink={track.artistPermalink} artistId={track.artistId} provider={track.artistProvider} />
@@ -166,6 +178,12 @@ const TrackRow = ({
           </svg>
         </button>
       </div>
+      {typeof track.scPlaybackCount === 'number' && track.scPlaybackCount > 0 && (
+        <div className="trplays" title={`${track.scPlaybackCount.toLocaleString()} ${tt('search.plays')}`}>
+          <Ico name="eye" width={12} height={12} />
+          {fmtNum(track.scPlaybackCount)}
+        </div>
+      )}
       {track.dur && <div className="trd">{track.dur}</div>}
     </div>
   )
@@ -257,13 +275,18 @@ export const DetailView = () => {
   const target = stack[stack.length - 1] ?? null
 
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
-  const createPl = usePlaylistStore((s) => s.createPl)
-  const reorderPlTracks = usePlaylistStore((s) => s.reorderPlTracks)
   const openShare = useShareStore((s) => s.openShare)
 
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [tracksLimit, setTracksLimit] = useState(8)
+
+  // Сетевая пагинация треков/репостов артиста: текущие списки + курсоры (см.
+  // ArtistPageData.tracksCursor/repostsCursor). Догружается по «Загрузить ещё».
+  const [artistTracks, setArtistTracks] = useState<Track[]>([])
+  const [artistReposts, setArtistReposts] = useState<RepostItem[]>([])
+  const [tracksCursor, setTracksCursor] = useState<string | null>(null)
+  const [repostsCursor, setRepostsCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState<'tracks' | 'reposts' | null>(null)
 
   // Ctx-menu трека (ПКМ) — как в SearchPage.
   const [ctx, setCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(null)
@@ -280,6 +303,10 @@ export const DetailView = () => {
     e.stopPropagation()
     setCtx({ pos: { x: e.clientX, y: e.clientY }, track })
   }
+
+  // Поповер выбора цели импорта (кнопка «Импортировать» в hero).
+  const importAnchorRef = useRef<HTMLButtonElement | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   // Поповер «Добавить в …» по кнопке «+» — список плейлистов + «В библиотеку», НЕ полное ctx-меню.
   const addAnchorRef = useRef<HTMLElement | null>(null)
@@ -299,7 +326,6 @@ export const DetailView = () => {
   const key = target ? cacheKey(target) : null
   useEffect(() => {
     if (!target || !key) return
-    setTracksLimit(8)
     const cached = detailCache.get(key)
     if (cached) {
       setLoaded(cached)
@@ -347,6 +373,17 @@ export const DetailView = () => {
     return () => document.body.classList.remove('detail-open')
   }, [target])
 
+  // При загрузке артиста — инициализируем пагинируемые списки/курсоры из данных
+  // (или из кеша, если уже догружали и вернулись «назад»).
+  useEffect(() => {
+    if (loaded?.kind === 'artist') {
+      setArtistTracks(loaded.data.tracks)
+      setArtistReposts(loaded.data.reposts ?? [])
+      setTracksCursor(loaded.data.tracksCursor ?? null)
+      setRepostsCursor(loaded.data.repostsCursor ?? null)
+    }
+  }, [loaded])
+
   if (!target) return null
 
   // ── Источник очереди для плеера ──
@@ -365,27 +402,7 @@ export const DetailView = () => {
   const playOne = (t: Track) =>
     playFromSource([t.id], scSource(t.artist, t.cover, false), t.id)
 
-  // ── Импорт ──
-  const importToLibrary = (tracks: Track[]) => {
-    let added = 0
-    tracks.forEach((t) => {
-      if (saveTrackToLibrary(t)) added++
-    })
-    toast(added ? t('search.toast.added', { n: added }) : t('search.toast.allInLib'))
-  }
-  const importAsPlaylist = (title: string, cover: string | null, tracks: Track[], scSource?: string) => {
-    if (!tracks.length) {
-      toast(t('search.toast.noImport'))
-      return
-    }
-    const pl = createPl(title, undefined, cover ?? undefined, scSource ? { scSource } : undefined)
-    tracks.forEach((t) => saveTrackToLibrary(t))
-    // Точный порядок альбома/плейлиста (addTrackToPl теперь prepend'ит по одному
-    // — для импорта это перевернуло бы список, поэтому ставим trs целиком).
-    reorderPlTracks(pl.id, tracks.map((t) => t.id))
-    toast(t('search.toast.plImported', { name: title, n: tracks.length }))
-    close()
-  }
+  // ── Импорт (цель выбирается в ImportPopup) ──
 
   // ── Hero данные (мгновенно из target, обогащаются из loaded) ──
   const isArtist = target.kind === 'artist'
@@ -443,13 +460,78 @@ export const DetailView = () => {
     if (!mainTracks.length) return
     playShuffledFromSource(mainTracks.map((t) => t.id), scSource(heroName, heroCover, isArtist))
   }
-  const onImport = () => {
-    if (isArtist) importToLibrary(mainTracks)
-    else {
-      // permalink для «Обновить треки» (только у SC-плейлистов/альбомов с handle).
-      const scSource = loaded && loaded.kind !== 'artist' ? loaded.playlist.sourceUrl ?? undefined : undefined
-      importAsPlaylist(heroName, heroCover, mainTracks, scSource)
+  const runImport = (target: ImportTarget) => {
+    if (!mainTracks.length) {
+      toast(t('search.toast.noImport'))
+      return
     }
+    // permalink для «Обновить треки» (только у SC-плейлистов/альбомов с handle).
+    const scSource = loaded && loaded.kind !== 'artist' ? loaded.playlist.sourceUrl ?? undefined : undefined
+    const res = applyImport(target, { title: heroName, cover: heroCover, tracks: mainTracks, scSource })
+    if (target.kind === 'create') {
+      toast(t('search.toast.plImported', { name: heroName, n: res.added }))
+      close()
+    } else if (target.kind === 'library') {
+      toast(res.added ? t('search.toast.added', { n: res.added }) : t('search.toast.allInLib'))
+    } else if (target.kind === 'favorites') {
+      toast(res.added ? t('lib.import.toast.toFavorites', { n: res.added }) : t('search.toast.allInLib'))
+    } else {
+      const name = usePlaylistStore.getState().playlists.find((p) => p.id === target.id)?.name ?? ''
+      toast(t('lib.import.toast.toPlaylist', { name, n: res.added }))
+    }
+  }
+
+  // Ленивая подгрузка треков альбома (вкладка «Альбомы» — раскрытие группы).
+  // Кешируем под тем же ключом, что и полный вид альбома (cacheKey), чтобы заход
+  // в альбом потом не дёргал сеть заново.
+  const loadAlbumTracks = async (album: Playlist): Promise<Track[]> => {
+    const prov = getProvider(target.providerId)
+    if (!prov?.getAlbum) return []
+    const k = `${target.providerId}:album:${album.id}`
+    const cached = detailCache.get(k)
+    if (cached && cached.kind === 'album') return cached.tracks
+    const { album: pl, tracks } = await prov.getAlbum(album.id)
+    detailCache.set(k, { kind: 'album', playlist: pl, tracks })
+    return tracks
+  }
+
+  // Догрузка следующей страницы. Пишем результат и в кеш (loaded.data), чтобы
+  // «назад» к артисту не сбрасывал уже подгруженное.
+  const loadMoreTracks = async () => {
+    const prov = getProvider(target.providerId)
+    if (!tracksCursor || loadingMore || !prov?.getArtistTracksPage) return
+    setLoadingMore('tracks')
+    try {
+      const { tracks: more, cursor } = await prov.getArtistTracksPage(tracksCursor)
+      setArtistTracks((p) => [...p, ...more])
+      setTracksCursor(cursor)
+      const cached = key ? detailCache.get(key) : null
+      if (cached?.kind === 'artist') {
+        cached.data.tracks = [...cached.data.tracks, ...more]
+        cached.data.tracksCursor = cursor
+      }
+    } catch {
+      /* оставляем как есть — пользователь повторит */
+    }
+    setLoadingMore(null)
+  }
+  const loadMoreReposts = async () => {
+    const prov = getProvider(target.providerId)
+    if (!repostsCursor || loadingMore || !prov?.getArtistRepostsPage) return
+    setLoadingMore('reposts')
+    try {
+      const { reposts: more, cursor } = await prov.getArtistRepostsPage(repostsCursor)
+      setArtistReposts((p) => [...p, ...more])
+      setRepostsCursor(cursor)
+      const cached = key ? detailCache.get(key) : null
+      if (cached?.kind === 'artist') {
+        cached.data.reposts = [...(cached.data.reposts ?? []), ...more]
+        cached.data.repostsCursor = cursor
+      }
+    } catch {
+      /* no-op */
+    }
+    setLoadingMore(null)
   }
 
   // Артист loaded — для follow-кнопки (id/permalink/avatar).
@@ -501,10 +583,7 @@ export const DetailView = () => {
           style={heroBg ? { backgroundImage: `url(${heroBg})` } : undefined}
         />
         <div className="sp-am-hero-grad" />
-        <button className="sp-dv-back" onClick={stack.length > 1 ? back : close} aria-label={t('common.back')}>
-          <Ico name="arrowLeft" width={15} height={15} />
-        </button>
-        <div className="sp-am-hero-content" style={{ paddingTop: 52 }}>
+        <div className="sp-am-hero-content">
           <div className="sp-am-hero-info">
             <div className={`sp-am-avatar${square ? ' square' : ''}`}>
               <Cover src={heroCover} placeholder={square ? <PhAlbum /> : <PhTrack />} />
@@ -516,32 +595,47 @@ export const DetailView = () => {
               {heroDesc && <div className="sp-am-hero-desc">{heroDesc}</div>}
             </div>
           </div>
-          {loaded && (
-            <div className="sp-am-actions" style={{ display: 'flex' }}>
-              <button className="sp-am-play-btn" onClick={onPlayAll}>
-                <Ico name="play" variant="bold" width={14} height={14} />
-                {t('search.playAll')}
-              </button>
-              {/* Follow — сразу после «Воспроизвести всё». */}
-              {isArtist && loadedArtist && (
-                <FollowBtn
-                  id={target.id}
-                  name={heroName}
-                  avatar={heroCover}
-                  permalink={loadedArtist.permalink ?? null}
-                />
-              )}
-              <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
-                <Ico name="shuffle" width={15} height={15} />
-              </button>
-              <button className="sp-am-icon-btn" onClick={onImport} aria-label={t('search.import')}>
-                <Ico name="import" width={14} height={14} />
-              </button>
-              <button className="sp-am-icon-btn" onClick={onShare} aria-label={t('lib.ctx.share')}>
-                <Ico name="share" width={14} height={14} />
-              </button>
-            </div>
-          )}
+          <div className="sp-am-actions" style={{ display: 'flex' }}>
+            {loaded && (
+              <>
+                <button className="sp-am-play-btn" onClick={onPlayAll}>
+                  <Ico name="play" variant="bold" width={14} height={14} />
+                  {t('search.playAll')}
+                </button>
+                {/* Follow — сразу после «Воспроизвести всё». */}
+                {isArtist && loadedArtist && (
+                  <FollowBtn
+                    id={target.id}
+                    name={heroName}
+                    avatar={heroCover}
+                    permalink={loadedArtist.permalink ?? null}
+                  />
+                )}
+                <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
+                  <Ico name="shuffle" width={15} height={15} />
+                </button>
+                <button
+                  ref={importAnchorRef}
+                  className="sp-am-icon-btn"
+                  onClick={() => setImportOpen((v) => !v)}
+                  aria-label={t('search.import')}
+                >
+                  <Ico name="import" width={14} height={14} />
+                </button>
+                <button className="sp-am-icon-btn" onClick={onShare} aria-label={t('lib.ctx.share')}>
+                  <Ico name="share" width={14} height={14} />
+                </button>
+              </>
+            )}
+            {/* «Назад» — в том же ряду, прижата вправо (.sp-am-back-btn). */}
+            <button
+              className="sp-am-icon-btn sp-am-back-btn"
+              onClick={stack.length > 1 ? back : close}
+              aria-label={t('common.back')}
+            >
+              <Ico name="arrowLeft" width={15} height={15} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -552,14 +646,31 @@ export const DetailView = () => {
         {loaded?.kind === 'artist' && (
           <ArtistBody
             data={loaded.data}
-            tracksLimit={tracksLimit}
-            onShowMore={() => setTracksLimit((n) => n + 8)}
+            tracks={artistTracks}
+            reposts={artistReposts}
+            tracksHasMore={!!tracksCursor}
+            repostsHasMore={!!repostsCursor}
+            loadingMore={loadingMore}
+            onLoadMoreTracks={loadMoreTracks}
+            onLoadMoreReposts={loadMoreReposts}
             onPlayTrack={playOne}
             onCtxMenu={onCtxMenu}
             onAddTrack={onAddTrack}
+            onLoadAlbumTracks={loadAlbumTracks}
             onOpenAlbum={(p) =>
               push({
                 kind: 'album',
+                providerId: target.providerId,
+                id: p.id,
+                title: p.title,
+                cover: p.cover ?? null,
+                subtitle: t('search.tracksCount', { n: p.trackCount ?? 0 }),
+                round: false,
+              })
+            }
+            onOpenPlaylist={(p, kind) =>
+              push({
+                kind,
                 providerId: target.providerId,
                 id: p.id,
                 title: p.title,
@@ -580,6 +691,13 @@ export const DetailView = () => {
           />
         )}
       </div>
+
+      <ImportPopup
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        anchorRef={importAnchorRef}
+        onPick={runImport}
+      />
 
       <TrackCtxMenu
         pos={ctx?.pos ?? null}
@@ -617,30 +735,220 @@ export const DetailView = () => {
   )
 }
 
+/* ── Группа альбома (вкладка «Альбомы») ───────────────────────────────────
+   Шапка (обложка + название + кол-во треков) + разворачиваемый превью-список
+   треков (лениво подгружается при первом раскрытии). Превью — первые
+   ALBUM_PREVIEW треков; «Показать все» раскрывает остаток или ведёт в альбом. */
+const ALBUM_PREVIEW = 5
+const AlbumGroup = ({
+  album,
+  onOpen,
+  onLoadTracks,
+  onPlayTrack,
+  onCtxMenu,
+  onAddTrack,
+}: {
+  album: Playlist
+  onOpen: () => void
+  onLoadTracks: (album: Playlist) => Promise<Track[]>
+  onPlayTrack: (track: Track) => void
+  onCtxMenu: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
+  onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
+}) => {
+  const t = useT()
+  const [tracks, setTracks] = useState<Track[] | null>(null)
+  const [showAll, setShowAll] = useState(false)
+
+  // Грузим треки сразу при монтировании — альбомы раскрыты по умолчанию (как в SC).
+  useEffect(() => {
+    let cancelled = false
+    onLoadTracks(album)
+      .then((tr) => !cancelled && setTracks(tr))
+      .catch(() => !cancelled && setTracks([]))
+    return () => {
+      cancelled = true
+    }
+  }, [album.id])
+
+  const preview = tracks ? tracks.slice(0, ALBUM_PREVIEW) : []
+  const extra = tracks ? tracks.slice(ALBUM_PREVIEW) : []
+  const hasMore = extra.length > 0
+
+  return (
+    <div className="sp-am-album">
+      <div className="sp-am-album-hdr">
+        <div className="sp-am-album-cov" onClick={onOpen}>
+          <Cover src={album.cover} placeholder={<PhAlbum />} />
+        </div>
+        <div className="sp-am-album-meta" onClick={onOpen}>
+          <div className="sp-am-album-label">{t('search.detail.album')}</div>
+          <div className="sp-am-album-name">{album.title}</div>
+          <div className="sp-am-album-sub">{t('search.tracksCount', { n: album.trackCount ?? 0 })}</div>
+        </div>
+      </div>
+
+      <div className="sp-am-album-body">
+        {tracks === null && <SkRow />}
+        {tracks && tracks.length === 0 && (
+          <div className="sc-status" style={{ padding: '8px 0' }}>{t('search.noTracks')}</div>
+        )}
+        {preview.map((tr) => (
+          <TrackRow
+            key={tr.id}
+            track={tr}
+            onPlay={() => onPlayTrack(tr)}
+            onCtxMenu={(e) => onCtxMenu(e, tr)}
+            onAddClick={(e) => onAddTrack(e, tr)}
+          />
+        ))}
+        {/* Доп. треки в grid-обёртке (0fr↔1fr) — плавное раскрытие/сворачивание. */}
+        {hasMore && (
+          <div className={`sp-am-album-extra${showAll ? ' open' : ''}`}>
+            <div>
+              {extra.map((tr) => (
+                <TrackRow
+                  key={tr.id}
+                  track={tr}
+                  onPlay={() => onPlayTrack(tr)}
+                  onCtxMenu={(e) => onCtxMenu(e, tr)}
+                  onAddClick={(e) => onAddTrack(e, tr)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        {hasMore && (
+          <button className="sp-am-album-more" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? t('search.album.collapse') : t('search.album.showAll', { n: tracks!.length })}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* Кнопка «Загрузить ещё» (сетевая догрузка страницы). */
+const MoreBtn = ({ loading, onClick, label }: { loading: boolean; onClick: () => void; label: string }) => (
+  <button
+    onClick={onClick}
+    disabled={loading}
+    style={{
+      display: 'block', width: '100%', marginTop: 8, padding: 9,
+      borderRadius: 'var(--radius)', background: 'transparent',
+      border: '1px solid rgba(255,255,255,var(--wb))', color: 'var(--text2)',
+      fontSize: 12, fontWeight: 600, cursor: loading ? 'default' : 'pointer',
+      fontFamily: 'var(--font)', opacity: loading ? 0.6 : 1,
+    }}
+  >
+    {loading ? '…' : label}
+  </button>
+)
+
 /* ── Тело страницы артиста ────────────────────────────────────────────── */
 const ArtistBody = ({
   data,
-  tracksLimit,
-  onShowMore,
+  tracks,
+  reposts,
+  tracksHasMore,
+  repostsHasMore,
+  loadingMore,
+  onLoadMoreTracks,
+  onLoadMoreReposts,
   onPlayTrack,
   onCtxMenu,
   onAddTrack,
   onOpenAlbum,
+  onOpenPlaylist,
+  onLoadAlbumTracks,
 }: {
   data: ArtistPageData
-  tracksLimit: number
-  onShowMore: () => void
+  /** Пагинируемые списки приходят из родителя (DetailView), не из data. */
+  tracks: Track[]
+  reposts: RepostItem[]
+  tracksHasMore: boolean
+  repostsHasMore: boolean
+  loadingMore: 'tracks' | 'reposts' | null
+  onLoadMoreTracks: () => void
+  onLoadMoreReposts: () => void
   onPlayTrack: (track: Track) => void
   onCtxMenu: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
   onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
   onOpenAlbum: (p: Playlist) => void
+  onOpenPlaylist: (p: Playlist, kind: 'album' | 'playlist') => void
+  onLoadAlbumTracks: (album: Playlist) => Promise<Track[]>
 }) => {
   const t = useT()
-  const { artist, topTracks, tracks, albums } = data
-  const shownTracks = tracks.slice(0, tracksLimit)
+  const { artist, topTracks, albums } = data
+
+  // Вкладки «Все / Популярные / Треки / Альбомы». Показываем только те, под
+  // которыми есть контент; «Все» — всегда (если хоть что-то есть).
+  const [tab, setTab] = useState<'all' | 'popular' | 'tracks' | 'albums' | 'reposts'>('all')
+  // Сколько превью-строк раскрыто на вкладке «Все» (старт 15 / 5). «Загрузить
+  // ещё» наращивает лимит и подтягивает следующую страницу из сети, когда
+  // загруженного перестаёт хватать. Сброс при смене артиста.
+  const [allTracksLimit, setAllTracksLimit] = useState(15)
+  const [allRepostsLimit, setAllRepostsLimit] = useState(5)
+  useEffect(() => {
+    setAllTracksLimit(15)
+    setAllRepostsLimit(5)
+  }, [data.artist.id])
+  const tabs = (
+    [
+      { id: 'all' as const, label: t('search.tab.all'), icon: 'list' as const, show: true },
+      { id: 'popular' as const, label: t('search.popular'), icon: 'chart' as const, show: topTracks.length > 0 },
+      { id: 'tracks' as const, label: t('search.tab.tracks'), icon: 'note' as const, show: tracks.length > 0 },
+      { id: 'albums' as const, label: t('search.tab.albums'), icon: 'vinyl' as const, show: albums.length > 0 },
+      { id: 'reposts' as const, label: t('search.tab.reposts'), icon: 'repeat' as const, show: reposts.length > 0 },
+    ]
+  ).filter((x) => x.show)
+  // Если активная вкладка осталась без контента (другой артист) — на «Все».
+  const activeTab = tabs.some((x) => x.id === tab) ? tab : 'all'
+  const showPopular = activeTab === 'all' || activeTab === 'popular'
+  const showTracks = activeTab === 'all' || activeTab === 'tracks'
+  const showAlbums = activeTab === 'all' || activeTab === 'albums'
+  const showReposts = activeTab === 'all' || activeTab === 'reposts'
+
+  // На «Все» — превью с наращиваемым лимитом; на своих вкладках — полный список.
+  const tracksToShow = activeTab === 'all' ? tracks.slice(0, allTracksLimit) : tracks
+  const repostsToShow = activeTab === 'all' ? reposts.slice(0, allRepostsLimit) : reposts
+  // Кнопка «Загрузить ещё» на «Все»: видна, пока есть нераскрытое локально ИЛИ
+  // есть курсор. Клик — раскрыть ещё порцию и при нехватке догрузить из сети.
+  const allTracksMore = tracks.length > allTracksLimit || tracksHasMore
+  const allRepostsMore = reposts.length > allRepostsLimit || repostsHasMore
+  const moreAllTracks = () => {
+    const next = allTracksLimit + 15
+    setAllTracksLimit(next)
+    if (next >= tracks.length && tracksHasMore) onLoadMoreTracks()
+  }
+  const moreAllReposts = () => {
+    const next = allRepostsLimit + 5
+    setAllRepostsLimit(next)
+    if (next >= reposts.length && repostsHasMore) onLoadMoreReposts()
+  }
+  // Заголовки секций нужны только в режиме «Все»; на одиночной вкладке имя
+  // секции уже задаёт сама вкладка.
+  const showHdr = activeTab === 'all'
 
   return (
     <>
+      {/* Вкладки фильтра (рендерим, только если есть хотя бы одна вторая). */}
+      {tabs.length > 1 && (
+        <div className="sp-am-tabs" role="tablist">
+          {tabs.map((x) => (
+            <button
+              key={x.id}
+              role="tab"
+              aria-selected={activeTab === x.id}
+              className={`sp-am-tab${activeTab === x.id ? ' active' : ''}`}
+              onClick={() => setTab(x.id)}
+            >
+              <Ico name={x.icon} width={15} height={15} />
+              {x.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Жанры/сайт */}
       {(!!artist.genres?.length || !!artist.website) && (
         <div style={{ marginBottom: 14 }}>
@@ -661,75 +969,152 @@ const ArtistBody = ({
         </div>
       )}
 
-      {topTracks.length > 0 && (
+      {showPopular && topTracks.length > 0 && (
         <div className="sp-am-section">
-          <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.popular')}</span></div>
-          <div className="sp-am-tracks-grid">
-            {topTracks.map((t) => (
-              <Card
+          {showHdr && <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.popular')}</span></div>}
+          {/* «Все» — горизонтальная лента карточек, как раньше;
+              отдельная вкладка «Популярные» — вертикальный список строк. */}
+          {activeTab === 'popular' ? (
+            topTracks.map((t) => (
+              <TrackRow
                 key={t.id}
-                cover={t.cover}
-                name={t.name}
-                sub={<ArtistLinks artist={t.artist} scId={t.artistScId} permalink={t.artistPermalink} artistId={t.artistId} provider={t.artistProvider} />}
-                square={false}
-                showPlay
-                badgeTrack={t}
-                onClick={() => onPlayTrack(t)}
+                track={t}
+                onPlay={() => onPlayTrack(t)}
                 onCtxMenu={(e) => onCtxMenu(e, t)}
+                onAddClick={(e) => onAddTrack(e, t)}
               />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {tracks.length > 0 && (
-        <div className="sp-am-section">
-          <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.tracks')}</span></div>
-          {shownTracks.map((t) => (
-            <TrackRow
-              key={t.id}
-              track={t}
-              onPlay={() => onPlayTrack(t)}
-              onCtxMenu={(e) => onCtxMenu(e, t)}
-              onAddClick={(e) => onAddTrack(e, t)}
-            />
-          ))}
-          {tracks.length > shownTracks.length && (
-            <button
-              onClick={onShowMore}
-              style={{
-                display: 'block', width: '100%', marginTop: 8, padding: 9,
-                borderRadius: 'var(--radius)', background: 'transparent',
-                border: '1px solid rgba(255,255,255,var(--wb))', color: 'var(--text2)',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)',
-              }}
-            >
-              {t('search.loadMore')}
-            </button>
+            ))
+          ) : (
+            <div className="sp-am-tracks-grid">
+              {topTracks.map((t) => (
+                <Card
+                  key={t.id}
+                  cover={t.cover}
+                  name={t.name}
+                  sub={<ArtistLinks artist={t.artist} scId={t.artistScId} permalink={t.artistPermalink} artistId={t.artistId} provider={t.artistProvider} />}
+                  square={false}
+                  showPlay
+                  badgeTrack={t}
+                  onClick={() => onPlayTrack(t)}
+                  onCtxMenu={(e) => onCtxMenu(e, t)}
+                />
+              ))}
+            </div>
           )}
         </div>
       )}
 
-      {albums.length > 0 && (
+      {showReposts && reposts.length > 0 && (
         <div className="sp-am-section">
-          <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.albums')}</span></div>
-          <div className="sp-am-tracks-grid">
-            {albums.map((a) => (
-              <Card
-                key={a.id}
-                cover={a.cover}
-                name={a.title}
-                sub={t('search.tracksCount', { n: a.trackCount ?? 0 })}
-                square
-                showPlay
-                onClick={() => onOpenAlbum(a)}
+          {showHdr && <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.reposts')}</span></div>}
+          {/* Всегда список: треки — строкой (с атрибуцией «⟲ репостнул»),
+              плейлисты/альбомы — кликабельной строкой. */}
+          {repostsToShow.map((r, i) =>
+            r.kind === 'track' ? (
+              <TrackRow
+                key={`t_${r.track.id}_${i}`}
+                track={r.track}
+                reposter={artist.name || undefined}
+                onPlay={() => onPlayTrack(r.track)}
+                onCtxMenu={(e) => onCtxMenu(e, r.track)}
+                onAddClick={(e) => onAddTrack(e, r.track)}
               />
-            ))}
-          </div>
+            ) : (
+              <div
+                key={`p_${r.playlist.id}_${i}`}
+                className="tr"
+                onClick={() => onOpenPlaylist(r.playlist, r.kind)}
+              >
+                <div className="trcov">
+                  <Cover src={r.playlist.cover} placeholder={<PhAlbum />} />
+                </div>
+                <div className="tri">
+                  <div className="trn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                      {r.playlist.title}
+                    </span>
+                    {artist.name && (
+                      <span className="tr-repost">
+                        <Ico name="repeat" width={12} height={12} />
+                        {artist.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="tra">
+                    {(r.kind === 'album' ? t('search.detail.album') : t('search.detail.playlist')) +
+                      (r.playlist.ownerName ? ' · ' + r.playlist.ownerName : '')}
+                  </div>
+                </div>
+                <div className="trd">{t('search.tracksCount', { n: r.playlist.trackCount ?? 0 })}</div>
+              </div>
+            ),
+          )}
+          {activeTab === 'reposts' && repostsHasMore && (
+            <MoreBtn loading={loadingMore === 'reposts'} onClick={onLoadMoreReposts} label={t('search.loadMore')} />
+          )}
+          {activeTab === 'all' && allRepostsMore && (
+            <MoreBtn loading={loadingMore === 'reposts'} onClick={moreAllReposts} label={t('search.loadMore')} />
+          )}
         </div>
       )}
 
-      {!topTracks.length && !tracks.length && !albums.length && (
+      {showAlbums && albums.length > 0 && (
+        <div className="sp-am-section">
+          {showHdr && <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.albums')}</span></div>}
+          {/* «Все» — горизонтальная лента карточек, как раньше; отдельная вкладка
+              «Альбомы» — список разворачиваемых групп с превью треков (как в SC). */}
+          {activeTab === 'albums' ? (
+            albums.map((a) => (
+              <AlbumGroup
+                key={a.id}
+                album={a}
+                onOpen={() => onOpenAlbum(a)}
+                onLoadTracks={onLoadAlbumTracks}
+                onPlayTrack={onPlayTrack}
+                onCtxMenu={onCtxMenu}
+                onAddTrack={onAddTrack}
+              />
+            ))
+          ) : (
+            <div className="sp-am-tracks-grid">
+              {albums.map((a) => (
+                <Card
+                  key={a.id}
+                  cover={a.cover}
+                  name={a.title}
+                  sub={t('search.tracksCount', { n: a.trackCount ?? 0 })}
+                  square
+                  showPlay
+                  onClick={() => onOpenAlbum(a)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {showTracks && tracks.length > 0 && (
+        <div className="sp-am-section">
+          {showHdr && <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.tracks')}</span></div>}
+          {tracksToShow.map((tr) => (
+            <TrackRow
+              key={tr.id}
+              track={tr}
+              onPlay={() => onPlayTrack(tr)}
+              onCtxMenu={(e) => onCtxMenu(e, tr)}
+              onAddClick={(e) => onAddTrack(e, tr)}
+            />
+          ))}
+          {activeTab === 'tracks' && tracksHasMore && (
+            <MoreBtn loading={loadingMore === 'tracks'} onClick={onLoadMoreTracks} label={t('search.loadMore')} />
+          )}
+          {activeTab === 'all' && allTracksMore && (
+            <MoreBtn loading={loadingMore === 'tracks'} onClick={moreAllTracks} label={t('search.loadMore')} />
+          )}
+        </div>
+      )}
+
+      {!topTracks.length && !tracks.length && !albums.length && !reposts.length && (
         <div className="sc-status">{t('search.noArtistTracks')}</div>
       )}
     </>

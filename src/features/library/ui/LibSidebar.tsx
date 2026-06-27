@@ -192,7 +192,7 @@ export const LibSidebar = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 4px' }}>
           <div
             className={cn(
-              'lib-item lib-item-sys lib-item-sys-all',
+              'lib-item lib-item-sys',
               mode === 'all' && 'active',
             )}
             id="libItemAll"
@@ -217,7 +217,7 @@ export const LibSidebar = () => {
 
           <div
             className={cn(
-              'lib-item lib-item-sys lib-item-sys-fav',
+              'lib-item lib-item-sys',
               mode === 'fav' && 'active',
             )}
             id="libItemFav"
@@ -242,16 +242,13 @@ export const LibSidebar = () => {
 
           <div
             className={cn(
-              'lib-item lib-item-sys lib-item-sys-hist',
+              'lib-item lib-item-sys',
               mode === 'history' && 'active',
             )}
             id="libItemHistory"
             onClick={() => selectBuiltin('history')}
           >
-            <div
-              className="lib-icon"
-              style={{ background: 'rgba(255,180,0,.15)' }}
-            >
+            <div className="lib-icon">
               <Ico name="clock" width={16} height={16} />
             </div>
             <div className="lib-item-info">
