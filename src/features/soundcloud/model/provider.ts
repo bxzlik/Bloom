@@ -97,8 +97,9 @@ const mapReposts = (raw: ScRepostItem[]): { reposts: RepostItem[]; tracks: Track
       reposts.push({ kind: 'track', track: tr })
     } else if (r.playlist) {
       const p = toPlaylist(r.playlist)
-      putPlaylistHandle(p.id, r.playlist, r.kind === 'album' ? 'album' : 'playlist')
-      reposts.push({ kind: r.kind, playlist: p })
+      const kind = r.kind === 'album' ? 'album' : 'playlist'
+      putPlaylistHandle(p.id, r.playlist, kind)
+      reposts.push({ kind, playlist: p })
     }
   }
   return { reposts, tracks }
