@@ -74,7 +74,6 @@ const APP_PREF_CLASSES = [
   'sidebar-floating',
   'sidebar-autohide',
   'no-sb-sep',
-  'no-nav-indicator',
   'cov-btns-in-bar',
 ] as const
 
@@ -277,8 +276,8 @@ export const App = () => {
       const active = bodySliderClass(usePlayerViewStore.getState().sliderType)
       for (const c of BODY_SLIDER_CLASSES) document.body.classList.toggle(c, c === active)
       // Плоская кнопка play (без фона, крупная иконка) — body-класс, чтобы достать
-      // и до #bigPicOverlay (вне .app). По умолчанию вкл (playBtnBg=false).
-      document.body.classList.toggle('play-flat', !usePlayerViewStore.getState().playBtnBg)
+      // и до #bigPicOverlay (вне .app). Всегда включена.
+      document.body.classList.add('play-flat')
       // Авто-скрытие тайтлбара — body-класс (#winTitlebar рендерится вне .app).
       document.body.classList.toggle('titlebar-autohide', useUiPrefsStore.getState().titlebarAutohide)
     }

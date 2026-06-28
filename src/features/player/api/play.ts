@@ -253,7 +253,15 @@ export const loadPlay = async (id: string): Promise<void> => {
   _skipCount = 0
   // Сетевой трек резолвнулся успешно — теперь переключаем показ на него.
   if (!instant) commitDisplay()
+  // Клик по уже играющему треку: src совпадает с текущим → audioEngine.play не
+  // перезагружает источник и событие loadedmetadata/error не придёт. Спиннер
+  // снимается только в этих обработчиках (bridge), поэтому снимаем его вручную,
+  // иначе на обложке висит бесконечная «загрузка».
+  const alreadyLoaded = src.url === audioEngine.currentSrc
   void audioEngine.play(src.url, { hls: src.hls })
+  if (alreadyLoaded && useQueueStore.getState().loadingId === id) {
+    useQueueStore.getState().setLoadingId(null)
+  }
   pushNowPlaying({ positionOverride: 0 })
 }
 

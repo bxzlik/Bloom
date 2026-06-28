@@ -169,6 +169,10 @@ class AudioEngine {
   get src(): string {
     return this.audio.src
   }
+  /** Сырой текущий источник (url, переданный в play/load) — для сравнения «тот же трек». */
+  get currentSrc(): string {
+    return this.curSrc
+  }
   get playbackRate(): number {
     return this._rate
   }

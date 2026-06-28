@@ -679,6 +679,38 @@ pub async fn download_to_dir(
     Ok(())
 }
 
+/// MIME по magic-bytes для `data:`-URL (по умолчанию JPEG).
+fn image_mime(b: &[u8]) -> &'static str {
+    if b.len() < 4 {
+        return "image/jpeg";
+    }
+    match (b[0], b[1]) {
+        (0x89, 0x50) => "image/png",
+        (0x47, 0x49) => "image/gif",
+        (0x52, 0x49) => "image/webp",
+        _ => "image/jpeg",
+    }
+}
+
+/// Скачать удалённую картинку (reqwest + rustls, в обход CORS WebView2) и вернуть
+/// её как `data:`-URL. Нужно «Оптимизации»: заморозка GIF снимает первый кадр
+/// через canvas, но браузерный `fetch` из WebView блокируется CORS для площадок
+/// без `Access-Control-Allow-Origin` (Pinterest и пр.) — поэтому тянем байты на
+/// стороне Rust и отдаём data-URL, который canvas рисует без CORS-ограничений.
+#[tauri::command]
+pub async fn fetch_image_data_url(url: String) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+        .build()
+        .map_err(|e| e.to_string())?;
+    let bytes = fetch_bytes_retry(&client, &url, None, 3).await?;
+    if !looks_like_image(&bytes) {
+        return Err("ответ не похож на изображение".into());
+    }
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    Ok(format!("data:{};base64,{}", image_mime(&bytes), b64))
+}
+
 #[tauri::command]
 pub fn cover_download(
     app: AppHandle,
@@ -1193,6 +1225,37 @@ pub async fn import_playlist_file(app: AppHandle) -> Result<Option<String>, Stri
         .file()
         .set_title("Импорт плейлиста")
         .add_filter("Bloom Playlist", &["bloomplaylist"])
+        .pick_file(move |path| { let _ = tx.send(path.and_then(|p| p.into_path().ok())); });
+    match rx.recv().ok().flatten() {
+        Some(path) => std::fs::read_to_string(&path).map(Some).map_err(|e| e.to_string()),
+        None => Ok(None),
+    }
+}
+
+#[tauri::command]
+pub async fn export_presets_file(app: AppHandle, content: String, default_name: String) -> Result<bool, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let (tx, rx) = std::sync::mpsc::channel::<Option<std::path::PathBuf>>();
+    app.dialog()
+        .file()
+        .set_title("Экспорт пресетов")
+        .set_file_name(&default_name)
+        .add_filter("Bloom Presets", &["bloompresets"])
+        .save_file(move |path| { let _ = tx.send(path.and_then(|p| p.into_path().ok())); });
+    match rx.recv().ok().flatten() {
+        Some(path) => std::fs::write(&path, content.as_bytes()).map(|_| true).map_err(|e| e.to_string()),
+        None => Ok(false),
+    }
+}
+
+#[tauri::command]
+pub async fn import_presets_file(app: AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let (tx, rx) = std::sync::mpsc::channel::<Option<std::path::PathBuf>>();
+    app.dialog()
+        .file()
+        .set_title("Импорт пресетов")
+        .add_filter("Bloom Presets", &["bloompresets"])
         .pick_file(move |path| { let _ = tx.send(path.and_then(|p| p.into_path().ok())); });
     match rx.recv().ok().flatten() {
         Some(path) => std::fs::read_to_string(&path).map(Some).map_err(|e| e.to_string()),

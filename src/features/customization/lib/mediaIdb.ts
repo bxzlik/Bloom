@@ -167,5 +167,3 @@ export const loadAppImages = async (): Promise<Partial<Record<AppImageKey, strin
     }
   })
 }
-
-export const MEDIA_LIMIT = 50

@@ -10,7 +10,7 @@ import { invoke } from '@shared/tauri'
  *
  * Методы: setSidebarPos/setSidebarCompact/toggleSbSep
  * (`.app.sidebar-top|sidebar-right|sidebar-compact|no-sb-sep`),
- * toggleNavIndicator (`.app.no-nav-indicator`), setBorderAlpha
+ * setBorderAlpha
  * (`--wb`/`--wb2`), toggleTitlebarLabel (`#winTitleCenter`), toggleNavBtn
  * (видимость кнопок мини-плеера/хоткеев в сайдбаре).
  *
@@ -36,7 +36,6 @@ export interface UiPrefs {
   sbSep: boolean
   /** Вид библиотеки: список (сайдбар) или сетка карточек. */
   libView: LibView
-  navIndicator: boolean
   /** Название текущей вкладки по центру тайтлбара (`#winTitleCenter`). */
   titlebarLabel: boolean
   navFloatBtn: boolean
@@ -73,7 +72,6 @@ const DEFAULTS: UiPrefs = {
   titlebarAutohide: false,
   sbSep: true,
   libView: 'list',
-  navIndicator: true,
   titlebarLabel: true,
   navFloatBtn: true,
   tbLogo: true,
@@ -103,7 +101,6 @@ const load = (): UiPrefs => {
       titlebarAutohide: !!p.titlebarAutohide,
       sbSep: p.sbSep !== false,
       libView: p.libView === 'grid' ? 'grid' : 'list',
-      navIndicator: p.navIndicator !== false,
       titlebarLabel: p.titlebarLabel !== false,
       navFloatBtn: p.navFloatBtn !== false,
       tbLogo: p.tbLogo !== false,
@@ -159,7 +156,6 @@ const persist = (s: UiPrefs): void => {
         titlebarAutohide: s.titlebarAutohide,
         sbSep: s.sbSep,
         libView: s.libView,
-        navIndicator: s.navIndicator,
         titlebarLabel: s.titlebarLabel,
         navFloatBtn: s.navFloatBtn,
         tbLogo: s.tbLogo,
@@ -214,7 +210,6 @@ export const appClassesFromPrefs = (p: UiPrefs): string[] => {
   // разруливает позиционирование для каждого случая.
   if (p.sidebarAutohide) out.push('sidebar-autohide')
   if (!p.sbSep) out.push('no-sb-sep')
-  if (!p.navIndicator) out.push('no-nav-indicator')
   return out
 }
 

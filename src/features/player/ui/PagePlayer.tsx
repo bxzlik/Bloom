@@ -628,6 +628,8 @@ const PlayerContent = () => {
             <div className="cn-progress">
               <PsProgress />
             </div>
+            {/* Визуализатор — оверлеем под прогрессом (прогресс поднимается выше). */}
+            <VizBlock />
             {/* Транспорт отдельной строкой (без рамки): download | плеер | дизлайк. */}
             {transportNode}
             {/* Громкость — полным слайдером в своей строке + source/eq/скорость. */}
@@ -655,6 +657,8 @@ const PlayerContent = () => {
           {renderCover(false)}
           <div className="sl-progress">
             <PsProgress />
+            {/* Визуализатор — оверлеем под прогрессом (прогресс поднимается выше). */}
+            <VizBlock />
           </div>
         </div>
         <div className="sl-bottom" key="sl-bottom">
@@ -900,7 +904,8 @@ const NextTrackBlock = ({
 }
 
 // ── визуализатор (#vizWrap + WebAudio AnalyserNode, toggleViz/_vizDraw) ──
-// Скрыт в large. Рендерится только в стандартной раскладке.
+// Рендерится во всех раскладках: в стандартной — отдельным блоком, в large/cinema
+// — оверлеем поверх обложки под прогрессом (CSS делает фон прозрачным).
 
 const VizBlock = () => {
   const vizEnabled = usePlayerViewStore((s) => s.vizEnabled)

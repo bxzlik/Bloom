@@ -90,6 +90,14 @@ body.glass-mode .sp-am-track-card {
   background: transparent !important;
 }
 
+/* Визуализатор в стандартном плеере следует настройке прозрачности — в стекле
+   прозрачен (просвечивает родительское стекло .player-section/.main), как другие
+   внутренние блоки. В large/cinema у визуализатора своя полупрозрачная подложка
+   (player.css), поэтому глушим только копию внутри .player-section. */
+body.glass-mode .player-section #vizWrap {
+  background: transparent !important;
+}
+
 /* ВАЖНО: НЕ ставить `will-change: backdrop-filter` (или сам backdrop-filter) на
    .sc — на карточки настроек стекло НЕ накладывается (только .main/.sidebar/
    панели/мини-плеер), а этот хинт создавал бы на КАЖДОМ .sc отдельный stacking-

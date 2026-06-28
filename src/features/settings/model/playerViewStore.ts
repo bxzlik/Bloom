@@ -77,8 +77,6 @@ export interface PlayerViewPrefs {
   hideQueue: boolean
   /** Текст песни вместо списка очереди. */
   lyricsInQueue: boolean
-  /** Скрыть шапку-пилюлю «Текст песни» над текстом. */
-  hideLyricsHeader: boolean
   /** Показать след. трек под контролами (только при hideQueue, toggleShowNextTrack). */
   showNextTrack: boolean
   /** Визуализатор (анимация волн под музыку, toggleViz). */
@@ -100,8 +98,6 @@ export interface PlayerViewPrefs {
   mpRounded: boolean
   /** Скрытые элементы бара (true = скрыт). */
   mpHide: MpHide
-  /** Фон (акцент) у кнопки воспроизведения. false → плоская кнопка с крупной иконкой. */
-  playBtnBg: boolean
   /** Оверлей-«остров» now-playing поверх всех окон: режим. */
   overlayMode: OverlayMode
   /** Позиция оверлея на экране. */
@@ -135,7 +131,6 @@ const DEFAULTS: PlayerViewPrefs = {
   queueView: 'normal',
   hideQueue: false,
   lyricsInQueue: false,
-  hideLyricsHeader: false,
   showNextTrack: false,
   vizEnabled: false,
   vizType: 'bars',
@@ -148,7 +143,6 @@ const DEFAULTS: PlayerViewPrefs = {
   mpCoverShape: 'default',
   mpRounded: false,
   mpHide: { lyrics: false, queue: false, bigpic: false, shuffle: false, repeat: false, time: false, fav: false },
-  playBtnBg: false,
   overlayMode: 'off',
   overlayPos: 'tr',
   overlayX: 0.98,
@@ -218,7 +212,6 @@ const load = (): PlayerViewPrefs => {
       queueView: p.queueView === 'extended' ? 'extended' : 'normal',
       hideQueue: !!p.hideQueue,
       lyricsInQueue: !!p.lyricsInQueue,
-      hideLyricsHeader: !!p.hideLyricsHeader,
       showNextTrack: !!p.showNextTrack,
       vizEnabled: !!p.vizEnabled,
       vizType: p.vizType === 'wave' ? 'wave' : 'bars',
@@ -244,7 +237,6 @@ const load = (): PlayerViewPrefs => {
         time: !!(p.mpHide && p.mpHide.time),
         fav: !!(p.mpHide && p.mpHide.fav),
       },
-      playBtnBg: !!p.playBtnBg,
       overlayMode:
         p.overlayMode === 'island' || p.overlayMode === 'compact' || p.overlayMode === 'bar'
           ? p.overlayMode
@@ -279,7 +271,6 @@ const persist = (s: PlayerViewPrefs): void => {
         queueView: s.queueView,
         hideQueue: s.hideQueue,
         lyricsInQueue: s.lyricsInQueue,
-        hideLyricsHeader: s.hideLyricsHeader,
         showNextTrack: s.showNextTrack,
         vizEnabled: s.vizEnabled,
         vizType: s.vizType,
@@ -292,7 +283,6 @@ const persist = (s: PlayerViewPrefs): void => {
         mpCoverShape: s.mpCoverShape,
         mpRounded: s.mpRounded,
         mpHide: s.mpHide,
-        playBtnBg: s.playBtnBg,
         overlayMode: s.overlayMode,
         overlayPos: s.overlayPos,
         overlayX: s.overlayX,

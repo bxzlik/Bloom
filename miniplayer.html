@@ -198,8 +198,7 @@ html,body{
 }
 .cc-play:hover{background:var(--accent2)}
 .cc-play:active{transform:scale(.94)}
-/* Плоская кнопка play (по умолчанию): без фона + крупная иконка, как в осн. окне.
-   Синхрон через bloom_view_prefs.playBtnBg (applyPlayBtnBg). Ведёт себя как .cc. */
+/* Плоская кнопка play: без фона + крупная иконка, как в осн. окне. Ведёт себя как .cc. */
 body.play-flat .cc-play{width:34px;height:34px;border-radius:calc(var(--radius)*0.7);background:none;color:var(--text2)}
 body.play-flat .cc-play:hover{background:rgba(255,255,255,.07);color:var(--accent)}
 body.play-flat .cc-play svg{width:22px;height:22px}
@@ -697,12 +696,9 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   function loadSettings() {
     try { applySettings(JSON.parse(localStorage.getItem('bloom_settings') || '{}')); } catch(e) {}
   }
-  // Плоская кнопка play — читаем настройку осн. окна (bloom_view_prefs.playBtnBg).
-  // По умолчанию (нет фона) → класс play-flat.
+  // Плоская кнопка play (без фона, крупная иконка) — всегда включена.
   function applyPlayBtnBg() {
-    var flat = true;
-    try { flat = !JSON.parse(localStorage.getItem('bloom_view_prefs') || '{}').playBtnBg; } catch(e) {}
-    document.body.classList.toggle('play-flat', flat);
+    document.body.classList.add('play-flat');
   }
 
   window.cmd = function(c) {

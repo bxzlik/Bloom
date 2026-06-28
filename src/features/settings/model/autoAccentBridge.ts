@@ -19,19 +19,22 @@ export const useAutoAccentBridge = (): void => {
     let token = 0
     const run = () => {
       const { autoAccent } = useThemeStore.getState()
-      const { artwork } = usePlayerStore.getState()
-      if (!autoAccent || !artwork) return
+      const ps = usePlayerStore.getState()
+      // Акцент берём с ОТОБРАЖАЕМОЙ обложки: кастом-override (в т.ч. гифка) важнее
+      // оригинала трека. frozenCover (снимок оптимизации) игнорируем — он временный.
+      const cover = ps.coverOverride ?? ps.artwork
+      if (!autoAccent || !cover) return
       const my = ++token
-      void extractAccentFromCover(artwork).then((hex) => {
+      void extractAccentFromCover(cover).then((hex) => {
         if (my === token && hex) useThemeStore.getState().applyAutoAccent(hex)
       })
     }
-    // Реагируем на смену autoAccent (тоггл) и artwork (новый трек) без ре-рендера.
+    // Реагируем на смену autoAccent (тоггл), обложки трека и кастом-override.
     const unTheme = useThemeStore.subscribe((s, p) => {
       if (s.autoAccent !== p.autoAccent) run()
     })
     const unPlayer = usePlayerStore.subscribe((s, p) => {
-      if (s.artwork !== p.artwork) run()
+      if (s.artwork !== p.artwork || s.coverOverride !== p.coverOverride) run()
     })
     run()
     return () => {

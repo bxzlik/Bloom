@@ -1,8 +1,9 @@
+import { useEffect } from 'react'
 import { useCustomizationStore } from '@features/customization'
 import { usePlayerStore } from '@features/player'
 import { useTauriEvent } from '@shared/hooks'
 import { useOptStore, type OptMode } from '../model/optStore'
-import { isGifUrl, snapshotGif } from './gifFreeze'
+import { isGifUrl, snapshotGif, warmGif, localGifSrc } from './gifFreeze'
 
 /**
  * Движок «Оптимизации». Применяет/снимает упрощение графики по событиям окна
@@ -110,9 +111,25 @@ const restoreAll = (): void => {
   opt.setFrozenCover(null)
   opt.setFrozenViz(null)
   if (_bgGifOriginal && el) {
-    el.style.backgroundImage = `url(${_bgGifOriginal})`
+    // Возвращаем «живую» гифку из локального кэша (data-URL) — без повторной
+    // сетевой загрузки/декода, иначе после фокуса фон долго подгружается.
+    el.style.backgroundImage = `url(${localGifSrc(_bgGifOriginal) ?? _bgGifOriginal})`
     _bgGifOriginal = null
   }
+}
+
+/**
+ * Прогреть кэш текущих GIF (фон/обложка/виз), чтобы первая же заморозка была
+ * мгновенной (без сетевого round-trip). Вызывается при старте и после возврата
+ * фокуса — к следующему расфокусу снимок уже готов.
+ */
+const warmCurrentGifs = (): void => {
+  const bgUrl = useCustomizationStore.getState().bgUrl
+  if (isGifUrl(bgUrl)) void warmGif(bgUrl!)
+  const ps = usePlayerStore.getState()
+  const cover = ps.coverOverride ?? ps.artwork
+  if (isGifUrl(cover)) void warmGif(cover!)
+  if (isGifUrl(ps.vizPhoto)) void warmGif(ps.vizPhoto!)
 }
 
 // Состояние окна.
@@ -128,6 +145,8 @@ const onFocus = (focused: boolean): void => {
     // _focused, а фокус — авторитетный сигнал «окно активно».
     _minimized = false
     restoreAll()
+    // Прогреваем гифки к следующему расфокусу (заморозка станет мгновенной).
+    warmCurrentGifs()
   } else {
     applyMode('unfocus')
   }
@@ -145,4 +164,23 @@ const onMinimized = (minimized: boolean): void => {
 export const useOptBootstrap = (): void => {
   useTauriEvent('bloom-window-focus', onFocus)
   useTauriEvent('bloom-window-minimized', onMinimized)
+  // Прогрев кэша гифок при смене источника (фон/обложка/виз) — чтобы первая же
+  // заморозка после назначения гифки была мгновенной (без сетевого round-trip).
+  // warmGif идемпотентен и дедуплицирует, так что лишних загрузок нет.
+  useEffect(() => {
+    warmCurrentGifs()
+    const unsubC = useCustomizationStore.subscribe((s, p) => {
+      if (s.bgUrl !== p.bgUrl && isGifUrl(s.bgUrl)) void warmGif(s.bgUrl!)
+    })
+    const unsubP = usePlayerStore.subscribe((s, p) => {
+      const cover = s.coverOverride ?? s.artwork
+      const prevCover = p.coverOverride ?? p.artwork
+      if (cover !== prevCover && isGifUrl(cover)) void warmGif(cover!)
+      if (s.vizPhoto !== p.vizPhoto && isGifUrl(s.vizPhoto)) void warmGif(s.vizPhoto!)
+    })
+    return () => {
+      unsubC()
+      unsubP()
+    }
+  }, [])
 }

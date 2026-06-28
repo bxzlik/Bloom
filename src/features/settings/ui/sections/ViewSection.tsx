@@ -134,16 +134,6 @@ export const ViewSection = () => {
         </div>
       </div>
 
-      <div className="sc">
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.view.playBtnBg')}</div>
-            <div className="ssub">{t('settings.view.playBtnBg.sub')}</div>
-          </div>
-          <Toggle checked={p.playBtnBg} onChange={(v) => p.set('playBtnBg', v)} />
-        </div>
-      </div>
-
       <div className="s-cat-label">{t('settings.view.cat.queueLyrics')}</div>
       <div className="sc">
         <div className="sc-title">{t('settings.view.grpSide')}</div>
@@ -214,13 +204,6 @@ export const ViewSection = () => {
             <div className="ssub">{t('settings.view.karaoke.sub')}</div>
           </div>
           <Toggle checked={karaoke} onChange={() => toggleKaraoke()} />
-        </div>
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.view.hideLyricsHeader')}</div>
-            <div className="ssub">{t('settings.view.hideLyricsHeader.sub')}</div>
-          </div>
-          <Toggle checked={p.hideLyricsHeader} onChange={(v) => p.set('hideLyricsHeader', v)} />
         </div>
         <div className="sr">
           <div>

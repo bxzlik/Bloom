@@ -8,7 +8,13 @@
  *   - extractMpBgColor       — тёмный доминант (для фона мини-плеера, mode coverColor)
  *
  * Возвращает hex или null (CORS-tainted canvas / ошибка загрузки → null).
+ *
+ * Удалённые картинки (обложка-гифка по ссылке) тейнтят canvas → getImageData
+ * бросает. Поэтому при провале прямого скана для http(s) повторяем из локального
+ * data-URL (см. resolveLocalSrc — тянет байты через Rust, в обход CORS).
  */
+
+import { resolveLocalSrc } from './gifFreeze'
 
 const hslToHex = (h: number, s: number, l: number): string => {
   const a = s * Math.min(l, 1 - l)
@@ -22,8 +28,8 @@ const hslToHex = (h: number, s: number, l: number): string => {
   return '#' + f(0) + f(8) + f(4)
 }
 
-/** Скан 32×32 → доминантный пиксель в HSL (общая часть обоих экстракторов). */
-const scanDominantHsl = (
+/** Скан одного локального src (32×32) → доминантный пиксель в HSL, или null. */
+const scanFrom = (
   src: string,
 ): Promise<{ h: number; s: number; l: number } | null> =>
   new Promise((resolve) => {
@@ -74,6 +80,22 @@ const scanDominantHsl = (
     img.onerror = () => resolve(null)
     img.src = src
   })
+
+/** Скан 32×32 → доминантный пиксель в HSL (общая часть обоих экстракторов). */
+const scanDominantHsl = async (
+  src: string,
+): Promise<{ h: number; s: number; l: number } | null> => {
+  if (!src) return null
+  const direct = await scanFrom(src)
+  if (direct) return direct
+  // Прямой скан не вышел (вероятно CORS-тейнт удалённой картинки) — тянем байты
+  // через Rust и пробуем снова из локального data-URL.
+  if (/^https?:\/\//i.test(src)) {
+    const local = await resolveLocalSrc(src)
+    if (local !== src) return scanFrom(local)
+  }
+  return null
+}
 
 /** Яркий акцент из обложки. */
 export const extractAccentFromCover = async (imgSrc: string): Promise<string | null> => {

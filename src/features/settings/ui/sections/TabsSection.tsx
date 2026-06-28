@@ -86,13 +86,6 @@ export const TabsSection = () => {
           </div>
           <Toggle checked={p.navFloatBtn} onChange={(v) => p.set('navFloatBtn', v)} />
         </div>
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.interface.nav.indicator.title')}</div>
-            <div className="ssub">{t('settings.interface.nav.indicator.sub')}</div>
-          </div>
-          <Toggle checked={p.navIndicator} onChange={(v) => p.set('navIndicator', v)} />
-        </div>
       </div>
 
       <div className="s-cat-label">{t('settings.tabs.cat.titlebar')}</div>

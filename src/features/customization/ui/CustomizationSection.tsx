@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { toast } from '@shared/ui'
 import { useT } from '@shared/i18n'
+import { usePopupOpenAnimation } from '@shared/hooks'
 import { useMediaLibStore } from '../model/mediaLibStore'
 import { useCustomizationStore } from '../model/customizationStore'
-import { usePresetsStore } from '../model/presetsStore'
+import { usePresetsStore, resolvePresetImg, type Preset } from '../model/presetsStore'
 import type { MediaItem } from '../lib/mediaIdb'
 import { Ico } from '@shared/ui/icons/solar'
 
@@ -15,6 +17,63 @@ import { Ico } from '@shared/ui/icons/solar'
  */
 
 type Ctx = 'bg' | 'cover' | 'viz' | 'cursor' | 'slider'
+
+// ── Лёгкое контекстное меню (стиль `.ctx`/`.ci`) ───────────────────────────
+interface CtxMenuItem {
+  label: string
+  icon: React.ReactNode
+  danger?: boolean
+  onClick: () => void
+}
+const CtxMenu = ({ pos, items, onClose }: { pos: { x: number; y: number } | null; items: CtxMenuItem[]; onClose: () => void }) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [clamped, setClamped] = useState<{ x: number; y: number } | null>(null)
+  usePopupOpenAnimation(ref, clamped)
+
+  // Удерживаем меню в пределах окна.
+  useLayoutEffect(() => {
+    if (!pos || !ref.current) {
+      setClamped(pos)
+      return
+    }
+    const m = ref.current
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    let x = pos.x
+    let y = pos.y
+    if (x + m.offsetWidth > vw - 8) x = vw - m.offsetWidth - 8
+    if (y + m.offsetHeight > vh - 8) y = vh - m.offsetHeight - 8
+    if (x < 8) x = 8
+    if (y < 8) y = 8
+    setClamped({ x, y })
+  }, [pos])
+
+  // Закрытие по клику вне / Escape.
+  useEffect(() => {
+    if (!pos) return
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [pos, onClose])
+
+  if (!pos) return null
+  const rp = clamped ?? pos
+  return createPortal(
+    <div ref={ref} className="ctx open" style={{ left: rp.x, top: rp.y, visibility: clamped ? 'visible' : 'hidden' }}>
+      {items.map((it, i) => (
+        <div key={i} className={`ci${it.danger ? ' red' : ''}`} onClick={() => { onClose(); it.onClick() }}>
+          <span className="ci-icon">{it.icon}</span> {it.label}
+        </div>
+      ))}
+    </div>,
+    document.body,
+  )
+}
 
 export const CustomizationSection = () => {
   const t = useT()
@@ -36,6 +95,7 @@ export const CustomizationSection = () => {
 
   const [urlVal, setUrlVal] = useState('')
   const [selCtx, setSelCtx] = useState<Ctx | null>(null)
+  const [imgMenu, setImgMenu] = useState<{ pos: { x: number; y: number }; item: MediaItem } | null>(null)
 
   const applyToCtx = (ctx: Ctx, data: string) => {
     if (ctx === 'bg') {
@@ -111,7 +171,6 @@ export const CustomizationSection = () => {
       <div className="s-cat-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {t('settings.custom.library')}
-          <span style={{ fontWeight: 600, color: 'var(--muted)', textTransform: 'none', letterSpacing: 0 }}>{items.length} / 50</span>
         </span>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flex: 1, minWidth: 0, maxWidth: 360, marginLeft: 'auto' }}>
           <input
@@ -150,7 +209,12 @@ export const CustomizationSection = () => {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 9, marginTop: 8 }}>
             {items.map((it) => (
-              <div key={it.id} className="mlm-card" onClick={() => onGalleryClick(it)}>
+              <div
+                key={it.id}
+                className="mlm-card"
+                onClick={() => onGalleryClick(it)}
+                onContextMenu={(e) => { e.preventDefault(); setImgMenu({ pos: { x: e.clientX, y: e.clientY }, item: it }) }}
+              >
                 <img src={it.data} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.opacity = '0.2' }} />
                 <button
                   className="mlm-card-del"
@@ -167,6 +231,15 @@ export const CustomizationSection = () => {
 
       {/* Пресеты */}
       <PresetsCard />
+
+      {/* Контекстное меню фото */}
+      <CtxMenu
+        pos={imgMenu?.pos ?? null}
+        onClose={() => setImgMenu(null)}
+        items={imgMenu ? [
+          { label: t('settings.custom.ctxmenu.delete'), icon: <Ico name="trash" width={13} height={13} />, danger: true, onClick: () => removeItem(imgMenu.item.id) },
+        ] : []}
+      />
     </div>
   )
 }
@@ -178,8 +251,12 @@ const PresetsCard = () => {
   const savePreset = usePresetsStore((s) => s.savePreset)
   const applyPreset = usePresetsStore((s) => s.applyPreset)
   const deletePreset = usePresetsStore((s) => s.deletePreset)
+  const exportPresets = usePresetsStore((s) => s.exportPresets)
+  const exportPreset = usePresetsStore((s) => s.exportPreset)
+  const importPresets = usePresetsStore((s) => s.importPresets)
   const [name, setName] = useState('')
   const [adding, setAdding] = useState(false)
+  const [menu, setMenu] = useState<{ pos: { x: number; y: number }; id: string } | null>(null)
 
   const onSave = () => {
     if (savePreset(name)) {
@@ -197,16 +274,23 @@ const PresetsCard = () => {
       <div className="s-cat-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           {t('settings.custom.presets')}
-          <span style={{ fontWeight: 600, color: 'var(--muted)', textTransform: 'none', letterSpacing: 0 }}>{presets.length} / 20</span>
         </span>
         {adding ? (
           <button className="mlm-icon-btn" onClick={cancelAdd}>
             <Ico name="close" width={14} height={14} />
           </button>
         ) : (
-          <button className="mlm-icon-btn" onClick={() => setAdding(true)}>
-            <Ico name="add" width={14} height={14} />
-          </button>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button className="mlm-icon-btn" onClick={() => void importPresets()}>
+              <Ico name="import" width={14} height={14} />
+            </button>
+            <button className="mlm-icon-btn" onClick={() => void exportPresets()}>
+              <Ico name="export" width={14} height={14} />
+            </button>
+            <button className="mlm-icon-btn" onClick={() => setAdding(true)}>
+              <Ico name="add" width={14} height={14} />
+            </button>
+          </div>
         )}
       </div>
       <div className="sc">
@@ -232,19 +316,15 @@ const PresetsCard = () => {
       ) : (
         <div className="presets-grid">
           {presets.map((p) => {
-            const thumb = p.bg || p.cover || p.viz || p.cursor || p.slider || ''
             const badges = [p.bg && t('settings.custom.badge.bg'), p.cover && t('settings.custom.badge.cover'), p.viz && t('settings.custom.badge.viz'), p.cursor && t('settings.custom.badge.cursor'), p.slider && t('settings.custom.badge.slider')].filter(Boolean) as string[]
             return (
-              <div key={p.id} className="preset-card" onClick={() => applyPreset(p.id)}>
-                <div className="preset-thumb">
-                  {thumb ? (
-                    <img src={thumb} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                  ) : (
-                    <div className="preset-thumb-empty">
-                      <Ico name="gallery" width={18} height={18} style={{ opacity: 0.3 }} />
-                    </div>
-                  )}
-                </div>
+              <div
+                key={p.id}
+                className="preset-card"
+                onClick={() => applyPreset(p.id)}
+                onContextMenu={(e) => { e.preventDefault(); setMenu({ pos: { x: e.clientX, y: e.clientY }, id: p.id }) }}
+              >
+                <PresetThumb p={p} />
                 <div className="preset-badges">
                   {badges.map((b) => <span key={b} className="preset-badge">{b}</span>)}
                 </div>
@@ -258,7 +338,73 @@ const PresetsCard = () => {
         </div>
       )}
       </div>
+
+      {/* Контекстное меню пресета */}
+      <CtxMenu
+        pos={menu?.pos ?? null}
+        onClose={() => setMenu(null)}
+        items={menu ? [
+          { label: t('settings.custom.ctxmenu.export'), icon: <Ico name="export" width={13} height={13} />, onClick: () => void exportPreset(menu.id) },
+          { label: t('settings.custom.ctxmenu.delete'), icon: <Ico name="trash" width={13} height={13} />, danger: true, onClick: () => deletePreset(menu.id) },
+        ] : []}
+      />
     </>
+  )
+}
+
+// ── Превью пресета (карусель) ──────────────────────────────────────────────
+// Все картинки пресета листаются авто-сменой (как страницы превью обновы);
+// точки внизу — ручное переключение. Одна картинка — без точек, ноль — заглушка.
+const PresetThumb = ({ p }: { p: Preset }) => {
+  const items = useMediaLibStore((s) => s.items)
+  // Поля пресета — id библиотеки; резолвим в данные картинок (инлайн — как есть).
+  const imgs = [p.bg, p.cover, p.viz, p.slider, p.cursor]
+    .map((f) => resolvePresetImg(f, items))
+    .filter((x): x is string => !!x)
+  const n = imgs.length
+  const [i, setI] = useState(0)
+
+  // Авто-смена страниц (только если их больше одной).
+  useEffect(() => {
+    if (n <= 1) return
+    const id = setInterval(() => setI((v) => (v + 1) % n), 2200)
+    return () => clearInterval(id)
+  }, [n])
+
+  if (n === 0) {
+    return (
+      <div className="preset-thumb">
+        <div className="preset-thumb-empty">
+          <Ico name="gallery" width={18} height={18} style={{ opacity: 0.3 }} />
+        </div>
+      </div>
+    )
+  }
+  const idx = i % n
+  return (
+    <div className="preset-thumb">
+      {imgs.map((src, k) => (
+        <img
+          key={k}
+          className={`preset-thumb-slide${k === idx ? ' on' : ''}`}
+          src={src}
+          alt=""
+          onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
+        />
+      ))}
+      {n > 1 && (
+        <div className="preset-thumb-dots" onClick={(e) => e.stopPropagation()}>
+          {imgs.map((_, k) => (
+            <button
+              key={k}
+              className={`preset-thumb-dot${k === idx ? ' on' : ''}`}
+              aria-label={`${k + 1}`}
+              onClick={(e) => { e.stopPropagation(); setI(k) }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

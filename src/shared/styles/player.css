@@ -181,7 +181,12 @@
 #playerContent.style-cinema .cn-vol-row{display:flex;align-items:center;gap:8px;width:100%}
 #playerContent.style-cinema .cn-vol-row .ps-ctrl{background:rgba(0,0,0,.28);backdrop-filter:blur(8px)}
 #playerContent.style-cinema .cn-vol-row .vol-pct{color:rgba(255,255,255,.85)}
-#playerContent.style-cinema #vizWrap{display:none!important}
+/* Визуализатор в «Кино»/«Большом» — блок с рамкой под прогрессом, но фон чуть
+   прозрачный (как панели контролов в этих стилях): полупрозрачная подложка + blur,
+   чтобы сквозь визуализатор слегка читалась обложка. overflow:hidden (инлайн)
+   держит бары/фото внутри рамки. */
+#playerContent.style-cinema .cn-overlay #vizWrap,
+#playerContent.style-large .sl-progress #vizWrap{margin:6px 0 0!important;background:rgba(0,0,0,.32)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 /* Очередь */
 #playerContent.style-cinema #playerQueueBlock,#playerContent.style-cinema #lyricsQueueBlock{grid-column:2;grid-row:1;min-width:0;min-height:0;overflow:hidden!important;width:auto!important}
 #playerContent.style-cinema.queue-hidden>.sl-cover-wrap{grid-column:1/-1!important}
@@ -229,9 +234,8 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 .cc-play:hover{background:var(--accent2)}
 /* Эффект вжатия при нажатии (как в мини-плеере/трее). */
 .cc-play:active{transform:scale(.94)}
-/* Плоская кнопка play (body.play-flat — по умолчанию): без фона + крупная иконка.
-   Применяется к плееру, нижнему бару и #bigPicOverlay. Тумблер «Фон у кнопки
-   play» (settings → Плеер) возвращает акцентный фон. */
+/* Плоская кнопка play (body.play-flat — всегда включена): без фона + крупная иконка.
+   Применяется к плееру, нижнему бару и #bigPicOverlay. */
 /* В плоском режиме play ведёт себя как обычная кнопка .cc (тот же размер/радиус/
    ховер) — отличается только более крупной иконкой. */
 body.play-flat .cc-play{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;color:var(--text2);transition:.15s}
