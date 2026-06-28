@@ -1,4 +1,17 @@
 {
+  "1.3.5": {
+    "title": { "ru": "Что нового в 1.3.5", "en": "What's new in 1.3.5" },
+    "date": "2026-06-28",
+    "pages": [
+      {
+        "title": { "ru": "Что нового", "en": "What's new" },
+        "body": {
+          "ru": "- Обновлён эквалайзер\n- Добавлен новый вид оверлея\n- Добавлены анимации\n- Исправлены баги",
+          "en": "- Reworked the equalizer\n- Added a new overlay style\n- Added animations\n- Bug fixes"
+        }
+      }
+    ]
+  },
   "1.3.4": {
     "title": { "ru": "Что нового в 1.3.4", "en": "What's new in 1.3.4" },
     "date": "2026-06-27",

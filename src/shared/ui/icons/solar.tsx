@@ -56,6 +56,8 @@ import UserBold from '~icons/solar/user-bold'
 import GalleryLinear from '~icons/solar/gallery-linear'
 import PaletteLinear from '~icons/solar/palette-linear'
 import RefreshLinear from '~icons/solar/refresh-linear'
+import PowerLinear from '~icons/solar/power-linear'
+import PowerBold from '~icons/solar/power-bold'
 import ArrowLeftLinear from '~icons/solar/alt-arrow-left-linear'
 import ArrowRightLinear from '~icons/solar/alt-arrow-right-linear'
 import ArrowDownLinear from '~icons/solar/alt-arrow-down-linear'
@@ -189,6 +191,7 @@ const ICONS = {
   gallery: { linear: GalleryLinear },
   palette: { linear: PaletteLinear },
   refresh: { linear: RefreshLinear },
+  power: { linear: PowerLinear, bold: PowerBold },
   check: { linear: CheckBare },
   arrowLeft: { linear: ArrowLeftLinear },
   arrowRight: { linear: ArrowRightLinear },

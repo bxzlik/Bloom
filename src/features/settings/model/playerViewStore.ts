@@ -46,8 +46,8 @@ export interface MpProgress {
   bg: boolean
   circle: boolean
 }
-/** Режим оверлея-«острова»: выключен / плашка / компактная плашка (раскрытие по наведению). */
-export type OverlayMode = 'off' | 'island' | 'compact'
+/** Режим оверлея-«острова»: выключен / плашка / компактная плашка (раскрытие по наведению) / полоса (круг-play + стеклянная полоса с названием + круг-визуализатор). */
+export type OverlayMode = 'off' | 'island' | 'compact' | 'bar'
 /** Якорь оверлея на экране: верт. (t/b) + гориз. (l/c/r); `custom` — свободная
  *  позиция, заданная вручную перетаскиванием (доли overlayX/overlayY). */
 export type OverlayPos = 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br' | 'custom'
@@ -245,7 +245,10 @@ const load = (): PlayerViewPrefs => {
         fav: !!(p.mpHide && p.mpHide.fav),
       },
       playBtnBg: !!p.playBtnBg,
-      overlayMode: p.overlayMode === 'island' || p.overlayMode === 'compact' ? p.overlayMode : 'off',
+      overlayMode:
+        p.overlayMode === 'island' || p.overlayMode === 'compact' || p.overlayMode === 'bar'
+          ? p.overlayMode
+          : 'off',
       overlayPos: OVERLAY_POSITIONS.includes(p.overlayPos) || p.overlayPos === 'custom' ? p.overlayPos : 'tr',
       overlayX: clampNum(p.overlayX, 0, 1, 0.98),
       overlayY: clampNum(p.overlayY, 0, 1, 0.02),

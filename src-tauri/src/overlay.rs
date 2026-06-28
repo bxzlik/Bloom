@@ -172,7 +172,12 @@ pub fn set_place_mode(app: &AppHandle, on: bool) {
         }
         let _ = win.emit("bloom-ov-place", OvPlace { on: true });
     } else {
-        PLACING.store(false, Ordering::Relaxed);
+        // Если режим размещения и так не активен — ничего не делаем. Иначе любой
+        // «выключающий» вызов (размонтирование секции настроек, в т.ч. двойной
+        // mount React StrictMode в dev) гасил бы и откреплял видимую плашку.
+        if !PLACING.swap(false, Ordering::Relaxed) {
+            return;
+        }
         let _ = win.emit("bloom-ov-place", OvPlace { on: false });
     }
 }

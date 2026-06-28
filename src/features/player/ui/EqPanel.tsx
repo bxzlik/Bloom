@@ -4,6 +4,7 @@ import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { EQ_LABELS, EQ_MAX_DB, EQ_PRESETS, EQ_PRESET_LABELS, useEqStore } from '../model/eqStore'
+import { useFxStore } from '../model/fxStore'
 
 /**
  * Панель эквалайзера (по макету): ряд пресетов (+ кастомные) и перетаскиваемая
@@ -39,12 +40,30 @@ export const EqPanel = ({
 }) => {
   const t = useT()
   const gains = useEqStore((s) => s.gains)
+  const enabled = useEqStore((s) => s.enabled)
   const activePreset = useEqStore((s) => s.activePreset)
   const custom = useEqStore((s) => s.custom)
   const setGain = useEqStore((s) => s.setGain)
   const applyPreset = useEqStore((s) => s.applyPreset)
   const saveCustom = useEqStore((s) => s.saveCustom)
   const deleteCustom = useEqStore((s) => s.deleteCustom)
+  const setEnabled = useEqStore((s) => s.setEnabled)
+  const resetEq = useEqStore((s) => s.reset)
+  const resetFx = useFxStore((s) => s.reset)
+  // Сброс всей панели: и кривая эквалайзера, и звуковые эффекты.
+  const resetAll = () => {
+    resetEq()
+    resetFx()
+  }
+
+  const spatial = useFxStore((s) => s.spatial)
+  const spatialIntensity = useFxStore((s) => s.spatialIntensity)
+  const reverb = useFxStore((s) => s.reverb)
+  const reverbIntensity = useFxStore((s) => s.reverbIntensity)
+  const setSpatial = useFxStore((s) => s.setSpatial)
+  const setSpatialIntensity = useFxStore((s) => s.setSpatialIntensity)
+  const setReverb = useFxStore((s) => s.setReverb)
+  const setReverbIntensity = useFxStore((s) => s.setReverbIntensity)
 
   const ref = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -149,7 +168,7 @@ export const EqPanel = ({
     <div
       ref={ref}
       id="eqPanel"
-      className="open"
+      className={`open${enabled ? '' : ' eq-off'}`}
       style={{
         left: pos?.left ?? -9999,
         top: pos?.top ?? -9999,
@@ -158,6 +177,22 @@ export const EqPanel = ({
         width: W,
       }}
     >
+      {/* Шапка: название · сброс · вкл/выкл */}
+      <div className="eq-head">
+        <span className="eq-head-title">{t('player.eq.title')}</span>
+        <button className="eq-reset" aria-label={t('player.eq.reset')} onClick={resetAll}>
+          <Ico name="refresh" width={14} height={14} />
+        </button>
+        <button
+          className={`eq-reset eq-power${enabled ? ' on' : ''}`}
+          aria-label={t('player.eq.power')}
+          aria-pressed={enabled}
+          onClick={() => setEnabled(!enabled)}
+        >
+          <Ico name="power" variant={enabled ? 'bold' : 'linear'} width={14} height={14} />
+        </button>
+      </div>
+
       {/* Пресеты */}
       <div className="eq-presets" ref={presetsRef} onWheel={onPresetsWheel}>
         {adding ? (
@@ -253,6 +288,57 @@ export const EqPanel = ({
         {EQ_LABELS.map((l) => (
           <span key={l}>{l}</span>
         ))}
+      </div>
+
+      {/* Звуковые эффекты: 8D / 10D / РЭ + ползунки интенсивности */}
+      <div className="eq-fx">
+        <div className="eq-fx-title">{t('player.eq.fx.title')}</div>
+        <div className="eq-fx-row">
+          <button
+            className={`eq-fx-chip${spatial === '8d' ? ' active' : ''}`}
+            onClick={() => setSpatial(spatial === '8d' ? 'off' : '8d')}
+          >
+            {t('player.eq.fx.8d')}
+          </button>
+          <button
+            className={`eq-fx-chip${spatial === '10d' ? ' active' : ''}`}
+            onClick={() => setSpatial(spatial === '10d' ? 'off' : '10d')}
+          >
+            {t('player.eq.fx.10d')}
+          </button>
+          <button
+            className={`eq-fx-chip${reverb ? ' active' : ''}`}
+            onClick={() => setReverb(!reverb)}
+          >
+            {t('player.eq.fx.reverb')}
+          </button>
+        </div>
+        {spatial !== 'off' && (
+          <label className="eq-fx-slider">
+            <span>{t('player.eq.fx.speed')}</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={spatialIntensity}
+              onChange={(e) => setSpatialIntensity(Number(e.target.value))}
+            />
+          </label>
+        )}
+        {reverb && (
+          <label className="eq-fx-slider">
+            <span>{t('player.eq.fx.amount')}</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={reverbIntensity}
+              onChange={(e) => setReverbIntensity(Number(e.target.value))}
+            />
+          </label>
+        )}
       </div>
     </div>,
     document.body,

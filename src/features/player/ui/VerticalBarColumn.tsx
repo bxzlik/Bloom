@@ -40,10 +40,15 @@ export const VerticalBarColumn = ({ side }: { side: 'left' | 'right' }) => {
     }
     // Двойной rAF — дождаться layout после display:none→flex.
     const raf = requestAnimationFrame(() => requestAnimationFrame(apply))
-    window.addEventListener('resize', apply)
+    // ResizeObserver на колонку: её высота меняется не только при resize окна, но
+    // и при смене расположения сайдбара/бара, floating/compact, autohide и т.п.
+    // Эффект на это НЕ перезапускается (deps те же), поэтому без наблюдателя бар
+    // оставался бы со старой шириной и не дотягивался до низа колонки.
+    const ro = new ResizeObserver(apply)
+    if (colRef.current) ro.observe(colRef.current)
     return () => {
       cancelAnimationFrame(raf)
-      window.removeEventListener('resize', apply)
+      ro.disconnect()
       app?.classList.remove('mp-col-visible')
     }
   }, [visible, side])
@@ -57,7 +62,11 @@ export const VerticalBarColumn = ({ side }: { side: 'left' | 'right' }) => {
         flexShrink: 0,
         width: 72,
         flexDirection: 'column',
-        position: 'relative',
+        // position НЕ задаём инлайн: CSS сам выбирает relative (обычная раскладка,
+        // player.css `#miniPlayerCol`) либо absolute (sidebar-top, чтобы колонка
+        // встала плавающей полосой top:68/bottom:8). Инлайн position:relative
+        // перебивал бы sidebar-top → высота колонки схлопывалась в 0 и бар не
+        // появлялся (h<=0 в apply).
         overflow: 'hidden',
       }}
     >

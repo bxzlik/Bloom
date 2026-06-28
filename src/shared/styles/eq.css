@@ -18,6 +18,58 @@
   display: flex;
 }
 
+/* Шапка панели: название · сброс · переключатель вкл/выкл */
+.eq-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eq-head-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.eq-reset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  color: var(--text2);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.14s;
+}
+.eq-reset:hover {
+  background: var(--hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text);
+}
+/* Кнопка вкл/выкл: подсвечена акцентом, когда эквалайзер включён */
+.eq-power.on {
+  background: rgba(var(--accent-rgb), 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.eq-power.on:hover {
+  background: rgba(var(--accent-rgb), 0.22);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Выключенный эквалайзер: тело панели приглушено (шапка активна) */
+.eq-off .eq-presets,
+.eq-off .eq-curve,
+.eq-off .eq-labels,
+.eq-off .eq-fx {
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+
 .eq-presets {
   display: flex;
   align-items: center;
@@ -144,4 +196,75 @@
   padding: 0 12px;
   font-size: 10px;
   color: var(--muted);
+}
+
+/* ── Звуковые эффекты (8D / 10D / РЭ) ── */
+.eq-fx {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+.eq-fx-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.eq-fx-row {
+  display: flex;
+  gap: 6px;
+}
+.eq-fx-chip {
+  flex: 1;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text2);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: 0.14s;
+}
+.eq-fx-chip:hover {
+  background: var(--hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text);
+}
+.eq-fx-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text, #fff);
+}
+.eq-fx-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.eq-fx-slider > span {
+  flex-shrink: 0;
+  width: 64px;
+  font-size: 11px;
+  color: var(--text2);
+}
+.eq-fx-slider input[type='range'] {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+.eq-fx-slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
 }

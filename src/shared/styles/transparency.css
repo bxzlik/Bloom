@@ -84,6 +84,7 @@ body.glass-mode .sp-artist-grid,
 body.glass-mode .sp-recent-list,
 body.glass-mode .sp-recent-item,
 body.glass-mode .sp-am-section,
+body.glass-mode .sp-am-album,
 body.glass-mode .sp-am-tracks-grid,
 body.glass-mode .sp-am-track-card {
   background: transparent !important;

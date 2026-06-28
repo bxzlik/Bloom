@@ -76,6 +76,7 @@ body{display:flex;align-items:center;justify-content:center;pointer-events:none}
 .eq i:nth-child(2){animation-delay:-.5s}
 .eq i:nth-child(3){animation-delay:-.1s}
 .eq i:nth-child(4){animation-delay:-.7s}
+.eq i:nth-child(5){animation-delay:-.4s}
 @keyframes eqb{0%,100%{height:25%}50%{height:100%}}
 body.paused .eq i{animation-play-state:paused;height:30%}
 
@@ -138,6 +139,7 @@ body.placing .island{cursor:move;outline:2px dashed var(--accent);outline-offset
 body.placing .island:hover .ctrl,body.placing .ctrl{opacity:0;pointer-events:none}
 body.placing .island:hover .eq{opacity:1;transform:none}
 body.placing .prog{pointer-events:none}
+body.placing .bcenter,body.placing .bcircle-play{pointer-events:none}
 /* Живой бейдж с координатами (доли %) во время ручного размещения. */
 .place-coords{position:absolute;top:3px;left:50%;transform:translateX(-50%);
   display:none;white-space:nowrap;padding:2px 9px;border-radius:9px;
@@ -145,6 +147,59 @@ body.placing .prog{pointer-events:none}
   background:rgba(0,0,0,.72);color:#fff;border:1px solid rgba(255,255,255,.14);
   box-shadow:0 3px 10px rgba(0,0,0,.4);pointer-events:none;z-index:10}
 body.placing .place-coords{display:block}
+
+/* ── Режим «Полоса» ──────────────────────────────────────
+   Три отдельных «стеклянных» элемента: круг play/pause слева, полоса с
+   названием и прогрессом по центру, круг-визуализатор (эквалайзер) справа.
+   Сам .island служит только контейнером (показ/скрытие, drag, масштаб). */
+.bar-wrap{display:none}
+body.bar .island{background:none;border:none;box-shadow:none;overflow:visible;
+  padding:8px;gap:0}
+/* В режиме «полоса» прячем штатную раскладку острова. Тонкую `.prog` держим
+   скрытой даже в perf-режиме (там островное правило показывает её на hover —
+   получался бы второй прогресс-бар поверх заливки центра). */
+body.bar .cover,body.bar .info,body.bar .right,body.bar .prog{display:none}
+body.bar .island:hover .prog{display:none}
+body.bar .bar-wrap{display:flex;align-items:center;gap:8px;width:100%;height:100%}
+
+/* Общий «стеклянный» вид элементов полосы. */
+.bcircle{width:48px;height:48px;flex-shrink:0;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;color:var(--text);
+  background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 5px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.13);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.bcircle-play{cursor:pointer;opacity:.95;transition:filter .12s,transform .08s}
+.bcircle-play:hover{filter:brightness(1.15);opacity:1}
+.bcircle-play:active{transform:scale(.92)}
+
+/* Центральная полоса: название по центру, прогресс — заливкой за текстом.
+   Лёгкий блик сверху, как на эталонном дизайне. */
+.bcenter{position:relative;flex:1;min-width:0;height:48px;overflow:hidden;
+  border-radius:24px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.04));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 5px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.bcenter::before{content:'';position:absolute;left:0;right:0;top:0;height:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0));
+  pointer-events:none}
+.bcenter.seekable{cursor:pointer}
+.bcenter-fill{position:absolute;left:0;top:0;bottom:0;width:0%;
+  background:var(--accent);opacity:.18;transition:width .25s linear;pointer-events:none}
+.bcenter-title{position:relative;z-index:1;padding:0 16px;max-width:100%;
+  font-size:14px;font-weight:700;color:var(--text);text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Визуализатор в правом круге — тот же эквалайзер, 5 столбиков. Перебиваем
+   островной кроссфейд `.island:hover .eq{opacity:0}`, чтобы при наведении на
+   полосу визуализатор не гас. */
+.bcircle-viz .eq{height:20px;padding:0;gap:3px}
+body.bar .bcircle-viz .eq{opacity:1;transform:none}
+/* Оптимизация: визуализатор анимировать дорого (постоянный repaint), поэтому
+   правый круг убираем целиком — центральная полоса (flex:1) растягивается на
+   освободившееся место, плашка остаётся сбалансированной. */
+body.bar.perf .bcircle-viz{display:none}
 </style>
 </head>
 <body>
@@ -171,6 +226,20 @@ body.placing .place-coords{display:block}
     </div>
   </div>
   <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+
+  <!-- Раскладка режима «полоса» (показывается при body.bar). -->
+  <div class="bar-wrap" id="barWrap">
+    <button class="bcircle bcircle-play" id="btnPlayBar">
+      <svg id="ovPlayIconBar" width="16" height="16" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M20.409 9.353a2.998 2.998 0 0 1 0 5.294L7.597 21.614C5.534 22.737 3 21.277 3 18.968V5.033c0-2.31 2.534-3.769 4.597-2.648z"/></svg>
+    </button>
+    <div class="bcenter" id="barCenter">
+      <div class="bcenter-fill" id="progFillBar"></div>
+      <div class="bcenter-title" id="titleBar">—</div>
+    </div>
+    <div class="bcircle bcircle-viz">
+      <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+  </div>
 </div>
 <div class="place-coords" id="placeCoords"></div>
 
@@ -292,15 +361,19 @@ body.placing .place-coords{display:block}
     perfMode = !!p.overlayPerf;
     var pe = $('prog');
     if (pe) pe.classList.toggle('seekable', seekEnabled);
+    var bc = $('barCenter');
+    if (bc) bc.classList.toggle('seekable', seekEnabled);
     document.documentElement.style.setProperty('--ov-op', Math.max(0, Math.min(100, op)) / 100);
     // Масштаб плашки. Окно Rust ресайзит синхронно по той же доле.
     $('island').style.zoom = Math.max(50, Math.min(160, size)) / 100;
 
     // Режим оптимизации + компактная плашка (прижатая к якорному краю).
     var compact = p.overlayMode === 'compact';
+    var bar = p.overlayMode === 'bar';
     var body = document.body;
     body.classList.toggle('perf', perfMode);
     body.classList.toggle('compact', compact);
+    body.classList.toggle('bar', bar);
     var horiz = (typeof p.overlayPos === 'string' ? p.overlayPos.charAt(1) : 'r') || 'r';
     body.classList.toggle('al', compact && horiz === 'l');
     body.classList.toggle('ac', compact && horiz === 'c');
@@ -380,6 +453,8 @@ body.placing .place-coords{display:block}
   function render(){
     renderArtist();
     updateMarquee();
+    var tb = $('titleBar');
+    if (tb) tb.textContent = st.title || '—';
     var cov = $('cover');
     if (st.artwork){
       cov.innerHTML = '<img src="' + esc(st.artwork) + '" alt="">';
@@ -394,19 +469,22 @@ body.placing .place-coords{display:block}
   }
 
   function setPlayIcon(){
-    var pi = $('ovPlayIcon');
-    if (!pi) return;
-    pi.innerHTML = st.playing
+    var html = st.playing
       ? '<path fill="none" stroke="currentColor" stroke-width="1.5" d="M2 6c0-1.886 0-2.828.586-3.414S4.114 2 6 2s2.828 0 3.414.586S10 4.114 10 6v12c0 1.886 0 2.828-.586 3.414S7.886 22 6 22s-2.828 0-3.414-.586S2 19.886 2 18zm12 0c0-1.886 0-2.828.586-3.414S16.114 2 18 2s2.828 0 3.414.586S22 4.114 22 6v12c0 1.886 0 2.828-.586 3.414S19.886 22 18 22s-2.828 0-3.414-.586S14 19.886 14 18z"/>'
       : '<path fill="none" stroke="currentColor" stroke-width="1.5" d="M20.409 9.353a2.998 2.998 0 0 1 0 5.294L7.597 21.614C5.534 22.737 3 21.277 3 18.968V5.033c0-2.31 2.534-3.769 4.597-2.648z"/>';
+    var pi = $('ovPlayIcon');
+    if (pi) pi.innerHTML = html;
+    var pib = $('ovPlayIconBar');
+    if (pib) pib.innerHTML = html;
   }
 
   // ── Прогресс трека (локальный тикер, как в мини-плеере) ──
   function setProgress(){
-    var f = $('progFill');
-    if (!f) return;
     var pct = st.dur > 0 ? Math.min(100, st.pos / st.dur * 100) : 0;
-    f.style.width = pct + '%';
+    var f = $('progFill');
+    if (f) f.style.width = pct + '%';
+    var fb = $('progFillBar');
+    if (fb) fb.style.width = pct + '%';
   }
 
   // Команда плееру (играть/пауза/пред/след) — через тот же мост, что мини-плеер.
@@ -480,20 +558,22 @@ body.placing .place-coords{display:block}
     // Кнопки управления.
     $('btnPrev').addEventListener('click', function(){ cmd('prev'); });
     $('btnNext').addEventListener('click', function(){ cmd('next'); });
-    $('btnPlay').addEventListener('click', function(){
-      // Оптимистично переключаем иконку/тикер, команду шлём в плеер.
+    // Оптимистично переключаем иконку/тикер, команду шлём в плеер.
+    function togglePlay(){
       st.playing = !st.playing;
+      document.body.classList.toggle('paused', !st.playing);
       setPlayIcon();
       if (st.playing) startTicker(); else stopTicker();
       cmd('playpause');
-    });
+    }
+    $('btnPlay').addEventListener('click', togglePlay);
+    var btnPlayBar = $('btnPlayBar');
+    if (btnPlayBar) btnPlayBar.addEventListener('click', togglePlay);
 
     // Прогресс-бар: перемотка кликом/скрабом (если включена в настройках).
     // Логика как в мини-плеере: визуал ведём за курсором, аудио сикаем на ходу
     // (throttle) + финальный сик на отпускании; scrubbing гасит эхо-пуши.
-    (function(){
-      var track = $('prog');
-      var fill = $('progFill');
+    function attachSeek(track, fill){
       if (!track) return;
       var dragging = false, last = 0, wheelTimer = null;
       function posFromEvent(e){
@@ -536,7 +616,9 @@ body.placing .place-coords{display:block}
         if (wheelTimer) clearTimeout(wheelTimer);
         wheelTimer = setTimeout(function(){ scrubbing = false; }, 250);
       }, { passive:false });
-    })();
+    }
+    attachSeek($('prog'), $('progFill'));
+    attachSeek($('barCenter'), $('progFillBar'));
 
     // Клик по имени артиста → страница артиста в главном окне (как в мини-плеере).
     $('artist').addEventListener('click', function(e){

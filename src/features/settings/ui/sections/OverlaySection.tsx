@@ -107,6 +107,10 @@ export const OverlaySection = () => {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="6" /></svg>
             {t('settings.view.ovMode.compact')}
           </OptBtn>
+          <OptBtn active={p.overlayMode === 'bar'} onClick={() => p.set('overlayMode', 'bar')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="5" cy="12" r="2.5" /><rect x="9" y="9" width="11" height="6" rx="3" /></svg>
+            {t('settings.view.ovMode.bar')}
+          </OptBtn>
         </div>
       </div>
 

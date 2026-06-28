@@ -4,6 +4,7 @@ import { Ico } from '@shared/ui/icons/solar'
 import { usePlayerViewStore } from '@features/settings'
 import { useNavStore } from '@app/navigationStore'
 import { useGrpStore } from '../model/grpStore'
+import { useQueueStore } from '../model/queueStore'
 import { QueueBlock } from './QueueBlock'
 
 /**
@@ -20,9 +21,12 @@ export const GlobalRightPanel = () => {
   const open = useGrpStore((s) => s.open)
   const mode = useGrpStore((s) => s.mode)
   const page = useNavStore((s) => s.page)
+  // Без трека мини-плеер скрыт (там кнопки панели) — панель тоже прячем, иначе
+  // её нечем закрыть.
+  const curId = useQueueStore((s) => s.curId)
   // На странице плеера у неё своя очередь (#playerQueueBlock) + lyrics-overlay,
   // поэтому глобальную панель там прячем.
-  const visible = open && page !== 'player'
+  const visible = open && page !== 'player' && !!curId
 
   return (
     <div id="globalRightPanel" className={visible ? 'grp-visible' : ''}>

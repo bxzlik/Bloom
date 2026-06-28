@@ -220,7 +220,10 @@ export const App = () => {
   // На странице плеера панель скрыта (там свой инлайн-queue) → не сдвигаем контент.
   const grpOpen = useGrpStore((s) => s.open)
   const grpSide = useGrpStore((s) => s.side)
-  const grpVisible = grpOpen && page !== 'player'
+  // Без трека мини-плеер скрыт (там кнопки панели) — панель тоже прячем, иначе
+  // её нечем закрыть. Появится снова, когда заиграет трек (open сохраняется).
+  const grpCurId = useQueueStore((s) => s.curId)
+  const grpVisible = grpOpen && page !== 'player' && !!grpCurId
 
   // Позиция нижнего бара. Меняется редко (настройка), поэтому
   // реактивная подписка допустима — пере-рендер App только на смену позиции.

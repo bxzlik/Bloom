@@ -128,7 +128,7 @@
 .sp-am-tab:hover{color:var(--text)}
 .sp-am-tab.active{background:var(--accent);color:var(--accent-text)}
 .sp-am-tab.active svg{color:var(--accent-text)}
-.sp-am-album{border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);margin-bottom:16px;overflow:hidden;background:rgba(255,255,255,.02)}
+.sp-am-album{border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);margin-bottom:16px;overflow:hidden;background:var(--card)}
 .sp-am-album-hdr{display:flex;align-items:center;gap:16px;padding:16px}
 .sp-am-album-hdr:hover{background:rgba(255,255,255,.03)}
 .sp-am-album-cov{width:96px;height:96px;border-radius:calc(var(--radius)*.7);overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3)}

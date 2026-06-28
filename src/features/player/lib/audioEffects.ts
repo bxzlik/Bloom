@@ -21,10 +21,12 @@ import {
   getNormGainNode,
   getXfadeGainNode,
   getEqNodes,
+  getFxGraph,
 } from './audioGraph'
 import { nextTr } from '../api/play'
 import { useQueueStore } from '../model/queueStore'
 import { useEqStore } from '../model/eqStore'
+import { useFxStore } from '../model/fxStore'
 
 // ── Нормализация ──
 const normCache: Record<string, number> = {}
@@ -103,10 +105,58 @@ export const resetNormCache = (): void => {
 export const applyEq = (): void => {
   const nodes = getEqNodes()
   if (!nodes.length) return
-  const gains = useEqStore.getState().gains
+  const { enabled, gains } = useEqStore.getState()
   nodes.forEach((n, i) => {
-    n.gain.value = gains[i] ?? 0
+    // Выключен — байпас (полосы в 0), но сохранённая кривая `gains` не теряется.
+    n.gain.value = enabled ? (gains[i] ?? 0) : 0
   })
+}
+
+// ── Звуковые эффекты (8D/10D + реверб/эхо) ──
+/** Радиус орбиты паннера (в «метрах» WebAudio); горизонталь и вертикаль. */
+const ORBIT_RADIUS = 1.5
+const VERTICAL_RADIUS = 1.2
+/** 10D: центр и размах свипа среза lowpass (Гц) — «верх-низ» как смена яркости. */
+const FILTER_CENTER_HZ = 6000
+const FILTER_SWEEP_HZ = 4000
+
+export const applyFx = (): void => {
+  const fx = getFxGraph()
+  const ctx = getAudioContext()
+  if (!fx || !ctx) return
+  const st = useFxStore.getState()
+  // Мастер-выключатель эквалайзера гасит и эффекты (настройки при этом сохраняются).
+  const masterOn = useEqStore.getState().enabled
+  const now = ctx.currentTime
+  // Плавная подводка, чтобы не было щелчков при вкл/выкл.
+  const ramp = (p: AudioParam, v: number) => {
+    p.cancelScheduledValues(now)
+    p.setTargetAtTime(v, now, 0.05)
+  }
+
+  // Пространственный: 8D — орбита по кругу, 10D — + вертикальная LFO.
+  const spatialOn = masterOn && st.spatial !== 'off'
+  const is10d = masterOn && st.spatial === '10d'
+  ramp(fx.dryGain.gain, spatialOn ? 0 : 1)
+  ramp(fx.spatialGain.gain, spatialOn ? 1 : 0)
+  ramp(fx.radX.gain, spatialOn ? ORBIT_RADIUS : 0)
+  ramp(fx.radZ.gain, spatialOn ? ORBIT_RADIUS : 0)
+  ramp(fx.radY.gain, is10d ? VERTICAL_RADIUS : 0)
+  // Интенсивность → скорость орбиты (0.05..0.30 Гц), вертикаль чуть медленнее.
+  const orbitHz = 0.05 + st.spatialIntensity * 0.25
+  ramp(fx.oscX.frequency, orbitHz)
+  ramp(fx.oscZ.frequency, orbitHz)
+  ramp(fx.oscY.frequency, orbitHz * 0.6)
+  // 10D: вертикальная LFO свипает срез lowpass (HRTF-высота почти не слышна, а
+  // смена яркости — отчётливо). 8D/выкл: фильтр открыт, тембр не трогаем.
+  ramp(fx.spatialFilter.frequency, is10d ? FILTER_CENTER_HZ : 20000)
+  ramp(fx.filterMod.gain, is10d ? FILTER_SWEEP_HZ : 0)
+
+  // «РЭ»: реверберация (wet) + эхо (дилей с обратной связью).
+  const r = masterOn && st.reverb ? st.reverbIntensity : 0
+  ramp(fx.reverbGain.gain, r * 0.9)
+  ramp(fx.echoGain.gain, r * 0.55)
+  ramp(fx.feedback.gain, r * 0.45) // < 1 — без самовозбуждения
 }
 
 // ── Устройство вывода ──
@@ -180,12 +230,15 @@ export const useAudioEffects = (): void => {
     const offUpd = audioEngine.onUpdate(() => {
       const st = useAudioStore.getState()
       // Лениво строим граф на воспроизведении, если включён эффект (виз строит сам).
-      const eqActive = useEqStore.getState().active
-      if (!audioEngine.paused && (st.normEnabled || st.xfadeEnabled || eqActive) && !isAudioGraphReady()) {
+      const eqState = useEqStore.getState()
+      const eqActive = eqState.active
+      const fxActive = eqState.enabled && useFxStore.getState().active
+      if (!audioEngine.paused && (st.normEnabled || st.xfadeEnabled || eqActive || fxActive) && !isAudioGraphReady()) {
         if (ensureAudioGraph()) {
           if (dev) applyAudioDevice(dev)
           applyNorm()
           applyEq()
+          applyFx()
           if (st.normEnabled) analyzeNorm()
         }
       }
@@ -239,13 +292,41 @@ export const useAudioEffects = (): void => {
 
     // Изменения эквалайзера → применить к узлам (см. ту же гочу про microtask).
     const offEq = useEqStore.subscribe((s, p) => {
-      if (s.gains === p.gains) return
+      const enabledChanged = s.enabled !== p.enabled
+      if (s.gains === p.gains && !enabledChanged) return
       queueMicrotask(() => {
         try {
-          if (s.active && !audioEngine.paused) ensureAudioGraph()
+          // Мастер-вкл при активном эффекте/кривой — может потребоваться граф.
+          if ((s.active || (s.enabled && useFxStore.getState().active)) && !audioEngine.paused) {
+            ensureAudioGraph()
+          }
           applyEq()
+          // enabled — мастер для всей панели, эффекты тоже надо переприменить.
+          if (enabledChanged) applyFx()
         } catch (e) {
           console.warn('[audioEffects] eq apply failed', e)
+        }
+      })
+    })
+
+    // Изменения звуковых эффектов → применить к FX-узлам.
+    const offFx = useFxStore.subscribe((s, p) => {
+      if (
+        s.spatial === p.spatial &&
+        s.spatialIntensity === p.spatialIntensity &&
+        s.reverb === p.reverb &&
+        s.reverbIntensity === p.reverbIntensity
+      )
+        return
+      queueMicrotask(() => {
+        try {
+          // Граф нужен только если эффект активен И мастер-выключатель включён.
+          if (s.active && useEqStore.getState().enabled && !audioEngine.paused) {
+            if (ensureAudioGraph()) resumeAudioGraph()
+          }
+          applyFx()
+        } catch (e) {
+          console.warn('[audioEffects] fx apply failed', e)
         }
       })
     })
@@ -255,6 +336,7 @@ export const useAudioEffects = (): void => {
       offMeta()
       offStore()
       offEq()
+      offFx()
     }
   }, [])
 }

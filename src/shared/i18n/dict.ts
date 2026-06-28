@@ -297,6 +297,7 @@ export const ru = {
   'settings.view.ovMode.off': 'Выключен',
   'settings.view.ovMode.island': 'Остров',
   'settings.view.ovMode.compact': 'Компактный',
+  'settings.view.ovMode.bar': 'Полоса',
   'settings.view.ovPos': 'Положение на экране',
   'settings.view.ovPos.desc': 'Где появляется плашка оверлея',
   'settings.view.ovPos.custom': 'Свободно',
@@ -626,6 +627,16 @@ export const ru = {
   'player.toast.copied': 'Скопировано',
   'player.toast.copyError': 'Ошибка',
   'player.eq.namePlaceholder': 'Название…',
+  'player.eq.title': 'Эквалайзер',
+  'player.eq.reset': 'Сбросить',
+  'player.eq.power': 'Вкл/выкл эквалайзер',
+  // Звуковые эффекты (8D/10D + реверб/эхо)
+  'player.eq.fx.title': 'Эффекты',
+  'player.eq.fx.8d': '8D',
+  'player.eq.fx.10d': '10D',
+  'player.eq.fx.reverb': 'РЭ',
+  'player.eq.fx.speed': 'Скорость',
+  'player.eq.fx.amount': 'Уровень',
 
   // Общее (библиотека и др.)
   'common.cancel': 'Отмена',
@@ -1662,6 +1673,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.view.ovMode.off': 'Off',
   'settings.view.ovMode.island': 'Island',
   'settings.view.ovMode.compact': 'Compact',
+  'settings.view.ovMode.bar': 'Bar',
   'settings.view.ovPos': 'Screen position',
   'settings.view.ovPos.desc': 'Where the overlay pill appears',
   'settings.view.ovPos.custom': 'Free',
@@ -1991,6 +2003,16 @@ export const en: Record<TranslationKey, string> = {
   'player.toast.copied': 'Copied',
   'player.toast.copyError': 'Error',
   'player.eq.namePlaceholder': 'Name…',
+  'player.eq.title': 'Equalizer',
+  'player.eq.reset': 'Reset',
+  'player.eq.power': 'Toggle equalizer',
+  // Sound effects (8D/10D + reverb/echo)
+  'player.eq.fx.title': 'Effects',
+  'player.eq.fx.8d': '8D',
+  'player.eq.fx.10d': '10D',
+  'player.eq.fx.reverb': 'Reverb',
+  'player.eq.fx.speed': 'Speed',
+  'player.eq.fx.amount': 'Amount',
 
   // Common (library etc.)
   'common.cancel': 'Cancel',

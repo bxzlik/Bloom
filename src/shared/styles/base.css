@@ -34,6 +34,12 @@ input,textarea{user-select:text;-webkit-user-select:text}
 
 /* ===== SIDEBAR POSITION: RIGHT ===== */
 .app.sidebar-right{flex-direction:row-reverse}
+/* row-reverse разворачивает порядок ВСЕХ детей .app, из-за чего боковые колонки
+   бара (#miniPlayerCol — левый, #miniPlayerColRight — правый) оказывались на
+   противоположной стороне (бар «слева» вставал справа). Через order возвращаем
+   визуальный порядок: [левый бар] [контент] [правый бар] [сайдбар]. */
+.app.sidebar-right>#miniPlayerCol{order:2}
+.app.sidebar-right>.main-wrap{order:1}
 /* ===== SIDEBAR COMPACT MODE ===== */
 .app.sidebar-compact .sidebar{align-self:center!important;height:auto!important;padding:6px 0!important}
 .app.sidebar-compact .sb-nav{flex:none!important;gap:0!important}
@@ -70,11 +76,14 @@ input,textarea{user-select:text;-webkit-user-select:text}
 
 /* — В потоке (обычный/компактный): отрицательный отступ прячет и освобождает место. — */
 .app.sidebar-autohide:not(.sidebar-floating) .sidebar{transition:margin .22s ease}
-/* Запас (24px помимо ширины+gap) — чтобы за краем скрылись бордер и скруглённые
-   углы капсулы; контент уже во всю ширину, поэтому лишний сдвиг на вид не влияет. */
-.app.sidebar-autohide:not(.sidebar-floating) .sidebar{margin-left:calc(-62px - 24px)}
-.app.sidebar-autohide:not(.sidebar-floating).sidebar-right .sidebar{margin-left:0;margin-right:calc(-62px - 24px)}
-.app.sidebar-autohide:not(.sidebar-floating).sidebar-top .sidebar{margin-left:0;margin-top:calc(-52px - 24px)}
+/* Отступ гасит РОВНО ширину сайдбара + gap (.app{gap:8px}), чтобы скрытый сайдбар
+   давал нулевой вклад во flex-трек, а контент получал тот же симметричный паддинг
+   8px, что и в плавающем режиме. Бордер и скруглённые углы (тени в этом режиме нет)
+   оказываются за краем (x≤0) и обрезаются `.app{overflow:hidden}` — щель не видна.
+   Лишний запас здесь перетягивал бы контент влево и съедал его левый отступ. */
+.app.sidebar-autohide:not(.sidebar-floating) .sidebar{margin-left:calc(-62px - 8px)}
+.app.sidebar-autohide:not(.sidebar-floating).sidebar-right .sidebar{margin-left:0;margin-right:calc(-62px - 8px)}
+.app.sidebar-autohide:not(.sidebar-floating).sidebar-top .sidebar{margin-left:0;margin-top:calc(-52px - 8px)}
 /* Раскрытие — на штатное место (правила последние по порядку → перебивают скрытые). */
 .app.sidebar-autohide:not(.sidebar-floating) .sb-edge-trigger:hover ~ .sidebar,
 .app.sidebar-autohide:not(.sidebar-floating) .sidebar:hover{margin-left:0;margin-right:0;margin-top:0}
@@ -112,8 +121,11 @@ body.play-flat #miniPlayer .cc-play{background:none;color:rgba(255,255,255,0.55)
 body.play-flat #miniPlayer .cc-play:hover{background:rgba(255,255,255,0.1)!important;color:var(--accent)}
 .app.playerbar-left #miniPlayer,.app.playerbar-right #miniPlayer{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* ===== GLOBAL SIDE PANEL (queue/lyrics from mini player) ===== */
-#globalRightPanel{display:none;flex-shrink:0;overflow:hidden;width:0;flex-direction:column;}
-#globalRightPanel.grp-visible{display:flex;width:320px;}
+#globalRightPanel{display:flex;flex-shrink:0;overflow:hidden;width:0;flex-direction:column;transition:width .3s cubic-bezier(.32,.72,0,1);}
+#globalRightPanel.grp-visible{width:320px;}
+/* Содержимое фиксированной ширины: пока контейнер растёт 0→320, оно «выезжает»
+   из-под края, а не сжимается по мере анимации. */
 #grpInner{width:320px;height:100%;display:flex;flex-direction:column;}
+#mainContentRow{transition:gap .3s cubic-bezier(.32,.72,0,1)}
 #mainContentRow.has-grp-panel{gap:8px}
 .app.grp-side-left #mainContentRow{flex-direction:row-reverse!important}

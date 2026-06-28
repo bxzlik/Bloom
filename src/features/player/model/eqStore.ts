@@ -54,6 +54,7 @@ export const EQ_PRESET_LABELS: Record<string, TranslationKey> = {
 const KEY = 'bloom_eq'
 
 interface Persisted {
+  enabled: boolean
   gains: EqGains
   activePreset: string | null
   custom: Record<string, EqGains>
@@ -68,28 +69,33 @@ const normalize = (g: EqGains): EqGains => {
 const read = (): Persisted => {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) return { gains: [...EQ_PRESETS['Нейтральный']!], activePreset: 'Нейтральный', custom: {} }
+    if (!raw) return { enabled: true, gains: [...EQ_PRESETS['Нейтральный']!], activePreset: 'Нейтральный', custom: {} }
     const p = JSON.parse(raw) as Partial<Persisted>
     return {
+      enabled: p.enabled ?? true,
       gains: normalize(p.gains ?? EQ_PRESETS['Нейтральный']!),
       activePreset: p.activePreset ?? null,
       custom: p.custom ?? {},
     }
   } catch {
-    return { gains: [...EQ_PRESETS['Нейтральный']!], activePreset: 'Нейтральный', custom: {} }
+    return { enabled: true, gains: [...EQ_PRESETS['Нейтральный']!], activePreset: 'Нейтральный', custom: {} }
   }
 }
 
 export interface EqState extends Persisted {
-  /** Любая полоса ≠ 0 — эквалайзер «активен» (для подсветки кнопки). */
+  /** Включён И есть ненулевые полосы — эквалайзер влияет на звук (подсветка/сборка графа). */
   active: boolean
   setGain: (i: number, db: number) => void
   applyPreset: (name: string) => void
   saveCustom: (name: string) => void
   deleteCustom: (name: string) => void
+  setEnabled: (on: boolean) => void
+  /** Сброс кривой к «Нейтральный» (все полосы 0). Вкл/выкл не трогает. */
+  reset: () => void
 }
 
-const isActive = (g: EqGains): boolean => g.some((v) => Math.abs(v) > 0.01)
+const hasGains = (g: EqGains): boolean => g.some((v) => Math.abs(v) > 0.01)
+const isActive = (enabled: boolean, g: EqGains): boolean => enabled && hasGains(g)
 
 export const useEqStore = create<EqState>((set, get) => {
   const init = read()
@@ -98,7 +104,12 @@ export const useEqStore = create<EqState>((set, get) => {
     try {
       localStorage.setItem(
         KEY,
-        JSON.stringify({ gains: s.gains, activePreset: s.activePreset, custom: s.custom } satisfies Persisted),
+        JSON.stringify({
+          enabled: s.enabled,
+          gains: s.gains,
+          activePreset: s.activePreset,
+          custom: s.custom,
+        } satisfies Persisted),
       )
     } catch {
       /* ignore */
@@ -106,18 +117,18 @@ export const useEqStore = create<EqState>((set, get) => {
   }
   return {
     ...init,
-    active: isActive(init.gains),
+    active: isActive(init.enabled, init.gains),
     setGain: (i, db) => {
       const gains = get().gains.slice()
       gains[i] = clampGain(db)
-      set({ gains, activePreset: null, active: isActive(gains) })
+      set({ gains, activePreset: null, active: isActive(get().enabled, gains) })
       persist()
     },
     applyPreset: (name) => {
       const preset = EQ_PRESETS[name] ?? get().custom[name]
       if (!preset) return
       const gains = normalize(preset)
-      set({ gains, activePreset: name, active: isActive(gains) })
+      set({ gains, activePreset: name, active: isActive(get().enabled, gains) })
       persist()
     },
     saveCustom: (name) => {
@@ -131,6 +142,15 @@ export const useEqStore = create<EqState>((set, get) => {
       const custom = { ...get().custom }
       delete custom[name]
       set({ custom, activePreset: get().activePreset === name ? null : get().activePreset })
+      persist()
+    },
+    setEnabled: (on) => {
+      set({ enabled: on, active: isActive(on, get().gains) })
+      persist()
+    },
+    reset: () => {
+      const gains = [...EQ_PRESETS['Нейтральный']!]
+      set({ gains, activePreset: 'Нейтральный', active: isActive(get().enabled, gains) })
       persist()
     },
   }

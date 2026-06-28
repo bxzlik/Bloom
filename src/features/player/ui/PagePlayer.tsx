@@ -17,6 +17,7 @@ import { useT } from '@shared/i18n'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
 import { useEqStore } from '../model/eqStore'
+import { useFxStore } from '../model/fxStore'
 import { useBigPicStore } from '../model/bigPicStore'
 import {
   togglePlay,
@@ -220,6 +221,8 @@ const PlayerContent = () => {
   const eqBtnRef = useRef<HTMLButtonElement>(null)
   const [eqOpen, setEqOpen] = useState(false)
   const eqActive = useEqStore((s) => s.active)
+  const eqEnabled = useEqStore((s) => s.enabled)
+  const fxActive = useFxStore((s) => s.active)
 
   // Ctx-меню по ПКМ на обложке текущего трека (
   // `oncontextmenu="if(curId){showCtx(event,curId)}"`).
@@ -440,7 +443,7 @@ const PlayerContent = () => {
   const eqBtnNode = (
     <button
       ref={eqBtnRef}
-      className={`cc${eqActive ? ' on' : ''}`}
+      className={`cc${eqActive || (eqEnabled && fxActive) ? ' on' : ''}`}
       id="eqBtn"
       aria-label={t('player.aria.eq')}
       onClick={(e) => {

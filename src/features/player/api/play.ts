@@ -360,15 +360,13 @@ export const toggleMuteMain = (): void => {
 export const nextTr = (): void => {
   const { queue, qIdx, repeat } = useQueueStore.getState()
   if (!queue.length) return
-  // repeat-one: повтор того же трека.
-  if (repeat === 2 && qIdx >= 0 && queue[qIdx]) {
-    audioEngine.seekTo(0)
-    void audioEngine.play()
-    return
-  }
+  // Явный «далее» всегда переключает на следующий трек, даже при repeat-one:
+  // повтор того же трека — поведение для авто-перехода на `ended` (см.
+  // useMainPlayerBridge), а не для кнопки. Иначе «далее» залипал на текущем.
   let next = qIdx + 1
   if (next >= queue.length) {
-    if (repeat !== 1) return // wrap только при repeat-all
+    // wrap при любом включённом repeat (all/one); off — останавливаемся в конце.
+    if (repeat === 0) return
     next = 0
   }
   useQueueStore.getState().setQIdx(next)

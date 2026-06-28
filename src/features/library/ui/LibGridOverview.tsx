@@ -2,6 +2,7 @@ import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useSortable } from '@shared/lib/useSortable'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
+import { artistSourceFromId } from '@entities/artist'
 import { VinylCover } from '@shared/ui'
 import {
   useLibStore,
@@ -143,6 +144,9 @@ export const LibGridOverview = () => {
     el.className = 'tra-link'
     el.dataset.artist = a.name
     el.dataset.artistId = a.id
+    // Источник восстанавливаем из префикса id — иначе глобальный делегат (App)
+    // дефолтит на soundcloud и getArtist падает на чужом провайдере.
+    el.dataset.artistProvider = artistSourceFromId(a.id)
     if (a.avatar) el.dataset.artistCover = a.avatar
     document.body.appendChild(el)
     el.click()
