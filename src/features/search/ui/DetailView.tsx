@@ -179,7 +179,7 @@ const TrackRow = ({
         </button>
       </div>
       {typeof track.scPlaybackCount === 'number' && track.scPlaybackCount > 0 && (
-        <div className="trplays" title={`${track.scPlaybackCount.toLocaleString()} ${tt('search.plays')}`}>
+        <div className="trplays">
           <Ico name="eye" width={12} height={12} />
           {fmtNum(track.scPlaybackCount)}
         </div>

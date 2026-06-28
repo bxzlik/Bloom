@@ -137,14 +137,25 @@ export const TelemetrySection = () => {
         </button>
       </div>
 
-      {/* ХРАНИЛИЩЕ — общий объём */}
-      <div className="tele-stat-card">
-        <div className="tele-stat-label">{t('settings.storage.used')}</div>
-        <div className="tele-stat-val">{usedStr}</div>
-        <div className="tele-storage-bar"><span style={{ width: `${pct}%` }} /></div>
-        {storage && storage.quota > 0 && (
-          <div className="tele-storage-sub">{t('settings.storage.of', { q: fmtBytes(storage.quota), p: pct < 1 ? '<1' : Math.round(pct) })}</div>
-        )}
+      {/* ХРАНИЛИЩЕ — общий объём (кольцевой индикатор) */}
+      <div className="tele-stat-card tele-gauge-card">
+        <div className="tele-gauge">
+          <svg viewBox="0 0 120 120" className="tele-gauge-svg">
+            <circle className="tele-gauge-track" cx="60" cy="60" r="54" />
+            <circle
+              className="tele-gauge-fill"
+              cx="60"
+              cy="60"
+              r="54"
+              strokeDasharray={2 * Math.PI * 54}
+              strokeDashoffset={2 * Math.PI * 54 * (1 - pct / 100)}
+            />
+          </svg>
+          <div className="tele-gauge-center">
+            <div className="tele-gauge-val">{usedStr}</div>
+            <div className="tele-gauge-label">{t('settings.storage.used')}</div>
+          </div>
+        </div>
       </div>
 
       {/* УПРАВЛЕНИЕ ДАННЫМИ ПРИЛОЖЕНИЯ */}

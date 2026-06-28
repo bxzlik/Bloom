@@ -267,7 +267,7 @@ export const ru = {
 
   // Хранилище (TelemetrySection)
   'settings.storage.refresh': 'Обновить',
-  'settings.storage.used': 'Занято места',
+  'settings.storage.used': 'Занято',
   'settings.storage.of': 'из ~{q} ({p}%)',
   'settings.storage.manage': 'Управление данными приложения',
   'settings.storage.clearAll': 'Очистить всё',
@@ -1643,7 +1643,7 @@ export const en: Record<TranslationKey, string> = {
 
   // Storage (TelemetrySection)
   'settings.storage.refresh': 'Refresh',
-  'settings.storage.used': 'Space used',
+  'settings.storage.used': 'Used',
   'settings.storage.of': 'of ~{q} ({p}%)',
   'settings.storage.manage': 'Manage app data',
   'settings.storage.clearAll': 'Clear all',
