@@ -32,6 +32,13 @@ export type TrMode = 'off' | 'on'
 export interface TransparencyState {
   /** Режим: off — обычные непрозрачные блоки; on — стекло. */
   trMode: TrMode
+  /**
+   * Стекло на всплывающих поверхностях: контекстные меню, модалки, боковые
+   * drawer'ы, попапы. Независим от `trMode` — можно включить стекло только на
+   * оверлеях, оставив основные блоки непрозрачными (и наоборот). Использует те
+   * же параметры blockOpacity/glassStr/glassBlur.
+   */
+  overlayGlass: boolean
   /** Прозрачность блоков, 0–100 (% → альфа фона внешних контейнеров). */
   blockOpacity: number
   /** Яркость стекла, 0–100 (50 = нейтрально, <50 темнее, >50 светлее). */
@@ -39,6 +46,7 @@ export interface TransparencyState {
   /** Размытие стекла, 0–40 px. */
   glassBlur: number
   setMode: (m: TrMode) => void
+  setOverlayGlass: (v: boolean) => void
   setBlockOpacity: (v: number) => void
   setGlassStr: (v: number) => void
   setGlassBlur: (v: number) => void
@@ -46,6 +54,7 @@ export interface TransparencyState {
 
 const DEFAULTS = {
   trMode: 'off' as TrMode,
+  overlayGlass: false,
   blockOpacity: 100,
   glassStr: 50,
   glassBlur: 12,
@@ -60,6 +69,7 @@ const loadFromLs = (): typeof DEFAULTS => {
     const p = JSON.parse(raw)
     return {
       trMode: p.trMode === 'on' ? 'on' : 'off',
+      overlayGlass: typeof p.overlayGlass === 'boolean' ? p.overlayGlass : DEFAULTS.overlayGlass,
       blockOpacity: typeof p.blockOpacity === 'number' ? p.blockOpacity : DEFAULTS.blockOpacity,
       glassStr: typeof p.glassStr === 'number' ? p.glassStr : DEFAULTS.glassStr,
       glassBlur: typeof p.glassBlur === 'number' ? p.glassBlur : DEFAULTS.glassBlur,
@@ -91,10 +101,14 @@ const hexToRgbTriplet = (hex: string): [number, number, number] => {
 export const applyTransparency = (): void => {
   const root = document.documentElement
   const body = document.body
-  const { trMode, blockOpacity, glassStr, glassBlur } = useTransparencyStore.getState()
+  const { trMode, overlayGlass, blockOpacity, glassStr, glassBlur } = useTransparencyStore.getState()
 
+  // Стекло оверлеев — ПОДРЕЖИМ основного: работает только когда включена
+  // «Прозрачность» блоков (trMode==='on'). При выключенной прозрачности всё
+  // стекло (и блоков, и оверлеев) выключено.
   if (trMode !== 'on') {
     body.classList.remove('glass-mode')
+    body.classList.remove('glass-overlays')
     body.classList.remove('mp-bg-theme')
     root.style.removeProperty('--glass-block-bg')
     root.style.removeProperty('--glass-filter')
@@ -109,19 +123,21 @@ export const applyTransparency = (): void => {
   root.style.setProperty('--glass-block-bg', `rgba(${r},${g},${b},${(blockOpacity / 100).toFixed(2)})`)
   root.style.setProperty('--glass-filter', filter)
   body.classList.add('glass-mode')
+  body.classList.toggle('glass-overlays', overlayGlass)
   // Мини-плеер: стекло только при фоне «Тема».
   body.classList.toggle('mp-bg-theme', usePlayerViewStore.getState().mpBgMode === 'theme')
 }
 
 export const useTransparencyStore = create<TransparencyState>((set, get) => {
   const persist = () => {
-    const { trMode, blockOpacity, glassStr, glassBlur } = get()
-    saveToLs({ trMode, blockOpacity, glassStr, glassBlur })
+    const { trMode, overlayGlass, blockOpacity, glassStr, glassBlur } = get()
+    saveToLs({ trMode, overlayGlass, blockOpacity, glassStr, glassBlur })
     applyTransparency()
   }
   return {
     ...loadFromLs(),
     setMode: (m) => { set({ trMode: m }); persist() },
+    setOverlayGlass: (v) => { set({ overlayGlass: v }); persist() },
     setBlockOpacity: (v) => { set({ blockOpacity: v }); persist() },
     setGlassStr: (v) => { set({ glassStr: v }); persist() },
     setGlassBlur: (v) => { set({ glassBlur: v }); persist() },

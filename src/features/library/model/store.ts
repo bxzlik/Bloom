@@ -8,6 +8,22 @@ export type TrackSortMode = 'default' | 'name' | 'artist' | 'dur' | 'date' | 'pl
 export type TrackSortDir = 'asc' | 'desc'
 
 /**
+ * Вид строк сайдбара библиотеки (кнопка `libSbCompactBtn`, циклится):
+ * - `full`    — обложка + название + подпись + play (по умолчанию)
+ * - `text`    — только текст, без обложек (компактный)
+ * - `covers`  — только обложки крупным столбиком, без текста
+ */
+export type SbView = 'full' | 'text' | 'covers'
+const SB_VIEW_CYCLE: SbView[] = ['full', 'text', 'covers']
+
+// Вид сайдбара персистим в localStorage — переживает перезапуск приложения.
+const SB_VIEW_KEY = 'bloom_lib_sbview'
+const loadSbView = (): SbView => {
+  const v = localStorage.getItem(SB_VIEW_KEY)
+  return v === 'text' || v === 'covers' ? v : 'full'
+}
+
+/**
  * Стор библиотеки. Поля: `libMode`, `libPlId`, `libFolderPath`, `libSbCompact`.
  *
  * Источники tracks:
@@ -20,7 +36,7 @@ export interface LibState {
   mode: LibMode
   plId: string | null
   folderPath: string | null
-  sbCompact: boolean
+  sbView: SbView
   /**
    * Показывать ли grid-обзор библиотеки. Имеет
    * смысл только когда вид библиотеки = «сетка» (uiPrefs.libView==='grid'):
@@ -50,7 +66,8 @@ export interface LibState {
    * gridHome=false (иначе async-эффект возвращал бы обзор поверх выбора).
    */
   onEnterLibrary: () => void
-  toggleSbCompact: () => void
+  /** Циклически переключить вид сайдбара: full → text → covers → full. */
+  cycleSbView: () => void
   setSearchQuery: (q: string) => void
 
   // — Обновления —
@@ -83,7 +100,7 @@ export const useLibStore = create<LibState>((set) => ({
   mode: 'all',
   plId: null,
   folderPath: null,
-  sbCompact: false,
+  sbView: loadSbView(),
   gridHome: true,
   tracks: [],
   folders: [],
@@ -101,7 +118,16 @@ export const useLibStore = create<LibState>((set) => ({
 
   onEnterLibrary: () =>
     set((s) => (s.plId === null && s.folderPath === null ? { gridHome: true } : s)),
-  toggleSbCompact: () => set((s) => ({ sbCompact: !s.sbCompact })),
+  cycleSbView: () =>
+    set((s) => {
+      const next = SB_VIEW_CYCLE[(SB_VIEW_CYCLE.indexOf(s.sbView) + 1) % SB_VIEW_CYCLE.length]
+      try {
+        localStorage.setItem(SB_VIEW_KEY, next)
+      } catch {
+        /* quota → ignore */
+      }
+      return { sbView: next }
+    }),
   setSearchQuery: (q) => set({ searchQuery: q.toLowerCase() }),
 
   setFolders: (paths) => set({ folders: paths }),

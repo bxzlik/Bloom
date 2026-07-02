@@ -48,7 +48,7 @@ const cardSub = (count: number, sec: number): string =>
 const PlayOverlay = () => (
   <div className="hpc-play-overlay">
     <div className="hpc-play-btn">
-      <Ico name="play" width="100%" height="100%" style={{ marginLeft: 2, color: '#fff' }} />
+      <Ico name="play" width="100%" height="100%" style={{ marginLeft: 2, color: 'var(--accent)' }} />
     </div>
   </div>
 )

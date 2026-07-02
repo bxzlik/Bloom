@@ -52,6 +52,8 @@ export const FONT_CATS: Record<FontCat, FontDef[]> = {
     { name: 'Rubik', val: "'Rubik',sans-serif" },
     { name: 'Oxanium', val: "'Oxanium',sans-serif" },
     { name: 'Exo 2', val: "'Exo 2',sans-serif" },
+    { name: 'Comfortaa', val: "'Comfortaa',sans-serif" },
+    { name: 'Sora', val: "'Sora',sans-serif" },
   ],
   serif: [
     { name: 'Georgia', val: "'Georgia',serif" },
@@ -118,6 +120,7 @@ export const FONT_CATS: Record<FontCat, FontDef[]> = {
     { name: 'Brush Script', val: "'Brush Script MT',cursive" },
     { name: 'Gill Sans', val: "'Gill Sans','Gill Sans MT',sans-serif" },
     { name: 'Copperplate', val: "'Copperplate','Copperplate Gothic Bold',sans-serif" },
+    { name: 'Unbounded', val: "'Unbounded',sans-serif" },
   ],
   game: [
     { name: 'Press Start 2P', val: "'Press Start 2P',cursive" },
@@ -145,6 +148,9 @@ const GF_MAP: Record<string, string> = {
   Rubik: 'https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap',
   Oxanium: 'https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&display=swap',
   'Exo 2': 'https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&display=swap',
+  Comfortaa: 'https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&display=swap',
+  Sora: 'https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap',
+  Unbounded: 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800;900&display=swap',
   'PT Serif': 'https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&display=swap',
   Merriweather: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&display=swap',
   'Playfair Display': 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap',

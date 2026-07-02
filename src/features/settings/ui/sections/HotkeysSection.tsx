@@ -3,70 +3,62 @@ import { toast } from '@shared/ui'
 import { useT, type TranslationKey } from '@shared/i18n'
 import {
   useHotkeysStore,
-  modSymbol,
+  captureFromEvent,
+  acceleratorSegments,
+  HOTKEY_ORDER,
   type HotkeyAction,
-  type HotkeyMod,
+  type Captured,
 } from '../../model/hotkeysStore'
-import { TeleToggleRow } from '../controls/TeleToggleRow'
-import { Ico } from '@shared/ui/icons/solar'
-
-/** Метки действий хоткеев — переводимые (имена в сторе не используются для отображения). */
-const HOTKEY_LABEL_KEYS: Record<HotkeyAction, TranslationKey> = {
-  play: 'settings.hotkeys.action.play',
-  seekBack: 'settings.hotkeys.action.seekBack',
-  seekFwd: 'settings.hotkeys.action.seekFwd',
-  prev: 'settings.hotkeys.action.prev',
-  next: 'settings.hotkeys.action.next',
-  volUp: 'settings.hotkeys.action.volUp',
-  volDown: 'settings.hotkeys.action.volDown',
-  mute: 'settings.hotkeys.action.mute',
-  loop: 'settings.hotkeys.action.loop',
-  shuffle: 'settings.hotkeys.action.shuffle',
-  search: 'settings.hotkeys.action.search',
-}
+import { Ico, type IconName } from '@shared/ui/icons/solar'
 
 /**
- * Секция «Горячие клавиши».
- * Глобальная Win+Shift+X (Rust) — read-only; локальные клавиши плеера —
- * редактируемые (перехват новой клавиши, сохранение в `useHotkeysStore`).
- * Диспетчер клавиш на действия — `app/useGlobalHotkeys`.
+ * Секция «Горячие клавиши» — настраиваемые СИСТЕМНЫЕ (OS-global) хоткеи.
+ * Каждое действие: иконка + название + описание + кнопка «Назначить» (или
+ * назначенное комбо с крестиком). Перехват новой клавиши сохраняется в
+ * `useHotkeysStore`; регистрацию в ОС делает `app/useGlobalHotkeys`.
+ * Отдельный НЕнастраиваемый Win+Shift+X (окно) — в Rust.
  */
 
-const PRETTY: Record<string, string> = {
-  Space: 'Space',
-  ArrowLeft: '←',
-  ArrowRight: '→',
-  ArrowUp: '↑',
-  ArrowDown: '↓',
+interface ActionMeta {
+  icon: IconName
+  title: TranslationKey
+  sub: TranslationKey
 }
 
-const baseDisplay = (e: KeyboardEvent): string => {
-  if (PRETTY[e.code]) return PRETTY[e.code]
-  if (e.code.startsWith('Key')) return e.code.slice(3)
-  if (e.code.startsWith('Digit')) return e.code.slice(5)
-  if (e.code.startsWith('Arrow')) return e.code.slice(5)
-  return e.key.length === 1 ? e.key.toUpperCase() : e.code
+const ACTION_META: Record<HotkeyAction, ActionMeta> = {
+  play: { icon: 'play', title: 'settings.hotkeys.action.play', sub: 'settings.hotkeys.desc.play' },
+  next: { icon: 'next', title: 'settings.hotkeys.action.next', sub: 'settings.hotkeys.desc.next' },
+  prev: { icon: 'prev', title: 'settings.hotkeys.action.prev', sub: 'settings.hotkeys.desc.prev' },
+  like: { icon: 'heart', title: 'settings.hotkeys.action.like', sub: 'settings.hotkeys.desc.like' },
+  volUp: { icon: 'volumeLoud', title: 'settings.hotkeys.action.volUp', sub: 'settings.hotkeys.desc.volUp' },
+  volDown: { icon: 'volumeSmall', title: 'settings.hotkeys.action.volDown', sub: 'settings.hotkeys.desc.volDown' },
+  toggleOverlay: { icon: 'monitor', title: 'settings.hotkeys.action.toggleOverlay', sub: 'settings.hotkeys.desc.toggleOverlay' },
 }
 
-interface Pending {
-  code: string
-  mod: HotkeyMod
-  display: string
-}
+/** Бейдж комбо: сегменты через «+». */
+const Badge = ({ segments }: { segments: string[] }) => (
+  <div className="hk-badge">
+    {segments.map((s, i) => (
+      <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        {i > 0 && <span className="sc-plus">+</span>}
+        <span className="hk-key">{s}</span>
+      </span>
+    ))}
+  </div>
+)
 
 export const HotkeysSection = () => {
   const t = useT()
   const enabled = useHotkeysStore((s) => s.enabled)
-  const hotkeys = useHotkeysStore((s) => s.hotkeys)
+  const bindings = useHotkeysStore((s) => s.bindings)
   const capturing = useHotkeysStore((s) => s.capturing)
   const setEnabled = useHotkeysStore((s) => s.setEnabled)
-  const setHotkey = useHotkeysStore((s) => s.setHotkey)
+  const setBinding = useHotkeysStore((s) => s.setBinding)
   const resetAll = useHotkeysStore((s) => s.resetAll)
   const setCapturing = useHotkeysStore((s) => s.setCapturing)
-  const [pending, setPending] = useState<Pending | null>(null)
+  const [pending, setPending] = useState<Captured | null>(null)
 
-  // Перехват новой клавиши во время редактирования (capture-фаза, чтобы
-  // глобальный диспетчер не сработал; он и так замьючен флагом capturing).
+  // Перехват новой клавиши (capture-фаза, чтобы ничего в приложении не сработало).
   useEffect(() => {
     if (!capturing) return
     const onKey = (e: KeyboardEvent) => {
@@ -78,20 +70,21 @@ export const HotkeysSection = () => {
       if (['Control', 'Alt', 'Meta', 'Shift'].includes(e.key)) return
       e.preventDefault()
       e.stopPropagation()
-      const mod: HotkeyMod = e.ctrlKey ? 'Ctrl' : e.shiftKey ? 'Shift' : e.altKey ? 'Alt' : null
-      setPending({ code: e.code, mod, display: baseDisplay(e) })
+      const cap = captureFromEvent(e)
+      if (cap) setPending(cap)
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
   }, [capturing, setCapturing])
 
   const startCapture = (k: HotkeyAction) => {
+    if (!enabled) return
     setPending(null)
     setCapturing(k)
   }
   const save = (k: HotkeyAction) => {
     if (pending) {
-      setHotkey(k, pending)
+      setBinding(k, pending.accelerator)
       toast(t('settings.hotkeys.toast.updated'))
     }
     setCapturing(null)
@@ -101,96 +94,96 @@ export const HotkeysSection = () => {
     setCapturing(null)
     setPending(null)
   }
+  const clear = (k: HotkeyAction) => {
+    setBinding(k, null)
+    toast(t('settings.hotkeys.toast.cleared'))
+  }
   const onResetAll = () => {
     resetAll()
+    setCapturing(null)
+    setPending(null)
     toast(t('settings.hotkeys.toast.reset'))
   }
 
   return (
     <div className="s-section active" id="ssec-hotkeys">
+      <div className="s-section-head">
+        <div className="s-section-title">
+          <Ico name="keyboard" width={15} height={15} />{' '}
+          {t('settings.hotkeys.heading')}
+        </div>
+        <button className="s-section-reset" onClick={onResetAll}>
+          <Ico name="refresh" width={10} height={10} />{' '}
+          {t('common.reset')}
+        </button>
+      </div>
+
       <div className="sc">
         <h3>{t('settings.hotkeys.heading')}</h3>
-        <TeleToggleRow
-          icon={<Ico name="keyboard" width={16} height={16} />}
-          title={t('settings.hotkeys.enabled.title')}
-          sub={t('settings.hotkeys.enabled.sub')}
-          checked={enabled}
-          onChange={setEnabled}
-        />
-      </div>
-
-      <div className="sc">
-        <h3>{t('settings.hotkeys.global')}</h3>
-        <div className="hk-row">
-          <div className="hk-label">{t('settings.hotkeys.showTrayPopup')}</div>
-          <div className="hk-badge">
-            <span className="hk-key">Win</span>
-            <span className="sc-plus">+</span>
-            <span className="hk-key">Shift</span>
-            <span className="sc-plus">+</span>
-            <span className="hk-key">X</span>
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.hotkeys.enabled.title')}</div>
+            <div className="ssub">{t('settings.hotkeys.enabled.sub')}</div>
           </div>
-        </div>
-        <div className="hk-row">
-          <div className="hk-label">{t('settings.hotkeys.toggleOverlay')}</div>
-          <div className="hk-badge">
-            <span className="hk-key">Win</span>
-            <span className="sc-plus">+</span>
-            <span className="hk-key">Shift</span>
-            <span className="sc-plus">+</span>
-            <span className="hk-key">O</span>
-          </div>
+          <label className="tele-sw">
+            <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+            <span className="tele-sw-track" />
+          </label>
         </div>
       </div>
 
-      <div className="sc">
-        <h3>{t('settings.hotkeys.inApp')}</h3>
-        {(Object.keys(hotkeys) as HotkeyAction[]).map((k) => {
-          const h = hotkeys[k]
-          const isCap = capturing === k
-          return (
-            <div className="hk-row" key={k} style={enabled ? undefined : { opacity: 0.5 }}>
-              <div className="hk-label">{t(HOTKEY_LABEL_KEYS[k])}</div>
-
-              {!isCap && (
-                <div className="hk-badge">
-                  {h.mod && (
-                    <>
-                      <span className="hk-key">{modSymbol(h.mod)}</span>
-                      <span className="sc-plus">+</span>
-                    </>
-                  )}
-                  <span className="hk-key">{h.display}</span>
+      <div className="hk-active-head">
+        <span className="hk-cat">{t('settings.hotkeys.active')}</span>
+        <button className="btn btg hk-reset" onClick={onResetAll} disabled={!enabled}>
+          <Ico name="refresh" width={11} height={11} />
+          {t('common.reset')}
+        </button>
+      </div>
+      <div className={`hk-list${enabled ? '' : ' hk-disabled'}`}>
+        {HOTKEY_ORDER.map((k) => {
+            const meta = ACTION_META[k]
+            const accel = bindings[k]
+            const isCap = capturing === k
+            return (
+              <div className="hk-card" key={k}>
+                <div className="hk-ico">
+                  <Ico name={meta.icon} width={18} height={18} />
                 </div>
-              )}
+                <div className="hk-text">
+                  <div className="hk-title">{t(meta.title)}</div>
+                  <div className="hk-sub">{t(meta.sub)}</div>
+                </div>
 
-              {isCap && (
-                <div className="hk-capture active">
-                  <div className="hk-cap-field">
-                    {pending
-                      ? (pending.mod ? modSymbol(pending.mod) + ' ' : '') + pending.display
-                      : t('settings.hotkeys.pressKey')}
+                {isCap ? (
+                  <div className="hk-capture active">
+                    <div className="hk-cap-field">
+                      {pending
+                        ? acceleratorSegments(pending.accelerator).join(' + ')
+                        : t('settings.hotkeys.pressKey')}
+                    </div>
+                    <button className="hk-cap-ok" onClick={() => save(k)} disabled={!pending}>
+                      {t('settings.hotkeys.ok')}
+                    </button>
+                    <button className="hk-cap-cancel" onClick={cancel}>✕</button>
                   </div>
-                  <button className="hk-cap-ok" onClick={() => save(k)}>{t('settings.hotkeys.ok')}</button>
-                  <button className="hk-cap-cancel" onClick={cancel}>✕</button>
-                </div>
-              )}
-
-              {!isCap && (
-                <button className="hk-edit-btn" onClick={() => startCapture(k)} disabled={!enabled}>
-                  <Ico name="edit" width={10} height={10} />
-                </button>
-              )}
-            </div>
-          )
+                ) : accel ? (
+                  <div className="hk-assigned">
+                    <button className="hk-assign-btn" onClick={() => startCapture(k)} disabled={!enabled}>
+                      <Badge segments={acceleratorSegments(accel)} />
+                    </button>
+                    <button className="hk-clear" onClick={() => clear(k)} disabled={!enabled} aria-label={t('settings.hotkeys.clear')}>
+                      <Ico name="close" width={13} height={13} />
+                    </button>
+                  </div>
+                ) : (
+                  <button className="hk-assign" onClick={() => startCapture(k)} disabled={!enabled}>
+                    <span className="hk-assign-plus">+</span>
+                    {t('settings.hotkeys.assign')}
+                  </button>
+                )}
+              </div>
+            )
         })}
-
-        <div style={{ marginTop: 10 }}>
-          <button className="btn btg" style={{ fontSize: 11, padding: '5px 11px', display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={onResetAll}>
-            <Ico name="refresh" width={11} height={11} />
-            {t('settings.hotkeys.resetAll')}
-          </button>
-        </div>
       </div>
     </div>
   )

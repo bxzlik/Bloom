@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
+import { usePopupOpenAnimation } from '@shared/hooks'
 import { useThemeStore, THEME_PRESETS, type ThemePreset } from '../../model/themeStore'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
@@ -76,10 +78,12 @@ export const InterfaceSection = () => {
   const setAccentBadges = useBadgePrefs((s) => s.setAccentBadges)
 
   const trMode = useTransparencyStore((s) => s.trMode)
+  const overlayGlass = useTransparencyStore((s) => s.overlayGlass)
   const blockOpacity = useTransparencyStore((s) => s.blockOpacity)
   const glassStr = useTransparencyStore((s) => s.glassStr)
   const glassBlur = useTransparencyStore((s) => s.glassBlur)
   const setTrMode = useTransparencyStore((s) => s.setMode)
+  const setOverlayGlass = useTransparencyStore((s) => s.setOverlayGlass)
   const setBlockOpacity = useTransparencyStore((s) => s.setBlockOpacity)
   const setGlassStr = useTransparencyStore((s) => s.setGlassStr)
   const setGlassBlur = useTransparencyStore((s) => s.setGlassBlur)
@@ -207,28 +211,7 @@ export const InterfaceSection = () => {
       </div>
 
       <div className="s-cat-label">{t('settings.interface.cat.interface')}</div>
-      <div className="sc">
-        <div className="sc-title">{t('settings.interface.radius.title')}</div>
-        <div className="sc-desc">{t('settings.interface.radius.desc')}</div>
-        <div className="s-opt-row" style={{ marginTop: 12 }}>
-          <OptBtn active={radius === 0} onClick={() => setRadius(0)}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" /></svg>
-            {t('settings.interface.radius.none')}
-          </OptBtn>
-          <OptBtn active={radius === 6} onClick={() => setRadius(6)}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="3" /></svg>
-            {t('settings.interface.radius.small')}
-          </OptBtn>
-          <OptBtn active={radius === 14} onClick={() => setRadius(14)}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="7" /></svg>
-            {t('settings.interface.radius.medium')}
-          </OptBtn>
-          <OptBtn active={radius === 24} onClick={() => setRadius(24)}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="12" /></svg>
-            {t('settings.interface.radius.large')}
-          </OptBtn>
-        </div>
-      </div>
+      <RadiusCard t={t} value={radius} onChange={setRadius} />
       <div className="sc">
         <div className="sc-title">{t('settings.interface.borders.title')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
@@ -258,11 +241,22 @@ export const InterfaceSection = () => {
             {t('settings.interface.transparency.on')}
           </button>
         </div>
+        {/* Слайдеры + тоггл оверлеев видны только при включённой прозрачности:
+            оверлеи — подрежим основного стекла (trMode==='on'). */}
         <div className={`${trMode === 'on' ? 'vis' : ''}`} id="sTrSliders">
           <div className="s-sliders-3" style={{ marginTop: 14 }}>
             <GlassSlider label={t('settings.interface.transparency.blockOpacity')} valLabel={`${blockOpacity}%`} min={0} max={100} value={blockOpacity} onChange={setBlockOpacity} />
             <GlassSlider label={t('settings.interface.transparency.glassStr')} valLabel={`${glassStr}%`} min={0} max={100} value={glassStr} onChange={setGlassStr} />
             <GlassSlider label={t('settings.interface.transparency.glassBlur')} valLabel={`${glassBlur}px`} min={0} max={40} value={glassBlur} onChange={setGlassBlur} />
+          </div>
+          {/* Ряд-тоггл БЕЗ класса `.sr`: правило `.sc:has(>.sr)>.sc-title{display:none}`
+              (settings.css) иначе спрятало бы заголовок этой карточки. */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
+            <div>
+              <div className="sl2">{t('settings.interface.transparency.overlays.title')}</div>
+              <div className="ssub">{t('settings.interface.transparency.overlays.sub')}</div>
+            </div>
+            <Toggle checked={overlayGlass} onChange={setOverlayGlass} />
           </div>
         </div>
       </div>
@@ -280,6 +274,48 @@ const GlassSlider = ({ label, valLabel, min, max, value, onChange }: { label: st
     <input type="range" className="srange-full" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} />
   </div>
 )
+
+// Пресеты скругления — «маленькое» чуть больше прежнего (8 вместо 6),
+// «большое» = 32px, чтобы блоки/кнопки/обложки становились максимально круглыми.
+// rx — форма иконки-превью (rect 18×18, макс. rx=9 → полностью круглые углы).
+const RADIUS_PRESETS: { v: number; labelKey: Parameters<TFunc>[0]; rx: number }[] = [
+  { v: 0, labelKey: 'settings.interface.radius.none', rx: 0 },
+  { v: 8, labelKey: 'settings.interface.radius.small', rx: 4 },
+  { v: 14, labelKey: 'settings.interface.radius.medium', rx: 7 },
+  { v: 32, labelKey: 'settings.interface.radius.large', rx: 9 },
+]
+
+const RadiusCard = ({ t, value, onChange }: { t: TFunc; value: number; onChange: (v: number) => void }) => {
+  // Снап к ближайшему пресету для подсветки плитки.
+  const snap = RADIUS_PRESETS.reduce((a, b) => (Math.abs(b.v - value) < Math.abs(a.v - value) ? b : a))
+  return (
+    <div className="sc">
+      <div className="sc-title">{t('settings.interface.radius.title')}</div>
+      <div className="sc-desc">{t('settings.interface.radius.desc')}</div>
+      <div className="s-zoom-presets" style={{ marginTop: 14 }}>
+        {RADIUS_PRESETS.map((p) => (
+          <button key={p.v} className={`s-zoom-tile ${p.v === snap.v ? 'bta' : 'btg'}`} onClick={() => onChange(p.v)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx={p.rx} /></svg>
+            {t(p.labelKey)}
+          </button>
+        ))}
+      </div>
+      <div className="s-zoom-slider-row" style={{ marginTop: 12 }}>
+        <span className="s-zoom-slider-lbl">{t('settings.interface.radius.title')}</span>
+        <span className="s-zoom-slider-val">{value}px</span>
+      </div>
+      <input
+        type="range"
+        className="srange-full"
+        min={0}
+        max={32}
+        value={value}
+        style={{ marginTop: 6, display: 'block' }}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+    </div>
+  )
+}
 
 const ZOOM_PRESETS = [70, 85, 100, 115, 130]
 
@@ -360,68 +396,129 @@ const ThemePicker = ({
   t: TFunc
 }) => {
   const [mode, setMode] = useState<'none' | 'list' | 'create'>('none')
-  const rootRef = useRef<HTMLDivElement>(null)
+  const currentBtnRef = useRef<HTMLButtonElement>(null)
+  const addBtnRef = useRef<HTMLButtonElement>(null)
 
   const allThemes = [...THEME_PRESETS, ...customThemes]
   const current = allThemes.find((t) => t.id === activeId)
   const currentName = current?.name ?? t('theme.ownName')
   const currentPreview = current?.preview ?? { bg: liveColors.bg, card: liveColors.blockColor, accent: liveColors.accent }
 
-  // Клик вне пикера закрывает поповер (но не клик внутри глобального color-picker).
-  useEffect(() => {
-    if (mode === 'none') return
-    const onDown = (e: MouseEvent) => {
-      const t = e.target as HTMLElement | null
-      if (rootRef.current?.contains(t) || t?.closest?.('#cpPopup')) return
-      setMode('none')
-    }
-    const id = setTimeout(() => document.addEventListener('mousedown', onDown), 10)
-    return () => {
-      clearTimeout(id)
-      document.removeEventListener('mousedown', onDown)
-    }
-  }, [mode])
-
   return (
-    <div className="tp" ref={rootRef}>
-      <button className={`tp-current${mode === 'list' ? ' open' : ''}`} onClick={() => setMode((m) => (m === 'list' ? 'none' : 'list'))}>
+    <div className="tp">
+      <button ref={currentBtnRef} className={`tp-current${mode === 'list' ? ' open' : ''}`} onClick={() => setMode((m) => (m === 'list' ? 'none' : 'list'))}>
         <Dots preview={currentPreview} />
         <span className="tp-current-name">{currentName}</span>
         <Ico name="arrowDown" className="tp-chev" width={14} height={14} />
       </button>
-      <button className={`tp-add${mode === 'create' ? ' open' : ''}`} onClick={() => setMode((m) => (m === 'create' ? 'none' : 'create'))}>
+      <button ref={addBtnRef} className={`tp-add${mode === 'create' ? ' open' : ''}`} onClick={() => setMode((m) => (m === 'create' ? 'none' : 'create'))}>
         <Ico name="add" width={16} height={16} />
       </button>
 
       {mode === 'list' && (
-        <div className="tp-pop tp-list">
+        <TpPopover anchorRef={currentBtnRef} width={300} className="tp-list" onClose={() => setMode('none')}>
           <div className="theme-section-label">{t('theme.builtin')}</div>
           <div className="tp-grid">
-            {THEME_PRESETS.map((t) => (
-              <TpCard key={t.id} t={t} active={t.id === activeId} onApply={(id) => { onApply(id); setMode('none') }} />
+            {THEME_PRESETS.map((th) => (
+              <TpCard key={th.id} t={th} active={th.id === activeId} onApply={(id) => { onApply(id); setMode('none') }} />
             ))}
           </div>
           {customThemes.length > 0 && (
             <>
               <div className="theme-section-label" style={{ marginTop: 12 }}>{t('theme.mine')}</div>
               <div className="tp-grid">
-                {customThemes.map((t) => (
-                  <TpCard key={t.id} t={t} active={t.id === activeId} onApply={(id) => { onApply(id); setMode('none') }} onDelete={onDelete} />
+                {customThemes.map((th) => (
+                  <TpCard key={th.id} t={th} active={th.id === activeId} onApply={(id) => { onApply(id); setMode('none') }} onDelete={onDelete} />
                 ))}
               </div>
             </>
           )}
-        </div>
+        </TpPopover>
       )}
 
       {mode === 'create' && (
-        <ThemeCreator
-          initial={currentPreview}
-          onCreate={(name, colors) => { onCreate(name, colors); setMode('none') }}
-          t={t}
-        />
+        <TpPopover anchorRef={addBtnRef} width={280} className="tp-creator" onClose={() => setMode('none')}>
+          <ThemeCreator
+            initial={currentPreview}
+            onCreate={(name, colors) => { onCreate(name, colors); setMode('none') }}
+            t={t}
+          />
+        </TpPopover>
       )}
     </div>
+  )
+}
+
+/**
+ * Обёртка-поповер темпикера: портал в body + fixed-позиция от кнопки-якоря
+ * (правый край поповера выравнивается по правому краю кнопки), open-анимация
+ * без «дёрганья» (usePopupOpenAnimation вместо ctxIn) и закрытие по клику вне.
+ *
+ * Раньше поповеры были `position:absolute` внутри скролла настроек: их высота
+ * добавляла вертикальный скроллбар панели → соседние надписи/элементы
+ * сдвигались вбок при открытии. Портал + fixed это убирает.
+ */
+const TpPopover = ({
+  anchorRef,
+  width,
+  className,
+  onClose,
+  children,
+}: {
+  anchorRef: RefObject<HTMLButtonElement | null>
+  width: number
+  className?: string
+  onClose: () => void
+  children: React.ReactNode
+}) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+
+  // Анимируем ОДИН раз при открытии (trigger = null→true), а не на каждый
+  // repos при скролле — иначе поповер мигал бы, переигрывая scale.
+  usePopupOpenAnimation(ref, pos !== null)
+
+  useLayoutEffect(() => {
+    const recalc = () => {
+      const a = anchorRef.current
+      if (!a) return
+      const r = a.getBoundingClientRect()
+      const W = ref.current?.offsetWidth || width
+      const left = Math.max(8, Math.min(r.right - W, window.innerWidth - W - 8))
+      setPos({ top: r.bottom + 8, left })
+    }
+    recalc()
+    window.addEventListener('resize', recalc)
+    window.addEventListener('scroll', recalc, true)
+    return () => {
+      window.removeEventListener('resize', recalc)
+      window.removeEventListener('scroll', recalc, true)
+    }
+  }, [anchorRef, width])
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      if (anchorRef.current?.contains(t)) return
+      if (ref.current?.contains(t)) return
+      // клик внутри глобального color-picker не закрывает создатель темы
+      if (t?.closest?.('#cpPopup')) return
+      onClose()
+    }
+    window.addEventListener('mousedown', onDown)
+    return () => window.removeEventListener('mousedown', onDown)
+  }, [anchorRef, onClose])
+
+  if (!pos) return null
+  return createPortal(
+    <div
+      ref={ref}
+      className={`tp-pop${className ? ' ' + className : ''}`}
+      style={{ top: pos.top, left: pos.left, right: 'auto' }}
+    >
+      {children}
+    </div>,
+    document.body,
   )
 }
 
@@ -485,7 +582,7 @@ const ThemeCreator = ({
   ]
 
   return (
-    <div className="tp-pop tp-creator">
+    <>
       <input
         className="tp-name-input"
         placeholder={t('theme.defaultName')}
@@ -523,7 +620,7 @@ const ThemeCreator = ({
           {t('common.save')}
         </button>
       </div>
-    </div>
+    </>
   )
 }
 

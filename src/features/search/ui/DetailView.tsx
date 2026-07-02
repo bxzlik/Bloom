@@ -10,7 +10,7 @@ import { ArtistLinks, CoverSourceBadge } from '@entities/track'
 import type { Playlist } from '@entities/playlist'
 import type { ArtistPageData, RepostItem } from '@features/providers'
 import { getProvider } from '@features/providers'
-import { AddPopup, playFromSource, playShuffledFromSource, type PlaySource } from '@features/player'
+import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, type PlaySource } from '@features/player'
 import {
   TrackCtxMenu,
   saveTrackToLibrary,
@@ -29,6 +29,7 @@ import { useT, useI18nStore } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { useDetailStore, type DetailTarget } from '../model/detailStore'
 import { ImportPopup } from './ImportPopup'
+import { TrackRowCover } from './TrackRowCover'
 
 /* ── Форматтеры ───── */
 const fmtNum = (n: number): string => {
@@ -62,7 +63,7 @@ const PhAlbum = () => <Ico name="vinyl" width={20} height={20} style={{ opacity:
 const PlayBadge = () => (
   <div className="sp-tc-play">
     <div className="sp-tc-play-btn">
-      <Ico name="play" width="100%" height="100%" style={{ color: '#fff', marginLeft: 2 }} />
+      <Ico name="play" width="100%" height="100%" style={{ color: 'var(--accent)', marginLeft: 2 }} />
     </div>
   </div>
 )
@@ -147,10 +148,7 @@ const TrackRow = ({
   }
   return (
     <div className="tr" onClick={onPlay} onContextMenu={onCtxMenu}>
-      <div className="trcov">
-        <Cover src={track.cover} placeholder={<PhTrack />} />
-        <CoverSourceBadge track={track} />
-      </div>
+      <TrackRowCover track={track} placeholder={<PhTrack />} />
       <div className="tri">
         <div className="trn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
@@ -215,6 +213,7 @@ const Card = ({
       <Cover src={cover} placeholder={square ? <PhAlbum /> : <PhTrack />} />
       {badgeTrack && <CoverSourceBadge track={badgeTrack} size={26} />}
       {showPlay && <PlayBadge />}
+      {badgeTrack && <PlayStateOverlay trackId={badgeTrack.id} size="card" />}
     </div>
     <div className="sp-tc-info">
       <div className="sp-tc-name">{name}</div>

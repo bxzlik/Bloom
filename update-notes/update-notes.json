@@ -1,4 +1,31 @@
 {
+  "1.4.0": {
+    "title": { "ru": "Что нового в 1.4.0", "en": "What's new in 1.4.0" },
+    "date": "2026-07-02",
+    "pages": [
+      {
+        "title": { "ru": "Главное", "en": "Highlights" },
+        "body": {
+          "ru": "- Обновлена главная страница\n- Новый вид сайдбара в библиотеке\n- Новая перемешка треков — умная перемешка\n- Переделана настройка горячих клавиш",
+          "en": "- Redesigned home page\n- New library sidebar look\n- New track shuffle — smart shuffle\n- Reworked hotkey settings"
+        }
+      },
+      {
+        "title": { "ru": "Кастомизация", "en": "Customization" },
+        "body": {
+          "ru": "- Слайдер скругления\n- Тоггл прозрачности для контекстных меню, попапов, модалов и т.д.\n- Новые шрифты: Comfortaa, Sora, Unbounded",
+          "en": "- Corner rounding slider\n- Transparency toggle for context menus, popups, modals, etc.\n- New fonts: Comfortaa, Sora, Unbounded"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Добавлена подсказка времени в миниплеере при наведении\n- Улучшен поиск в настройках",
+          "en": "- Added a time tooltip in the mini player on hover\n- Improved search in settings"
+        }
+      }
+    ]
+  },
   "1.3.7": {
     "title": { "ru": "Что нового в 1.3.7", "en": "What's new in 1.3.7" },
     "date": "2026-06-29",

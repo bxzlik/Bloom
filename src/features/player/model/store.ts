@@ -30,6 +30,8 @@ export interface PlayerState {
   /** 0..100 */
   volume: number
   shuffle: boolean
+  /** «Умная» перемешка активна (подвид shuffle). Зеркалит queueStore.smartShuffle. */
+  smartShuffle: boolean
   repeat: RepeatMode
   fav: boolean
   canAddToLib: boolean
@@ -85,6 +87,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   duration: 0,
   volume: _vol.volume,
   shuffle: false,
+  smartShuffle: false,
   repeat: 0,
   fav: false,
   canAddToLib: false,

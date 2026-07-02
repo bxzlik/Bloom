@@ -15,7 +15,7 @@
 }
 .win-bell:hover,
 .win-bell.on {
-  color: var(--accent);
+  color: var(--text);
 }
 
 /* Бейдж непрочитанных */

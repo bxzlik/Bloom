@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { createPortal } from 'react-dom'
+import { usePopupOpenAnimation } from '@shared/hooks'
 import { WaveCard } from '@features/wave'
 import { useT, t as tt } from '@shared/i18n'
 import {
@@ -6,6 +8,7 @@ import {
   useHistoryStore,
   usePlaylistStore,
   usePlEditStore,
+  useFavStore,
   TrackCtxMenu,
   TagEditor,
   PlMenu,
@@ -23,11 +26,11 @@ import {
   loadResume,
   restoreResumeQueue,
   legacySourceLabel,
+  PlayStateOverlay,
   type PlaySource,
 } from '@features/player'
+import { seek, seekLive } from '@features/player/api/play'
 import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
-import { useGamesStore, GamepadIcon } from '@features/games'
-import { useAccountTabStore } from '@features/profile'
 import { VinylCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '../navigationStore'
@@ -36,9 +39,7 @@ import { useNavStore } from '../navigationStore'
  * Главная страница (#page-home) — макет.
  *
  * Секции: «Моя волна» (WaveCard) + «Продолжить» (если есть трек) | Любимые/История
- * | статистика | Игры | Плейлисты. Бар статистики ведёт на страницу профиля,
- * вкладку «Статистика» (StatsSection). Отложено (скрыты по дефолту): «Трек
- * дня», «Недавно слушали», авто-резюм (bloom_resume), игры.
+ * | Недавно слушали | Плейлисты.
  */
 export const HomePage = ({ active }: { active: boolean }) => {
   // ПКМ по треку (продолжить / трек дня / недавнее) → TrackCtxMenu.
@@ -74,14 +75,6 @@ export const HomePage = ({ active }: { active: boolean }) => {
           </div>
         )}
         <QuickGrid />
-        <StatsBar
-          onOpen={() => {
-            useAccountTabStore.getState().setTab('stats')
-            goNav('account')
-          }}
-        />
-        <TrackOfDay onTrackCtx={onTrackCtx} />
-        <GamesCard />
         <RecentSection onTrackCtx={onTrackCtx} />
         <PlaylistsSection
           onPlCtx={onPlCtx}
@@ -231,6 +224,7 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
   const duration = usePlayerStore((s) => s.duration)
   const playing = usePlayerStore((s) => s.playing)
   const libTracks = useLibStore((s) => s.tracks)
+  const favs = useFavStore((s) => s.favs)
   const goNav = useNavStore((s) => s.goNav)
 
   // Живой трек этой сессии — показываем из плеера; play/pause + переход.
@@ -242,10 +236,6 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
         cover={artwork}
         title={title || '—'}
         artist={artist || '—'}
-        artistScId={liveTrack?.artistScId}
-        artistPermalink={liveTrack?.artistPermalink}
-        artistId={liveTrack?.artistId}
-        artistProvider={liveTrack?.artistProvider}
         label={sourceLabel(source)}
         iconKind={li.kind}
         iconCover={li.cover}
@@ -254,10 +244,12 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
         playing={playing}
         stateText={playing ? tr('home.nowPlaying') : tr('home.paused')}
         stateActive={playing}
-        onResume={() => {
-          togglePlay()
-          goNav('player')
-        }}
+        isFav={favs.has(curId)}
+        onToggleFav={() => useFavStore.getState().toggleFav(curId)}
+        onTogglePlay={() => togglePlay()}
+        onSeekLive={seekLive}
+        onSeekCommit={seek}
+        onResume={() => goNav('player')}
         onContextMenu={liveTrack ? (e) => onTrackCtx(e, liveTrack) : undefined}
       />
     )
@@ -281,10 +273,6 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
       cover={t.cover ?? null}
       title={t.name || '—'}
       artist={t.artist || '—'}
-      artistScId={t.artistScId}
-      artistPermalink={t.artistPermalink}
-      artistId={t.artistId}
-      artistProvider={t.artistProvider}
       label={legacySourceLabel(r.source)}
       iconKind={iconKind}
       iconCover={iconCover}
@@ -293,6 +281,13 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
       playing={false}
       stateText={resumeStateLabel(r.state, r.savedAt)}
       stateActive={false}
+      isFav={favs.has(t.id)}
+      onToggleFav={() => useFavStore.getState().toggleFav(t.id)}
+      onTogglePlay={() => {
+        // Ещё не играет (восстановление после рестарта) — запускаем, без перехода.
+        const id = restoreResumeQueue(r)
+        if (id) void loadPlay(id)
+      }}
       onResume={() => {
         const id = restoreResumeQueue(r)
         if (id) {
@@ -309,10 +304,6 @@ const ContinueView = ({
   cover,
   title,
   artist,
-  artistScId,
-  artistPermalink,
-  artistId,
-  artistProvider,
   label,
   iconKind,
   iconCover,
@@ -321,16 +312,17 @@ const ContinueView = ({
   playing,
   stateText,
   stateActive,
+  isFav,
+  onToggleFav,
+  onTogglePlay,
+  onSeekLive,
+  onSeekCommit,
   onResume,
   onContextMenu,
 }: {
   cover: string | null
   title: string
   artist: string
-  artistScId?: number | null
-  artistPermalink?: string | null
-  artistId?: string | null
-  artistProvider?: string | null
   label: string
   iconKind: SrcIconKind
   iconCover: string | null
@@ -341,43 +333,107 @@ const ContinueView = ({
   stateText: string
   /** Активное проигрывание — для зелёной подсветки is-playing. */
   stateActive: boolean
+  isFav: boolean
+  onToggleFav: () => void
+  /** Play/pause по кнопке — БЕЗ перехода в плеер. */
+  onTogglePlay: () => void
+  /** Live-seek во время перетаскивания (только у играющего трека). */
+  onSeekLive?: (sec: number) => void
+  /** Финальная перемотка на отпускании. Наличие = полоса перематываемая. */
+  onSeekCommit?: (sec: number) => void
+  /** Клик по карточке (обложка/пустое место) — открыть плеер. */
   onResume: () => void
   onContextMenu?: (e: ReactMouseEvent) => void
 }) => {
   const t = useT()
-  const pct = dur > 0 ? Math.min(100, (pos / dur) * 100) : 0
+  const barRef = useRef<HTMLDivElement>(null)
+  const draggingRef = useRef(false)
+  const lastFracRef = useRef(0)
+  const [dragFrac, setDragFrac] = useState<number | null>(null)
+  const seekable = !!onSeekCommit
+
+  // Попап кнопки «!» — источник + активность. Fixed-портал у кнопки (как в
+  // WaveCard): попап рендерится в body, иначе overflow:hidden карточки/скролл
+  // главной его обрежут. `cx` — центр кнопки, попап центрируется translateX(-50%).
+  const [infoPos, setInfoPos] = useState<{ top: number; cx: number } | null>(null)
+  const infoBtnRef = useRef<HTMLButtonElement>(null)
+  const infoRef = useRef<HTMLDivElement>(null)
+  usePopupOpenAnimation(infoRef, infoPos)
+  const toggleInfo = () => {
+    if (infoPos) {
+      setInfoPos(null)
+      return
+    }
+    const r = infoBtnRef.current?.getBoundingClientRect()
+    if (!r) return
+    // Открываем НАД кнопкой: якорим низ попапа к верху кнопки (translateY(-100%)).
+    setInfoPos({ top: r.top - 8, cx: r.left + r.width / 2 })
+  }
+  // Ресайз/скролл → координаты fixed-попапа устаревают, закрываем.
+  useLayoutEffect(() => {
+    if (!infoPos) return
+    const close = () => setInfoPos(null)
+    window.addEventListener('resize', close)
+    window.addEventListener('scroll', close, true)
+    return () => {
+      window.removeEventListener('resize', close)
+      window.removeEventListener('scroll', close, true)
+    }
+  }, [infoPos])
+  const pct = dragFrac != null ? dragFrac * 100 : dur > 0 ? Math.min(100, (pos / dur) * 100) : 0
+  const shownPos = dragFrac != null ? dragFrac * dur : pos
+
+  // Перемотка-скраб по образцу оверлея (режим «Полоса», attachSeek):
+  // pointerdown + setPointerCapture, гейт по флагу dragging (надёжнее
+  // hasPointerCapture); заливка идёт за курсором без transition-лага.
+  const applyAt = (clientX: number) => {
+    const el = barRef.current
+    if (!el || !dur || !onSeekLive) return
+    const r = el.getBoundingClientRect()
+    const f = Math.max(0, Math.min(1, (clientX - r.left) / r.width))
+    lastFracRef.current = f
+    setDragFrac(f)
+    onSeekLive(f * dur)
+  }
+  const onDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dur || !seekable) return
+    e.stopPropagation()
+    e.preventDefault()
+    draggingRef.current = true
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      /* no-op */
+    }
+    applyAt(e.clientX)
+  }
+  const onMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (draggingRef.current) applyAt(e.clientX)
+  }
+  const onUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return
+    draggingRef.current = false
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* no-op */
+    }
+    if (dur && onSeekCommit) onSeekCommit(lastFracRef.current * dur)
+    setDragFrac(null)
+  }
+
   return (
-    <div className="home-continue-card" id="homeContinueCard" onClick={onResume} onContextMenu={onContextMenu}>
-      <div className="hcc-meta">
-        <div className="hcc-source" id="homeCcSource">
-          <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-            <ContinueSourceIcon kind={iconKind} cover={iconCover} />
-          </span>
-          <span>{label}</span>
-        </div>
-        <div className={`hcc-state${stateActive ? ' is-playing' : ''}`}>{stateText}</div>
-      </div>
+    <div className="home-continue-card" id="homeContinueCard" onContextMenu={onContextMenu}>
       <div className="hcc-row">
-        <div className="hcc-cover" id="homeCcCover">
+        {/* Клик по обложке открывает полноэкранный плеер. */}
+        <div className="hcc-cover" id="homeCcCover" onClick={onResume}>
           {cover ? <img src={cover} alt="" /> : <NoteSvg />}
-        </div>
-        <div className="hcc-body">
-          <div className="hcc-top">
-            <div className="hcc-title">{title}</div>
-            <div className="hcc-artist">
-              <ArtistLinks artist={artist} scId={artistScId} permalink={artistPermalink} artistId={artistId} provider={artistProvider} />
-            </div>
-          </div>
-          <div className="hcc-progress">
-            <div className="hcc-bar-wrap"><div className="hcc-bar-fill" style={{ width: `${pct}%` }} /></div>
-            <div className="hcc-times"><span>{fmtTime(pos)}</span><span>{fmtTime(dur)}</span></div>
-          </div>
         </div>
         <button
           className="hcc-play-btn"
           onClick={(e) => {
             e.stopPropagation()
-            onResume()
+            onTogglePlay()
           }}
           aria-label={playing ? t('player.aria.pause') : t('home.resume')}
         >
@@ -387,7 +443,97 @@ const ContinueView = ({
             <Ico name="play" variant="bold" width={14} height={14} />
           )}
         </button>
+        {/* Полоса-пилюля: название внутри, заливка прогресса. У живого трека —
+            перематываемая (drag/click = seek). У восстановленного из резюма
+            (не перематываемая) клик = продолжить воспроизведение. */}
+        <div
+          ref={barRef}
+          className={`hcc-seek${seekable ? ' is-seekable' : ''}`}
+          onPointerDown={seekable ? onDown : undefined}
+          onPointerMove={seekable ? onMove : undefined}
+          onPointerUp={seekable ? onUp : undefined}
+          onPointerCancel={seekable ? onUp : undefined}
+          onClick={seekable ? undefined : () => onTogglePlay()}
+        >
+          <div
+            className="hcc-seek-fill"
+            style={{ width: `${pct}%`, ...(dragFrac != null ? { transition: 'none' } : null) }}
+          />
+          <div className="hcc-seek-label">
+            <div className="hcc-seek-main">
+              <span className="hcc-seek-title">{title}</span>
+              {artist && artist !== '—' && <span className="hcc-seek-artist">{artist}</span>}
+            </div>
+            <span className="hcc-seek-times">{fmtTime(shownPos)} / {fmtTime(dur)}</span>
+          </div>
+          {/* «!» — источник и активность спрятаны в попап (портал в body). Внутри
+              полосы, поэтому глушим pointerdown/click, чтобы не перематывать. */}
+          <button
+            ref={infoBtnRef}
+            className={`hcc-seek-info${infoPos ? ' active' : ''}`}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleInfo()
+            }}
+            aria-label={t('home.info')}
+            aria-haspopup="menu"
+            aria-expanded={infoPos !== null}
+          >
+            <Ico name="info" width={16} height={16} />
+          </button>
+        </div>
+        <button
+          className={`hcc-icon-btn hcc-like${isFav ? ' active' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleFav()
+          }}
+          aria-label={t('home.favTracks')}
+        >
+          <Ico name="heart" variant={isFav ? 'bold' : undefined} width={16} height={16} />
+        </button>
+        <button
+          className="hcc-icon-btn hcc-dots"
+          onClick={(e) => {
+            e.stopPropagation()
+            onContextMenu?.(e)
+          }}
+          aria-label={t('common.more')}
+        >
+          <Ico name="kebab" width={16} height={16} />
+        </button>
       </div>
+      {infoPos &&
+        createPortal(
+          <>
+            {/* клик мимо — закрыть */}
+            <div onClick={() => setInfoPos(null)} style={{ position: 'fixed', inset: 0, zIndex: 8000 }} />
+            <div style={{ position: 'fixed', top: infoPos.top, left: infoPos.cx, zIndex: 8001, transform: 'translate(-50%, -100%)' }}>
+              <div ref={infoRef} className="hcc-info-pop" role="menu">
+                <div className="hcc-info-item">
+                  <span className="hcc-info-ico">
+                    <ContinueSourceIcon kind={iconKind} cover={iconCover} />
+                  </span>
+                  <span className="hcc-info-txt">
+                    <span className="hcc-info-cap">{t('home.srcLabel')}</span>
+                    <span className="hcc-info-val">{label}</span>
+                  </span>
+                </div>
+                <div className="hcc-info-item">
+                  <span className="hcc-info-ico">
+                    <span className={`hcc-info-dot${stateActive ? ' is-playing' : ''}`} />
+                  </span>
+                  <span className="hcc-info-txt">
+                    <span className="hcc-info-cap">{t('home.actLabel')}</span>
+                    <span className="hcc-info-val">{stateText}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   )
 }
@@ -437,123 +583,6 @@ const parseDur = (dur: string | undefined): number => {
   return 0
 }
 
-const StatsBar = ({ onOpen }: { onOpen: () => void }) => {
-  const t = useT()
-  const tracks = useLibStore((s) => s.tracks)
-  const entries = useHistoryStore((s) => s.entries)
-  // Прослушивания берём из истории (count) — playCount на треках не ведётся.
-  const { totalSec, totalPlays } = useMemo(() => {
-    let sec = 0
-    let plays = 0
-    for (const e of entries) {
-      plays += e.count || 0
-      const t = findTrack(e.id, tracks)
-      if (t) sec += parseDur(t.dur) * (e.count || 0)
-    }
-    return { totalSec: sec, totalPlays: plays }
-  }, [entries, tracks])
-  const h = Math.floor(totalSec / 3600)
-  const m = Math.floor((totalSec % 3600) / 60)
-  return (
-    <div className="home-stats-bar" id="homeStatsBar" onClick={onOpen}>
-      <div className="hsb-item">
-        <span className="hsb-num">{totalPlays || tracks.length}</span>
-        <Ico name="note" width={13} height={13} style={{ opacity: 0.5 }} />
-      </div>
-      <span className="hsb-sep">{t('home.per')}</span>
-      <div className="hsb-item"><span className="hsb-num">{h}</span><span className="hsb-unit">{t('home.hShort')}</span></div>
-      <div className="hsb-item"><span className="hsb-num">{m}</span><span className="hsb-unit">{t('home.mShort')}</span></div>
-      <div style={{ position: 'absolute', right: 16, bottom: 0, display: 'flex', alignItems: 'flex-end', gap: 5, pointerEvents: 'none', height: '100%' }}>
-        {[55, 80, 40, 70].map((hpct, i) => (
-          <div key={i} style={{ width: 12, height: `${hpct}%`, background: 'rgba(255,255,255,.13)', borderRadius: '3px 3px 0 0' }} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── Игры ───────────────────────────────────────────────────────────────────
-
-const GamesCard = () => {
-  const t = useT()
-  return (
-  <div className="home-games-card" onClick={() => useGamesStore.getState().openModal()}>
-    <div className="home-games-card-left">
-      <div className="home-games-card-icon">
-        <GamepadIcon size={35} />
-      </div>
-      <div className="home-games-card-title">{t('home.games')}</div>
-    </div>
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)' }} />
-      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#059669,#0891b2)' }} />
-      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#dc2626,#ea580c)' }} />
-      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#d97706,#ca8a04)' }} />
-    </div>
-  </div>
-  )
-}
-
-// ── Трек дня ───────────────────────────────────────────────────────────────
-
-const PlaySmall = ({ size = 14 }: { size?: number }) => <Ico name="play" variant="bold" width={size} height={size} />
-
-/** Номер суток по МСК (UTC+3). Меняется ровно в 00:00 МСК. */
-const mskDayNumber = (): number => Math.floor((Date.now() + 3 * 3600 * 1000) / 86400000)
-
-const TrackOfDay = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track) => void }) => {
-  const t = useT()
-  const tracks = useLibStore((s) => s.tracks)
-  const goNav = useNavStore((s) => s.goNav)
-  // Состояние = номер МСК-суток; авто-обновление в 00:00 МСК даже при открытом окне.
-  const [day, setDay] = useState(mskDayNumber)
-  useEffect(() => {
-    const msToMidnight = 86400000 - ((Date.now() + 3 * 3600 * 1000) % 86400000)
-    const id = window.setTimeout(() => setDay(mskDayNumber()), msToMidnight + 500)
-    return () => window.clearTimeout(id)
-  }, [day])
-
-  // Стабильный выбор внутри суток: индексируем в отсортированную по id копию,
-  // чтобы переупорядочивание библиотеки в течение дня не меняло трек дня.
-  const tod = useMemo(() => {
-    if (!tracks.length) return null
-    const sorted = [...tracks].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-    return sorted[day % sorted.length] ?? null
-  }, [tracks, day])
-  if (!tod) return null
-
-  const play = () => {
-    playSingleTrack(tod.id)
-    goNav('player')
-  }
-  return (
-    <div id="homeTodSection">
-      <div className="home-tod" id="homeTodCard" onClick={play} onContextMenu={(e) => onTrackCtx(e, tod)}>
-        <div className="home-tod-cover">
-          {tod.cover ? <img src={tod.cover} alt="" /> : <NoteSvg />}
-        </div>
-        <div className="home-tod-info">
-          <div className="home-tod-label">✦ {t('home.trackOfDay')}</div>
-          <div className="home-tod-name">{tod.name}</div>
-          <div className="home-tod-artist">
-            <ArtistLinks artist={tod.artist} scId={tod.artistScId} permalink={tod.artistPermalink} artistId={tod.artistId} provider={tod.artistProvider} />
-          </div>
-        </div>
-        <button
-          className="home-tod-play"
-          onClick={(e) => {
-            e.stopPropagation()
-            play()
-          }}
-          aria-label={t('home.playDaily')}
-        >
-          <PlaySmall />
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ── Недавно слушали ──────────────────────────────────────────────────────────
 
 const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Track) => void }) => {
@@ -590,9 +619,10 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
               <CoverSourceBadge track={t} size={24} />
               <div className="hc-play-overlay">
                 <div className="hc-play-btn">
-                  <Ico name="play" width="100%" height="100%" style={{ color: '#fff', marginLeft: 2 }} />
+                  <Ico name="play" width="100%" height="100%" style={{ color: 'var(--accent)', marginLeft: 2 }} />
                 </div>
               </div>
+              <PlayStateOverlay trackId={t.id} size="card" />
             </div>
             <div className="hc-name">{t.name}</div>
             <div className="hc-artist">
@@ -634,7 +664,7 @@ const PlaylistsSection = ({
               <CoverProviderBadge provider={playlistProvider(pl.trs, libTracks)} size={24} />
               <div className="hpc-play-overlay">
                 <div className="hpc-play-btn">
-                  <Ico name="play" width="100%" height="100%" style={{ color: '#fff', marginLeft: 2 }} />
+                  <Ico name="play" width="100%" height="100%" style={{ color: 'var(--accent)', marginLeft: 2 }} />
                 </div>
               </div>
             </div>

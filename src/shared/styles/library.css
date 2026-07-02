@@ -200,6 +200,19 @@
 .lib-sidebar.lib-sb-compact .lib-item>div:first-child{display:none}
 .lib-sidebar.lib-sb-compact .lib-pin-dot{display:none}
 .lib-sidebar.lib-sb-compact .lib-item[data-pinned]::before{content:'';width:6px;height:6px;min-width:6px;border-radius:50%;background:var(--accent);align-self:center;flex-shrink:0}
+/* ── Sidebar: вид «только обложки» (`lib-sb-covers`) ──
+   Сам сайдбар сужается до ширины обложки; текст строк и play скрыты; крупная
+   обложка столбиком по центру, подсветка hover/active облегает обложку
+   (width:fit-content). Заголовок «Моя библиотека» прячем (не влезает в узкую
+   колонку), кнопки шапки оставляем по центру. Бейдж площадки и pin-dot — на
+   углах обложки. */
+.lib-sidebar.lib-sb-covers{width:88px}
+.lib-sidebar.lib-sb-covers .lib-section-label{display:none}
+.lib-sidebar.lib-sb-covers .lib-section-title{justify-content:center;padding:6px 4px 4px}
+.lib-sidebar.lib-sb-covers .lib-item{justify-content:center;width:fit-content;margin:0 auto 8px;padding:5px}
+.lib-sidebar.lib-sb-covers .lib-item-info{display:none}
+.lib-sidebar.lib-sb-covers .lib-item-play{display:none!important}
+.lib-sidebar.lib-sb-covers .lib-icon{width:56px;height:56px}
 .ib{width:25px;height:25px;border-radius:calc(var(--radius) * 0.55);background:transparent;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-size:12px}
 .ib:hover{background:rgba(255,255,255,.08);color:var(--text)}
 .ib.fav{color:#e03030}

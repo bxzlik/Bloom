@@ -1,5 +1,5 @@
 export * from './model'
 export * from './ui'
-export { extractAccentFromCover, extractMpBgColor } from './lib/coverAccent'
+export { extractAccentFromCover, extractMpBgColor, extractCoverHsl } from './lib/coverAccent'
 export { useOptBootstrap } from './lib/optEngine'
 export { useTelemetryBootstrap } from './lib/telemetryBootstrap'

@@ -25,7 +25,7 @@
   --card-solid: var(--block-color);
 
   /* `--block-bg` (фон карточек главной/grid-обзора библиотеки:
-     .lib-grid-sys-card-*, .home-stats-bar, .home-games-card, #peditModal…) в
+     .lib-grid-sys-card-*, #peditModal…) в
      задавался JS из applyBlockBg. Без него все они падали на фолбэк
      #2a2a2a (светло-серый, не совпадал с фоном). Алиасим к цвету блоков — карточки
      сливаются с фоном (поверх лежат их градиенты ::before). */
@@ -84,9 +84,6 @@ body {
 #grpLyricsBlock,
 .home-continue-card,
 .home-quick-card,
-.home-stats-bar,
-.home-games-card,
-.home-tod,
 .home-btn-secondary {
   background: var(--block-color) !important;
 }
@@ -344,12 +341,4 @@ body {
 }
 #mpCover:hover .mp-cover-bigpic {
   opacity: .92;
-}
-
-/* Модалка игр: оконный тайтлбар (#winTitlebar, z-index:1001) остаётся видимым и
-   перетаскиваемым поверх затемнения — как у прочих модалок (#settingsOverlay
-   z990, #dislikesModalOverlay z992). В #gamesOverlay был z-index:9100
-   и накрывал тайтлбар; опускаем в тот же ряд, что и остальные модалки. */
-#gamesOverlay {
-  z-index: 992;
 }

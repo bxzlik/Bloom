@@ -175,11 +175,10 @@ body.titlebar-autohide #winTitlebar:hover{margin-top:0}
 #winTitleCenter .wtc-icon{width:13px;height:13px;flex-shrink:0;opacity:.7}
 #winTitleCenter .wtc-label{font-size:12px;font-weight:600;color:var(--text2)}
 .win-btns{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
-.win-btn{width:46px;height:32px;border:none;background:transparent;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
-.win-btn:hover{background:rgba(var(--accent-rgb),.15);color:var(--accent)}
-.win-pin{color:var(--text2)}
-.win-pin:hover{color:var(--accent)}
-.win-pin.on{color:var(--accent)}
+.win-btn{width:46px;height:32px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
+.win-btn:hover{background:rgba(var(--text2-rgb,140,140,140),.15);color:var(--text)}
+.win-pin:hover{color:var(--text)}
+.win-pin.on{color:var(--text)}
 .win-close:hover{background:#c42b1c!important;color:#fff!important}
 
 /* ===== DISCORD RPC SECTION ===== */

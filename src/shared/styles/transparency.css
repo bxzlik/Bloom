@@ -68,9 +68,6 @@ body.glass-mode .lib-content-head,
 body.glass-mode .lib-tracklist,
 body.glass-mode .home-btn-secondary,
 body.glass-mode .home-quick-card,
-body.glass-mode .home-games-card,
-body.glass-mode .home-stats-bar,
-body.glass-mode .home-tod,
 body.glass-mode .home-continue-card,
 body.glass-mode .lib-grid-sys-card,
 body.glass-mode .lib-item-sys,
@@ -104,3 +101,109 @@ body.glass-mode .player-section #vizWrap {
    контекст. Тогда `z-index` всплывающих попапов внутри карточки (.tp-pop темы,
    color-picker и т.п.) переставал действовать глобально и попап уходил ПОД
    соседние карточки/тогглы ниже по DOM. */
+
+/* ── Стекло на оверлеях (независимый тоггл `overlayGlass`) ─────────────────────
+   Включается классом `glass-overlays` на <body>. Накладывает то же стекло
+   (--glass-block-bg + --glass-filter), что и режим блоков, но на ВСПЛЫВАЮЩИЕ
+   поверхности: контекстные меню, модалки, боковые drawer'ы, попапы, дропдауны.
+   Все эти поверхности штатно красятся `color-mix(var(--block-color), var(--text) 1%)`
+   — перебиваем на полупрозрачный фон + backdrop-filter.
+
+   Работает независимо от `glass-mode`: можно затуманить только оверлеи, оставив
+   основной UI непрозрачным. Оверлеи сами по себе topmost, поэтому backdrop-filter
+   на них не ломает z-index соседей (в отличие от .sc, см. выше). Единственный
+   `position:fixed`-попап, всплывающий из настроек (#cpPopup color-picker), висит
+   отдельным экземпляром в App-root, а НЕ внутри .tp-pop — его containing block
+   не затрагивается. */
+body.glass-overlays .ctx,
+body.glass-overlays #cxPlFlyout,
+body.glass-overlays .pl-popup,
+body.glass-overlays #plMenu,
+body.glass-overlays #plCtxMenu,
+body.glass-overlays #folderCtxMenu,
+body.glass-overlays #artistCtxMenu,
+body.glass-overlays #libAddMenu,
+body.glass-overlays #libSortMenu,
+body.glass-overlays #afsSortMenu,
+body.glass-overlays #speedPicker,
+body.glass-overlays #cpPopup,
+body.glass-overlays .sp-dd-menu,
+body.glass-overlays .sp-hist,
+body.glass-overlays .bloom-dl-inner,
+body.glass-overlays .hcc-info-pop,
+body.glass-overlays .tp-pop,
+body.glass-overlays .modal,
+body.glass-overlays .logs-modal,
+body.glass-overlays #dlinkModal,
+body.glass-overlays #shareCardModal,
+body.glass-overlays #profileShareModal,
+body.glass-overlays .unm-modal,
+body.glass-overlays .stats-modal,
+body.glass-overlays #peditModal,
+body.glass-overlays .spanel,
+/* Модалки с нестандартным фоном (не color-mix): настройки красятся из
+   overrides-main.css, инфо-трека — динамическим rgb(var(--ti-*)) по обложке. */
+body.glass-overlays .settings-modal,
+body.glass-overlays #settingsOverlay .settings-modal,
+body.glass-overlays .ti-modal,
+body.glass-overlays #tiDescPopup,
+body.glass-overlays .media-lib-modal,
+body.glass-overlays .sc-modal,
+body.glass-overlays .acc-edit-panel {
+  background: var(--glass-block-bg) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  -webkit-backdrop-filter: var(--glass-filter) !important;
+}
+
+/* Затемняющие подложки (scrim) модалок штатно `rgba(0,0,0,.55–.7)` + blur — из-за
+   этого даже стеклянная модалка показывала почти чёрный фон, а прозрачные блоки
+   внутри «пропадали» в темноту. Осветляем scrim и оставляем размытие: сквозь
+   стекло становится виден размытый интерфейс/обои — тот же принцип, что у
+   основного стекла (.main/.sidebar над обоями). Так ВСЕ модалки прозрачнеют
+   одинаково. Насыщенность самой поверхности регулируется слайдером «Прозрачность
+   блоков» (blockOpacity). */
+body.glass-overlays #settingsOverlay,
+body.glass-overlays .mover,
+body.glass-overlays .ti-overlay,
+body.glass-overlays .logs-backdrop,
+body.glass-overlays #peditBackdrop,
+body.glass-overlays .spanel-backdrop,
+body.glass-overlays #dlinkMover,
+body.glass-overlays #shareCardMover,
+body.glass-overlays #profileShareMover,
+body.glass-overlays .unm-mover,
+body.glass-overlays #dislikesModalOverlay,
+body.glass-overlays #scOverlay,
+body.glass-overlays .media-lib-overlay {
+  background: rgba(0, 0, 0, 0.28) !important;
+  /* Размытие/яркость scrim'а — из слайдеров (--glass-filter), а не фикс. blur:
+     иначе «Размытие стекла» не влияло бы на фон под модалками. glassBlur=0 →
+     фильтр без blur (только brightness) → фон под модалкой чёткий. */
+  backdrop-filter: var(--glass-filter) !important;
+  -webkit-backdrop-filter: var(--glass-filter) !important;
+}
+
+/* Внутренние карточки настроек (`.sc`, строки-тогглы `.sr`, плитки `.sm-tile`)
+   красятся из `var(--card-solid)` правилами с высокой специфичностью + !important
+   (settings.css) — точечный `background:transparent` их не перебивал. Надёжнее
+   переопределить саму переменную внутри стеклянного оверлея: тогда ВСЕ карточки
+   разом становятся полупрозрачным стеклом, независимо от специфичности правил.
+   Не полный transparent (иначе карточки «пропадают»), а лёгкая матовая подложка —
+   читаемо и явно прозрачно; бордеры карточек остаются (var(--border)). */
+body.glass-overlays #settingsOverlay {
+  --card-solid: rgba(255, 255, 255, 0.05) !important;
+  --card: rgba(255, 255, 255, 0.05) !important;
+}
+/* Правая контент-панель настроек (#smContent) имеет СВОЙ непрозрачный фон
+   (overrides-main.css) — гасим, чтобы стекло модалки просвечивало, как левая
+   нав-колонка. */
+body.glass-overlays #settingsOverlay #smContent {
+  background: transparent !important;
+}
+
+/* Инфо-трека: ячейки перекрывают стекло — гасим их фон (стекло модалки видно). */
+body.glass-overlays .ti-modal .ti-cell,
+body.glass-overlays .ti-modal .ti-desc-cell,
+body.glass-overlays .ti-modal .ti-genre-tag {
+  background: transparent !important;
+}

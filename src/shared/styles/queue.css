@@ -1,3 +1,6 @@
+/* Скрыть скроллбар списка очереди (прокрутка остаётся, полоса невидима) */
+#qpList{scrollbar-width:none;-ms-overflow-style:none}
+#qpList::-webkit-scrollbar{display:none;width:0;height:0}
 /* Queue position: bottom (default) — equal split */
 #playerContent:not(.queue-right):not(.queue-left) #playerMainBlock{flex:1 1 0;min-height:0;overflow:hidden}
 #playerContent:not(.queue-right):not(.queue-left) #playerMainBlock .player-section{height:100%;overflow:hidden;box-sizing:border-box;flex-shrink:1;align-items:stretch}
@@ -19,13 +22,11 @@
 #playerContent.queue-left #playerQueueBlock{width:320px;flex-shrink:0;flex:none}
 /* In side mode: player-section becomes vertical (cover on top, info below) */
 #playerContent.queue-right .player-section,
-#playerContent.queue-left .player-section{flex-direction:column;align-items:center;padding:24px 24px 18px;gap:16px;flex:1;overflow-y:auto}
+#playerContent.queue-left .player-section{flex-direction:column;align-items:center;padding:24px 24px 18px;gap:16px;flex:1;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
 #playerContent.queue-right .player-section::-webkit-scrollbar,
-#playerContent.queue-left .player-section::-webkit-scrollbar{width:2px}
-#playerContent.queue-right .player-section::-webkit-scrollbar-thumb,
-#playerContent.queue-left .player-section::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+#playerContent.queue-left .player-section::-webkit-scrollbar{display:none;width:0;height:0}
 #playerContent.queue-right .ps-cover,
-#playerContent.queue-left .ps-cover{width:clamp(160px,60%,320px);height:clamp(160px,60%,320px)}
+#playerContent.queue-left .ps-cover{width:clamp(160px,60%,320px);height:auto;aspect-ratio:1/1;max-width:100%}
 #playerContent.queue-right .ps-cover.vinyl-mode,
 #playerContent.queue-left .ps-cover.vinyl-mode{height:auto;aspect-ratio:1/1;max-width:100%}
 #playerContent.queue-right .ps-right,
@@ -45,7 +46,7 @@
 /* Side queue: vizWrap full width, no extra margin */
 #playerContent.queue-right #vizWrap,
 #playerContent.queue-left #vizWrap{margin:0}
-.lib-sidebar{width:248px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;padding:10px 0 10px 10px;gap:6px}
+.lib-sidebar{width:248px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;padding:10px 0 10px 10px;gap:6px;transition:width .18s ease}
 .lib-block{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
 .lib-block-search{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:6px 8px}
 .lib-block-btns{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:8px;display:flex;flex-direction:column;gap:6px}

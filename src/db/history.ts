@@ -21,6 +21,32 @@ export function playCountAll(id: string): number {
   return host.playHistory.filter(e => e.id === id).reduce((s, e) => s + (e.count ?? 1), 0);
 }
 
+// Вес трека для «умной» перемешки: недавно и часто слушанные — тяжелее,
+// поэтому статистически всплывают в НАЧАЛЕ очереди (но не детерминированно —
+// порядок каждый раз новый). Контраст между «горячим» и «холодным» намеренно
+// большой (~140x): холодных треков в библиотеке обычно кратно больше недавних,
+// и при слабом смещении они забивают начало. Расклад по симуляции:
+// при 400 треках/40 недавних — ~9 из 10 первых треков недавние.
+//   base:    0.5     — трек без истории
+//   recency: до +40  — экспон. затухание, «горячая» неделя, к ~месяцу гаснет
+//   freq:    до +30  — count из истории (потолок 10)
+// Используется как weightFn в queueStore.cycleShuffle.
+export function smartShuffleWeight(id: string): number {
+  let count = 0;
+  let lastTs = 0;
+  for (const e of host.playHistory) {
+    if (e.id !== id) continue;
+    count += e.count ?? 1;
+    if (e.ts > lastTs) lastTs = e.ts;
+  }
+  let recencyBonus = 0;
+  if (lastTs) {
+    const days = (Date.now() - lastTs) / 86_400_000;
+    recencyBonus = 40 * Math.exp(-days / 6);
+  }
+  return 0.5 + recencyBonus + Math.min(count, 10) * 3;
+}
+
 export function classifyCompletion(playedSec: number, durSec: number): CompletionVerdict {
   if (!durSec || durSec <= 0) return "neutral";
   const ratio = playedSec / durSec;

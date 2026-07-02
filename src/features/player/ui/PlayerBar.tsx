@@ -61,6 +61,7 @@ export const PlayerBar = () => {
   const playing = usePlayerStore((s) => s.playing)
   const volume = usePlayerStore((s) => s.volume)
   const shuffle = usePlayerStore((s) => s.shuffle)
+  const smartShuffle = usePlayerStore((s) => s.smartShuffle)
   const repeat = usePlayerStore((s) => s.repeat)
   const isFav = useFavStore((s) => (curId ? s.favs.has(curId) : false))
   const curTrack =
@@ -190,7 +191,8 @@ export const PlayerBar = () => {
   const onWheelVol = (e: ReactWheelEvent<HTMLDivElement>) => {
     e.preventDefault()
     const cur = usePlayerStore.getState().volume
-    setVol(Math.min(100, Math.max(0, cur + (e.deltaY < 0 ? 1 : -1))))
+    const step = e.shiftKey ? 5 : 1
+    setVol(Math.min(100, Math.max(0, cur + (e.deltaY < 0 ? step : -step))))
   }
 
   // Классы фона/формы.
@@ -401,8 +403,9 @@ export const PlayerBar = () => {
           </span>
           <span className="mp-side-ctl mp-side-r">
             {!mpHide.shuffle && (
-              <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
+              <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={smartShuffle ? t('player.aria.smartShuffle') : t('player.aria.shuffle')}>
                 <ShuffleSvg size={15} />
+                {smartShuffle && <span className="cc-badge"><Ico name="stars" size={9} /></span>}
               </button>
             )}
           </span>
@@ -492,6 +495,8 @@ const MpProgress = () => {
   const showLine = usePlayerViewStore((s) => s.mpProgress.line)
   const showBg = usePlayerViewStore((s) => s.mpProgress.bg)
   const [dragFrac, setDragFrac] = useState<number | null>(null)
+  // Позиция курсора над линией → пилюля со временем (как в fullscreen-плеере).
+  const [hover, setHover] = useState<{ frac: number; x: number; top: number } | null>(null)
   const pct =
     dragFrac != null ? dragFrac * 100 : duration > 0 ? Math.min(100, (position / duration) * 100) : 0
   const seekAtPointer = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -507,6 +512,10 @@ const MpProgress = () => {
     seekAtPointer(e)
   }
   const onBarPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!duration) return
+    const r = e.currentTarget.getBoundingClientRect()
+    const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
+    setHover({ frac, x: e.clientX, top: r.top })
     if (e.currentTarget.hasPointerCapture(e.pointerId)) seekAtPointer(e)
   }
   const endBarDrag = () => {
@@ -517,7 +526,8 @@ const MpProgress = () => {
     e.preventDefault()
     const d = audioEngine.duration
     if (!d) return
-    const t = Math.max(0, Math.min(d, audioEngine.currentTime + (e.deltaY < 0 ? 1 : -1)))
+    const step = e.shiftKey ? 5 : 1
+    const t = Math.max(0, Math.min(d, audioEngine.currentTime + (e.deltaY < 0 ? step : -step)))
     seek(t)
   }
   return (
@@ -547,6 +557,7 @@ const MpProgress = () => {
           onPointerMove={onBarPointerMove}
           onPointerUp={endBarDrag}
           onPointerCancel={endBarDrag}
+          onPointerLeave={() => setHover(null)}
           onWheel={onProgWheel}
           style={{
             position: 'absolute',
@@ -572,6 +583,39 @@ const MpProgress = () => {
           />
         </div>
       )}
+      {/* Пилюля со временем под курсором при наведении на линию. Портал в body —
+          иначе overflow:hidden бара обрезал бы её сверху. */}
+      {showLine && hover && duration > 0 &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              left: hover.x,
+              top: hover.top - 8,
+              transform: 'translate(-50%, -100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 20,
+              padding: '2px 9px',
+              borderRadius: 8,
+              fontSize: 11,
+              fontWeight: 600,
+              lineHeight: 1,
+              color: 'var(--text)',
+              background: 'var(--block-color, #1a1a1a)',
+              border: '1px solid rgba(255,255,255,0.14)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+              fontVariantNumeric: 'tabular-nums',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              zIndex: 9500,
+            }}
+          >
+            {fmt(hover.frac * duration)}
+          </div>,
+          document.body,
+        )}
     </>
   )
 }
@@ -695,19 +739,16 @@ const Volume = ({ volume, onWheel }: { volume: number; onWheel: (e: ReactWheelEv
         <VolSvg size={19} v={volume} />
         {hover && (
           <span
+            className="cc-badge num"
             style={{
-              position: 'absolute',
-              top: -2,
-              right: -3,
-              fontSize: 9,
+              width: 'auto',
+              minWidth: 13,
+              paddingLeft: 3,
+              paddingRight: 3,
+              borderRadius: 7,
+              fontSize: 8,
               fontWeight: 700,
-              lineHeight: 1,
-              padding: '1px 3px',
-              borderRadius: 6,
-              background: 'var(--accent)',
-              color: 'var(--accent-text)',
               fontVariantNumeric: 'tabular-nums',
-              pointerEvents: 'none',
             }}
           >
             {Math.round(volume)}
@@ -796,7 +837,9 @@ const VertVolPopup = ({
   }
   const onTrackWheel = (e: ReactWheelEvent<HTMLDivElement>) => {
     e.preventDefault()
-    setVol(Math.min(100, Math.max(0, volume + (e.deltaY < 0 ? 5 : -5))))
+    e.stopPropagation()
+    const step = e.shiftKey ? 5 : 1
+    setVol(Math.min(100, Math.max(0, volume + (e.deltaY < 0 ? step : -step))))
   }
 
   return createPortal(
@@ -855,25 +898,7 @@ const PauseSvg = ({ size }: { size: number }) => <Ico name="pause" size={size} /
 const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={size} />
 const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (
-  <span
-    style={{
-      position: 'absolute',
-      top: -2,
-      right: -2,
-      background: 'var(--accent)',
-      borderRadius: '50%',
-      width: 9,
-      height: 9,
-      fontSize: 6,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'var(--accent-text)',
-      fontWeight: 700,
-    }}
-  >
-    1
-  </span>
+  <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 700 }}>1</span>
 )
 const VolSvg = ({ size, v }: { size: number; v: number }) => {
   if (v === 0) return <Ico name="muted" size={size} />

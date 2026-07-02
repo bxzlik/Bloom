@@ -6,6 +6,7 @@ import { toast, notify } from '@shared/ui'
 import { t as i18nT } from '@shared/i18n'
 import { requestLyrics, useLyricsStore } from '@features/lyrics'
 import waveApi from '@/wave'
+import { smartShuffleWeight } from '@/db/history'
 import { getProvider } from '@features/providers'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore, type PlaySource } from '../model/queueStore'
@@ -301,7 +302,7 @@ export const playShuffledFromSource = (
     const j = Math.floor(Math.random() * (i + 1))
     ;[shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!]
   }
-  useQueueStore.setState({ shuffle: true, _origQueue: trackIds })
+  useQueueStore.setState({ shuffle: true, smartShuffle: false, _origQueue: trackIds })
   useQueueStore.getState().setQueue(shuffled, 0, source)
   trackIds.forEach((x) => trackRegistry.promote(x))
   void loadPlay(shuffled[0]!)
@@ -395,8 +396,9 @@ export const prevTr = (): void => {
 }
 
 export const toggleShuffleMain = (): void => {
-  useQueueStore.getState().toggleShuffle()
-  usePlayerStore.setState({ shuffle: useQueueStore.getState().shuffle })
+  useQueueStore.getState().cycleShuffle(smartShuffleWeight)
+  const q = useQueueStore.getState()
+  usePlayerStore.setState({ shuffle: q.shuffle, smartShuffle: q.smartShuffle })
   pushNowPlaying()
 }
 

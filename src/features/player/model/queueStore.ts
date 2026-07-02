@@ -44,6 +44,12 @@ export interface QueueState {
   source: PlaySource
 
   shuffle: boolean
+  /**
+   * Флаг «умной» перемешки поверх shuffle. Активен только когда shuffle=true.
+   * shuffle остаётся источником правды «включена ли перемешка вообще» (Rust
+   * mp_state / mirror / tray его читают), а smartShuffle различает вариант.
+   */
+  smartShuffle: boolean
   /** 0 = off, 1 = repeat-all, 2 = repeat-one. */
   repeat: 0 | 1 | 2
 
@@ -58,8 +64,12 @@ export interface QueueState {
   /** Пометить/снять трек как «загружается» (спиннер на обложке). */
   setLoadingId: (id: string | null) => void
 
-  /** Включить/выключить shuffle с реорганизацией очереди. */
-  toggleShuffle: () => void
+  /**
+   * Прокрутить режим перемешки: off → обычный → умный → off, реорганизуя очередь.
+   * `weightFn` (вес трека по истории) нужен для «умного» шага; без неё умный шаг
+   * ведёт себя как обычный shuffle.
+   */
+  cycleShuffle: (weightFn?: (id: string) => number) => void
   /** off → all → one → off. */
   cycleRepeat: () => void
 
@@ -74,6 +84,25 @@ const shuffleInPlace = <T,>(arr: T[]): void => {
   }
 }
 
+/**
+ * Взвешенный shuffle без повторов (Efraimidis–Spirakis): ключ = u^(1/w),
+ * где u∈(0,1) случайно, w — вес. Чем больше вес, тем ближе ключ к 1 и тем
+ * раньше трек в результате — но порядок всё равно случайный каждый раз.
+ */
+const weightedShuffle = (
+  ids: string[],
+  weightFn: (id: string) => number,
+): string[] =>
+  ids
+    .map((id) => {
+      const w = Math.max(weightFn(id), 1e-4)
+      return { id, key: Math.pow(Math.random(), 1 / w) }
+    })
+    .sort((a, b) => b.key - a.key)
+    .map((x) => x.id)
+
+type ShuffleMode = 'off' | 'normal' | 'smart'
+
 export const useQueueStore = create<QueueState>((set, get) => ({
   curId: null,
   loadingId: null,
@@ -81,6 +110,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   qIdx: -1,
   source: null,
   shuffle: false,
+  smartShuffle: false,
   repeat: 0,
   _origQueue: null,
 
@@ -90,33 +120,55 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   setCurId: (id) => set({ curId: id }),
   setLoadingId: (id) => set({ loadingId: id }),
 
-  toggleShuffle: () => {
-    const { shuffle, queue, qIdx, _origQueue, curId } = get()
-    if (!shuffle) {
-      if (queue.length <= 1) {
-        set({ shuffle: true })
-        return
-      }
-      const orig = [...queue]
-      const cur = queue[qIdx] ?? curId
-      const rest = queue.filter((_, i) => i !== qIdx)
-      shuffleInPlace(rest)
-      const newQueue = cur ? [cur, ...rest] : rest
-      set({ shuffle: true, queue: newQueue, qIdx: 0, _origQueue: orig })
-    } else {
+  cycleShuffle: (weightFn) => {
+    const { shuffle, smartShuffle, queue, qIdx, _origQueue, curId } = get()
+    const cur: ShuffleMode = !shuffle ? 'off' : smartShuffle ? 'smart' : 'normal'
+    const next: ShuffleMode =
+      cur === 'off' ? 'normal' : cur === 'normal' ? 'smart' : 'off'
+
+    // Выключаем — восстанавливаем исходный линейный порядок.
+    if (next === 'off') {
       if (_origQueue) {
         const restored = [..._origQueue]
         const idx = curId ? Math.max(0, restored.indexOf(curId)) : 0
         set({
           shuffle: false,
+          smartShuffle: false,
           queue: restored,
           qIdx: idx,
           _origQueue: null,
         })
       } else {
-        set({ shuffle: false })
+        set({ shuffle: false, smartShuffle: false })
       }
+      return
     }
+
+    // Включаем/переключаем режим — (пере)собираем перемешанную очередь.
+    if (queue.length <= 1) {
+      set({ shuffle: true, smartShuffle: next === 'smart' })
+      return
+    }
+    // Базой для перемешки берём исходный линейный порядок (если уже сохранён при
+    // переходе normal↔smart), иначе текущую очередь.
+    const orig = _origQueue ?? [...queue]
+    const curTrack = queue[qIdx] ?? curId
+    const rest = orig.filter((id) => id !== curTrack)
+    let shuffledRest: string[]
+    if (next === 'smart' && weightFn) {
+      shuffledRest = weightedShuffle(rest, weightFn)
+    } else {
+      shuffledRest = [...rest]
+      shuffleInPlace(shuffledRest)
+    }
+    const newQueue = curTrack ? [curTrack, ...shuffledRest] : shuffledRest
+    set({
+      shuffle: true,
+      smartShuffle: next === 'smart',
+      queue: newQueue,
+      qIdx: 0,
+      _origQueue: orig,
+    })
   },
 
   cycleRepeat: () => set((s) => ({ repeat: ((s.repeat + 1) % 3) as 0 | 1 | 2 })),

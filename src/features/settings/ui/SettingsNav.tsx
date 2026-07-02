@@ -1,6 +1,6 @@
-import { Fragment, useState, type ReactNode } from 'react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { ScLogo, YmLogo, SpLogo, YtmLogo, providerBrandColor } from '@entities/track'
-import { useT, type TranslationKey } from '@shared/i18n'
+import { useT, useLocale, dictionaries, type TranslationKey } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -182,19 +182,84 @@ const GROUPS: GroupDef[] = [
   },
 ]
 
+/**
+ * Правила «в какой секции искать по содержимому». Поиск в шапке навигации ищет
+ * не только по названиям вкладок, но и по подписям всех настроек внутри — для
+ * этого сопоставляем каждой секции префиксы i18n-ключей, которые она рендерит.
+ *
+ * `exclude` нужен там, где секции делят общий namespace: например ключи
+ * `settings.interface.sidebar*`/`titlebar*`/`nav*` физически лежат в разделе
+ * «Вкладки» (перенесены из «Интерфейса»), а overlay-настройки в
+ * `settings.view.ov*` — в разделе «Оверлей», а не «Плеер».
+ */
+const SEARCH_RULES: Record<SectionId, { include: string[]; exclude?: string[] }> = {
+  system: { include: ['settings.system.', 'settings.about.'] },
+  overlay: { include: ['settings.view.ov'] },
+  audio: { include: ['settings.audio.'] },
+  efficiency: { include: ['settings.efficiency.'] },
+  hotkeys: { include: ['settings.hotkeys.'] },
+  'tele-storage': { include: ['settings.storage.'] },
+  view: { include: ['settings.view.'], exclude: ['settings.view.ov'] },
+  interface: {
+    include: ['settings.interface.'],
+    exclude: ['settings.interface.sidebar', 'settings.interface.titlebar', 'settings.interface.nav'],
+  },
+  tabs: {
+    include: [
+      'settings.tabs.',
+      'settings.interface.sidebar',
+      'settings.interface.titlebar',
+      'settings.interface.nav',
+    ],
+  },
+  background: { include: ['settings.background.'] },
+  medialib: { include: ['settings.custom.'] },
+  soundcloud: { include: ['settings.sc.'] },
+  ytmusic: { include: ['settings.ytm.'] },
+  genius: { include: ['settings.genius.'] },
+  lastfm: { include: ['settings.lastfm.'] },
+  discord: { include: ['settings.discord.'] },
+  yandex: { include: ['settings.ym.'] },
+  spotify: { include: ['settings.sp.'] },
+}
+
 export const SettingsNav = ({
   active,
   onSelect,
 }: {
   active: SectionId
-  onSelect: (id: SectionId) => void
+  onSelect: (id: SectionId, query?: string) => void
 }) => {
   const t = useT()
+  const locale = useLocale()
   const [filter, setFilter] = useState('')
   const q = filter.trim().toLowerCase()
 
   // Метка секции: переводимый ключ либо литеральный бренд.
   const secLabel = (s: SectionDef): string => (s.labelKey ? t(s.labelKey) : s.brand ?? s.id)
+
+  // Индекс содержимого секций для поиска: на каждую секцию — конкатенация всех
+  // переведённых подписей её настроек (по правилам SEARCH_RULES). Пересобираем
+  // только при смене языка.
+  const contentIndex = useMemo(() => {
+    const dict = dictionaries[locale]
+    const keys = Object.keys(dict) as TranslationKey[]
+    const idx = {} as Record<SectionId, string>
+    for (const id of Object.keys(SEARCH_RULES) as SectionId[]) {
+      const { include, exclude } = SEARCH_RULES[id]
+      idx[id] = keys
+        .filter((k) => include.some((p) => k.startsWith(p)) && !exclude?.some((p) => k.startsWith(p)))
+        .map((k) => dict[k])
+        .join('\n')
+        .toLowerCase()
+    }
+    return idx
+  }, [locale])
+
+  // Секция видна в результатах, если запрос совпал с её меткой ИЛИ с подписью
+  // любой настройки внутри неё.
+  const secMatches = (s: SectionDef): boolean =>
+    secLabel(s).toLowerCase().includes(q) || (contentIndex[s.id]?.includes(q) ?? false)
 
   return (
     <div className="settings-modal-nav" id="smNav">
@@ -209,9 +274,7 @@ export const SettingsNav = ({
         />
       </div>
       {GROUPS.map((grp) => {
-        const visible = q
-          ? grp.sections.filter((s) => secLabel(s).toLowerCase().includes(q))
-          : grp.sections
+        const visible = q ? grp.sections.filter(secMatches) : grp.sections
         if (visible.length === 0) return null
         // Fragment, не <div>! Иначе flex gap:2px на родителе не применяется
         // между sibling-items внутри группы. В старом smBuildNav() тоже
@@ -230,7 +293,7 @@ export const SettingsNav = ({
                 <div
                   key={sec.id}
                   className={`s-nav-item${isActive ? ' active' : ''}`}
-                  onClick={() => onSelect(sec.id)}
+                  onClick={() => onSelect(sec.id, q || undefined)}
                 >
                   <div className="s-nav-icon" style={brandC ? { color: brandC } : undefined}>
                     {sec.icon}

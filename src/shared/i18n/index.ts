@@ -9,4 +9,4 @@ export {
   type Locale,
   type TFunc,
 } from './i18nStore'
-export { type TranslationKey } from './dict'
+export { dictionaries, type TranslationKey } from './dict'

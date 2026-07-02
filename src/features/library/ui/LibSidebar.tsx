@@ -101,9 +101,9 @@ export const LibSidebar = () => {
   const t = useT()
   useLocale()
   const mode = useLibStore((s) => s.mode)
-  const sbCompact = useLibStore((s) => s.sbCompact)
+  const sbView = useLibStore((s) => s.sbView)
   const selectBuiltin = useLibStore((s) => s.selectBuiltin)
-  const toggleSbCompact = useLibStore((s) => s.toggleSbCompact)
+  const cycleSbView = useLibStore((s) => s.cycleSbView)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
   const allTracks = useLibStore((s) => s.tracks)
   const totalTracks = allTracks.length
@@ -187,7 +187,13 @@ export const LibSidebar = () => {
   })()
 
   return (
-    <div className={cn('lib-sidebar', sbCompact && 'lib-sb-compact')}>
+    <div
+      className={cn(
+        'lib-sidebar',
+        sbView === 'text' && 'lib-sb-compact',
+        sbView === 'covers' && 'lib-sb-covers',
+      )}
+    >
       {/* ── Системные ─────────────────────────────────────────── */}
       <div className="lib-block" style={{ paddingBottom: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 4px' }}>
@@ -268,10 +274,14 @@ export const LibSidebar = () => {
         style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
         <div className="lib-section-title">
-          {t('lib.myLibrary')}
+          <span className="lib-section-label">{t('lib.myLibrary')}</span>
           <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <button id="libSbCompactBtn" onClick={toggleSbCompact}>
-              <Ico name="menu" width={13} height={13} />
+            <button id="libSbCompactBtn" onClick={cycleSbView}>
+              <Ico
+                name={sbView === 'full' ? 'list' : sbView === 'text' ? 'menu' : 'gallery'}
+                width={13}
+                height={13}
+              />
             </button>
             <button
               ref={sortBtnRef}
@@ -491,7 +501,7 @@ const UnifiedList = ({
   const folderPath = useLibStore((s) => s.folderPath)
   const plId = useLibStore((s) => s.plId)
   const tracks = useLibStore((s) => s.tracks)
-  const sbCompact = useLibStore((s) => s.sbCompact)
+  const sbView = useLibStore((s) => s.sbView)
   const selectFolder = useLibStore((s) => s.selectFolder)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
   const playlists = usePlaylistStore((s) => s.playlists)
@@ -606,11 +616,11 @@ const UnifiedList = ({
           clickFallback,
         )
         const isPinnedEntry = pinnedSet.has(entryKey(entry))
-        // В non-compact sidebar drag только за .lib-icon (
-        // libUnifiedDragStart:11851-11854: `if(!isCompact && !e.target.closest('.lib-icon'))return;`).
-        // В compact — drag за всю строку.
-        const rowHandle = sbCompact ? handleProps : {}
-        const iconHandle = sbCompact ? {} : handleProps
+        // В обычном виде (full) drag только за .lib-icon; в компактных видах
+        // (text — без обложки; covers — строка = обложка) drag за всю строку.
+        const rowDrag = sbView !== 'full'
+        const rowHandle = rowDrag ? handleProps : {}
+        const iconHandle = rowDrag ? {} : handleProps
         if (entry.type === 'playlist') {
           const pl = plById.get(entry.id)
           if (!pl) return null

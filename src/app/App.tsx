@@ -26,7 +26,6 @@ import { AccountPage } from '@features/profile'
 import { useMediaLibBootstrap, useCustomizationBootstrap } from '@features/customization'
 import { QuickWheel } from '@features/quick-wheel'
 import { Onboarding } from '@features/onboarding'
-import { GamesModal, useTamaBootstrap } from '@features/games'
 import {
   SettingsOverlay,
   ColorPicker,
@@ -99,7 +98,6 @@ export const App = () => {
   useLastfmBridge()
   useAudioEffects()
   useTrackRowMarquee()
-  useTamaBootstrap()
   useUpdateBootstrap()
 
   // Клик по артисту в miniplayer/tray → Rust `tray_open_artist` показывает главное
@@ -401,9 +399,6 @@ export const App = () => {
 
       {/* «Круговое меню» (#quick-wheel) — удержание Tab, плеер + навигация */}
       <QuickWheel />
-
-      {/* Модалка игр (#gamesOverlay) — открывается с карточки «Игры» на главной */}
-      <GamesModal />
 
       {/* Онбординг первого запуска (#onboarding) — поверх всего, только при !done */}
       <Onboarding />

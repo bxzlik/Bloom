@@ -190,25 +190,33 @@ export const AddPopup = ({
         </div>
       ) : (
         <>
-          {playlists.map((pl) => (
-            <div
-              key={pl.id}
-              className="ci"
-              onClick={() => {
-                addToPl(pl.id)
-                onClose()
-              }}
-            >
-              <span className="ci-icon" style={{ background: 'transparent', overflow: 'hidden' }}>
-                {pl.cover ? (
-                  <img src={pl.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <VinylCover seed={pl.id} />
+          {playlists.map((pl) => {
+            const already = !!trackId && pl.trs.includes(trackId)
+            return (
+              <div
+                key={pl.id}
+                className={already ? 'ci ci-active' : 'ci'}
+                onClick={() => {
+                  addToPl(pl.id)
+                  onClose()
+                }}
+              >
+                <span className="ci-icon" style={{ background: 'transparent', overflow: 'hidden' }}>
+                  {pl.cover ? (
+                    <img src={pl.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <VinylCover seed={pl.id} />
+                  )}
+                </span>{' '}
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {pl.name}
+                </span>
+                {already && (
+                  <Ico name="check" width={13} height={13} style={{ flexShrink: 0, color: 'var(--accent)' }} />
                 )}
-              </span>{' '}
-              {pl.name}
-            </div>
-          ))}
+              </div>
+            )
+          })}
           <div className="cx-sep" />
           <div
             className="ci"

@@ -1,6 +1,8 @@
-//! Win+Shift+X — показать/скрыть главное окно.
-//! Play/Pause/Next/Prev/Stop здесь НЕ регистрируются — ими занимается SMTC,
-//! и именно он даёт поддержку физических медиаклавиш и Bluetooth-гарнитур.
+//! Win+Shift+X — показать/скрыть главное окно. Единственный НЕнастраиваемый
+//! global-хоткей (завязан на состояние OS-окна). Остальные системные хоткеи
+//! (play/next/prev/like/громкость/оверлей) регистрирует фронт через
+//! `@tauri-apps/plugin-global-shortcut` — см. `app/useGlobalHotkeys`.
+//! Play/Pause/Next/Prev/Stop с физической клавиатуры/гарнитуры — через SMTC.
 
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
@@ -18,19 +20,6 @@ pub fn register(app: &AppHandle) {
         tracing::warn!("global_hotkey: register Win+Shift+X failed: {e}");
     } else {
         tracing::info!("global_hotkey: Win+Shift+X registered");
-    }
-
-    // Win+Shift+O — закрепить/снять оверлей-«остров» now-playing.
-    let overlay_sc = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyO);
-    let app_ov = app.clone();
-    if let Err(e) = manager.on_shortcut(overlay_sc, move |_app, _sc, ev| {
-        if ev.state == ShortcutState::Pressed {
-            crate::overlay::toggle(&app_ov);
-        }
-    }) {
-        tracing::warn!("global_hotkey: register Win+Shift+O failed: {e}");
-    } else {
-        tracing::info!("global_hotkey: Win+Shift+O registered");
     }
 }
 

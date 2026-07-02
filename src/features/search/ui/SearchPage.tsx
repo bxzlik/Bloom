@@ -14,7 +14,7 @@ import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, YtmL
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
-import { playSingleTrack, AddPopup } from '@features/player'
+import { playSingleTrack, AddPopup, PlayStateOverlay } from '@features/player'
 import { getAllProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
 import { toast } from '@shared/ui'
@@ -31,6 +31,7 @@ import { useNavStore } from '@app/navigationStore'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
 import { useSearchStore, looksLikeUrl, type SearchTab, type RecentItem } from '../model/store'
 import { useDetailStore, type DetailTarget } from '../model/detailStore'
+import { TrackRowCover } from './TrackRowCover'
 
 /* ── Иконки page-search ─────────────────────────────── */
 const IconSearch = () => <Ico name="search" width={16} height={16} style={{ flexShrink: 0, opacity: 0.5 }} />
@@ -38,7 +39,7 @@ const IconClose = () => <Ico name="close" width={13} height={13} />
 const PlayBadge = () => (
   <div className="sp-tc-play">
     <div className="sp-tc-play-btn">
-      <Ico name="play" width="100%" height="100%" style={{ color: '#fff', marginLeft: 2 }} />
+      <Ico name="play" width="100%" height="100%" style={{ color: 'var(--accent)', marginLeft: 2 }} />
     </div>
   </div>
 )
@@ -68,6 +69,7 @@ const TrackCard = ({
       <Cover src={track.cover} placeholder={<PhTrack />} />
       <CoverSourceBadge track={track} size={26} />
       <PlayBadge />
+      <PlayStateOverlay trackId={track.id} size="card" />
     </div>
     <div className="sp-tc-info">
       <div className="sp-tc-name">{track.name}</div>
@@ -131,10 +133,7 @@ const TrackListRow = ({
   }
   return (
     <div className="tr" onClick={onPlay} onContextMenu={onCtxMenu}>
-      <div className="trcov">
-        <Cover src={track.cover} placeholder={<PhTrack />} />
-        <CoverSourceBadge track={track} />
-      </div>
+      <TrackRowCover track={track} placeholder={<PhTrack />} />
       <div className="tri">
         <div className="trn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>

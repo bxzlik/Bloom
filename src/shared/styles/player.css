@@ -97,13 +97,13 @@
 .ps-cover.vinyl-mode #lyricsPanel{border-radius:50%;z-index:4;overflow:hidden}.ps-cover.vinyl-mode #lyricsPanel .lyrics-content{padding:52px 52px 52px}
 /* Large player style — grid layout 50/50 */
 #playerContent.style-large{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr) auto;gap:8px;padding:8px;overflow:hidden;height:100%}
-#playerContent.style-large>.sl-cover-wrap{grid-column:1;grid-row:1;min-width:0;min-height:0;overflow:hidden;border-radius:var(--radius);position:relative}
+#playerContent.style-large>.sl-cover-wrap{grid-column:1;grid-row:1;min-width:0;min-height:0;overflow:hidden;border-radius:var(--radius);clip-path:inset(0 round var(--radius));position:relative}
 #playerContent.style-large.queue-left>.sl-cover-wrap{grid-column:2;grid-row:1}
 #playerContent.style-large.queue-left #playerQueueBlock,#playerContent.style-large.queue-left #lyricsQueueBlock{grid-column:1!important;grid-row:1}
-#playerContent.style-large>.sl-cover-wrap .ps-cover{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto;min-width:0;border-radius:var(--radius)}
+#playerContent.style-large>.sl-cover-wrap .ps-cover{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto;min-width:0;border-radius:0;background:transparent}
 #playerContent.style-large>.sl-cover-wrap .ps-cover img{object-fit:cover}
 #playerContent.style-large>.sl-cover-wrap .cov-fav,#playerContent.style-large>.sl-cover-wrap .cov-add{z-index:3}
-#playerContent.style-large>.sl-cover-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(transparent,rgba(0,0,0,.52));border-radius:0 0 var(--radius) var(--radius);pointer-events:none;z-index:1}
+#playerContent.style-large>.sl-cover-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(transparent,rgba(0,0,0,.52));border-radius:0;pointer-events:none;z-index:1}
 #playerContent.style-large .sl-progress{position:absolute;bottom:0;left:0;right:0;padding:0 20px 12px;z-index:2;background:none;border-radius:0 0 var(--radius) var(--radius)}
 #playerContent.style-large .sl-progress .ps-times{font-size:12px;font-weight:400;color:rgba(255,255,255,.65);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.6px}
 #playerContent.style-large .sl-progress .ps-bar-wrap{height:4px!important;background:rgba(0,0,0,.28)!important;border-radius:2px!important}
@@ -140,10 +140,10 @@
 #playerContent.style-large.queue-left #playerMainBlock,#playerContent.style-large.queue-right #playerMainBlock,#playerContent.style-large.queue-hidden #playerMainBlock{display:none!important}
 /* Cinema player style — как large, но контролы оверлеем на обложке (без нижнего бара) */
 #playerContent.style-cinema{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr);gap:8px;padding:8px;overflow:hidden;height:100%}
-#playerContent.style-cinema>.sl-cover-wrap{grid-column:1;grid-row:1;min-width:0;min-height:0;overflow:hidden;border-radius:var(--radius);position:relative}
+#playerContent.style-cinema>.sl-cover-wrap{grid-column:1;grid-row:1;min-width:0;min-height:0;overflow:hidden;border-radius:var(--radius);clip-path:inset(0 round var(--radius));position:relative}
 #playerContent.style-cinema.queue-left>.sl-cover-wrap{grid-column:2;grid-row:1}
 #playerContent.style-cinema.queue-left #playerQueueBlock,#playerContent.style-cinema.queue-left #lyricsQueueBlock{grid-column:1!important;grid-row:1}
-#playerContent.style-cinema>.sl-cover-wrap .ps-cover{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto;min-width:0;border-radius:var(--radius)}
+#playerContent.style-cinema>.sl-cover-wrap .ps-cover{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto;min-width:0;border-radius:0;background:transparent}
 #playerContent.style-cinema>.sl-cover-wrap .ps-cover img{object-fit:cover}
 /* Прячем встроенный hover-хинт обложки (⤢): в cinema свой значок ⤢ по центру */
 #playerContent.style-cinema>.sl-cover-wrap .ps-cover::after{content:none!important}
@@ -166,7 +166,7 @@
 #playerContent.style-cinema .cn-hover-actions .cov-fav:hover,#playerContent.style-cinema .cn-hover-actions .cov-add:hover,#playerContent.style-cinema .cn-hover-actions .cn-bigpic:hover{opacity:1;transform:scale(1.12)}
 #playerContent.style-cinema .cn-hover-actions .cov-fav svg,#playerContent.style-cinema .cn-hover-actions .cov-add svg,#playerContent.style-cinema .cn-hover-actions .cn-bigpic svg{width:26px;height:26px}
 /* Затемнение низа обложки под контролы (сильнее, чем в large — текста больше) */
-#playerContent.style-cinema>.sl-cover-wrap::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4),rgba(0,0,0,.34) 40%,rgba(0,0,0,.86));border-radius:var(--radius);pointer-events:none;z-index:1}
+#playerContent.style-cinema>.sl-cover-wrap::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4),rgba(0,0,0,.34) 40%,rgba(0,0,0,.86));border-radius:0;pointer-events:none;z-index:1}
 /* Оверлей: прогресс + контролы внизу обложки (фон даёт ::after-градиент) */
 #playerContent.style-cinema .cn-overlay{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:12px;padding:18px 22px 18px}
 /* Прогресс */
@@ -230,6 +230,11 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 .cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
 .cc:hover{color:var(--text);background:var(--hover)}
 .cc.on{color:var(--accent)}
+/* «Умная» перемешка — мини-значок в белом кружке сверху справа над shuffle. */
+.cc-badge{position:absolute;top:3px;right:3px;width:13px;height:13px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;line-height:1;color:#000;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+/* Числовые бейджи (repeat-one, громкость): цифры оптически сидят выше центра —
+   компенсируем небольшим отступом сверху, чтобы визуально были по центру. */
+.cc-badge.num{padding-top:1px}
 .cc-play{width:48px;height:48px;border-radius:calc(var(--radius) * 0.85);background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s,transform .08s;will-change:transform}
 .cc-play:hover{background:var(--accent2)}
 /* Эффект вжатия при нажатии (как в мини-плеере/трее). */

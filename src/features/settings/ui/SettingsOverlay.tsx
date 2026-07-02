@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavStore } from '@app/navigationStore'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
@@ -46,6 +46,10 @@ export const SettingsOverlay = () => {
   const [section, setSection] = useState<SectionId>('system')
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
+  // Текст поискового запроса, по которому открыли секцию — чтобы подсветить и
+  // прокрутить к найденной настройке внутри. null → обычная навигация.
+  const [highlight, setHighlight] = useState<string | null>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   // Enter-анимация `.open` без «дёрганья» появления (см. runEnterAnimation).
   useEffect(() => {
@@ -54,6 +58,7 @@ export const SettingsOverlay = () => {
       return runEnterAnimation(setOpening)
     } else {
       setOpening(false)
+      setHighlight(null)
     }
   }, [open])
 
@@ -69,6 +74,67 @@ export const SettingsOverlay = () => {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
+
+  // Подсветка + скролл к настройке, найденной поиском. После рендера секции ищем
+  // первый текстовый узел, содержащий запрос, и подсвечиваем ИМЕННО совпавший
+  // текст (а не блок) через CSS Custom Highlight API — без мутации DOM, чтобы не
+  // ломать React. Фолбэк (если API недоступен) — класс на строке-подписи.
+  useEffect(() => {
+    if (!highlight) return
+    const root = contentRef.current
+    if (!root) return
+    const q = highlight.toLowerCase()
+    const labels = root.querySelectorAll<HTMLElement>(
+      '.sl2, .sc-title, .s-cat-label, h3, .tele-toggle-title, .tele-data-name, .tele-gauge-label',
+    )
+    let node: Text | null = null
+    let el: HTMLElement | null = null
+    let idx = -1
+    for (const cand of labels) {
+      const walker = document.createTreeWalker(cand, NodeFilter.SHOW_TEXT)
+      let n = walker.nextNode()
+      while (n) {
+        const i = (n.textContent ?? '').toLowerCase().indexOf(q)
+        if (i >= 0) {
+          node = n as Text
+          el = cand
+          idx = i
+          break
+        }
+        n = walker.nextNode()
+      }
+      if (node) break
+    }
+    if (!node || !el) return
+
+    const card = (el.closest('.sc, .tele-data-row, .tele-stat-card') as HTMLElement | null) ?? el
+    card.scrollIntoView({ block: 'center', behavior: 'smooth' })
+
+    const HL = 'settings-search'
+    const highlights = (window as unknown as { CSS?: { highlights?: Map<string, unknown> } }).CSS
+      ?.highlights
+    const HighlightCtor = (window as unknown as { Highlight?: new (...r: Range[]) => unknown }).Highlight
+    if (highlights && HighlightCtor) {
+      const range = document.createRange()
+      range.setStart(node, idx)
+      range.setEnd(node, idx + q.length)
+      highlights.set(HL, new HighlightCtor(range))
+      const tm = setTimeout(() => highlights.delete(HL), 2200)
+      return () => {
+        clearTimeout(tm)
+        highlights.delete(HL)
+      }
+    }
+
+    // Фолбэк: подсветить строку-подпись целиком.
+    el.classList.add('s-hl')
+    const target = el
+    const tm = setTimeout(() => target.classList.remove('s-hl'), 1900)
+    return () => {
+      clearTimeout(tm)
+      target.classList.remove('s-hl')
+    }
+  }, [highlight, section])
 
   if (!mounted) return null
 
@@ -116,8 +182,14 @@ export const SettingsOverlay = () => {
       <div className="settings-modal">
         <div className="settings-modal-body">
           <div className="sm-cat-view">
-            <SettingsNav active={section} onSelect={setSection} />
-            <div className="settings-modal-content" id="smContent">
+            <SettingsNav
+              active={section}
+              onSelect={(id, query) => {
+                setSection(id)
+                setHighlight(query ?? null)
+              }}
+            />
+            <div className="settings-modal-content" id="smContent" ref={contentRef}>
               {sectionMap[section]}
             </div>
           </div>

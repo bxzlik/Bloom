@@ -87,16 +87,25 @@ export const LibContent = () => {
   const [coverBusy, setCoverBusy] = useState(false)
   const editNameRef = useRef<HTMLInputElement>(null)
 
-  // При входе в режим — подставляем значения редактируемого плейлиста и фокус
-  // на имя. Читаем из стора напрямую, чтобы не зависеть от порядка ре-рендера.
+  // При входе в режим подставляем значения редактируемого плейлиста синхронно
+  // в рендере (ref-гвард), а не в эффекте: иначе на один кадр шапка мигала бы
+  // обложкой из прошлой сессии редактирования — editCover ещё держит старое
+  // значение до срабатывания эффекта. Читаем из стора напрямую.
+  const seededId = useRef<string | null>(null)
+  if (editingId !== seededId.current) {
+    seededId.current = editingId
+    if (editingId) {
+      const pl = usePlaylistStore.getState().playlists.find((p) => p.id === editingId)
+      setEditName(pl?.name ?? '')
+      setEditDesc(pl?.desc ?? '')
+      setEditCover(pl?.cover)
+      setCoverBusy(false)
+    }
+  }
+
+  // Фокус на имя при входе в режим.
   useEffect(() => {
     if (!editingId) return
-    const pl = usePlaylistStore.getState().playlists.find((p) => p.id === editingId)
-    if (!pl) return
-    setEditName(pl.name)
-    setEditDesc(pl.desc ?? '')
-    setEditCover(pl.cover)
-    setCoverBusy(false)
     const tm = setTimeout(() => {
       editNameRef.current?.focus()
       editNameRef.current?.select()
@@ -190,6 +199,10 @@ export const LibContent = () => {
     folderTracks,
   })
 
+  // В режиме редактирования шапка (блюр-фон) должна сразу отражать выбранную
+  // в редакторе обложку, не дожидаясь сохранения.
+  const headCover = editing ? editCover : heroCover
+
   return (
     <div className="lib-content">
       {overview ? (
@@ -197,8 +210,8 @@ export const LibContent = () => {
       ) : (
       <>
       <div
-        className={`lib-content-head${heroCover ? ' has-cover' : ''}`}
-        style={heroCover ? ({ '--hero-cover': `url("${heroCover}")` } as CSSProperties) : undefined}
+        className={`lib-content-head${headCover ? ' has-cover' : ''}`}
+        style={headCover ? ({ '--hero-cover': `url("${headCover}")` } as CSSProperties) : undefined}
         onContextMenu={(e) => {
           // ПКМ по шапке открывает то же меню, что и кнопка «…», но у курсора.
           // В режиме редактирования — отдаём нативное меню (для полей ввода).

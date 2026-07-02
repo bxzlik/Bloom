@@ -340,7 +340,8 @@ const BpProgress = () => {
     e.preventDefault()
     const d = audioEngine.duration
     if (!d) return
-    const t = Math.max(0, Math.min(d, audioEngine.currentTime + (e.deltaY < 0 ? 1 : -1)))
+    const step = e.shiftKey ? 5 : 1
+    const t = Math.max(0, Math.min(d, audioEngine.currentTime + (e.deltaY < 0 ? step : -step)))
     seek(t)
   }
 
@@ -395,6 +396,7 @@ const BpControls = () => {
   const t = useT()
   const playing = usePlayerStore((s) => s.playing)
   const shuffle = usePlayerStore((s) => s.shuffle)
+  const smartShuffle = usePlayerStore((s) => s.smartShuffle)
   const repeat = usePlayerStore((s) => s.repeat)
   const curId = useQueueStore((s) => s.curId)
   const isFav = useFavStore((s) => (curId ? s.favs.has(curId) : false))
@@ -434,8 +436,9 @@ const BpControls = () => {
       <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
         <Ico name="next" width={20} height={20} />
       </button>
-      <button className={`cc${shuffle ? ' on' : ''}`} id="bpShufBtn" onClick={toggleShuffleMain} aria-label={t('player.aria.shuffle')}>
+      <button className={`cc${shuffle ? ' on' : ''}`} id="bpShufBtn" onClick={toggleShuffleMain} aria-label={smartShuffle ? t('player.aria.smartShuffle') : t('player.aria.shuffle')}>
         <Ico name="shuffle" width={18} height={18} />
+        {smartShuffle && <span className="cc-badge"><Ico name="stars" width={9} height={9} /></span>}
       </button>
       <button className="cc" id="bpAddBtn" onClick={openAdd} aria-label={t('player.aria.add')}>
         <Ico name="add" width={18} height={18} />

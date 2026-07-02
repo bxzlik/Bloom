@@ -97,6 +97,14 @@ const scanDominantHsl = async (
   return null
 }
 
+/**
+ * Доминантный HSL обложки (h 0–360, s/l 0–1) — сырьё для произвольной
+ * раскраски (напр. огненное свечение «Моей волны»). null при CORS/ошибке.
+ */
+export const extractCoverHsl = (
+  imgSrc: string,
+): Promise<{ h: number; s: number; l: number } | null> => scanDominantHsl(imgSrc)
+
 /** Яркий акцент из обложки. */
 export const extractAccentFromCover = async (imgSrc: string): Promise<string | null> => {
   const hsl = await scanDominantHsl(imgSrc)

@@ -15,33 +15,47 @@
 
 .home-actions{display:flex;flex-direction:column;gap:10px}
 
-/* ===== MY WAVE BAR ===== */
-.home-wave-bar{position:relative;display:flex;flex-direction:column;gap:14px;padding:24px 22px 18px}
-.home-wave-bar .hwb-top{display:flex;align-items:center;gap:18px;width:100%}
+/* ===== MY WAVE HERO ===== */
+/* НЕ карточка: фаербол парит прямо на фоне главной — без рамки/заливки/обрезки.
+   Края свечения гасятся радиальной маской на .hwb-aura, поэтому прямоугольного
+   обреза нет. Цвета орбов — в --wave-1/2/3 (акцент темы либо тон обложки трека,
+   см. WaveCard.tsx). */
+.home-wave-bar{position:relative;height:440px;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;--wave-1:#ff3d1a;--wave-2:#ff8a00;--wave-3:#ffd21e}
+
+/* Турбулентное пламя (SVG). Градиенты сами затухают в прозрачность к краям —
+   отдельная маска не нужна, прямоугольного обреза нет. CSS-масштаб добавляет
+   выраженную пульсацию поверх «дыхания» язычков (feDisplacementMap.scale). */
+.home-wave-bar .hwb-aura{position:absolute;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.home-wave-bar .hwb-fire{width:540px;height:540px;overflow:visible;transform-origin:50% 50%;animation:hwbFirePulse 8s ease-in-out infinite}
+/* Вращение — на группе (отдельный элемент), чтобы не конфликтовать с scale-пульсом
+   .hwb-fire. Обе — чистый CSS, поэтому не сбрасываются при ре-рендере/repaint. */
+.home-wave-bar .hwb-fire-g{isolation:isolate;transform-box:fill-box;transform-origin:50% 50%;animation:hwbFireSpin 120s linear infinite}
+body.bars-hidden .home-wave-bar .hwb-fire,
+body.bars-hidden .home-wave-bar .hwb-fire-g{animation-play-state:paused}
+/* Круги пламени слитаются screen-блендом → бело-горячее ядро поверх тела/флейра */
+.home-wave-bar .hwb-fire-g circle{mix-blend-mode:screen}
+/* Цвета стопов — из палитры (акцент / тон обложки), см. WaveCard.tsx */
+.home-wave-bar .hwb-s-outer0{stop-color:var(--wave-1);stop-opacity:.95}
+.home-wave-bar .hwb-s-outer1{stop-color:var(--wave-1);stop-opacity:.4}
+.home-wave-bar .hwb-s-body0{stop-color:var(--wave-2);stop-opacity:.98}
+.home-wave-bar .hwb-s-body1{stop-color:var(--wave-2);stop-opacity:.45}
+.home-wave-bar .hwb-s-core0{stop-color:var(--wave-3);stop-opacity:1}
+.home-wave-bar .hwb-s-core1{stop-color:var(--wave-3);stop-opacity:.5}
+.home-wave-bar .hwb-s-trans{stop-color:var(--wave-1);stop-opacity:0}
+
+.home-wave-bar .hwb-hero{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px}
+.home-wave-bar .hwb-hero-main{display:flex;align-items:center;gap:16px}
 .home-wave-bar .hwb-play{position:relative;width:64px;height:64px;border:none;background:transparent;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;font-family:var(--font)}
-.home-wave-bar .hwb-play svg{width:56px;height:56px;transition:transform .15s ease,opacity .22s ease;will-change:transform,opacity}
+.home-wave-bar .hwb-play svg{width:56px;height:56px;transition:transform .15s ease,opacity .22s ease;will-change:transform,opacity;filter:drop-shadow(0 2px 14px rgba(0,0,0,.4))}
 .home-wave-bar .hwb-play:hover svg{transform:scale(1.1)}
 .home-wave-bar .hwb-play:active svg{transform:scale(0.92)}
 .home-wave-bar .hwb-play.is-loading{cursor:default}
 .home-wave-bar .hwb-play.is-loading svg{opacity:0;transform:scale(0.6)}
-.home-wave-bar .hwb-play.is-loading:hover svg,
-.home-wave-bar .hwb-play.is-loading:active svg{transform:scale(0.6)}
-.home-wave-bar .hwb-play .hwb-spinner{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:3px solid rgba(255,255,255,.18);border-top-color:#fff;opacity:0;transition:opacity .22s ease;pointer-events:none}
+.home-wave-bar .hwb-play .hwb-spinner{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;opacity:0;transition:opacity .22s ease;pointer-events:none}
 .home-wave-bar .hwb-play.is-loading .hwb-spinner{opacity:1;animation:hwbSpin .8s linear infinite}
-.home-wave-bar .hwb-title{font-size:34px;font-weight:900;color:#fff;letter-spacing:-1.2px;white-space:nowrap;flex-shrink:0;line-height:1;display:flex;align-items:center}
-.home-wave-bar .hwb-divider{width:1px;height:30px;background:rgba(255,255,255,.18);flex-shrink:0;margin:0 6px}
-.home-wave-bar .hwb-avatars{display:flex;align-items:center;flex-shrink:0}
-.home-wave-bar .hwb-avatars .hwb-ava{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#333,#1a1a1a);overflow:hidden;border:2px solid #0a0a0a;margin-left:-10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4)}
-.home-wave-bar .hwb-avatars .hwb-ava:first-child{margin-left:0}
-.home-wave-bar .hwb-avatars .hwb-ava img{width:100%;height:100%;object-fit:cover;display:block}
-.home-wave-bar .hwb-wave-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
-.home-wave-bar .hwb-top{position:relative;z-index:1}
-.home-wave-bar .hwb-wave{position:absolute;top:0;left:0;width:200%;height:100%;color:rgba(255,255,255,.35);will-change:transform}
-.home-wave-bar .hwb-wave-1{animation:hwbWaveFlow 18s linear infinite}
-.home-wave-bar .hwb-wave-2{animation:hwbWaveFlow 26s linear infinite reverse;color:rgba(255,255,255,.2)}
-body.bars-hidden .hwb-wave{animation-play-state:paused}
-.home-wave-bar .hwb-tune{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;font-family:var(--font);margin-left:auto}
-.home-wave-bar .hwb-tune:hover{color:var(--text);background:transparent}
+.home-wave-bar .hwb-title{font-size:40px;font-weight:900;color:#fff;letter-spacing:-1.5px;white-space:nowrap;line-height:1;text-shadow:0 2px 28px rgba(0,0,0,.5)}
+.home-wave-bar .hwb-tune{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 15px;border-radius:min(16px,calc(var(--radius)*.9));background:rgba(255,255,255,.12);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:none;color:#fff;cursor:pointer;transition:.15s;font-family:var(--font);font-size:12.5px;font-weight:600}
+.home-wave-bar .hwb-tune:hover{background:rgba(255,255,255,.2)}
 
 /* ===== DISLIKED IN QUEUE ===== */
 .tr.is-disliked .trn,.tr.is-disliked .tra,.tr.is-disliked .trd{text-decoration:line-through;color:var(--text2);opacity:.55}
@@ -51,27 +65,58 @@ body.bars-hidden .hwb-wave{animation-play-state:paused}
 #dislikeBtn.lyr-active{color:#e03030!important;background:rgba(224,48,48,.12)!important}
 
 /* ===== CONTINUE CARD ===== */
-.home-continue-card{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:var(--radius);border:1px solid rgba(255,255,255,var(--wb));background:var(--block-bg,#2a2a2a);cursor:pointer;transition:filter .15s;position:relative;overflow:hidden}
-.home-continue-card:hover{filter:brightness(1.1)}
-.hcc-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1}
+/* Карточка «Продолжить» больше не кликабельна целиком (нет бордера/hover):
+   продолжить трек можно кликом по полосе прогресса или кнопке play, открыть
+   плеер — по обложке. Источник/активность спрятаны в попап кнопки «!». */
+.home-continue-card{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);position:relative;overflow:hidden}
 .hcc-source,.hcc-state{display:flex;align-items:center;gap:5px;min-width:0;max-width:50%;height:26px;box-sizing:border-box;font-size:10.5px;font-weight:600;line-height:1;color:var(--text2);background:transparent;border:1px solid rgba(255,255,255,.07);padding:4px 8px;border-radius:calc(var(--radius) * 0.95)}
 .hcc-source span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hcc-state{justify-content:center;flex-shrink:0;white-space:nowrap;padding-left:8px;padding-right:8px}
 .hcc-state.is-playing{gap:6px}
 .hcc-state.is-playing::before{content:'';display:block;width:6px;height:6px;min-width:6px;border-radius:50%;background:var(--accent);flex:0 0 auto}
-.hcc-row{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
-.hcc-cover{width:56px;height:56px;border-radius:calc(var(--radius)*.65);flex-shrink:0;overflow:hidden;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:var(--muted);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.hcc-row{display:flex;align-items:center;gap:10px;position:relative;z-index:1}
+.hcc-cover{width:44px;height:44px;border-radius:calc(var(--radius)*.6);flex-shrink:0;overflow:hidden;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:var(--muted);box-shadow:0 4px 16px rgba(0,0,0,.4);cursor:pointer;transition:filter .15s}
+.hcc-cover:hover{filter:brightness(1.12)}
 .hcc-cover img{width:100%;height:100%;object-fit:cover}
-.hcc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.hcc-top{display:flex;flex-direction:column;gap:2px}
-.hcc-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);line-height:1.2}
-.hcc-artist{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hcc-progress{display:flex;flex-direction:column;gap:4px}
-.hcc-bar-wrap{height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
-.hcc-bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .08s linear}
-.hcc-times{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);font-variant-numeric:tabular-nums}
-.hcc-play-btn{width:36px;height:36px;border-radius:min(50%,calc(var(--radius) * 1.35));background:var(--accent);color:var(--accent-text);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;position:relative;z-index:2}
-.hcc-play-btn:hover{filter:brightness(1.12)}
+.hcc-play-btn{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);color:var(--text);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;position:relative;z-index:2}
+.hcc-play-btn:hover{background:rgba(255,255,255,.16)}
+.hcc-play-btn svg{margin-left:0}
+
+/* Полоса-пилюля с названием внутри + заливкой прогресса (перематываемая) */
+.hcc-seek{flex:1;min-width:0;position:relative;height:44px;border-radius:min(22px,calc(var(--radius)*1.5));background:rgba(255,255,255,.06);overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer}
+.hcc-seek.is-seekable{touch-action:none}
+/* Заливка акцентом (как режим «Полоса» в оверлее). Без своего скругления —
+   левый край режется overflow пилюли, правый ровный. Во время драга transition
+   снимается инлайном → заливка мгновенно идёт за курсором. */
+.hcc-seek-fill{position:absolute;left:0;top:0;height:100%;background:var(--accent);opacity:.22;border-radius:0;pointer-events:none;transition:width .25s linear}
+.hcc-seek-label{position:absolute;inset:0;pointer-events:none}
+.hcc-seek-main,.hcc-seek-times{position:absolute;left:14px;right:42px;top:50%;transform:translateY(-50%);transition:opacity .15s}
+/* «!» внутри полосы (справа): открывает попап источник/активность */
+.hcc-seek-info{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;transition:.15s;font-family:var(--font)}
+.hcc-seek-info:hover{background:rgba(255,255,255,.16);color:var(--text)}
+.hcc-seek-info.active{background:rgba(255,255,255,.2);color:var(--text)}
+.hcc-seek-main{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
+.hcc-seek-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hcc-seek-artist{font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;max-width:42%}
+.hcc-seek-times{opacity:0;text-align:center;font-size:12px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.hcc-seek.is-seekable:hover .hcc-seek-main{opacity:0}
+.hcc-seek.is-seekable:hover .hcc-seek-times{opacity:1}
+
+/* Круглые кнопки справа: лайк + контекстное меню (три точки) */
+.hcc-icon-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;font-family:var(--font)}
+.hcc-icon-btn:hover{background:rgba(255,255,255,.12);color:var(--text)}
+.hcc-like.active,.hcc-like.active:hover{color:var(--accent)}
+
+/* Попап кнопки «!» — источник + активность (стек), портал в body, открыт вверх */
+.hcc-info-pop{display:flex;flex-direction:column;gap:4px;padding:6px;min-width:196px;transform-origin:bottom center;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*.7);box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.04)}
+.hcc-info-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(var(--radius)*.55);background:rgba(255,255,255,.035);min-width:0}
+.hcc-info-ico{width:30px;height:30px;flex-shrink:0;border-radius:calc(var(--radius)*.5);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.hcc-info-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hcc-info-cap{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);opacity:.65;line-height:1}
+.hcc-info-val{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Статус-точка активности: акцентная с ореолом при воспроизведении */
+.hcc-info-dot{width:9px;height:9px;border-radius:50%;background:var(--text2);opacity:.5}
+.hcc-info-dot.is-playing{background:var(--accent);opacity:1;box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18),0 0 8px 1px rgba(var(--accent-rgb),.55)}
 
 /* ===== RANDOM MIX BUTTON ===== */
 .home-btn-secondary{display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);color:var(--text2);border:1px solid rgba(255,255,255,var(--wb));font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font);width:100%}
@@ -138,45 +183,9 @@ body.bars-hidden .hwb-wave{animation-play-state:paused}
 .hqc-title{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
 .hqc-sub{font-size:10.5px;color:rgba(255,255,255,0.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* ===== HOME STATS BAR ===== */
-.home-stats-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:18px 20px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);border:1px solid rgba(255,255,255,var(--wb));cursor:pointer;transition:.15s;user-select:none;position:relative}
-.home-games-card{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);border:1px solid rgba(255,255,255,var(--wb));cursor:pointer;transition:.15s;user-select:none}
-.home-games-card:hover{filter:brightness(1.1)}
-.home-games-card-left{display:flex;align-items:center;gap:12px}
-.home-games-card-icon{display:flex;align-items:center;justify-content:center;color:var(--text2)}
-.home-games-card-title{font-size:13px;font-weight:800}
-.home-games-card-sub{font-size:11px;color:var(--text2);margin-top:2px}
-.home-games-card-preview{display:none}
-/* Games modal */
-#gamesOverlay{position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s}
-#gamesOverlay.open{opacity:1;pointer-events:all}
-.games-modal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);width:860px;max-width:97vw;height:82vh;max-height:700px;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
-#gamesOverlay.open .games-modal{transform:translateY(0)}
-/* Содержимое модалки игр (витрина + полноэкранная игра) живёт в gamesShell.css
-   и тематических clicker.css / tamagotchi.css. Здесь — только базовая оболочка
-   (#gamesOverlay/.games-modal выше), размеры подстраиваются под игру через
-   .games-modal[data-game]. */
-.home-stats-bar:hover{filter:brightness(1.1)}
-.hsb-item{display:flex;align-items:center;gap:5px}
-.hsb-num{font-size:22px;font-weight:800;letter-spacing:-.5px}
-.hsb-unit{font-size:14px;font-weight:700;color:var(--text2)}
-.hsb-sep{font-size:13px;color:var(--text2);margin:0 2px}
-.hsb-arrow{display:none}
-.home-stats-bar:hover .hsb-arrow{color:var(--text2);transform:translateX(2px)}
-
 /* ===== HOME EXTRAS ===== */
 .home-time{font-size:11px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.02em;background:rgba(var(--accent-rgb),.1);padding:2px 8px;border-radius:min(20px,calc(var(--radius) * 0.95));margin-left:auto;flex-shrink:0}
 .home-recent-hdr{display:flex;align-items:center;gap:7px;font-size:28px;font-weight:700;color:var(--text);text-transform:none;letter-spacing:-.3px}
-.home-tod{display:flex;align-items:center;gap:14px;padding:12px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);border:1px solid rgba(255,255,255,var(--wb));cursor:pointer;transition:.15s}
-.home-tod:hover{filter:brightness(1.1)}
-.home-tod-cover{width:52px;height:52px;border-radius:calc(var(--radius)*.7);overflow:hidden;flex-shrink:0;background:var(--hover);display:flex;align-items:center;justify-content:center;color:var(--muted)}
-.home-tod-cover img{width:100%;height:100%;object-fit:cover}
-.home-tod-info{flex:1;min-width:0}
-.home-tod-label{font-size:9.5px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
-.home-tod-name{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.home-tod-artist{font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.home-tod-play{width:36px;height:36px;border-radius:min(50%,calc(var(--radius) * 1.35));background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
-.home-tod-play:hover{filter:brightness(1.12)}
 
 /* ===== DISLIKES MODAL ===== */
 #dislikesModalOverlay{position:fixed;inset:0;z-index:992;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s}

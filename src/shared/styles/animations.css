@@ -22,24 +22,12 @@
 @keyframes dropPulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}
 @keyframes smRowGlow{0%{background:transparent;outline-color:transparent}15%{background:rgba(255,190,0,.1);outline-color:rgba(255,190,0,.55)}80%{background:rgba(255,190,0,.06);outline-color:rgba(255,190,0,.28)}100%{background:transparent;outline-color:transparent}}
 @keyframes sSecIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-@keyframes clkFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-54px) scale(.8)}}
-@keyframes tamaBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-@keyframes tamaDance{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-14deg) scale(1.06)}75%{transform:rotate(14deg) scale(1.06)}}
-@keyframes tamaShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
-@keyframes tamaDroop{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(5px) rotate(-8deg)}}
-@keyframes tamaSleep{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.96)}}
-@keyframes quizIdlePulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--accent-rgb),.35)}60%{box-shadow:0 0 0 14px rgba(var(--accent-rgb),0)}}
-@keyframes quizBar1{0%,100%{height:7px}50%{height:26px}}
-@keyframes quizBar2{0%,100%{height:20px}50%{height:9px}}
-@keyframes quizBar3{0%,100%{height:28px}50%{height:13px}}
-@keyframes quizBar4{0%,100%{height:12px}50%{height:24px}}
-@keyframes quizBar5{0%,100%{height:17px}50%{height:7px}}
-@keyframes quizResultPop{0%{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.18) rotate(3deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
-@keyframes quizFadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes bwPop{0%{transform:scale(1);opacity:1}35%{transform:scale(1.22);opacity:.8}100%{transform:scale(0);opacity:0}}
 @keyframes bwRefill{0%{transform:scale(0);opacity:0}65%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
 @keyframes g2048pop{0%{transform:scale(0.6)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes reacPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
 @keyframes ctxIn{from{opacity:0;transform:scale(.92) translateY(-5px)}to{opacity:1;transform:scale(1) translateY(0)}}
 @keyframes hwbSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-@keyframes hwbWaveFlow{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* Пульсация пламени «Моей волны» — синхронно с «дыханием» язычков */
+@keyframes hwbFirePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes hwbFireSpin{to{transform:rotate(360deg)}}
