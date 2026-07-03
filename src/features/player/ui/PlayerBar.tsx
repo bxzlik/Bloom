@@ -10,6 +10,7 @@ import {
 import type { Track } from '@entities/track'
 import { trackRegistry, CoverSourceBadge, ArtistLinks } from '@entities/track'
 import { useNavStore } from '@app/navigationStore'
+import { useDetailStore } from '@features/search/model/detailStore'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
 import { useGrpStore } from '../model/grpStore'
@@ -50,6 +51,10 @@ export const PlayerBar = () => {
   const t = useT()
   const curId = useQueueStore((s) => s.curId)
   const page = useNavStore((s) => s.page)
+  // Детальный оверлей (артист/альбом/плейлист) открывается ПОВЕРХ страницы плеера,
+  // но page остаётся 'player'. Тогда бар нужно показать — иначе на странице артиста,
+  // открытой из плеера, нет управления воспроизведением (см. `visible` ниже).
+  const detailOpen = useDetailStore((s) => s.stack.length > 0)
 
   const title = usePlayerStore((s) => s.title)
   const artist = usePlayerStore((s) => s.artist)
@@ -169,7 +174,9 @@ export const PlayerBar = () => {
   const openGrp = useGrpStore((s) => s.openPanel)
 
   // Скрываем bar когда нет трека, открыт page-player, или бар выключен (preset off).
-  const visible = !!curId && page !== 'player' && mpEnabled
+  // Исключение: детальный оверлей поверх плеера (артист/альбом) — тогда показываем,
+  // т.к. полный плеер перекрыт и иначе нечем управлять воспроизведением.
+  const visible = !!curId && mpEnabled && (page !== 'player' || detailOpen)
   if (!visible) {
     return (
       <div

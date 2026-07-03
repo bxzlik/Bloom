@@ -1440,16 +1440,38 @@ pub async fn ym_stream_url(id: String) -> Result<String, String> {
 
 /// «Моя волна»: очередной батч rotor-станции.
 #[tauri::command]
-pub async fn ym_wave_tracks(last_id: Option<String>) -> Result<yandex::YmWave, String> {
+pub async fn ym_wave_tracks(
+    station: Option<String>,
+    last_id: Option<String>,
+) -> Result<yandex::YmWave, String> {
     let token = ym_token()?;
-    yandex::wave_tracks(&token, last_id.as_deref().unwrap_or(""))
-        .await
-        .map_err(|e| e.to_string())
+    yandex::wave_tracks(
+        &token,
+        station.as_deref().unwrap_or(""),
+        last_id.as_deref().unwrap_or(""),
+    )
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Общий чарт Яндекс.Музыки (треки) — для витрины «Чарты» на главной.
+#[tauri::command]
+pub async fn ym_chart() -> Result<Vec<yandex::YmTrack>, String> {
+    let token = ym_token()?;
+    yandex::chart(&token).await.map_err(|e| e.to_string())
+}
+
+/// Новинки Яндекс.Музыки (свежие альбомы) — для витрины «Новинки» на главной.
+#[tauri::command]
+pub async fn ym_new_releases() -> Result<Vec<yandex::YmAlbum>, String> {
+    let token = ym_token()?;
+    yandex::new_releases(&token).await.map_err(|e| e.to_string())
 }
 
 /// Фидбек «Моей волны» (best-effort, не критично при ошибке).
 #[tauri::command]
 pub async fn ym_wave_feedback(
+    station: Option<String>,
     event: String,
     track_id: Option<String>,
     batch_id: Option<String>,
@@ -1458,6 +1480,7 @@ pub async fn ym_wave_feedback(
     let token = ym_token()?;
     let _ = yandex::wave_feedback(
         &token,
+        station.as_deref().unwrap_or(""),
         &event,
         track_id.as_deref().unwrap_or(""),
         batch_id.as_deref().unwrap_or(""),

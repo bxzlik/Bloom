@@ -18,6 +18,7 @@ const PREFETCH_AHEAD = 3;    // прогрев стримов следующих
 const SKIP_RATIO = 0.3;      // < этой доли длительности → «skip», иначе «trackFinished»
 
 interface RotorState {
+  station: string;    // сид станции: 'user:onyourwave' | 'track:<id>' | …
   batchId: string;
   lastId: string;     // id последнего трека из rotor — курсор для следующего батча
   gen: number;        // поколение сессии (защита от гонок refill/start)
@@ -41,7 +42,7 @@ export function isActive(): boolean {
 }
 
 function fb(event: string, trackId = "", played = 0): void {
-  void ymWaveFeedback(event, trackId, state?.batchId ?? "", played);
+  void ymWaveFeedback(state?.station ?? "", event, trackId, state?.batchId ?? "", played);
 }
 
 // raw → Track, закрепляем в реестре (pushTempTrack кладёт как постоянный, чтобы
@@ -62,8 +63,22 @@ function prefetch(): void {
   }
 }
 
-/** Старт «Моей волны» Яндекса. Возвращает true, если волна реально пошла. */
+/** Старт «Моей волны» Яндекса (rotor `user:onyourwave`). */
 export async function start(): Promise<boolean> {
+  return startStation("user:onyourwave", i18nT("wave.title"));
+}
+
+/** Волна по конкретному Яндекс-треку (rotor `track:<id>`). */
+export async function startByTrack(ymTrackId: string): Promise<boolean> {
+  if (!ymTrackId) return false;
+  return startStation(`track:${ymTrackId}`, i18nT("wave.label.track"));
+}
+
+/**
+ * Общий старт rotor-станции. `station` — сид (`user:onyourwave`/`track:<id>`),
+ * `label` — подпись источника в плеере. Возвращает true, если волна пошла.
+ */
+async function startStation(station: string, label: string): Promise<boolean> {
   if (!(await ymIsAuthed().catch(() => false))) {
     host.toast(i18nT("wave.toast.ymNoAuth"), "warn");
     return false;
@@ -71,7 +86,7 @@ export async function start(): Promise<boolean> {
 
   let batch;
   try {
-    batch = await ymWaveTracks();
+    batch = await ymWaveTracks(station);
   } catch (e) {
     host.toast(i18nT("wave.toast.ymError", { msg: (e as Error)?.message ?? String(e) }), "error");
     return false;
@@ -94,6 +109,7 @@ export async function start(): Promise<boolean> {
   if (!ids.length) return false;
 
   state = {
+    station,
     batchId: batch.batchId || "",
     lastId: String(raws[raws.length - 1]!.id),
     gen: (state?.gen ?? 0) + 1,
@@ -102,7 +118,7 @@ export async function start(): Promise<boolean> {
 
   host.queue = ids;
   host.qIdx = 0;
-  host.curSource = { type: "wave", label: i18nT("wave.title") };
+  host.curSource = { type: "wave", label };
   host.shuffle = false; // волна сама задаёт порядок
 
   fb("radioStarted");
@@ -151,7 +167,7 @@ async function maybeRefill(): Promise<void> {
   state.refilling = true;
   const gen = state.gen;
   try {
-    const batch = await ymWaveTracks(state.lastId || "");
+    const batch = await ymWaveTracks(state.station, state.lastId || "");
     // Сессия могла смениться/закончиться, пока ждали Rust — не пишем в чужую очередь.
     if (!state || state.gen !== gen || !isWaveSource()) return;
     if (batch?.batchId) state.batchId = batch.batchId;

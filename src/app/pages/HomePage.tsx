@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { WaveCard } from '@features/wave'
@@ -34,6 +34,7 @@ import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type 
 import { VinylCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '../navigationStore'
+import { DiscoverSections } from './DiscoverSections'
 
 /**
  * Главная страница (#page-home) — макет.
@@ -54,6 +55,30 @@ export const HomePage = ({ active }: { active: boolean }) => {
   // Блок «Моя волна + Продолжить» скрыт на пустой библиотеке.
   const hasTracks = useLibStore((s) => s.tracks.length > 0)
 
+  // Пока идёт скролл — вешаем .is-scrolling, чтобы CSS поставил на паузу тяжёлый
+  // SVG-фильтр фаербола «Моей волны» (feTurbulence/feDisplacementMap не
+  // композитятся на GPU и перерисовывают вьюпорт каждый кадр → jank при листании).
+  // Снимаем класс через паузу простоя, анимация возобновляется.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    let idle: number | undefined
+    const onScroll = () => {
+      if (idle === undefined) el.classList.add('is-scrolling')
+      else window.clearTimeout(idle)
+      idle = window.setTimeout(() => {
+        el.classList.remove('is-scrolling')
+        idle = undefined
+      }, 160)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      el.removeEventListener('scroll', onScroll)
+      if (idle !== undefined) window.clearTimeout(idle)
+    }
+  }, [])
+
   const onTrackCtx = (e: ReactMouseEvent, track: Track) => {
     e.preventDefault()
     e.stopPropagation()
@@ -67,7 +92,7 @@ export const HomePage = ({ active }: { active: boolean }) => {
 
   return (
     <div className={`page${active ? ' active' : ''}`} id="page-home">
-      <div className="home-scroll">
+      <div className="home-scroll" ref={scrollRef}>
         {hasTracks && (
           <div className="home-actions">
             <WaveCard />
@@ -75,6 +100,7 @@ export const HomePage = ({ active }: { active: boolean }) => {
           </div>
         )}
         <QuickGrid />
+        <DiscoverSections active={active} onTrackCtx={onTrackCtx} />
         <RecentSection onTrackCtx={onTrackCtx} />
         <PlaylistsSection
           onPlCtx={onPlCtx}

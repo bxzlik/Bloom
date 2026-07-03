@@ -40,11 +40,19 @@ async function waveStartPersonal(): Promise<boolean> {
 }
 
 async function waveStartByTrack(trackId: string): Promise<boolean> {
+  const t = host.trackById(trackId);
+  if (!t) { host.toast(i18nT("wave.toast.noSeed"), "error"); return false; }
+
+  // Яндекс-трек → нативный rotor (`track:<id>`), а не SC-движок.
+  if (t._ym && t.ymTrackId) {
+    if (session.isActive()) session.endSession();
+    return ymWave.startByTrack(t.ymTrackId);
+  }
+
   resetWaveSourceCache();
   const seeds = pickTrackSeeds(trackId);
   if (!seeds.length) { host.toast(i18nT("wave.toast.noSeed"), "error"); return false; }
-  const t = host.trackById(trackId);
-  if (!t?.scId && !t?.scTrackId) {
+  if (!t.scId && !t.scTrackId) {
     host.toast(i18nT("wave.toast.scOnly"), "warn");
     return false;
   }

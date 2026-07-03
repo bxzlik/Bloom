@@ -121,6 +121,14 @@ export const ymPlaylistUuid = (uuid: string): Promise<YmRawEntity> =>
 
 export const ymResolve = (url: string): Promise<YmResolved> => invoke<YmResolved>('ym_resolve', { url })
 
+/* ── Чарты и новинки (витрина на главной) ──────────────────────────────── */
+
+/** Общий чарт Яндекс.Музыки (топ треков). */
+export const ymChart = (): Promise<YmRawTrack[]> => invoke<YmRawTrack[]>('ym_chart')
+
+/** Новинки Яндекс.Музыки (свежие альбомы). */
+export const ymNewReleases = (): Promise<YmRawAlbum[]> => invoke<YmRawAlbum[]>('ym_new_releases')
+
 /* ── Стрим ─────────────────────────────────────────────────────────────── */
 
 /** Прямой mp3-URL (подписанный). Бросает, если нет Плюса/трек недоступен. */
@@ -135,13 +143,18 @@ export const ymProxyUrl = (url: string): Promise<string> =>
 
 /* ── Моя волна (rotor) ─────────────────────────────────────────────────── */
 
-export const ymWaveTracks = (lastId?: string): Promise<YmWaveBatch> =>
-  invoke<YmWaveBatch>('ym_wave_tracks', { lastId: lastId ?? '' })
+/**
+ * Батч rotor-станции. `station` — сид: пусто/`user:onyourwave` = «Моя волна»,
+ * `track:<id>` = волна по треку. `lastId` — курсор продолжения цепочки.
+ */
+export const ymWaveTracks = (station?: string, lastId?: string): Promise<YmWaveBatch> =>
+  invoke<YmWaveBatch>('ym_wave_tracks', { station: station ?? '', lastId: lastId ?? '' })
 
 export const ymWaveFeedback = (
+  station: string,
   event: string,
   trackId?: string,
   batchId?: string,
   played?: number,
 ): Promise<void> =>
-  invoke<void>('ym_wave_feedback', { event, trackId, batchId, played }).catch(() => undefined)
+  invoke<void>('ym_wave_feedback', { station, event, trackId, batchId, played }).catch(() => undefined)

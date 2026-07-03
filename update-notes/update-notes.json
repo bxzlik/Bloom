@@ -1,4 +1,17 @@
 {
+  "1.4.1": {
+    "title": { "ru": "Что нового в 1.4.1", "en": "What's new in 1.4.1" },
+    "date": "2026-07-03",
+    "pages": [
+      {
+        "title": { "ru": "Яндекс", "en": "Yandex" },
+        "body": {
+          "ru": "Обновлена поддержка Яндекса:\n- Добавлены новинки и чарты\n- Добавлена волна по треку",
+          "en": "Updated Yandex support:\n- Added new releases and charts\n- Added a wave based on a track"
+        }
+      }
+    ]
+  },
   "1.4.0": {
     "title": { "ru": "Что нового в 1.4.0", "en": "What's new in 1.4.0" },
     "date": "2026-07-02",

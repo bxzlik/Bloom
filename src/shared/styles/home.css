@@ -31,7 +31,12 @@
    .hwb-fire. Обе — чистый CSS, поэтому не сбрасываются при ре-рендере/repaint. */
 .home-wave-bar .hwb-fire-g{isolation:isolate;transform-box:fill-box;transform-origin:50% 50%;animation:hwbFireSpin 120s linear infinite}
 body.bars-hidden .home-wave-bar .hwb-fire,
-body.bars-hidden .home-wave-bar .hwb-fire-g{animation-play-state:paused}
+body.bars-hidden .home-wave-bar .hwb-fire-g,
+/* Пока листаем главную — замораживаем фаербол: SVG-фильтр не композитится на
+   GPU и перерисовывает вьюпорт каждый кадр, из-за чего скролл «плывёт». Класс
+   .is-scrolling вешает/снимает HomePage по простою скролла. */
+.home-scroll.is-scrolling .home-wave-bar .hwb-fire,
+.home-scroll.is-scrolling .home-wave-bar .hwb-fire-g{animation-play-state:paused}
 /* Круги пламени слитаются screen-блендом → бело-горячее ядро поверх тела/флейра */
 .home-wave-bar .hwb-fire-g circle{mix-blend-mode:screen}
 /* Цвета стопов — из палитры (акцент / тон обложки), см. WaveCard.tsx */
@@ -126,7 +131,9 @@ body.bars-hidden .home-wave-bar .hwb-fire-g{animation-play-state:paused}
 .home-btn-secondary .hbs-arrow{display:none}
 
 /* Sections */
-.home-section{display:flex;flex-direction:column;gap:12px}
+/* content-visibility: офскрин-секции не красятся при скролле. contain-intrinsic-size
+   резервирует высоту, чтобы скроллбар не прыгал. */
+.home-section{display:flex;flex-direction:column;gap:12px;content-visibility:auto;contain-intrinsic-size:auto 260px}
 .home-section-hdr{display:flex;align-items:center;gap:7px;font-size:28px;font-weight:700;color:var(--text);text-transform:none;letter-spacing:-.3px}
 
 /* Recent track cards */
@@ -186,6 +193,15 @@ body.bars-hidden .home-wave-bar .hwb-fire-g{animation-play-state:paused}
 /* ===== HOME EXTRAS ===== */
 .home-time{font-size:11px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.02em;background:rgba(var(--accent-rgb),.1);padding:2px 8px;border-radius:min(20px,calc(var(--radius) * 0.95));margin-left:auto;flex-shrink:0}
 .home-recent-hdr{display:flex;align-items:center;gap:7px;font-size:28px;font-weight:700;color:var(--text);text-transform:none;letter-spacing:-.3px}
+
+/* ===== HOME DISCOVER (Чарты / Новинки) ===== */
+.home-disc-hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+/* Кнопка-инфо «(i)» в заголовке (вместо переключателя площадок). */
+.home-disc-info{appearance:none;border:0;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+.home-disc-info:hover{background:rgba(255,255,255,.16);color:var(--text)}
+.home-disc-info.active{background:rgba(255,255,255,.2);color:var(--text)}
+.home-disc-loading .hc-cover{animation:home-disc-pulse 1.2s ease-in-out infinite}
+@keyframes home-disc-pulse{0%,100%{opacity:.5}50%{opacity:.85}}
 
 /* ===== DISLIKES MODAL ===== */
 #dislikesModalOverlay{position:fixed;inset:0;z-index:992;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s}

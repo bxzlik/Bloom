@@ -1,5 +1,6 @@
 import { LyricsView } from '@features/lyrics'
 import { useNavStore } from '@app/navigationStore'
+import { useDetailStore } from '@features/search/model/detailStore'
 import { useGrpStore } from '../model/grpStore'
 import { useQueueStore } from '../model/queueStore'
 import { QueueBlock } from './QueueBlock'
@@ -22,8 +23,10 @@ export const GlobalRightPanel = () => {
   // её нечем закрыть.
   const curId = useQueueStore((s) => s.curId)
   // На странице плеера у неё своя очередь (#playerQueueBlock) + lyrics-overlay,
-  // поэтому глобальную панель там прячем.
-  const visible = open && page !== 'player' && !!curId
+  // поэтому глобальную панель там прячем — КРОМЕ случая, когда поверх плеера открыт
+  // детальный оверлей (артист/альбом): инлайн-очередь перекрыта, панель нужна.
+  const detailOpen = useDetailStore((s) => s.stack.length > 0)
+  const visible = open && (page !== 'player' || detailOpen) && !!curId
 
   return (
     <div id="globalRightPanel" className={visible ? 'grp-visible' : ''}>

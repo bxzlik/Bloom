@@ -36,6 +36,10 @@ export interface ResumeData {
   /** Снимок трека — чтобы карточка «Продолжить» отрисовалась и трек заиграл
    *  после рестарта, когда трек площадки (SC) уже не лежит в реестре в памяти. */
   track?: Track
+  /** Снимки ВСЕХ треков очереди, которых нет в библиотеке (треки площадок живут
+   *  только в реестре в памяти). Без них после рестарта очередь-альбом из поиска
+   *  теряет все треки, кроме текущего, — реестр очищается при закрытии приложения. */
+  tracks?: Track[]
 }
 
 const toLegacySource = (s: PlaySource): LegacySource => {
@@ -100,6 +104,19 @@ export const saveResume = (state?: string): void => {
   if (!curId || !audioEngine.duration) return
   try {
     const t = findTrack(curId)
+    // Снимки треков очереди, которых нет в библиотеке (треки площадок живут
+    // только в реестре в памяти) — иначе после рестарта очередь показывает
+    // пустые строки для всех треков, кроме текущего. Лимит — защита от раздутия
+    // localStorage на очень длинных очередях (волна/большие плейлисты).
+    const libIds = new Set(useLibStore.getState().tracks.map((x) => x.id))
+    const tracks: Track[] = []
+    for (const id of queue) {
+      if (tracks.length >= 300) break
+      if (libIds.has(id)) continue
+      const tr = trackRegistry.get(id) ?? (id === curId ? t : undefined)
+      // url протух — обнуляем; остальное (cover/name/scMedia) нужно для рестарта.
+      if (tr) tracks.push({ ...tr, url: null })
+    }
     const data: ResumeData = {
       id: curId,
       pos: audioEngine.currentTime,
@@ -110,6 +127,7 @@ export const saveResume = (state?: string): void => {
       state: state || (audioEngine.paused ? 'paused' : 'playing'),
       // url протух — обнуляем; остальное (cover/name/scMedia) нужно для рестарта.
       track: t ? { ...t, url: null } : undefined,
+      tracks: tracks.length ? tracks : undefined,
     }
     localStorage.setItem(KEY, JSON.stringify(data))
   } catch {
@@ -149,8 +167,13 @@ const reconstructQueue = (r: ResumeData): string[] => {
  */
 export const restoreResumeQueue = (r: ResumeData): string | null => {
   if (!r.id) return null
-  // Пере-регистрируем снимок трека — иначе после рестарта SC-трек не зарезолвится
-  // в loadPlay (реестр площадок живёт только в памяти).
+  // Пере-регистрируем снимки треков очереди — иначе после рестарта SC-треки не
+  // зарезолвятся в loadPlay/очереди (реестр площадок живёт только в памяти).
+  // Сперва вся очередь (`tracks`), затем текущий (`track`) как фолбэк для старых
+  // резюмов без `tracks`.
+  if (r.tracks?.length) {
+    for (const tr of r.tracks) if (tr?.id && !findTrack(tr.id)) trackRegistry.put(tr)
+  }
   if (r.track && !findTrack(r.id)) trackRegistry.put(r.track)
   const queue = reconstructQueue(r)
   let qIdx = typeof r.qIdx === 'number' ? r.qIdx : queue.indexOf(r.id)

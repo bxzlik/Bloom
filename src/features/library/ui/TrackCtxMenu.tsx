@@ -178,7 +178,7 @@ export const TrackCtxMenu = ({
     : false
   // Платформенные действия (share/wave/download) — общий флаг для разделителя.
   const hasShare = track.scId != null || track.scPermalink != null
-  const hasWave = track.scId != null || track.scTrackId != null
+  const hasWave = track.scId != null || track.scTrackId != null || !!track._ym
   const hasDl = !!(track._sc || track._ym || track._ytm || track._sp)
   const hasTools = hasShare || hasWave || hasDl
 
@@ -314,7 +314,7 @@ export const TrackCtxMenu = ({
           </div>
         )}
 
-        {/* cxwave — «Волна по треку», только для SC-треков */}
+        {/* cxwave — «Волна по треку»: SC-треки (движок Bloom) и Яндекс (rotor track:<id>) */}
         {hasWave && (
           <div
             className="ci"

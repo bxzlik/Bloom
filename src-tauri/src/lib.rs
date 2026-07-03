@@ -195,6 +195,8 @@ pub fn run() {
             commands::ym_proxy_url,
             commands::ym_wave_tracks,
             commands::ym_wave_feedback,
+            commands::ym_chart,
+            commands::ym_new_releases,
             commands::ytm_search,
             commands::ytm_stream_url,
             commands::ytm_album,

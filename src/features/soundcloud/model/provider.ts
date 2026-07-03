@@ -329,6 +329,10 @@ export const scProvider: MusicProvider = {
     return { reposts, cursor: next }
   },
 
+  // SoundCloud НЕ участвует в витрине «Чарты и новинки»: api-v2 даёт только
+  // `kind=trending` (New & Hot), а этот поток подмешивает случайные/нерелевантные
+  // треки. Реальные чарты/новинки — у Яндекса и YouTube Music.
+
   async getAlbum(id): Promise<{ album: Playlist; tracks: Track[] }> {
     const { playlist, tracks } = await loadScPlaylist(id)
     return { album: playlist, tracks }

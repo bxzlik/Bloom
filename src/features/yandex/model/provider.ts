@@ -3,7 +3,7 @@ import { trackRegistry } from '@entities/track'
 import { t as i18nT } from '@shared/i18n'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
-import type { MusicProvider, SearchResults, ArtistPageData, ResolvedUrl } from '@features/providers'
+import type { MusicProvider, SearchResults, ArtistPageData, ResolvedUrl, NewReleases } from '@features/providers'
 import type { PlayableSource } from '@features/player'
 import {
   ymSearch,
@@ -12,6 +12,8 @@ import {
   ymPlaylist,
   ymPlaylistUuid,
   ymResolve,
+  ymChart,
+  ymNewReleases,
   ymStreamUrl,
   ymProxyUrl,
 } from '../api/ymClient'
@@ -167,6 +169,18 @@ export const ymProvider: MusicProvider = {
       avatar: e.cover || null,
     }
     return { artist, topTracks, tracks, albums, playlists: [] }
+  },
+
+  async getCharts(): Promise<Track[]> {
+    const tracks = (await ymChart()).map(toTrack)
+    if (tracks.length) trackRegistry.put(tracks, { temp: true })
+    prefetchStreams(tracks)
+    return tracks
+  },
+
+  async getNewReleases(): Promise<NewReleases> {
+    const albums = (await ymNewReleases()).map(toAlbum)
+    return { kind: 'albums', albums }
   },
 
   async getAlbum(id): Promise<{ album: Playlist; tracks: Track[] }> {

@@ -39,6 +39,15 @@ export type ResolvedUrl =
   | { type: 'profile'; profile: ProfileData }
 
 /**
+ * Новинки площадки для блока «Новинки» на главной. У Yandex/YTM это свежие
+ * альбомы (карточки-плейлисты), у SoundCloud — треки «New & Hot» (у SC нет
+ * глобальной ленты альбомов). Поэтому union — блок сам решает, чем рендерить.
+ */
+export type NewReleases =
+  | { kind: 'albums'; albums: Playlist[] }
+  | { kind: 'tracks'; tracks: Track[] }
+
+/**
  * Элемент ленты репостов артиста (вкладка «Репосты») — репостнутый трек ИЛИ
  * плейлист/альбом. Лента смешанная, порядок важен, поэтому это union, а не
  * раздельные массивы.
@@ -125,6 +134,19 @@ export interface MusicProvider {
     name: string,
     hint?: { scId?: number; permalink?: string | null },
   ): Promise<{ id: string; title: string; cover?: string | null } | null>
+
+  // ── Витрина «Чарты и новинки» на главной (опц.) ──────────────────────
+  /**
+   * Топ-чарт площадки — треки для блока «Чарты». Провайдер сам кладёт треки в
+   * `trackRegistry` (чтобы плеер нашёл их по id). Нет метода → площадка не
+   * участвует в блоке (как с `getArtist?`).
+   */
+  getCharts?(): Promise<Track[]>
+  /**
+   * Новинки площадки для блока «Новинки» — альбомы или треки (см. NewReleases).
+   * Провайдер регистрирует треки/хэндлы альбомов, как в поиске.
+   */
+  getNewReleases?(): Promise<NewReleases>
 
   // ── Страницы (опциональны пока; добавляются по мере готовности фич) ──
   getArtist?(id: string): Promise<ArtistPageData>

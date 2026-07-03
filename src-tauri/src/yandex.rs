@@ -601,6 +601,73 @@ pub async fn resolve(token: &str, url: &str) -> Result<YmResolved> {
     bail!("Не удалось разобрать ссылку Яндекс.Музыки")
 }
 
+// ======================= Чарты и новинки (главная) =======================
+
+/// Общий чарт Яндекс.Музыки (топ треков) для витрины на главной.
+/// `/landing3/chart` → `result.chart.tracks[]`, где каждый элемент несёт `.track`
+/// (иногда сам элемент уже трек — обрабатываем оба случая).
+pub async fn chart(token: &str) -> Result<Vec<YmTrack>> {
+    let v = api_get(token, &format!("{API}/landing3/chart"), &[]).await?;
+    let arr = v["result"]["chart"]["tracks"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    let tracks = arr
+        .iter()
+        .map(|it| if it.get("track").is_some() { &it["track"] } else { it })
+        .filter_map(parse_track)
+        .take(30)
+        .collect();
+    Ok(tracks)
+}
+
+/// Новинки (свежие альбомы) для витрины на главной. Основной путь —
+/// `landing3?blocks=new-releases` (полные альбомы в `entities[].data`). Фолбэк —
+/// `/landing3/new-releases` (id-шники) с добором через `/albums`.
+pub async fn new_releases(token: &str) -> Result<Vec<YmAlbum>> {
+    let v = api_get(token, &format!("{API}/landing3"), &[("blocks", "new-releases")]).await?;
+    let mut out: Vec<YmAlbum> = Vec::new();
+    if let Some(blocks) = v["result"]["blocks"].as_array() {
+        for b in blocks {
+            if let Some(ents) = b["entities"].as_array() {
+                for e in ents {
+                    // entity.data — полный альбом; иногда сам entity уже альбом.
+                    let data = if e["data"].is_object() { &e["data"] } else { e };
+                    if let Some(al) = parse_album(data) {
+                        out.push(al);
+                        if out.len() >= 24 {
+                            return Ok(out);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if out.is_empty() {
+        out = new_releases_by_ids(token).await.unwrap_or_default();
+    }
+    Ok(out)
+}
+
+/// Фолбэк новинок: `/landing3/new-releases` отдаёт `newReleases[]` = id альбомов,
+/// добираем полные объекты одним запросом `/albums?album-ids=...`.
+async fn new_releases_by_ids(token: &str) -> Result<Vec<YmAlbum>> {
+    let v = api_get(token, &format!("{API}/landing3/new-releases"), &[]).await?;
+    let ids: Vec<String> = v["result"]["newReleases"]
+        .as_array()
+        .map(|a| a.iter().filter_map(id_str).take(24).collect())
+        .unwrap_or_default();
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let joined = ids.join(",");
+    let av = api_get(token, &format!("{API}/albums"), &[("album-ids", joined.as_str())]).await?;
+    Ok(av["result"]
+        .as_array()
+        .map(|a| a.iter().filter_map(parse_album).collect())
+        .unwrap_or_default())
+}
+
 // ============================ Моя волна (rotor) ============================
 
 #[derive(Serialize)]
@@ -609,18 +676,22 @@ pub struct YmWave {
     pub batch_id: String,
 }
 
-const WAVE_STATION: &str = "user:onyourwave";
+/// Станция «Моей волны» по умолчанию. Rotor принимает и другие сиды в том же
+/// формате: `track:<id>` (волна по треку), `artist:<id>`, `genre:<tag>` и т.д.
+pub const WAVE_STATION: &str = "user:onyourwave";
 
-/// Очередной батч «Моей волны». `last_id` — id последнего сыгранного трека
-/// (для продолжения цепочки); пусто = старт станции.
-pub async fn wave_tracks(token: &str, last_id: &str) -> Result<YmWave> {
+/// Очередной батч rotor-станции. `station` — сид (`user:onyourwave`,
+/// `track:<id>`, …); `last_id` — id последнего сыгранного трека (для продолжения
+/// цепочки), пусто = старт станции.
+pub async fn wave_tracks(token: &str, station: &str, last_id: &str) -> Result<YmWave> {
+    let station = if station.is_empty() { WAVE_STATION } else { station };
     let mut q: Vec<(&str, &str)> = vec![("settings2", "true")];
     if !last_id.is_empty() {
         q.push(("queue", last_id));
     }
     let v = api_get(
         token,
-        &format!("{API}/rotor/station/{WAVE_STATION}/tracks"),
+        &format!("{API}/rotor/station/{station}/tracks"),
         &q,
     )
     .await?;
@@ -649,11 +720,13 @@ pub async fn wave_tracks(token: &str, last_id: &str) -> Result<YmWave> {
 /// «Мою волну» в аккаунте. Best-effort: ошибки не критичны.
 pub async fn wave_feedback(
     token: &str,
+    station: &str,
     event: &str,
     track_id: &str,
     batch_id: &str,
     played: f64,
 ) -> Result<()> {
+    let station = if station.is_empty() { WAVE_STATION } else { station };
     let now = chrono::Utc::now().to_rfc3339();
     let mut body = serde_json::json!({
         "type": event,
@@ -667,7 +740,7 @@ pub async fn wave_feedback(
         body["totalPlayedSeconds"] =
             serde_json::Value::from((played * 10.0).round() / 10.0);
     }
-    let mut url = format!("{API}/rotor/station/{WAVE_STATION}/feedback");
+    let mut url = format!("{API}/rotor/station/{station}/feedback");
     if !batch_id.is_empty() {
         url.push_str(&format!("?batch-id={batch_id}"));
     }
