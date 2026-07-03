@@ -138,6 +138,27 @@ export const App = () => {
       })
     })
   })
+  // Авто-скрытие очереди у минимальной ширины окна (минимум = 900 логич.px,
+  // tauri.conf minWidth). Считаем в ЛОГИЧЕСКИХ px: webview-зум (setwinzoom →
+  // set_zoom) масштабирует CSS-px, поэтому window.innerWidth плавает вместе с
+  // зумом, и порог в чистом CSS был бы ненадёжным. logicalW = innerWidth * zoom.
+  // Ставим body.win-narrow → CSS в queue.css прячет боковую/grid-очередь.
+  // Императивно (classList), без ре-рендера. Порог 915 — узкая полоса у минимума.
+  useEffect(() => {
+    const apply = () => {
+      const zoom = (useUiPrefsStore.getState().winZoom || 100) / 100
+      const logicalW = window.innerWidth * zoom
+      document.body.classList.toggle('win-narrow', logicalW <= 905)
+    }
+    apply()
+    window.addEventListener('resize', apply)
+    const un = useUiPrefsStore.subscribe(apply)
+    return () => {
+      window.removeEventListener('resize', apply)
+      un()
+    }
+  }, [])
+
   // Регистрируем провайдеры: встроенный локальный + SoundCloud (поиск + стрим).
   useEffect(() => {
     bootstrapProviders()

@@ -74,6 +74,12 @@ export async function startByTrack(ymTrackId: string): Promise<boolean> {
   return startStation(`track:${ymTrackId}`, i18nT("wave.label.track"));
 }
 
+/** Волна по Яндекс-артисту (rotor `artist:<id>`). */
+export async function startByArtist(ymArtistId: string): Promise<boolean> {
+  if (!ymArtistId) return false;
+  return startStation(`artist:${ymArtistId}`, i18nT("wave.label.artist"));
+}
+
 /**
  * Общий старт rotor-станции. `station` — сид (`user:onyourwave`/`track:<id>`),
  * `label` — подпись источника в плеере. Возвращает true, если волна пошла.

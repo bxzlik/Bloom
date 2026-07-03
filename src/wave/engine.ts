@@ -43,6 +43,7 @@ export function waveLabel(mode: WaveMode): string {
     case "personal": return i18nT("wave.title");
     case "queue":    return i18nT("wave.label.queue");
     case "track":    return i18nT("wave.label.track");
+    case "artist":   return i18nT("wave.label.artist");
   }
 }
 

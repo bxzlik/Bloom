@@ -4,7 +4,7 @@ import { host } from "./host";
 import { t as i18nT } from "@shared/i18n";
 import * as session from "./session";
 import { startWave, maybeRefill, WAVE_SOURCE_TYPE, waveLabel, prefetchUpcoming } from "./engine";
-import { pickPersonalSeeds, pickTrackSeeds, pickQueueSeeds } from "./seeds";
+import { pickPersonalSeeds, pickTrackSeeds, pickQueueSeeds, scIdOf } from "./seeds";
 import { dispatch, onPlayStart } from "./feedback";
 import { resetWaveSourceCache } from "./sources";
 import * as ymWave from "./yandex";
@@ -72,6 +72,31 @@ async function waveStartByQueue(trackIds?: string[]): Promise<boolean> {
     return false;
   }
   const ok = await startWave("queue", seeds);
+  if (!ok) host.toast(i18nT("wave.toast.noSimilar"), "error");
+  return ok;
+}
+
+// «Волна по артисту». Яндекс-артист → нативный rotor `artist:<id>`; SoundCloud
+// (и прочие площадки с SC-треками) → SC-движок, где сидами служат треки артиста.
+// `ymArtistId` — сырой числовой id (без префикса `ym_`); `seedTrackIds` — id уже
+// зарегистрированных треков артиста (популярные + все), из которых pickQueueSeeds
+// адаптивно выберет 8–10.
+async function waveStartByArtist(opts: {
+  ymArtistId?: string | null;
+  seedTrackIds?: string[];
+}): Promise<boolean> {
+  // Яндекс: нативная станция артиста (rotor), SC-движок не задействуем.
+  if (opts.ymArtistId) {
+    if (session.isActive()) session.endSession();
+    return ymWave.startByArtist(opts.ymArtistId);
+  }
+  // SoundCloud: сиды из треков артиста, у которых есть scId.
+  resetWaveSourceCache();
+  const pool = (opts.seedTrackIds ?? []).filter(id => scIdOf(host.trackById(id)));
+  if (!pool.length) { host.toast(i18nT("wave.toast.artistNoSeeds"), "warn"); return false; }
+  const seeds = pickQueueSeeds(pool);
+  if (!seeds.length) { host.toast(i18nT("wave.toast.artistNoSeeds"), "warn"); return false; }
+  const ok = await startWave("artist", seeds);
   if (!ok) host.toast(i18nT("wave.toast.noSimilar"), "error");
   return ok;
 }
@@ -212,6 +237,7 @@ interface WaveApi {
   startPersonal: typeof waveStartPersonal;
   startByTrack: typeof waveStartByTrack;
   startByQueue: typeof waveStartByQueue;
+  startByArtist: typeof waveStartByArtist;
   stop: typeof waveStop;
   endSession: typeof waveEndSession;
   feedback: typeof waveFeedback;
@@ -226,6 +252,7 @@ const api: WaveApi = {
   startPersonal: waveStartPersonal,
   startByTrack: waveStartByTrack,
   startByQueue: waveStartByQueue,
+  startByArtist: waveStartByArtist,
   stop: waveStop,
   endSession: waveEndSession,
   feedback: waveFeedback,

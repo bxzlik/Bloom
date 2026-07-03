@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react'
@@ -24,6 +25,8 @@ import {
   type ImportTarget,
 } from '@features/library'
 import { useNavStore } from '@app/navigationStore'
+import waveApi from '@/wave'
+import { extractMpBgColor } from '@features/settings'
 import { toast, useShareStore } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
@@ -383,6 +386,29 @@ export const DetailView = () => {
     }
   }, [loaded])
 
+  // Нейтральная заливка шапки: приглушённый тёмный доминант аватарки/обложки
+  // (extractMpBgColor — та же логика, что у фона мини-плеера). Считаем ДО
+  // early-return, поэтому кавер берём из target/loaded здесь же. Прячем градиентом
+  // в фон страницы (см. .sp-am-bg). null при CORS/ошибке — CSS-фолбэк.
+  const tintCover =
+    loaded?.kind === 'artist'
+      ? loaded.data.artist.avatar ?? target?.cover ?? null
+      : loaded
+        ? loaded.playlist.cover ?? target?.cover ?? null
+        : target?.cover ?? null
+  const [heroTint, setHeroTint] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    setHeroTint(null)
+    if (!tintCover) return
+    void extractMpBgColor(tintCover).then((hex) => {
+      if (!cancelled) setHeroTint(hex)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tintCover])
+
   if (!target) return null
 
   // ── Источник очереди для плеера ──
@@ -406,12 +432,12 @@ export const DetailView = () => {
   // ── Hero данные (мгновенно из target, обогащаются из loaded) ──
   const isArtist = target.kind === 'artist'
   const square = !isArtist
-  const label = isArtist ? t('search.detail.artist') : target.kind === 'album' ? t('search.detail.album') : t('search.detail.playlist')
 
   let heroName = target.title
   let heroCover = target.cover ?? null
-  let heroBanner: string | null = null
   let heroDesc = ''
+  // Владелец плейлиста/альбома — отдельной строкой между именем и статами.
+  let heroOwner: ReactNode = null
   let subNode: ReactNode = target.subtitle ?? null
   let mainTracks: Track[] = []
 
@@ -419,7 +445,6 @@ export const DetailView = () => {
     const { artist, tracks } = loaded.data
     heroName = artist.name
     heroCover = artist.avatar ?? heroCover
-    heroBanner = artist.bannerUrl ?? null
     heroDesc = artist.description ?? ''
     mainTracks = tracks
     const secs = totalSec(tracks)
@@ -427,27 +452,42 @@ export const DetailView = () => {
       <>
         {!!artist.followers && (
           <span className="sp-am-stat">
-            <Ico name="user" width={12} height={12} />
+            <Ico name="user" width={13} height={13} />
             {fmtNum(artist.followers)}
           </span>
         )}
         <span className="sp-am-stat">
-          <Ico name="note" width={12} height={12} />
-          {tracks.length} треков{secs ? ' · ' + fmtDurLong(secs) : ''}
+          <Ico name="note" width={13} height={13} />
+          {tracksLabel(tracks.length)}
         </span>
+        {!!secs && (
+          <span className="sp-am-stat">
+            <Ico name="clock" width={13} height={13} />
+            {fmtDurLong(secs)}
+          </span>
+        )}
       </>
     )
   } else if (loaded) {
     const { playlist, tracks } = loaded
     heroName = playlist.title
     heroCover = playlist.cover ?? heroCover
+    heroOwner = playlist.ownerName || null
     mainTracks = tracks
     const secs = totalSec(tracks)
     subNode = (
-      <span className="sp-am-stat">
-        {(playlist.ownerName ? playlist.ownerName + ' · ' : '') + tracksLabel(tracks.length)}
-        {secs ? ' · ' + fmtDurLong(secs) : ''}
-      </span>
+      <>
+        <span className="sp-am-stat">
+          <Ico name="note" width={13} height={13} />
+          {tracksLabel(tracks.length)}
+        </span>
+        {!!secs && (
+          <span className="sp-am-stat">
+            <Ico name="clock" width={13} height={13} />
+            {fmtDurLong(secs)}
+          </span>
+        )}
+      </>
     )
   }
 
@@ -536,6 +576,17 @@ export const DetailView = () => {
   // Артист loaded — для follow-кнопки (id/permalink/avatar).
   const loadedArtist = loaded?.kind === 'artist' ? loaded.data.artist : null
 
+  // «Волна по артисту» (только на странице артиста SC/YM). Яндекс-артист
+  // (`ym_artist_<id>`) уходит в нативный rotor `artist:<id>`, SoundCloud (`sc_<id>`)
+  // — в SC-движок по трекам артиста как сидам.
+  const canWave = isArtist && (target.id.startsWith('sc_') || target.id.startsWith('ym_artist_'))
+  const onArtistWave = () => {
+    const ymArtistId = target.id.startsWith('ym_artist_') ? target.id.slice('ym_artist_'.length) : null
+    const seedTrackIds =
+      loaded?.kind === 'artist' ? [...loaded.data.topTracks, ...artistTracks].map((tr) => tr.id) : []
+    void waveApi.startByArtist({ ymArtistId, seedTrackIds })
+  }
+
   const onShare = () => {
     if (isArtist) {
       openShare({
@@ -557,9 +608,6 @@ export const DetailView = () => {
     }
   }
 
-  // Фон hero: баннер артиста (если есть) ИЛИ обложка/аватарка.
-  const heroBg = heroBanner ?? heroCover
-
   return (
     <div
       className="sp-detail-view sp-dv-body-in"
@@ -574,66 +622,79 @@ export const DetailView = () => {
         padding: '12px 12px 12px',
       }}
     >
-      <div className="sp-dv-hero">
-        {/* Фон hero = баннер артиста (если есть) ИЛИ обложка/аватарка,
-            с тёмным градиентом сверху. spDvBg = avatarUrl. */}
-        <div
-          className="sp-am-bg"
-          style={heroBg ? { backgroundImage: `url(${heroBg})` } : undefined}
-        />
-        <div className="sp-am-hero-grad" />
+      <div
+        className="sp-dv-hero"
+        style={heroTint ? ({ ['--hero-tint' as string]: heroTint } as CSSProperties) : undefined}
+      >
+        {/* Фон hero — нейтральный тёмный цвет, вытянутый из аватарки/обложки
+            (--hero-tint), плавно растворяется в фон страницы (не floating). */}
+        <div className="sp-am-bg" />
         <div className="sp-am-hero-content">
+          {/* «Назад» — стрелка + название страницы, слева сверху. */}
+          <button
+            className="sp-am-back"
+            onClick={stack.length > 1 ? back : close}
+            aria-label={t('common.back')}
+          >
+            <Ico name="arrowLeftStraight" width={20} height={20} />
+            <span>{heroName}</span>
+          </button>
           <div className="sp-am-hero-info">
             <div className={`sp-am-avatar${square ? ' square' : ''}`}>
               <Cover src={heroCover} placeholder={square ? <PhAlbum /> : <PhTrack />} />
             </div>
+            {/* Правая колонка: имя → статы → теги/описание → кнопки. */}
             <div className="sp-am-meta">
-              <div className="sp-am-label">{label}</div>
               <div className="sp-am-name">{heroName}</div>
+              {heroOwner && <div className="sp-am-owner">{heroOwner}</div>}
               <div className="sp-am-sub">{subNode}</div>
               {heroDesc && <div className="sp-am-hero-desc">{heroDesc}</div>}
+              {loaded && (
+                <div className="sp-am-actions">
+                  <button className="sp-am-play-btn" onClick={onPlayAll}>
+                    <Ico name="play" variant="bold" width={14} height={14} />
+                    {t('search.playAll')}
+                  </button>
+                  {/* Группа вторичных действий (слева) + share (справа) в одном
+                      ряду со space-between — share всегда прижат вправо, в т.ч.
+                      когда ряд переносится под «Воспроизвести всё». */}
+                  <div className="sp-am-actions-rest">
+                    <div className="sp-am-btn-group">
+                      {isArtist && loadedArtist && (
+                        <FollowBtn
+                          id={target.id}
+                          name={heroName}
+                          avatar={heroCover}
+                          permalink={loadedArtist.permalink ?? null}
+                        />
+                      )}
+                      <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
+                        <Ico name="shuffle" width={15} height={15} />
+                      </button>
+                      <button
+                        ref={importAnchorRef}
+                        className="sp-am-icon-btn"
+                        onClick={() => setImportOpen((v) => !v)}
+                        aria-label={t('search.import')}
+                      >
+                        <Ico name="import" width={14} height={14} />
+                      </button>
+                    </div>
+                    {/* Share (+ «волна по артисту») — отдельной капсулой у правого края. */}
+                    <div className="sp-am-btn-group">
+                      <button className="sp-am-icon-btn" onClick={onShare} aria-label={t('lib.ctx.share')}>
+                        <Ico name="share" width={14} height={14} />
+                      </button>
+                      {canWave && (
+                        <button className="sp-am-icon-btn" onClick={onArtistWave} aria-label={t('wave.label.artist')}>
+                          <Ico name="wave" variant="bold" width={15} height={15} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="sp-am-actions" style={{ display: 'flex' }}>
-            {loaded && (
-              <>
-                <button className="sp-am-play-btn" onClick={onPlayAll}>
-                  <Ico name="play" variant="bold" width={14} height={14} />
-                  {t('search.playAll')}
-                </button>
-                {/* Follow — сразу после «Воспроизвести всё». */}
-                {isArtist && loadedArtist && (
-                  <FollowBtn
-                    id={target.id}
-                    name={heroName}
-                    avatar={heroCover}
-                    permalink={loadedArtist.permalink ?? null}
-                  />
-                )}
-                <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
-                  <Ico name="shuffle" width={15} height={15} />
-                </button>
-                <button
-                  ref={importAnchorRef}
-                  className="sp-am-icon-btn"
-                  onClick={() => setImportOpen((v) => !v)}
-                  aria-label={t('search.import')}
-                >
-                  <Ico name="import" width={14} height={14} />
-                </button>
-                <button className="sp-am-icon-btn" onClick={onShare} aria-label={t('lib.ctx.share')}>
-                  <Ico name="share" width={14} height={14} />
-                </button>
-              </>
-            )}
-            {/* «Назад» — в том же ряду, прижата вправо (.sp-am-back-btn). */}
-            <button
-              className="sp-am-icon-btn sp-am-back-btn"
-              onClick={stack.length > 1 ? back : close}
-              aria-label={t('common.back')}
-            >
-              <Ico name="arrowLeft" width={15} height={15} />
-            </button>
           </div>
         </div>
       </div>

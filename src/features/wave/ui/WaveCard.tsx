@@ -263,74 +263,53 @@ export const WaveCard = () => {
               }}
             >
               {ymAuthed && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: '.04em',
-                      textTransform: 'uppercase',
-                      color: 'var(--text2)',
-                      padding: '0 2px',
-                    }}
-                  >
-                    {t('wave.sourceLabel')}
-                  </div>
-                  {/* Простой выбор: сегменты, а не вложенный дропдаун. */}
-                  <div
-                    role="radiogroup"
-                    aria-label={t('wave.pickSource')}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 4,
-                      padding: 3,
-                      background: 'rgba(255,255,255,.05)',
-                      borderRadius: 'calc(var(--radius)*.6)',
-                    }}
-                  >
-                    {(['sc', 'ym'] as const).map((s) => (
-                      <button
-                        key={s}
-                        role="radio"
-                        aria-checked={effSource === s}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          pickSource(s)
-                        }}
+                <div
+                  role="radiogroup"
+                  aria-label={t('wave.pickSource')}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 4,
+                    padding: 3,
+                    background: 'rgba(255,255,255,.05)',
+                    borderRadius: 'calc(var(--radius)*.6)',
+                  }}
+                >
+                  {(['sc', 'ym'] as const).map((s) => (
+                    <button
+                      key={s}
+                      role="radio"
+                      aria-checked={effSource === s}
+                      aria-label={s === 'sc' ? 'SoundCloud' : t('settings.nav.yandex')}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        pickSource(s)
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: 'none',
+                        // Лёгкое серое выделение вместо акцентного цвета.
+                        background: effSource === s ? 'rgba(255,255,255,.12)' : 'none',
+                        color: 'var(--text)',
+                        padding: '9px 8px',
+                        borderRadius: 'calc(var(--radius)*.45)',
+                        cursor: 'pointer',
+                        transition: '.15s',
+                      }}
+                    >
+                      {/* Бейдж — только лого, без подписи. */}
+                      <span
                         style={{
                           display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 7,
-                          border: 'none',
-                          background: effSource === s ? 'var(--accent)' : 'none',
-                          // Текст: на акцентном фоне контрастный --accent-text, иначе --text.
-                          // (Иконка красится отдельно — см. span ниже.)
-                          color: effSource === s ? 'var(--accent-text, #fff)' : 'var(--text)',
-                          padding: '8px 8px',
-                          borderRadius: 'calc(var(--radius)*.45)',
-                          cursor: 'pointer',
-                          transition: '.15s',
-                          fontFamily: 'var(--font)',
-                          fontSize: 13,
-                          fontWeight: 600,
+                          color: brand ? providerBrandColor(s === 'sc' ? 'soundcloud' : 'yandex') : undefined,
                         }}
                       >
-                        {/* Иконка в бренд-цвете (если включён) — даже на активном
-                            пункте, чтобы не темнела от --accent-text. */}
-                        <span
-                          style={{
-                            display: 'flex',
-                            color: brand ? providerBrandColor(s === 'sc' ? 'soundcloud' : 'yandex') : undefined,
-                          }}
-                        >
-                          {s === 'sc' ? <ScLogo size={15} /> : <YmLogo size={14} />}
-                        </span>
-                        <span>{s === 'sc' ? 'SoundCloud' : t('settings.nav.yandex')}</span>
-                      </button>
-                    ))}
-                  </div>
+                        {s === 'sc' ? <ScLogo size={17} /> : <YmLogo size={16} />}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               )}
               <button

@@ -86,30 +86,65 @@
 #spDetailView.dv-opening{animation:spDvIn .2s ease both}
 #spDetailView.dv-closing{animation:spDvOut .15s ease both}
 .sp-dv-body-in{animation:spDvBodyIn .22s ease-out both}
-.sp-dv-hero{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid rgba(255,255,255,var(--wb,0.06))}
+/* Шапка не floating: full-bleed (гасим паддинг оверлея −12px), скруглены только
+   верхние углы под контейнер, без рамки/фото. Фон — нейтральный цвет из
+   аватарки/обложки (--hero-tint), растворяющийся в фон страницы. */
+.sp-dv-hero{position:relative;overflow:hidden;margin:-12px -12px 0;border-radius:var(--radius) var(--radius) 0 0}
 .search-page.sp-dv-open .sp-header{display:none}
 .sp-am-hero{position:relative;flex-shrink:0;overflow:hidden}
-.sp-am-bg{position:absolute;inset:0;background-size:cover;background-position:center top}
-.sp-am-hero-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.45) 0%,rgba(0,0,0,.55) 45%,rgba(0,0,0,.85) 100%)}
+/* Сплошная заливка цветом + маска альфы с мягким «хвостом»: затухание идёт
+   плавно до нуля (нет излома/видимой кромки, как у линейного →transparent), и
+   работает поверх фона страницы И стекла. */
+.sp-am-bg{position:absolute;inset:0;background:var(--hero-tint,rgba(255,255,255,.05));-webkit-mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.94) 12%,rgba(0,0,0,.8) 26%,rgba(0,0,0,.6) 40%,rgba(0,0,0,.4) 54%,rgba(0,0,0,.24) 66%,rgba(0,0,0,.12) 78%,rgba(0,0,0,.04) 88%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.94) 12%,rgba(0,0,0,.8) 26%,rgba(0,0,0,.6) 40%,rgba(0,0,0,.4) 54%,rgba(0,0,0,.24) 66%,rgba(0,0,0,.12) 78%,rgba(0,0,0,.04) 88%,transparent 100%)}
 .sp-am-close{position:absolute;top:14px;right:14px;z-index:3;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .sp-am-close:hover{background:rgba(0,0,0,.8);color:#fff}
-.sp-am-hero-content{position:relative;z-index:2;padding:32px 32px 24px;display:flex;flex-direction:column;gap:24px}
-.sp-am-hero-info{display:flex;align-items:center;gap:24px}
-.sp-am-avatar{width:130px;height:130px;border-radius:50%;background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.sp-am-avatar.square{border-radius:calc(var(--radius)*.7)}
+.sp-am-hero-content{position:relative;z-index:2;padding:26px 32px 30px;display:flex;flex-direction:column;gap:16px}
+/* «Назад»: стрелка + название страницы. Отступы сверху/слева выровнены, чтобы
+   кнопка стояла ровно от верхне-левого угла. */
+.sp-am-back{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;max-width:100%;padding:6px 12px 6px 6px;margin:-12px 0 2px -14px;background:transparent;border:none;border-radius:calc(var(--radius)*.7);color:rgba(255,255,255,.76);font-family:var(--font);font-size:15.5px;font-weight:700;cursor:pointer;transition:color .15s,background .15s}
+.sp-am-back:hover{color:rgba(255,255,255,.95);background:rgba(255,255,255,.06)}
+.sp-am-back span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-am-hero-info{display:flex;align-items:center;gap:26px}
+.sp-am-avatar{width:220px;height:220px;border-radius:50%;background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 34px rgba(0,0,0,.45)}
+.sp-am-avatar.square{border-radius:calc(var(--radius)*1.4)}
 .sp-am-avatar img{width:100%;height:100%;object-fit:cover}
 .sp-am-meta{flex:1;min-width:0}
-.sp-am-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:rgba(255,255,255,.7);margin-bottom:6px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
-.sp-am-name{font-size:30px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:10px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
-.sp-am-sub{display:flex;align-items:center;gap:16px;font-size:12px;color:rgba(255,255,255,.78);flex-wrap:wrap;margin-bottom:8px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.sp-am-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--text2);margin-bottom:8px}
+.sp-am-name{font-size:34px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:12px;color:var(--text)}
+/* Владелец плейлиста/альбома — отдельной строкой под именем. */
+.sp-am-owner{font-size:15px;font-weight:600;color:rgba(255,255,255,.6);margin:-4px 0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-am-sub{display:flex;align-items:center;gap:16px;font-size:13px;font-weight:600;color:rgba(255,255,255,.6);flex-wrap:wrap;margin-bottom:8px}
 .sp-am-stat{display:flex;align-items:center;gap:5px}
-.sp-am-hero-desc{font-size:12px;color:rgba(255,255,255,.66);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:500px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
-.sp-am-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.sp-am-hero-desc{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.7);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:500px}
+/* Ряд кнопок — в правой колонке под именем/статами. */
+.sp-am-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px}
+/* Группа+share занимают остаток строки; space-between держит share у правого
+   края (и когда ряд переносится под «Воспроизвести всё» — тоже). */
+.sp-am-actions-rest{flex:1;min-width:220px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+/* Иконочные кнопки сгруппированы в капсулы с тонкой рамкой (как в референсе). */
+.sp-am-btn-group{display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;border:1px solid rgba(255,255,255,var(--wb,.1));background:rgba(255,255,255,.03)}
+.sp-am-btn-group .sp-am-icon-btn,.sp-am-btn-group .sp-follow-btn{border-radius:50%}
 .sp-am-play-btn{display:flex;align-items:center;gap:8px;padding:11px 26px;border-radius:var(--radius);background:#fff;color:#111;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:.15s;font-family:var(--font);flex-shrink:0}
 .sp-am-play-btn:hover{background:#e0e0e0}
-.sp-am-icon-btn{width:38px;height:38px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.38);color:rgba(255,255,255,.92);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0;backdrop-filter:blur(8px)}
-.sp-am-icon-btn:hover{border-color:rgba(255,255,255,.3);color:#fff;background:rgba(0,0,0,.6)}
-.sp-am-back-btn{margin-left:auto}
+/* Иконочные кнопки — минималистичные (без рамок/подложки), заливка на hover. */
+.sp-am-icon-btn{width:36px;height:36px;border-radius:var(--radius);border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+.sp-am-icon-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+/* Адаптив шапки под ширину самого оверлея (container query — реагирует на реальную
+   ширину контента, а не окна, поэтому учитывает и раскрытый сайдбар). При узком —
+   меньше аватар/имя и share не отрывается вправо на отдельную строку. */
+.sp-detail-view{container-type:inline-size}
+@container (max-width:840px){
+  .sp-am-hero-content{padding:20px 22px 24px}
+  .sp-am-hero-info{gap:20px}
+  .sp-am-avatar{width:150px;height:150px}
+  .sp-am-name{font-size:26px;margin-bottom:10px}
+  .sp-am-actions{gap:10px;margin-top:18px}
+}
+@container (max-width:600px){
+  .sp-am-hero-info{gap:16px}
+  .sp-am-avatar{width:118px;height:118px}
+  .sp-am-name{font-size:22px}
+}
 .sp-am-body{padding:16px 0 24px;scrollbar-width:none}
 .sp-am-body::-webkit-scrollbar{display:none}
 .sp-am-body .sc-track{border:1px solid rgba(255,255,255,var(--wb));margin-bottom:3px}

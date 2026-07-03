@@ -1,4 +1,24 @@
 {
+  "1.4.2": {
+    "title": { "ru": "Что нового в 1.4.2", "en": "What's new in 1.4.2" },
+    "date": "2026-07-03",
+    "pages": [
+      {
+        "title": { "ru": "Страницы", "en": "Pages" },
+        "body": {
+          "ru": "- Обновлены страницы артистов, плейлистов и альбомов\n- Добавлена волна по артистам",
+          "en": "- Redesigned artist, playlist and album pages\n- Added a wave based on an artist"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
   "1.4.1": {
     "title": { "ru": "Что нового в 1.4.1", "en": "What's new in 1.4.1" },
     "date": "2026-07-03",

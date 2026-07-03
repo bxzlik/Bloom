@@ -13,6 +13,25 @@
 #playerContent.queue-hidden #playerMainBlock .ps-cover{flex:0 0 42%;width:42%!important;height:auto!important;aspect-ratio:1/1!important;max-width:42%!important;max-height:100%;align-self:center}
 #playerContent.queue-hidden #playerMainBlock .ps-cover.vinyl-mode{flex:0 0 42%;width:42%!important;max-width:42%!important}
 #playerContent.queue-hidden #playerMainBlock .ps-right{flex:1;min-width:0}
+/* ── Узкий экран: авто-скрытие очереди ────────────────────────────────────
+   Когда окно у минимальной ширины, боковая очередь (queue-right/left) и
+   grid-стили (large/cinema) съедают горизонтальное место → прячем очередь,
+   плеер занимает всю ширину («только экран управления»). Работает независимо
+   от ручной настройки «скрыть очередь».
+   Класс body.win-narrow ставит JS (App.tsx) по ЛОГИЧЕСКОЙ ширине окна — не
+   через CSS-порог, т.к. webview-зум масштабирует CSS-px и делал бы порог
+   ненадёжным (см. коммент в App.tsx). */
+body.win-narrow #playerContent.queue-right #playerQueueBlock,
+body.win-narrow #playerContent.queue-right #lyricsQueueBlock,
+body.win-narrow #playerContent.queue-left #playerQueueBlock,
+body.win-narrow #playerContent.queue-left #lyricsQueueBlock,
+body.win-narrow #playerContent.style-large #playerQueueBlock,
+body.win-narrow #playerContent.style-large #lyricsQueueBlock,
+body.win-narrow #playerContent.style-cinema #playerQueueBlock,
+body.win-narrow #playerContent.style-cinema #lyricsQueueBlock{display:none!important}
+/* Grid-стили: обложка растягивается на обе колонки, раз очереди нет. */
+body.win-narrow #playerContent.style-large>.sl-cover-wrap,
+body.win-narrow #playerContent.style-cinema>.sl-cover-wrap{grid-column:1/-1!important}
 /* Queue position: side layout */
 #playerContent.queue-right{flex-direction:row!important}
 #playerContent.queue-left{flex-direction:row-reverse!important}
@@ -138,6 +157,6 @@
 .lai-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--sni-hover);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;overflow:hidden;color:var(--text2)}
 .lai-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .lai-name{font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sp-follow-btn{width:38px;height:38px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.38);color:rgba(255,255,255,.92);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0;backdrop-filter:blur(8px)}
-.sp-follow-btn:hover{border-color:rgba(255,255,255,.3);color:#fff;background:rgba(0,0,0,.6)}
-.sp-follow-btn.followed{border-color:rgba(var(--accent-rgb),.7);color:var(--accent);background:rgba(var(--accent-rgb),.2)}
+.sp-follow-btn{width:36px;height:36px;border-radius:var(--radius);border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+.sp-follow-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.sp-follow-btn.followed{color:var(--accent);background:rgba(var(--accent-rgb),.16)}

@@ -59,6 +59,7 @@ import RefreshLinear from '~icons/solar/refresh-linear'
 import PowerLinear from '~icons/solar/power-linear'
 import PowerBold from '~icons/solar/power-bold'
 import ArrowLeftLinear from '~icons/solar/alt-arrow-left-linear'
+import ArrowLeftStraightLinear from '~icons/solar/arrow-left-linear'
 import ArrowRightLinear from '~icons/solar/alt-arrow-right-linear'
 import ArrowDownLinear from '~icons/solar/alt-arrow-down-linear'
 import ArrowUpLinear from '~icons/solar/alt-arrow-up-linear'
@@ -194,6 +195,7 @@ const ICONS = {
   power: { linear: PowerLinear, bold: PowerBold },
   check: { linear: CheckBare },
   arrowLeft: { linear: ArrowLeftLinear },
+  arrowLeftStraight: { linear: ArrowLeftStraightLinear },
   arrowRight: { linear: ArrowRightLinear },
   arrowDown: { linear: ArrowDownLinear },
   arrowUp: { linear: ArrowUpLinear },

@@ -1189,6 +1189,8 @@ export const ru = {
   'wave.toast.ymEmpty': 'Волна Яндекса пуста',
   'wave.label.queue': 'Похожие на очередь',
   'wave.label.track': 'Волна по треку',
+  'wave.label.artist': 'Волна по артисту',
+  'wave.toast.artistNoSeeds': 'Нет треков этого артиста для волны',
   'wave.toast.noSimilar': 'SoundCloud не вернул похожих треков',
   'wave.toast.refilling': 'Дизлайк: догружаю похожие…',
 
@@ -2442,6 +2444,8 @@ export const en: Record<TranslationKey, string> = {
   'wave.toast.ymEmpty': 'Yandex wave is empty',
   'wave.label.queue': 'Similar to queue',
   'wave.label.track': 'Wave by track',
+  'wave.label.artist': 'Artist wave',
+  'wave.toast.artistNoSeeds': 'No tracks by this artist to start a wave',
   'wave.toast.noSimilar': 'SoundCloud returned no similar tracks',
   'wave.toast.refilling': 'Dislike: loading more similar…',
 

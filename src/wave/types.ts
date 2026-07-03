@@ -7,7 +7,8 @@ export type { Track };
 // "track"    — волна по одному треку (1 сид)
 // "personal" — «Моя волна» (несколько сидов из библиотеки + подмешивание знакомых)
 // "queue"    — «Похожие на очередь» (сиды из текущей очереди, без подмешивания библиотеки)
-export type WaveMode = "track" | "personal" | "queue";
+// "artist"   — «Волна по артисту» (сиды из треков артиста; SC-движок, без подмешивания)
+export type WaveMode = "track" | "personal" | "queue" | "artist";
 
 // «Сырой» трек из SC API v2 — то, что приходит в /stations и /related.
 export interface ScRawTrack {
