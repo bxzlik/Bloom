@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useThemeSettings, useTrackRowMarquee, useTauriEvent } from '@shared/hooks'
-import { initLocaleAttr } from '@shared/i18n'
+import { initLocaleAttr, t as tFn } from '@shared/i18n'
 import { TitleBar } from './TitleBar'
 import { Sidebar } from './Sidebar'
 import { HomePage } from './pages/HomePage'
-import { GlobalToast, ShareCardModal } from '@shared/ui'
+import { GlobalToast, ShareCardModal, toast } from '@shared/ui'
 import { useNavStore } from './navigationStore'
 import { useGlobalHotkeys } from './useGlobalHotkeys'
 import { useFullscreenHotkey } from './useFullscreenHotkey'
@@ -22,7 +22,7 @@ import { bootstrapSoundcloud } from '@features/soundcloud'
 import { bootstrapYandex } from '@features/yandex'
 import { bootstrapYtmusic } from '@features/ytmusic'
 import { bootstrapSpotify } from '@features/spotify'
-import { AccountPage } from '@features/profile'
+import { AccountPage, useAchievementsWatcher } from '@features/profile'
 import { useMediaLibBootstrap, useCustomizationBootstrap } from '@features/customization'
 import { QuickWheel } from '@features/quick-wheel'
 import { Onboarding } from '@features/onboarding'
@@ -99,6 +99,7 @@ export const App = () => {
   useAudioEffects()
   useTrackRowMarquee()
   useUpdateBootstrap()
+  useAchievementsWatcher()
 
   // Клик по артисту в miniplayer/tray → Rust `tray_open_artist` показывает главное
   // окно и шлёт `bloom-open-artist`. Открываем страницу артиста — с веткой
@@ -138,17 +139,20 @@ export const App = () => {
       })
     })
   })
-  // Авто-скрытие очереди у минимальной ширины окна (минимум = 900 логич.px,
-  // tauri.conf minWidth). Считаем в ЛОГИЧЕСКИХ px: webview-зум (setwinzoom →
-  // set_zoom) масштабирует CSS-px, поэтому window.innerWidth плавает вместе с
-  // зумом, и порог в чистом CSS был бы ненадёжным. logicalW = innerWidth * zoom.
-  // Ставим body.win-narrow → CSS в queue.css прячет боковую/grid-очередь.
-  // Императивно (classList), без ре-рендера. Порог 915 — узкая полоса у минимума.
+  // Авто-скрытие очереди у минимума окна (минимум = 900×600 логич.px, tauri.conf
+  // minWidth/minHeight). Считаем в ЛОГИЧЕСКИХ px: webview-зум (setwinzoom →
+  // set_zoom) масштабирует CSS-px, поэтому window.inner* плавают вместе с зумом,
+  // и порог в чистом CSS был бы ненадёжным. logical = inner * zoom.
+  //   • win-narrow (по ШИРИНЕ) → прячет боковую/grid-очередь (queue.css);
+  //   • win-short  (по ВЫСОТЕ) → прячет нижнюю/вертикальную очередь.
+  // Императивно (classList), без ре-рендера. Пороги — узкая полоса у минимума.
   useEffect(() => {
     const apply = () => {
       const zoom = (useUiPrefsStore.getState().winZoom || 100) / 100
-      const logicalW = window.innerWidth * zoom
-      document.body.classList.toggle('win-narrow', logicalW <= 905)
+      document.body.classList.toggle('win-narrow', window.innerWidth * zoom <= 905)
+      document.body.classList.toggle('win-short', window.innerHeight * zoom <= 605)
+      // Широкое окно — показываем доп-колонки треклиста библиотеки (Альбом/Дата).
+      document.body.classList.toggle('win-lib-wide', window.innerWidth * zoom >= 1080)
     }
     apply()
     window.addEventListener('resize', apply)
@@ -218,6 +222,83 @@ export const App = () => {
           title: target.title,
           cover: target.cover ?? null,
           round: true,
+        })
+      })
+    }
+    document.addEventListener('click', onClick, true)
+    return () => document.removeEventListener('click', onClick, true)
+  }, [])
+
+  // Глобальный клик по названию альбома (.alb-link) в треклисте библиотеки →
+  // страница альбома. У трека нет album-id, поэтому резолвим по имени через
+  // поиск площадки (как артиста), подмешивая имя артиста для точности. Локальные
+  // треки (provider==='local') страницы альбома не имеют → фильтруем текущий
+  // список библиотеки по названию альбома.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.('.alb-link') as HTMLElement | null
+      if (!el) return
+      const album = el.dataset.album
+      if (!album) return
+      e.stopPropagation()
+      const provider = el.dataset.albumProvider || 'local'
+      const artist = el.dataset.albumArtist || ''
+      if (provider === 'local') {
+        // Фильтр сравнивает с lowercase-полями трека → запрос в нижнем регистре.
+        useLibStore.getState().setSearchQuery(album.toLowerCase())
+        return
+      }
+      const prov = getProvider(provider)
+      if (!prov) return
+      useBigPicStore.getState().closeBig()
+      const q = artist ? `${album} ${artist}` : album
+      // Нормализация: нижний регистр, убрать пунктуацию/лишние пробелы (юникод).
+      const norm = (s: string | null | undefined) =>
+        (s || '')
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N} ]+/gu, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+      const wantAlbum = norm(album)
+      const wantArtist = norm(artist)
+      void prov.search(q).then((res) => {
+        const albums = res.albums || []
+        if (!albums.length) {
+          toast(tFn('lib.albumNotFound', { album }))
+          return
+        }
+        // Скоринг: сперва совпадение НАЗВАНИЯ (иначе кандидат отбрасывается —
+        // не открываем случайный альбом), затем бонус за совпадение артиста
+        // (ownerName у альбома). Порог 40 = хотя бы частичное совпадение имени.
+        const scored = albums
+          .map((a) => {
+            const title = norm(a.title)
+            let score = 0
+            if (title === wantAlbum) score = 100
+            else if (title.includes(wantAlbum) || wantAlbum.includes(title)) score = 45
+            else return { a, score: -1 }
+            const owner = norm(a.ownerName)
+            if (wantArtist && owner) {
+              if (owner === wantArtist) score += 50
+              else if (owner.includes(wantArtist) || wantArtist.includes(owner)) score += 20
+            }
+            return { a, score }
+          })
+          .filter((x) => x.score >= 40)
+          .sort((x, y) => y.score - x.score)
+        const best = scored[0]?.a
+        if (!best) {
+          // Ничего уверенно не совпало — лучше не открывать чужой альбом.
+          toast(tFn('lib.albumNotFound', { album }))
+          return
+        }
+        useDetailStore.getState().open({
+          kind: 'album',
+          providerId: provider,
+          id: best.id,
+          title: best.title,
+          cover: best.cover ?? null,
+          round: false,
         })
       })
     }

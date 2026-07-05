@@ -23,6 +23,7 @@ import { invoke } from '@shared/tauri'
 
 export type SidebarPos = 'left' | 'top' | 'right'
 export type LibView = 'list' | 'grid'
+export type LibDensity = 'comfortable' | 'compact'
 
 export interface UiPrefs {
   sidebarPos: SidebarPos
@@ -36,6 +37,12 @@ export interface UiPrefs {
   sbSep: boolean
   /** Вид библиотеки: список (сайдбар) или сетка карточек. */
   libView: LibView
+  /** Плотность строк треклиста библиотеки: просторно / компактно. */
+  libDensity: LibDensity
+  /** Показывать колонку «Альбом» в треклисте (на широком окне). */
+  libColAlbum: boolean
+  /** Показывать колонку «Дата добавления» в треклисте (на широком окне). */
+  libColDate: boolean
   /** Название текущей вкладки по центру тайтлбара (`#winTitleCenter`). */
   titlebarLabel: boolean
   navFloatBtn: boolean
@@ -72,6 +79,9 @@ const DEFAULTS: UiPrefs = {
   titlebarAutohide: false,
   sbSep: true,
   libView: 'list',
+  libDensity: 'comfortable',
+  libColAlbum: true,
+  libColDate: true,
   titlebarLabel: true,
   navFloatBtn: true,
   tbLogo: true,
@@ -101,6 +111,9 @@ const load = (): UiPrefs => {
       titlebarAutohide: !!p.titlebarAutohide,
       sbSep: p.sbSep !== false,
       libView: p.libView === 'grid' ? 'grid' : 'list',
+      libDensity: p.libDensity === 'compact' ? 'compact' : 'comfortable',
+      libColAlbum: p.libColAlbum !== false,
+      libColDate: p.libColDate !== false,
       titlebarLabel: p.titlebarLabel !== false,
       navFloatBtn: p.navFloatBtn !== false,
       tbLogo: p.tbLogo !== false,
@@ -156,6 +169,9 @@ const persist = (s: UiPrefs): void => {
         titlebarAutohide: s.titlebarAutohide,
         sbSep: s.sbSep,
         libView: s.libView,
+        libDensity: s.libDensity,
+        libColAlbum: s.libColAlbum,
+        libColDate: s.libColDate,
         titlebarLabel: s.titlebarLabel,
         navFloatBtn: s.navFloatBtn,
         tbLogo: s.tbLogo,

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@shared/lib/cn'
-import { toast, VinylCover } from '@shared/ui'
+import { toast, PlaylistCover } from '@shared/ui'
 import { useT, useLocale } from '@shared/i18n'
 import { useSortable } from '@shared/lib/useSortable'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
@@ -664,7 +664,7 @@ const UnifiedList = ({
                       }}
                     />
                   ) : (
-                    <VinylCover seed={pl.id} />
+                    <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} seed={pl.id} />
                   )}
                 </div>
                 {/* Бейдж площадки поверх обложки плейлиста (нижний-правый угол).

@@ -191,6 +191,23 @@
 .tr-repost svg{opacity:.8}
 .trac{display:flex;gap:2px;opacity:0;transition:.15s;flex-shrink:0}
 .tr:hover .trac{opacity:1}
+
+/* ── Доп-колонки треклиста: «Альбом» + «Добавлено» ──────────────────────
+   Пер-колонка включается префом (React не рендерит ячейку, если выкл), а
+   показ по ширине окна — классом body.win-lib-wide (логические px, App.tsx).
+   Скрыты по умолчанию → на узком окне колонок нет, лэйаут не ломается. */
+.tr-album,.tr-date{display:none;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.tr-album{flex:0 1 220px;min-width:0}
+.tr-date{flex:0 0 auto;width:104px}
+body.win-lib-wide .tr-album,body.win-lib-wide .tr-date{display:block}
+.alb-link{cursor:pointer;transition:color .1s}
+.alb-link:hover{color:var(--text);text-decoration:underline}
+
+/* ── Компактная плотность строк (переключатель в настройках) ──────────── */
+.lib-tracklist.lib-dense .tr{min-height:44px;margin-bottom:2px;padding:3px 8px;contain-intrinsic-size:auto 44px}
+.lib-tracklist.lib-dense .trcov{width:34px;height:34px}
+.lib-tracklist.lib-dense .trn{font-size:13px}
+.lib-tracklist.lib-dense .tra{font-size:10px}
 .lib-sidebar.lib-sb-compact .lib-icon{display:none}
 /* В компактном сайдбаре обложка скрыта — прячем и бейдж площадки, иначе он
    позиционируется относительно схлопнутого контейнера и висит мусором. */

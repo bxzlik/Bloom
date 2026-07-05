@@ -82,6 +82,21 @@
 .sk-block{border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:skeletonShimmer 1.6s ease-in-out infinite}
 .sk-row{display:flex;gap:12px;margin-bottom:6px}
 .sk-grid{display:flex;gap:12px;margin-bottom:20px}
+/* Скелет-строка списка треков (совпадает по метрике с .tr). */
+.sk-listrow{display:flex;align-items:center;gap:12px;padding:8px 6px}
+.sk-listrow .sk-txt{flex:1;min-width:0}
+/* ── Топ-результат (вкладка «Все») ── */
+.sp-top{display:flex;gap:20px;flex-wrap:wrap;align-items:stretch}
+.sp-top-card{position:relative;flex:0 0 360px;max-width:100%;box-sizing:border-box;display:flex;flex-direction:column;padding:28px 26px;border-radius:var(--radius);background:var(--card);cursor:pointer;transition:background .15s;overflow:hidden}
+.sp-top-card:hover{background:var(--hover)}
+.sp-top-cover{width:150px;height:150px;border-radius:calc(var(--radius)*.7);overflow:hidden;background:var(--hover);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 34px rgba(0,0,0,.45);color:var(--text2);flex-shrink:0}
+.sp-top-cover.round{border-radius:50%}
+.sp-top-cover img{width:100%;height:100%;object-fit:cover}
+.sp-top-text{margin-top:auto;padding-top:26px;min-width:0}
+.sp-top-name{font-size:30px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:7px}
+.sp-top-sub{font-size:13.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-top-kind{position:absolute;top:20px;right:20px;font-size:11px;font-weight:700;background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--text2);padding:4px 12px;border-radius:999px}
+.sp-top-list{flex:1 1 340px;min-width:min(340px,100%);display:flex;flex-direction:column}
 #spDetailView{background:var(--bg2,#141414);will-change:opacity}
 #spDetailView.dv-opening{animation:spDvIn .2s ease both}
 #spDetailView.dv-closing{animation:spDvOut .15s ease both}

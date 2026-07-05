@@ -18,6 +18,7 @@ export type SectionId =
   // Оформление
   | 'view'
   | 'interface'
+  | 'library'
   | 'tabs'
   | 'background'
   | 'medialib'
@@ -105,6 +106,11 @@ const GROUPS: GroupDef[] = [
         id: 'interface',
         labelKey: 'settings.nav.interface',
         icon: <Ico name="sidebar" width={13} height={13} />,
+      },
+      {
+        id: 'library',
+        labelKey: 'settings.nav.library',
+        icon: <Ico name="library" width={13} height={13} />,
       },
       {
         id: 'tabs',
@@ -202,7 +208,22 @@ const SEARCH_RULES: Record<SectionId, { include: string[]; exclude?: string[] }>
   view: { include: ['settings.view.'], exclude: ['settings.view.ov'] },
   interface: {
     include: ['settings.interface.'],
-    exclude: ['settings.interface.sidebar', 'settings.interface.titlebar', 'settings.interface.nav'],
+    exclude: [
+      'settings.interface.sidebar',
+      'settings.interface.titlebar',
+      'settings.interface.nav',
+      'settings.interface.cat.library',
+      'settings.interface.libView',
+      'settings.interface.libDensity',
+      'settings.interface.libCols',
+    ],
+  },
+  library: {
+    include: [
+      'settings.interface.libView',
+      'settings.interface.libDensity',
+      'settings.interface.libCols',
+    ],
   },
   tabs: {
     include: [

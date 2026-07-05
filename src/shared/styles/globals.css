@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* Общая база, не зависящая от палитры окна.
-   Палитра main-окна — index.css → root.css. Мини/трей-окна (miniplayer.html,
+   Палитра main-окна — index.css → root.css. Мини/трей-окна (picture-in-picture.html,
    tray-popup.html) — самодостаточный vanilla-HTML, стили в их собственных <style>.
    Анимации модалок: opacity .26s + scale/translate .32s. */
 @theme {

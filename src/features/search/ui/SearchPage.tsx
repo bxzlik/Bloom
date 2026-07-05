@@ -644,6 +644,102 @@ const ProfileView = ({
   )
 }
 
+/* ── Скелет загрузки выдачи (переиспользует .sk-block из DetailView) ── */
+const SkCard = () => (
+  <div className="sp-track-card" style={{ pointerEvents: 'none' }}>
+    <div className="sp-tc-cover"><div className="sk-block" style={{ width: '100%', height: '100%' }} /></div>
+    <div className="sp-tc-info">
+      <div className="sk-block" style={{ height: 12, width: '85%', borderRadius: 6, marginBottom: 7 }} />
+      <div className="sk-block" style={{ height: 10, width: '55%', borderRadius: 6 }} />
+    </div>
+  </div>
+)
+const SkArtist = () => (
+  <div className="sp-artist-card" style={{ pointerEvents: 'none' }}>
+    <div className="sk-block" style={{ width: 100, height: 100, borderRadius: '50%' }} />
+    <div className="sk-block" style={{ height: 12, width: '75%', borderRadius: 6 }} />
+    <div className="sk-block" style={{ height: 10, width: '45%', borderRadius: 6 }} />
+  </div>
+)
+const SkListRow = () => (
+  <div className="sk-listrow">
+    <div className="sk-block" style={{ width: 42, height: 42, borderRadius: 'calc(var(--radius)*.6)', flexShrink: 0 }} />
+    <div className="sk-txt">
+      <div className="sk-block" style={{ height: 12, width: '40%', borderRadius: 6, marginBottom: 7 }} />
+      <div className="sk-block" style={{ height: 10, width: '25%', borderRadius: 6 }} />
+    </div>
+  </div>
+)
+const SkSecTitle = ({ w = 120 }: { w?: number }) => (
+  <div className="sk-block" style={{ height: 16, width: w, borderRadius: 6, marginBottom: 14 }} />
+)
+
+/**
+ * Скелет выдачи поиска: повторяет раскладку активного таба, чтобы при загрузке
+ * ничего «не прыгало». Раньше тут был центральный спиннер — скелет живее.
+ */
+const SearchSkeleton = ({ tab }: { tab: SearchTab }) => {
+  if (tab === 'tracks')
+    return (
+      <div className="sc-uni-section">
+        <SkSecTitle />
+        {Array.from({ length: 8 }).map((_, i) => (
+          <SkListRow key={i} />
+        ))}
+      </div>
+    )
+  if (tab === 'artists')
+    return (
+      <div className="sc-uni-section">
+        <SkSecTitle />
+        <div className="sp-artist-grid">{Array.from({ length: 7 }).map((_, i) => <SkArtist key={i} />)}</div>
+      </div>
+    )
+  if (tab === 'playlists' || tab === 'albums')
+    return (
+      <div className="sc-uni-section">
+        <SkSecTitle />
+        <div className="sp-pl-grid">{Array.from({ length: 6 }).map((_, i) => <SkCard key={i} />)}</div>
+      </div>
+    )
+  // 'all' — ряд карточек треков + ряд артистов
+  return (
+    <>
+      <div className="sc-uni-section">
+        <SkSecTitle />
+        <div className="sp-track-grid">{Array.from({ length: 6 }).map((_, i) => <SkCard key={i} />)}</div>
+      </div>
+      <div className="sc-uni-section">
+        <SkSecTitle w={90} />
+        <div className="sp-artist-grid">{Array.from({ length: 7 }).map((_, i) => <SkArtist key={i} />)}</div>
+      </div>
+    </>
+  )
+}
+
+/* ── Топ-результат: крупная карточка лучшего совпадения (таб «Все») ── */
+type TopPick = { kind: 'artist'; artist: Artist } | { kind: 'track'; track: Track }
+
+const TopResultCard = ({ pick, onOpen }: { pick: TopPick; onOpen: () => void }) => {
+  const t = useT()
+  const isArtist = pick.kind === 'artist'
+  const cover = isArtist ? pick.artist.avatar : pick.track.cover
+  const name = isArtist ? pick.artist.name : pick.track.name
+  const sub = isArtist ? null : pick.track.artist
+  return (
+    <div className="sp-top-card" onClick={onOpen}>
+      <span className="sp-top-kind">{t(isArtist ? 'search.kind.artist' : 'search.kind.track')}</span>
+      <div className={cn('sp-top-cover', isArtist && 'round')}>
+        <Cover src={cover} placeholder={isArtist ? <PhArtist /> : <PhTrack />} />
+      </div>
+      <div className="sp-top-text">
+        <div className="sp-top-name">{name}</div>
+        {sub && <div className="sp-top-sub">{sub}</div>}
+      </div>
+    </div>
+  )
+}
+
 export interface SearchPageProps {
   active: boolean
 }
@@ -943,6 +1039,23 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const showAlbums = (tab === 'all' || tab === 'albums') && albums.length > 0
   // Мета-фильтры показываем когда видим треки (таб «Все»/«Треки» и они есть).
   const showMeta = showResults && (tab === 'all' || tab === 'tracks') && tracks.length > 0
+  // Топ-результат (таб «Все»): что точнее совпало с запросом — имя артиста или
+  // название трека. Артист выигрывает при равенстве (как в Spotify).
+  const topPick: TopPick | null = (() => {
+    const q = submitted.trim().toLowerCase()
+    const bestArtist = artists[0]
+    const bestTrack = filteredTracks[0]
+    const score = (name?: string) => {
+      if (!name) return -1
+      const n = name.toLowerCase()
+      return n === q ? 3 : n.startsWith(q) ? 2 : n.includes(q) ? 1 : 0
+    }
+    if (bestArtist && score(bestArtist.name) >= score(bestTrack?.name)) return { kind: 'artist', artist: bestArtist }
+    if (bestTrack) return { kind: 'track', track: bestTrack }
+    if (bestArtist) return { kind: 'artist', artist: bestArtist }
+    return null
+  })()
+  const showTop = showResults && tab === 'all' && topPick !== null
   // Раскладка по табу: 'tracks' → вертикальный список; одиночные арт/пл/альб → wrap;
   // 'all' → горизонтальные ряды (.sp-filter-list / .sp-filter-wrap).
   const layoutClass =
@@ -1023,12 +1136,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
           style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '14px 28px 28px' }}
         >
           <div id="spScResults" className={layoutClass}>
-            {loading && (
-              <div className="sc-status">
-                <div className="sc-spinner" />
-                {t('search.searching')}
-              </div>
-            )}
+            {loading && <SearchSkeleton tab={tab} />}
 
             {showProfile && profile && (
               <ProfileView
@@ -1051,6 +1159,34 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
             {showResults && (
               <>
+                {showTop && topPick && (
+                  <div className="sc-uni-section" data-sp-section="top">
+                    <div className="sp-sec-title">{t('search.topResult')}</div>
+                    <div className="sp-top">
+                      <TopResultCard
+                        pick={topPick}
+                        onOpen={() =>
+                          topPick.kind === 'artist'
+                            ? openArtist(topPick.artist)
+                            : playTrackFromSearch(topPick.track)
+                        }
+                      />
+                      {filteredTracks.length > 0 && (
+                        <div className="sp-top-list">
+                          {filteredTracks.slice(0, 4).map((tr) => (
+                            <TrackListRow
+                              key={tr.id}
+                              track={tr}
+                              onPlay={() => playTrackFromSearch(tr)}
+                              onCtxMenu={(e) => onCtxMenu(e, tr)}
+                              onAddClick={(e) => onAddTrack(e, tr)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {showTracks && (
                   <div className="sc-uni-section" data-sp-section="tracks">
                     <div className="sp-sec-title">{t('search.tab.tracks')}</div>

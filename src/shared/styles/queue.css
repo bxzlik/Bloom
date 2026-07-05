@@ -13,14 +13,16 @@
 #playerContent.queue-hidden #playerMainBlock .ps-cover{flex:0 0 42%;width:42%!important;height:auto!important;aspect-ratio:1/1!important;max-width:42%!important;max-height:100%;align-self:center}
 #playerContent.queue-hidden #playerMainBlock .ps-cover.vinyl-mode{flex:0 0 42%;width:42%!important;max-width:42%!important}
 #playerContent.queue-hidden #playerMainBlock .ps-right{flex:1;min-width:0}
-/* ── Узкий экран: авто-скрытие очереди ────────────────────────────────────
-   Когда окно у минимальной ширины, боковая очередь (queue-right/left) и
-   grid-стили (large/cinema) съедают горизонтальное место → прячем очередь,
-   плеер занимает всю ширину («только экран управления»). Работает независимо
-   от ручной настройки «скрыть очередь».
-   Класс body.win-narrow ставит JS (App.tsx) по ЛОГИЧЕСКОЙ ширине окна — не
-   через CSS-порог, т.к. webview-зум масштабирует CSS-px и делал бы порог
-   ненадёжным (см. коммент в App.tsx). */
+/* ── Маленькое окно: авто-скрытие очереди ─────────────────────────────────
+   Прячем очередь у минимума окна, отдавая плееру всё место («только экран
+   управления»). ГДЕ очередь ест место — зависит от раскладки, поэтому и порог
+   разный:
+     • боковая (queue-right/left) и grid (large/cinema) — колонка сбоку → по
+       ШИРИНЕ (body.win-narrow);
+     • нижняя/вертикальная (дефолт) — делит высоту → по ВЫСОТЕ (body.win-short).
+   Классы ставит JS (App.tsx) по ЛОГИЧЕСКИМ размерам окна — не CSS-порогом, т.к.
+   webview-зум масштабирует CSS-px и делал бы порог ненадёжным. Работает
+   независимо от ручной настройки «скрыть очередь». */
 body.win-narrow #playerContent.queue-right #playerQueueBlock,
 body.win-narrow #playerContent.queue-right #lyricsQueueBlock,
 body.win-narrow #playerContent.queue-left #playerQueueBlock,
@@ -32,6 +34,9 @@ body.win-narrow #playerContent.style-cinema #lyricsQueueBlock{display:none!impor
 /* Grid-стили: обложка растягивается на обе колонки, раз очереди нет. */
 body.win-narrow #playerContent.style-large>.sl-cover-wrap,
 body.win-narrow #playerContent.style-cinema>.sl-cover-wrap{grid-column:1/-1!important}
+/* Нижняя (вертикальная) очередь — прячем по высоте. */
+body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-large):not(.style-cinema) #playerQueueBlock,
+body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-large):not(.style-cinema) #lyricsQueueBlock{display:none!important}
 /* Queue position: side layout */
 #playerContent.queue-right{flex-direction:row!important}
 #playerContent.queue-left{flex-direction:row-reverse!important}

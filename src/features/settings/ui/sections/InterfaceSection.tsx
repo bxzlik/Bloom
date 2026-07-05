@@ -26,7 +26,8 @@ import { Ico } from '@shared/ui/icons/solar'
  * + скругление углов (radius).
  * + прозрачность/стекло (trMode/blockOpacity/glassStr/glassBlur, transparencyStore).
  *
- * Отложено (отдельным заходом): grid-вид библиотеки (setLibView).
+ * Настройки библиотеки (вид/плотность/колонки) вынесены в отдельную вкладку
+ * «Библиотека» (LibrarySection).
  */
 
 /** Флаги языков */
@@ -79,11 +80,13 @@ export const InterfaceSection = () => {
 
   const trMode = useTransparencyStore((s) => s.trMode)
   const overlayGlass = useTransparencyStore((s) => s.overlayGlass)
+  const nativeTransparent = useTransparencyStore((s) => s.nativeTransparent)
   const blockOpacity = useTransparencyStore((s) => s.blockOpacity)
   const glassStr = useTransparencyStore((s) => s.glassStr)
   const glassBlur = useTransparencyStore((s) => s.glassBlur)
   const setTrMode = useTransparencyStore((s) => s.setMode)
   const setOverlayGlass = useTransparencyStore((s) => s.setOverlayGlass)
+  const setNativeTransparent = useTransparencyStore((s) => s.setNativeTransparent)
   const setBlockOpacity = useTransparencyStore((s) => s.setBlockOpacity)
   const setGlassStr = useTransparencyStore((s) => s.setGlassStr)
   const setGlassBlur = useTransparencyStore((s) => s.setGlassBlur)
@@ -149,7 +152,6 @@ export const InterfaceSection = () => {
         </div>
       </div>
 
-      <div className="s-cat-label">{t('settings.interface.cat.view')}</div>
       <div className="sc">
         <div className="sr">
           <div>
@@ -160,18 +162,44 @@ export const InterfaceSection = () => {
         </div>
       </div>
 
-      <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.interface.libView.title')}</div>
-        <div className="sc-desc">{t('settings.interface.libView.desc')}</div>
-        <div className="s-opt-row">
-          <OptBtn active={p.libView === 'list'} onClick={() => p.set('libView', 'list')}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><circle cx="3" cy="6" r="1" fill="currentColor" stroke="none" /><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="3" cy="18" r="1" fill="currentColor" stroke="none" /></svg>
-            {t('settings.interface.libView.list')}
-          </OptBtn>
-          <OptBtn active={p.libView === 'grid'} onClick={() => p.set('libView', 'grid')}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
-            {t('settings.interface.libView.grid')}
-          </OptBtn>
+      <div className="s-cat-label">{t('settings.interface.cat.transparency')}</div>
+      <div className="sc">
+        <div className="sc-title">{t('settings.interface.transparency.title')}</div>
+        <div className="sc-desc">{t('settings.interface.transparency.desc')}</div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+          <button className={`s-mode-btn${trMode === 'off' ? ' active' : ''}`} onClick={() => setTrMode('off')}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            {t('settings.interface.transparency.off')}
+          </button>
+          <button className={`s-mode-btn${trMode === 'on' ? ' active' : ''}`} onClick={() => setTrMode('on')}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M3 9h18M9 21V9" /></svg>
+            {t('settings.interface.transparency.on')}
+          </button>
+        </div>
+        {/* Слайдеры + тоггл оверлеев видны только при включённой прозрачности:
+            оверлеи — подрежим основного стекла (trMode==='on'). */}
+        <div className={`${trMode === 'on' ? 'vis' : ''}`} id="sTrSliders">
+          <div className="s-sliders-3" style={{ marginTop: 14 }}>
+            <GlassSlider label={t('settings.interface.transparency.blockOpacity')} valLabel={`${blockOpacity}%`} min={0} max={100} value={blockOpacity} onChange={setBlockOpacity} />
+            <GlassSlider label={t('settings.interface.transparency.glassStr')} valLabel={`${glassStr}%`} min={0} max={100} value={glassStr} onChange={setGlassStr} />
+            <GlassSlider label={t('settings.interface.transparency.glassBlur')} valLabel={`${glassBlur}px`} min={0} max={40} value={glassBlur} onChange={setGlassBlur} />
+          </div>
+          {/* Ряд-тоггл БЕЗ класса `.sr`: правило `.sc:has(>.sr)>.sc-title{display:none}`
+              (settings.css) иначе спрятало бы заголовок этой карточки. */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
+            <div>
+              <div className="sl2">{t('settings.interface.transparency.overlays.title')}</div>
+              <div className="ssub">{t('settings.interface.transparency.overlays.sub')}</div>
+            </div>
+            <Toggle checked={overlayGlass} onChange={setOverlayGlass} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
+            <div>
+              <div className="sl2">{t('settings.interface.transparency.native.title')}</div>
+              <div className="ssub">{t('settings.interface.transparency.native.sub')}</div>
+            </div>
+            <Toggle checked={nativeTransparent} onChange={setNativeTransparent} />
+          </div>
         </div>
       </div>
 
@@ -224,40 +252,6 @@ export const InterfaceSection = () => {
             value={p.borderAlpha}
             onChange={(e) => p.set('borderAlpha', Number(e.target.value))}
           />
-        </div>
-      </div>
-
-      <div className="s-cat-label">{t('settings.interface.cat.transparency')}</div>
-      <div className="sc">
-        <div className="sc-title">{t('settings.interface.transparency.title')}</div>
-        <div className="sc-desc">{t('settings.interface.transparency.desc')}</div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-          <button className={`s-mode-btn${trMode === 'off' ? ' active' : ''}`} onClick={() => setTrMode('off')}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            {t('settings.interface.transparency.off')}
-          </button>
-          <button className={`s-mode-btn${trMode === 'on' ? ' active' : ''}`} onClick={() => setTrMode('on')}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M3 9h18M9 21V9" /></svg>
-            {t('settings.interface.transparency.on')}
-          </button>
-        </div>
-        {/* Слайдеры + тоггл оверлеев видны только при включённой прозрачности:
-            оверлеи — подрежим основного стекла (trMode==='on'). */}
-        <div className={`${trMode === 'on' ? 'vis' : ''}`} id="sTrSliders">
-          <div className="s-sliders-3" style={{ marginTop: 14 }}>
-            <GlassSlider label={t('settings.interface.transparency.blockOpacity')} valLabel={`${blockOpacity}%`} min={0} max={100} value={blockOpacity} onChange={setBlockOpacity} />
-            <GlassSlider label={t('settings.interface.transparency.glassStr')} valLabel={`${glassStr}%`} min={0} max={100} value={glassStr} onChange={setGlassStr} />
-            <GlassSlider label={t('settings.interface.transparency.glassBlur')} valLabel={`${glassBlur}px`} min={0} max={40} value={glassBlur} onChange={setGlassBlur} />
-          </div>
-          {/* Ряд-тоггл БЕЗ класса `.sr`: правило `.sc:has(>.sr)>.sc-title{display:none}`
-              (settings.css) иначе спрятало бы заголовок этой карточки. */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
-            <div>
-              <div className="sl2">{t('settings.interface.transparency.overlays.title')}</div>
-              <div className="ssub">{t('settings.interface.transparency.overlays.sub')}</div>
-            </div>
-            <Toggle checked={overlayGlass} onChange={setOverlayGlass} />
-          </div>
         </div>
       </div>
 
@@ -623,12 +617,6 @@ const ThemeCreator = ({
     </>
   )
 }
-
-const OptBtn = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button className={`s-opt-btn ${active ? 'bta' : 'btg'}`} onClick={onClick}>
-    {children}
-  </button>
-)
 
 const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
   <label className="tele-sw">

@@ -14,9 +14,14 @@ import {
   removeFromQueue,
   useQueueStore,
   downloadTrack,
+  trackProviderId,
+  switchTrackPlatform,
+  providerLogo,
 } from '@features/player'
+import { getProviders } from '@features/providers'
 import waveApi from '@/wave'
-import { useShareStore, VinylCover } from '@shared/ui'
+import { useShareStore } from '@shared/ui'
+import { PlCover } from './PlCover'
 import { useT } from '@shared/i18n'
 import { useFavStore, useLibStore, usePlaylistStore, useTrackInfoStore } from '../model'
 import { Ico } from '@shared/ui/icons/solar'
@@ -54,6 +59,7 @@ export const TrackCtxMenu = ({
   const menuRef = useRef<HTMLDivElement>(null)
   const flyoutRef = useRef<HTMLDivElement>(null)
   const addItemRef = useRef<HTMLDivElement>(null)
+  const srcItemRef = useRef<HTMLDivElement>(null)
   const isFav = useFavStore((s) => (track ? s.favs.has(track.id) : false))
   const toggleFav = useFavStore((s) => s.toggleFav)
   const playlists = usePlaylistStore((s) => s.playlists)
@@ -70,7 +76,8 @@ export const TrackCtxMenu = ({
   const inLib = useLibStore((s) => (track ? s.tracks.some((t) => t.id === track.id) : false))
 
   const [clampedPos, setClampedPos] = useState<{ x: number; y: number } | null>(null)
-  const [flyoutOpen, setFlyoutOpen] = useState(false)
+  // Какое подменю-флайаут открыто: 'pl' (в плейлист) или 'src' (сменить площадку).
+  const [sub, setSub] = useState<null | 'pl' | 'src'>(null)
   const [flyoutPos, setFlyoutPos] = useState<{ left: number; top: number } | null>(null)
   const hideTimer = useRef<number | null>(null)
 
@@ -82,7 +89,7 @@ export const TrackCtxMenu = ({
   // unmount-через-null и при следующем открытии flyout всплывает сам.
   useEffect(() => {
     if (!pos) {
-      setFlyoutOpen(false)
+      setSub(null)
       if (hideTimer.current !== null) {
         window.clearTimeout(hideTimer.current)
         hideTimer.current = null
@@ -97,9 +104,13 @@ export const TrackCtxMenu = ({
       hideTimer.current = null
     }
   }
+  const openSub = (which: 'pl' | 'src') => {
+    cancelHide()
+    setSub(which)
+  }
   const scheduleHide = () => {
     cancelHide()
-    hideTimer.current = window.setTimeout(() => setFlyoutOpen(false), 180)
+    hideTimer.current = window.setTimeout(() => setSub(null), 180)
   }
 
   // Auto-clamp основного меню чтобы не вылезало за viewport.
@@ -122,13 +133,14 @@ export const TrackCtxMenu = ({
     setClampedPos({ x, y })
   }, [pos])
 
-  // Позиционирование flyout: справа от .ci #cxadd, при недостатке места — слева.
+  // Позиционирование flyout: справа от пункта-якоря, при недостатке места — слева.
+  const anchorEl = sub === 'src' ? srcItemRef.current : addItemRef.current
   useLayoutEffect(() => {
-    if (!flyoutOpen || !addItemRef.current || !flyoutRef.current) {
+    if (!sub || !anchorEl || !flyoutRef.current) {
       setFlyoutPos(null)
       return
     }
-    const ar = addItemRef.current.getBoundingClientRect()
+    const ar = anchorEl.getBoundingClientRect()
     const fw = flyoutRef.current.offsetWidth
     const fh = flyoutRef.current.offsetHeight
     const vw = window.innerWidth
@@ -139,7 +151,7 @@ export const TrackCtxMenu = ({
     if (top + fh > vh - 8) top = vh - fh - 8
     if (top < 8) top = 8
     setFlyoutPos({ left, top })
-  }, [flyoutOpen])
+  }, [sub, anchorEl])
 
   // Close on click outside / Escape.
   useEffect(() => {
@@ -180,12 +192,14 @@ export const TrackCtxMenu = ({
   const hasShare = track.scId != null || track.scPermalink != null
   const hasWave = track.scId != null || track.scTrackId != null || !!track._ym
   const hasDl = !!(track._sc || track._ym || track._ytm || track._sp)
-  const hasTools = hasShare || hasWave || hasDl
+  // Сменить площадку — только для библиотечного трека с площадочным origin и при
+  // наличии хотя бы одной ДРУГОЙ сетевой площадки (замена = поиск + ремап записи).
+  const curProv = trackProviderId(track)
+  const netProviders = getProviders().filter((p) => p.id !== 'local')
+  const canSwitchSrc = inLib && curProv !== 'local' && netProviders.some((p) => p.id !== curProv)
+  const hasTools = hasShare || hasWave || hasDl || canSwitchSrc
 
-  const onAddEnter = () => {
-    cancelHide()
-    setFlyoutOpen(true)
-  }
+  const onAddEnter = () => openSub('pl')
   const onAddLeave = () => scheduleHide()
 
   return createPortal(
@@ -331,6 +345,28 @@ export const TrackCtxMenu = ({
           </div>
         )}
 
+        {/* cxsrc — «Сменить площадку»: flyout с иконками площадок, выбор ищет трек
+            там и ПЕРСИСТЕНТНО заменяет им библиотечную запись (switchTrackPlatform). */}
+        {canSwitchSrc && (
+          <div
+            ref={srcItemRef}
+            className="ci"
+            id="cxsrc"
+            onMouseEnter={() => openSub('src')}
+            onMouseLeave={onAddLeave}
+            onClick={(e) => {
+              e.stopPropagation()
+              openSub('src')
+            }}
+          >
+            <span className="ci-icon">
+              {providerLogo(curProv, 13) ?? <Ico name="note" width={11} height={11} />}
+            </span>{' '}
+            {t('lib.ctx.switchSrc')}
+            <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
+          </div>
+        )}
+
         {/* cxdl — «Скачать», только для треков площадок (SC/Yandex/YTM/Spotify). */}
         {hasDl && (
           <div
@@ -433,8 +469,9 @@ export const TrackCtxMenu = ({
         )}
       </div>
 
-      {/* Flyout «В плейлист» — отдельный popup справа от cxadd */}
-      {flyoutOpen && (
+      {/* Flyout-подменю справа от пункта: «В плейлист» (cxadd) или «Сменить
+          площадку» (cxsrc) — один контейнер, содержимое по активному `sub`. */}
+      {sub && (
         <div
           ref={flyoutRef}
           id="cxPlFlyout"
@@ -447,6 +484,9 @@ export const TrackCtxMenu = ({
             visibility: flyoutPos ? 'visible' : 'hidden',
           }}
         >
+          {/* ── Подменю «В плейлист» ── */}
+          {sub === 'pl' && (
+          <>
           {/* «В библиотеку» — первый пункт flyout для трека НЕ из библиотеки
               (SC/Yandex). _showScAddFlyout. */}
           {!inLib && (
@@ -502,7 +542,7 @@ export const TrackCtxMenu = ({
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       ) : (
-                        <VinylCover seed={pl.id} />
+                        <PlCover trs={pl.trs} seed={pl.id} />
                       )}
                     </span>{' '}
                     <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -529,6 +569,36 @@ export const TrackCtxMenu = ({
               </div>
             </>
           )}
+          </>
+          )}
+
+          {/* ── Подменю «Сменить площадку»: иконка+название каждой сетевой
+              площадки; текущая помечена галочкой, остальные ищут+заменяют. ── */}
+          {sub === 'src' &&
+            netProviders.map((p) => {
+              const active = p.id === curProv
+              return (
+                <div
+                  key={p.id}
+                  className={active ? 'ci ci-active' : 'ci'}
+                  onClick={() => {
+                    if (active) return
+                    onClose()
+                    void switchTrackPlatform(track, p.id)
+                  }}
+                >
+                  <span className="ci-icon" style={{ background: 'transparent' }}>
+                    {providerLogo(p.id, 15)}
+                  </span>{' '}
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.label}
+                  </span>
+                  {active && (
+                    <Ico name="check" width={13} height={13} style={{ flexShrink: 0, color: 'var(--accent)' }} />
+                  )}
+                </div>
+              )
+            })}
         </div>
       )}
     </>,

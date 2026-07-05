@@ -31,13 +31,13 @@ import {
 } from '@features/player'
 import { seek, seekLive } from '@features/player/api/play'
 import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
-import { VinylCover } from '@shared/ui'
+import { PlaylistCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '../navigationStore'
 import { DiscoverSections } from './DiscoverSections'
 
 /**
- * Главная страница (#page-home) — макет.
+ * Главная страница
  *
  * Секции: «Моя волна» (WaveCard) + «Продолжить» (если есть трек) | Любимые/История
  * | Недавно слушали | Плейлисты.
@@ -423,6 +423,7 @@ const ContinueView = ({
   }
   const onDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!dur || !seekable) return
+    if (e.button !== 0) return // только ЛКМ — ПКМ/СКМ не двигают полосу
     e.stopPropagation()
     e.preventDefault()
     draggingRef.current = true
@@ -673,6 +674,7 @@ const PlaylistsSection = ({
   const t = useT()
   const playlists = usePlaylistStore((s) => s.playlists)
   const libTracks = useLibStore((s) => s.tracks)
+  const libById = useMemo(() => new Map(libTracks.map((tr) => [tr.id, tr])), [libTracks])
   const goNav = useNavStore((s) => s.goNav)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
   const openPl = (id: string) => {
@@ -686,7 +688,7 @@ const PlaylistsSection = ({
         {playlists.map((pl) => (
           <div className="home-pl-card" key={pl.id} onClick={() => openPl(pl.id)} onContextMenu={(e) => onPlCtx(e, pl)}>
             <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
-              {pl.cover ? <img src={pl.cover} alt="" /> : <VinylCover seed={pl.id} />}
+              {pl.cover ? <img src={pl.cover} alt="" /> : <PlaylistCover covers={pl.trs.map((id) => (libById.get(id) ?? trackRegistry.get(id))?.cover)} seed={pl.id} />}
               <CoverProviderBadge provider={playlistProvider(pl.trs, libTracks)} size={24} />
               <div className="hpc-play-overlay">
                 <div className="hpc-play-btn">

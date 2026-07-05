@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEven
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
 import { useSortable } from '@shared/lib/useSortable'
-import { useT } from '@shared/i18n'
+import { useUiPrefsStore } from '@features/settings'
+import { useT, useLocale } from '@shared/i18n'
 import {
   useLibStore,
   usePlaylistStore,
@@ -42,6 +43,18 @@ export const LibTracklist = () => {
   const historyEntries = useHistoryStore((s) => s.entries)
   const sortMode = useLibStore((s) => s.sortMode)
   const sortDir = useLibStore((s) => s.sortDir)
+
+  // Плотность строк + видимость доп-колонок (пер-колонка гейтится префом,
+  // ширина окна — CSS-классом body.win-lib-wide). useLocale — реактивный
+  // ре-рендер форматтера даты «Добавлено» при смене языка.
+  useLocale()
+  const libDensity = useUiPrefsStore((s) => s.libDensity)
+  const colAlbum = useUiPrefsStore((s) => s.libColAlbum)
+  const colDate = useUiPrefsStore((s) => s.libColDate)
+  const listCls = `lib-tracklist${libDensity === 'compact' ? ' lib-dense' : ''}`
+  // «Дата добавления» бессмысленна в Истории (там своя колонка времени игры).
+  const showAlbum = colAlbum
+  const showDate = colDate && mode !== 'history'
 
   const viewTracks = useMemo(() => {
     let base = filterByMode(
@@ -180,7 +193,7 @@ export const LibTracklist = () => {
 
   if (viewTracks.length === 0) {
     return (
-      <div className="lib-tracklist" id="libTracklist">
+      <div className={listCls} id="libTracklist">
         <EmptyState mode={mode} />
       </div>
     )
@@ -192,7 +205,7 @@ export const LibTracklist = () => {
     : null
 
   return (
-    <div ref={sortable.containerRef} className="lib-tracklist" id="libTracklist">
+    <div ref={sortable.containerRef} className={listCls} id="libTracklist">
       {(() => {
         if (mode !== 'history') return null
         const nodes: React.ReactNode[] = []
@@ -213,6 +226,8 @@ export const LibTracklist = () => {
               onContextMenu={(e) => onTrackCtx(e, t)}
               onClick={(e) => onTrackClickWithMods(t, idx, e)}
               onAddClick={openAddPopup}
+              showAlbum={showAlbum}
+              showDate={showDate}
               historyMeta={{ time: historyTime(entry.ts), count: entry.count }}
             />,
           )
@@ -233,6 +248,8 @@ export const LibTracklist = () => {
             onContextMenu={(e) => onTrackCtx(e, t)}
             onClick={(e) => onTrackClickWithMods(t, idx, e)}
             onAddClick={openAddPopup}
+            showAlbum={showAlbum}
+            showDate={showDate}
             rootProps={rootProps}
             handleProps={handleProps}
           />
@@ -518,6 +535,8 @@ const TrackRow = ({
   onContextMenu,
   onClick,
   onAddClick,
+  showAlbum,
+  showDate,
   rootProps,
   handleProps,
   historyMeta,
@@ -527,6 +546,10 @@ const TrackRow = ({
   onContextMenu?: (e: ReactMouseEvent<HTMLDivElement>) => void
   onClick?: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick?: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
+  /** Показывать ячейку «Альбом» (пер-колонка гейт; ширина — через CSS). */
+  showAlbum?: boolean
+  /** Показывать ячейку «Добавлено». */
+  showDate?: boolean
   rootProps?: {
     'data-sortable-id': string
     style: React.CSSProperties
@@ -545,6 +568,18 @@ const TrackRow = ({
   const isCurrent = useQueueStore((s) => s.curId === track.id)
   const isLoading = useQueueStore((s) => s.loadingId === track.id)
   const isSelected = useSelectionStore((s) => s.selected.has(track.id))
+
+  // Провайдер альбома для клика по колонке «Альбом» (глоб. делегат .alb-link
+  // в App резолвит по имени у нужной площадки; local → фильтр по названию).
+  const albumProvider = track._sc
+    ? 'soundcloud'
+    : track._ym
+      ? 'yandex'
+      : track._ytm
+        ? 'ytmusic'
+        : track._sp
+          ? 'spotify'
+          : 'local'
 
   return (
   <div
@@ -613,6 +648,23 @@ const TrackRow = ({
         {track.artist ? <ArtistLinks artist={track.artist} scId={track.artistScId} permalink={track.artistPermalink} artistId={track.artistId} provider={track.artistProvider} /> : '—'}
       </div>
     </div>
+    {showAlbum && (
+      <div className="tr-album">
+        {track.album && (
+          <span
+            className="alb-link"
+            data-album={track.album}
+            data-album-artist={track.artist || ''}
+            data-album-provider={albumProvider}
+          >
+            {track.album}
+          </span>
+        )}
+      </div>
+    )}
+    {showDate && (
+      <div className="tr-date">{track.addedAt ? historyLabel(track.addedAt) : '—'}</div>
+    )}
     <div className="trac">
       {historyMeta && (
         <span

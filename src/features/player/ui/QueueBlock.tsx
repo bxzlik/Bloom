@@ -12,7 +12,7 @@ import {
 } from '@features/library'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
-import { VinylCover } from '@shared/ui'
+import { PlaylistCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
@@ -323,6 +323,10 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
     justifyContent: 'center',
     overflow: 'hidden',
   }
+  // Треки очереди — для мозаики обложки плейлиста без своей картинки (очередь
+  // плейлиста = его треки).
+  const queue = useQueueStore((s) => s.queue)
+  const allTracks = useLibStore((s) => s.tracks)
   if (!source) return <div id="qpSourceIcon" style={box} />
   if ((source.kind === 'playlist' || source.kind === 'sc' || source.kind === 'single') && source.cover) {
     const round = source.kind === 'sc' && source.round
@@ -378,13 +382,17 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
           </div>
         </div>
       )
-    case 'playlist':
-      // Плейлист без cover — рисованный винил (цвет лейбла по id плейлиста).
+    case 'playlist': {
+      // Плейлист без cover — мозаика из обложек треков очереди (или винил-фолбэк
+      // внутри PlaylistCover, если обложек нет).
+      const byId = new Map(allTracks.map((t) => [t.id, t]))
+      const covers = queue.map((id) => (byId.get(id) ?? trackRegistry.get(id))?.cover)
       return (
         <div id="qpSourceIcon" style={box}>
-          <VinylCover seed={source.id} />
+          <PlaylistCover covers={covers} seed={source.id} />
         </div>
       )
+    }
     case 'sc':
     case 'single':
       // SC/одиночный трек без cover — note-icon на var(--card).

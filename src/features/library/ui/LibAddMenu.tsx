@@ -9,7 +9,8 @@ import {
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
-import { toast, VinylCover } from '@shared/ui'
+import { toast } from '@shared/ui'
+import { PlCover } from './PlCover'
 import { ScLogo, YmLogo, YtmLogo, SpLogo, providerBrandColor } from '@entities/track'
 import { Ico } from '@shared/ui/icons/solar'
 import { folderAdd, importPlaylistFile } from '../api'
@@ -76,7 +77,7 @@ const FavThumb = () => (
 /** Обложка плейлиста для строки выбора цели импорта. */
 const PlThumb = ({ pl }: { pl: Playlist }) => (
   <span className="lam-pl-thumb">
-    {pl.cover ? <img src={pl.cover} alt="" /> : <VinylCover seed={pl.id} />}
+    {pl.cover ? <img src={pl.cover} alt="" /> : <PlCover trs={pl.trs} seed={pl.id} />}
   </span>
 )
 

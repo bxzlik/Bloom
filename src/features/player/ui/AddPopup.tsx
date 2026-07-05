@@ -9,7 +9,7 @@ import { createPortal } from 'react-dom'
 import { usePlaylistStore } from '@features/library/model/playlistStore'
 import { mpAddToLib, mpAddToPlaylist, mpOpenNewPlaylist } from '@features/player'
 import { useT } from '@shared/i18n'
-import { VinylCover } from '@shared/ui'
+import { PlCover } from '@features/library/ui/PlCover'
 import { Ico } from '@shared/ui/icons/solar'
 
 export interface AddPopupProps {
@@ -205,7 +205,7 @@ export const AddPopup = ({
                   {pl.cover ? (
                     <img src={pl.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <VinylCover seed={pl.id} />
+                    <PlCover trs={pl.trs} seed={pl.id} />
                   )}
                 </span>{' '}
                 <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

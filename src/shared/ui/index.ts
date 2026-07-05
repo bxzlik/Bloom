@@ -1,4 +1,5 @@
 export * from './VinylCover'
+export * from './PlaylistCover'
 export * from './IntegrationCard'
 export * from './Toast'
 export * from './GlobalToast'

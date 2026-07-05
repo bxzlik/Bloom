@@ -6,9 +6,8 @@ import {
   type RefObject,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { usePlaylistStore, type ImportTarget } from '@features/library'
+import { usePlaylistStore, PlCover, type ImportTarget } from '@features/library'
 import { useT } from '@shared/i18n'
-import { VinylCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 
 export interface ImportPopupProps {
@@ -134,7 +133,7 @@ export const ImportPopup = ({ open, onClose, anchorRef, onPick }: ImportPopupPro
             {pl.cover ? (
               <img src={pl.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <VinylCover seed={pl.id} />
+              <PlCover trs={pl.trs} seed={pl.id} />
             )}
           </span>{' '}
           {pl.name}

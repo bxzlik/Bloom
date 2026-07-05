@@ -79,6 +79,12 @@ export interface LibState {
   /** Удалить один трек по id. */
   removeTrack: (trackId: string) => void
   /**
+   * Заменить трек новым (версией с другой площадки), сохранив позицию в списке.
+   * id меняется — правим и сохранённый tracksOrder. Ремап ссылок в плейлистах/
+   * лайках/IDB — на вызывающей стороне (replaceLibTrack).
+   */
+  replaceTrack: (oldId: string, next: Track) => void
+  /**
    * Переупорядочить треки по списку id (drag-reorder в mode='all'/'fav').
    * Не персистится в IDB — порядок живёт только в runtime; folder_watcher и
    * IDB rehydrate могут перезаписать. Полноценный persist — отдельной фазой.
@@ -175,6 +181,21 @@ export const useLibStore = create<LibState>((set) => ({
     set((s) => ({
       tracks: s.tracks.filter((t) => t.id !== trackId),
     })),
+
+  replaceTrack: (oldId, next) =>
+    set((s) => {
+      const idx = s.tracks.findIndex((t) => t.id === oldId)
+      if (idx < 0) return s
+      const tracks = s.tracks.slice()
+      tracks[idx] = next
+      // Ремап сохранённого порядка, если oldId в нём был — иначе после рестарта
+      // applyTracksOrder не нашёл бы новый id и увёл его в конец списка.
+      const order = loadTracksOrder()
+      if (order.includes(oldId)) {
+        saveTracksOrder(order.map((id) => (id === oldId ? next.id : id)))
+      }
+      return { tracks }
+    }),
 
   reorderTracks: (ids) =>
     set((s) => {

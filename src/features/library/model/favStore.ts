@@ -51,6 +51,11 @@ export interface FavState {
   /** Снять лайк с набора id (при удалении треков из библиотеки). No-op если ничего не залайкано. */
   purge: (ids: string[]) => void
   /**
+   * Перенести лайк со старого id на новый (переключение площадки — id меняется),
+   * сохранив favAt (позицию в «Любимом»). No-op, если старый не залайкан.
+   */
+  remap: (oldId: string, newId: string) => void
+  /**
    * Переупорядочить любимые. Перезаписываем favAt timestamps так, чтобы
    * первый id в массиве получил самое позднее время — а значит при сортировке
    * `favs.get(b.id) - favs.get(a.id)` desc оказался первым.
@@ -101,6 +106,17 @@ export const useFavStore = create<FavState>((set, get) => ({
       if (next.delete(id)) changed = true
     }
     if (!changed) return
+    saveFavs(next)
+    set({ favs: next })
+  },
+
+  remap: (oldId, newId) => {
+    const cur = get().favs
+    const at = cur.get(oldId)
+    if (at == null) return
+    const next = new Map(cur)
+    next.delete(oldId)
+    if (!next.has(newId)) next.set(newId, at)
     saveFavs(next)
     set({ favs: next })
   },

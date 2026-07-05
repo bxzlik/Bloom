@@ -1,4 +1,24 @@
 {
+  "1.5.0": {
+    "title": { "ru": "Что нового в 1.5.0", "en": "What's new in 1.5.0" },
+    "date": "2026-07-05",
+    "pages": [
+      {
+        "title": { "ru": "Библиотека", "en": "Library" },
+        "body": {
+          "ru": "- Мозаика обложек — прогрессивная (1→1, 2→2, 3→3, 4→2×2), везде: сайдбар, сетка, hero, главная, меню, попапы, очередь\n- Плотность треклиста — просторно/компактно, переключатель в Настройки → Интерфейс → Библиотека\n- Колонки Альбом + Дата — как в Spotify, по центру, с тумблерами и авто-скрытием на узком окне\n- Кликабельный альбом — открывает страницу альбома (стриминг) со строгим резолвом, локальные → фильтр\n- Настройки переставлены — бейджи к авто-акценту, вид библиотеки к «Библиотеке»",
+          "en": "- Cover mosaic — progressive (1→1, 2→2, 3→3, 4→2×2), everywhere: sidebar, grid, hero, home, menus, popups, queue\n- Tracklist density — comfortable/compact, toggle in Settings → Interface → Library\n- Album + Date columns — Spotify-style, centered, with toggles and auto-hide on a narrow window\n- Clickable album — opens the album page (streaming) with strict resolution, local → filter\n- Rearranged settings — badges moved to auto-accent, library view moved to \"Library\""
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Переключатель трека на другую площадку в контекстном меню\n- Обновлён Picture-in-Picture\n- Нативная прозрачность\n- Топ результат в поиске\n- Мелкие улучшения",
+          "en": "- Switch a track to another platform from the context menu\n- Updated Picture-in-Picture\n- Native transparency\n- Top result in search\n- Minor improvements"
+        }
+      }
+    ]
+  },
   "1.4.2": {
     "title": { "ru": "Что нового в 1.4.2", "en": "What's new in 1.4.2" },
     "date": "2026-07-03",

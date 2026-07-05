@@ -8,7 +8,7 @@ import {
 import { createPortal } from 'react-dom'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT, useLocale } from '@shared/i18n'
-import { VinylCover } from '@shared/ui'
+import { PlCover } from './PlCover'
 import type { Track } from '@entities/track'
 import { Ico } from '@shared/ui/icons/solar'
 import { useLibStore, usePlaylistStore } from '../model'
@@ -239,7 +239,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
         <div className="mpl-hero">
           <div className="mpl-cstack" style={{ width: 56, height: 56 }}>
             <div className="mpl-cov" style={{ width: 56, height: 56, top: 0, left: 0 }}>
-              {cover ? <img src={cover} alt="" /> : <VinylCover seed={actId ?? ''} />}
+              {cover ? <img src={cover} alt="" /> : <PlCover trs={playlist?.trs ?? []} seed={actId ?? ''} />}
             </div>
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>

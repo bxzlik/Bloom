@@ -58,7 +58,9 @@ export const applyBackground = (url: string | null, blur: number): void => {
   if (url) {
     const gif = isGif(url)
     bgl.classList.remove('no-bg')
-    bgl.style.backgroundImage = `url(${url})`
+    // Кавычки обязательны: без них URL со спецсимволами (пробелы/скобки/запятые
+    // в путях обложек) молча ломает CSS-присваивание и фон остаётся старым.
+    bgl.style.backgroundImage = `url("${url}")`
     bgl.style.filter = blur > 0 ? `blur(${gif ? Math.min(blur, 8) : blur}px)` : ''
     bgl.classList.toggle('gif-bg', gif)
   } else {

@@ -4,6 +4,7 @@ import { useNavStore } from '@app/navigationStore'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { SettingsNav, type SectionId } from './SettingsNav'
 import { InterfaceSection } from './sections/InterfaceSection'
+import { LibrarySection } from './sections/LibrarySection'
 import { TabsSection } from './sections/TabsSection'
 import { ViewSection } from './sections/ViewSection'
 import { OverlaySection } from './sections/OverlaySection'
@@ -153,6 +154,7 @@ export const SettingsOverlay = () => {
     // Оформление
     view: <ViewSection />,
     interface: <InterfaceSection />,
+    library: <LibrarySection />,
     tabs: <TabsSection />,
     background: <BackgroundSection />,
     medialib: <CustomizationSection />,

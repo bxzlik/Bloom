@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Playlist } from '../model'
 import { useMergeStore, usePlaylistStore, useLibStore } from '../model'
-import { toast, VinylCover } from '@shared/ui'
+import { toast } from '@shared/ui'
+import { PlCover } from './PlCover'
 import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { Ico } from '@shared/ui/icons/solar'
@@ -15,7 +16,7 @@ import { Ico } from '@shared/ui/icons/solar'
  */
 
 const PlCov = ({ pl }: { pl: Playlist }) =>
-  pl.cover ? <img src={pl.cover} alt="" /> : <VinylCover seed={pl.id} />
+  pl.cover ? <img src={pl.cover} alt="" /> : <PlCover trs={pl.trs} seed={pl.id} />
 
 export const MergeModal = () => {
   const t = useT()

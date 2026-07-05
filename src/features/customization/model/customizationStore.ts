@@ -72,11 +72,16 @@ const savePrefs = (p: BgPrefs): void => {
 const initPrefs = loadPrefs()
 
 export const useCustomizationStore = create<CustomizationState>((set, get) => {
+  /** Обложка, которую показывает плеер (кастом-override важнее оригинала трека). */
+  const shownCover = (): string | null => {
+    const ps = usePlayerStore.getState()
+    return ps.coverOverride ?? ps.artwork
+  }
   /** Резолвит итоговый фон и применяет к #bgl + затемнение. */
   const applyBgNow = (): void => {
     const s = get()
     let url = s.bgUrl
-    if (!url && s.coverAsBg) url = usePlayerStore.getState().artwork
+    if (!url && s.coverAsBg) url = shownCover()
     applyBackground(url, s.bgBlur)
     applyBgDim(s.bgDim)
   }
@@ -165,7 +170,8 @@ export const useCustomizationBootstrap = (): void => {
       })
       // Применяем восстановленные.
       const s = useCustomizationStore.getState()
-      const bg = s.bgUrl || (s.coverAsBg ? usePlayerStore.getState().artwork : null)
+      const ps = usePlayerStore.getState()
+      const bg = s.bgUrl || (s.coverAsBg ? ps.coverOverride ?? ps.artwork : null)
       applyBackground(bg, s.bgBlur)
       applyBgDim(s.bgDim)
       if (s.cursorUrl) applyCustomCursor(s.cursorUrl)
@@ -174,12 +180,15 @@ export const useCustomizationBootstrap = (): void => {
       if (s.sliderUrl) usePlayerStore.setState({ sliderThumb: s.sliderUrl })
     })
 
-    // Обложка трека как фон: переприменяем при смене artwork.
+    // Обложка трека как фон: переприменяем при смене показываемой обложки
+    // (оригинал трека ИЛИ кастом-override — что показывает плеер).
     const unsub = usePlayerStore.subscribe((st, prev) => {
-      if (st.artwork === prev.artwork) return
+      const cur = st.coverOverride ?? st.artwork
+      const old = prev.coverOverride ?? prev.artwork
+      if (cur === old) return
       const c = useCustomizationStore.getState()
       if (!c.bgUrl && c.coverAsBg) {
-        applyBackground(st.artwork, c.bgBlur)
+        applyBackground(cur, c.bgBlur)
       }
     })
     return () => {

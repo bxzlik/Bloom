@@ -3,7 +3,7 @@ import { useSortable } from '@shared/lib/useSortable'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
 import { artistSourceFromId } from '@entities/artist'
-import { VinylCover } from '@shared/ui'
+import { PlaylistCover } from '@shared/ui'
 import {
   useLibStore,
   usePlaylistStore,
@@ -258,7 +258,7 @@ export const LibGridOverview = () => {
               <div key={`pl_${pl.id}`} className="home-pl-card" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
                 <div style={{ position: 'relative' }}>
                   <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
-                    {pl.cover ? <img src={pl.cover} loading="lazy" alt="" /> : <VinylCover seed={pl.id} />}
+                    {pl.cover ? <img src={pl.cover} loading="lazy" alt="" /> : <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} seed={pl.id} />}
                     <PlayOverlay />
                     {/* Бейдж площадки поверх обложки (прячется при наведении —
                         PlayOverlay перекрывает). hasSc/hasYm взаимоисключающи. */}

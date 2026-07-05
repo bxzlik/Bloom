@@ -12,7 +12,8 @@ import { useNavStore } from '@app/navigationStore'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
-import { toast, VinylCover } from '@shared/ui'
+import { toast } from '@shared/ui'
+import { PlCover } from './PlCover'
 import { playFromSource, playShuffledFromSource, downloadPlaylistTracks, type PlaySource } from '@features/player'
 import { Ico } from '@shared/ui/icons/solar'
 import { exportPlaylistFile, folderScan, folderRemove } from '../api'
@@ -320,7 +321,7 @@ export const PlMenu = ({
       return <img src={playlist.cover} alt="" />
     }
     if (mode === 'pl' && playlist) {
-      return <VinylCover seed={playlist.id} />
+      return <PlCover trs={playlist.trs} seed={playlist.id} />
     }
     if (mode === 'fav') {
       return <Ico name="heart" variant="bold" width={14} height={14} style={{ color: '#fff' }} />

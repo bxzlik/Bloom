@@ -266,7 +266,7 @@ const applyToRoot = (s: Snapshot): void => {
 
 /**
  * Публикуем тему в miniplayer/tray-popup. Эти окна — самодостаточный vanilla HTML
- * (см./miniplayer.html), который читает `localStorage['bloom_settings']` и
+ * (см./picture-in-picture.html), который читает `localStorage['bloom_settings']` и
  * слушает `storage`-событие (одна origin → событие долетает в другие окна). Формат
  * `applySettings`: accent/accent2/font/radius + blockR/G/B (из
  * blockColor). Без этого окна остаются на дефолтной палитре.

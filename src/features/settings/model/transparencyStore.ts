@@ -39,6 +39,13 @@ export interface TransparencyState {
    * же параметры blockOpacity/glassStr/glassBlur.
    */
   overlayGlass: boolean
+  /**
+   * Нативная (OS-уровня) прозрачность окна: базовый фон окна (body/#bgl)
+   * становится по-настоящему прозрачным, и сквозь зазоры/стекло виден рабочий
+   * стол. Требует окна, созданного с `transparent: true` (tauri.conf). Работает
+   * как подрежим стекла — только при `trMode==='on'` (иначе окно непрозрачно).
+   */
+  nativeTransparent: boolean
   /** Прозрачность блоков, 0–100 (% → альфа фона внешних контейнеров). */
   blockOpacity: number
   /** Яркость стекла, 0–100 (50 = нейтрально, <50 темнее, >50 светлее). */
@@ -47,6 +54,7 @@ export interface TransparencyState {
   glassBlur: number
   setMode: (m: TrMode) => void
   setOverlayGlass: (v: boolean) => void
+  setNativeTransparent: (v: boolean) => void
   setBlockOpacity: (v: number) => void
   setGlassStr: (v: number) => void
   setGlassBlur: (v: number) => void
@@ -55,6 +63,7 @@ export interface TransparencyState {
 const DEFAULTS = {
   trMode: 'off' as TrMode,
   overlayGlass: false,
+  nativeTransparent: false,
   blockOpacity: 100,
   glassStr: 50,
   glassBlur: 12,
@@ -70,6 +79,7 @@ const loadFromLs = (): typeof DEFAULTS => {
     return {
       trMode: p.trMode === 'on' ? 'on' : 'off',
       overlayGlass: typeof p.overlayGlass === 'boolean' ? p.overlayGlass : DEFAULTS.overlayGlass,
+      nativeTransparent: typeof p.nativeTransparent === 'boolean' ? p.nativeTransparent : DEFAULTS.nativeTransparent,
       blockOpacity: typeof p.blockOpacity === 'number' ? p.blockOpacity : DEFAULTS.blockOpacity,
       glassStr: typeof p.glassStr === 'number' ? p.glassStr : DEFAULTS.glassStr,
       glassBlur: typeof p.glassBlur === 'number' ? p.glassBlur : DEFAULTS.glassBlur,
@@ -101,7 +111,7 @@ const hexToRgbTriplet = (hex: string): [number, number, number] => {
 export const applyTransparency = (): void => {
   const root = document.documentElement
   const body = document.body
-  const { trMode, overlayGlass, blockOpacity, glassStr, glassBlur } = useTransparencyStore.getState()
+  const { trMode, overlayGlass, nativeTransparent, blockOpacity, glassStr, glassBlur } = useTransparencyStore.getState()
 
   // Стекло оверлеев — ПОДРЕЖИМ основного: работает только когда включена
   // «Прозрачность» блоков (trMode==='on'). При выключенной прозрачности всё
@@ -110,6 +120,9 @@ export const applyTransparency = (): void => {
     body.classList.remove('glass-mode')
     body.classList.remove('glass-overlays')
     body.classList.remove('mp-bg-theme')
+    // Нативная прозрачность — тоже подрежим стекла: при выключенной прозрачности
+    // окно непрозрачно (иначе базовый фон стал бы дырой в стол без стекла).
+    root.classList.remove('native-transparent')
     root.style.removeProperty('--glass-block-bg')
     root.style.removeProperty('--glass-filter')
     return
@@ -124,20 +137,24 @@ export const applyTransparency = (): void => {
   root.style.setProperty('--glass-filter', filter)
   body.classList.add('glass-mode')
   body.classList.toggle('glass-overlays', overlayGlass)
+  // Нативная прозрачность окна — класс на <html> (нужно погасить и html-фон #000,
+  // и body-фон var(--bg), и слой #bgl). Требует окна с transparent:true.
+  root.classList.toggle('native-transparent', nativeTransparent)
   // Мини-плеер: стекло только при фоне «Тема».
   body.classList.toggle('mp-bg-theme', usePlayerViewStore.getState().mpBgMode === 'theme')
 }
 
 export const useTransparencyStore = create<TransparencyState>((set, get) => {
   const persist = () => {
-    const { trMode, overlayGlass, blockOpacity, glassStr, glassBlur } = get()
-    saveToLs({ trMode, overlayGlass, blockOpacity, glassStr, glassBlur })
+    const { trMode, overlayGlass, nativeTransparent, blockOpacity, glassStr, glassBlur } = get()
+    saveToLs({ trMode, overlayGlass, nativeTransparent, blockOpacity, glassStr, glassBlur })
     applyTransparency()
   }
   return {
     ...loadFromLs(),
     setMode: (m) => { set({ trMode: m }); persist() },
     setOverlayGlass: (v) => { set({ overlayGlass: v }); persist() },
+    setNativeTransparent: (v) => { set({ nativeTransparent: v }); persist() },
     setBlockOpacity: (v) => { set({ blockOpacity: v }); persist() },
     setGlassStr: (v) => { set({ glassStr: v }); persist() },
     setGlassBlur: (v) => { set({ glassBlur: v }); persist() },

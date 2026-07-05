@@ -111,6 +111,20 @@ const BigPicInner = () => {
 
   const lyrView = useBigPicStore((s) => s.lyrView)
 
+  // Прячем верхние кнопки, пока курсор вне окна приложения (fade-out).
+  const [cursorOut, setCursorOut] = useState(false)
+  useEffect(() => {
+    const root = document.documentElement
+    const onLeave = () => setCursorOut(true)
+    const onEnter = () => setCursorOut(false)
+    root.addEventListener('mouseleave', onLeave)
+    root.addEventListener('mouseenter', onEnter)
+    return () => {
+      root.removeEventListener('mouseleave', onLeave)
+      root.removeEventListener('mouseenter', onEnter)
+    }
+  }, [])
+
   // Выравнивание заголовка/артиста/текста следует настройке titleAlign плеера.
   const titleAlign = usePlayerViewStore((s) => s.titleAlign)
   const modeClass =
@@ -133,7 +147,7 @@ const BigPicInner = () => {
       />
       <div className="bp-vignette" data-tauri-drag-region />
 
-      <div className="bp-top-actions">
+      <div className={`bp-top-actions${cursorOut ? ' bp-chrome-hidden' : ''}`}>
         <button
           className={`bp-top-btn${panel === 'queue' ? ' bp-lyr-active' : ''}`}
           id="bpQueueBtn"

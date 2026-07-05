@@ -13,18 +13,18 @@
   --radius:14px;
 }
 html,body{
-  width:100%;height:100%;overflow:hidden;
+  width:100%;height:100%;overflow:hidden;position:relative;
   font-family:var(--font);-webkit-font-smoothing:antialiased;
-  background:var(--bg);color:var(--text);
-  display:flex;flex-direction:column;
+  background:#000;color:var(--text);
 }
 
-/* ── Titlebar (same as main app) ───────────────────── */
+/* ── Titlebar (same as main app, now floats over cover) ─ */
 #winTitlebar{
+  position:absolute;top:0;left:0;right:0;z-index:20;
   height:32px;display:flex;align-items:center;gap:8px;
-  padding:0 0 0 12px;flex-shrink:0;
+  padding:0 0 0 12px;
   user-select:none;-webkit-user-select:none;
-  position:relative;z-index:10;
+  background:linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0));
 }
 #winDrag{
   flex:1;height:100%;display:flex;align-items:center;gap:8px;
@@ -33,21 +33,21 @@ html,body{
 #winDrag:active{cursor:grabbing}
 .win-icon{
   width:16px;height:16px;flex-shrink:0;pointer-events:none;
-  background-color:currentColor;color:var(--text2);
+  background-color:currentColor;color:rgba(255,255,255,.72);
   -webkit-mask-image:url('/logo.png');mask-image:url('/logo.png');
   -webkit-mask-size:contain;mask-size:contain;
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   -webkit-mask-position:center;mask-position:center;
 }
 .win-title{
-  font-size:12px;font-weight:600;color:var(--text2);
+  font-size:12px;font-weight:600;color:rgba(255,255,255,.8);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   pointer-events:none;min-width:0;
 }
 .win-btns{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
 .win-btn{
   width:46px;height:32px;border:none;background:transparent;
-  color:var(--text2);cursor:pointer;
+  color:rgba(255,255,255,.72);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:background .12s,color .12s;flex-shrink:0;
 }
@@ -55,47 +55,45 @@ html,body{
 .win-btn.on{color:var(--accent)}
 .win-close:hover{background:#c42b1c!important;color:#fff!important}
 
-/* ── Body (tray-popup layout) ──────────────────────── */
-.body{
-  flex:1;min-height:0;
-  display:flex;flex-direction:column;justify-content:center;
-  padding:8px 16px 12px;
-  overflow:hidden;position:relative;
-}
-
-/* ── Track info ────────────────────────────────────── */
-.info{
-  display:flex;flex-direction:column;align-items:center;
-  gap:8px;margin-bottom:10px;flex-shrink:0;text-align:center;
-}
+/* ── Cover fills the whole window ──────────────────── */
 .cover{
-  width:60px;height:60px;flex-shrink:0;position:relative;
-  border-radius:calc(var(--radius)*0.6);background:var(--bg2);
-  overflow:hidden;display:flex;align-items:center;justify-content:center;
-  color:var(--muted);
+  position:absolute;inset:0;z-index:0;
+  background:var(--bg2);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);
 }
 .cover img{width:100%;height:100%;object-fit:cover;display:block}
-/* Круглый полупрозрачный бейдж площадки в нижнем-правом углу обложки. */
-.cov-badge{
-  position:absolute;right:3px;bottom:3px;width:18px;height:18px;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:50%;background:rgba(0,0,0,.38);color:var(--accent);
-  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);pointer-events:none;
+
+/* ── Scrim — затемнение только при наведении (читаемость кнопок/тайтлбара) ── */
+.scrim{
+  position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;
+  transition:opacity .2s;
+  background:linear-gradient(to bottom,
+    rgba(0,0,0,.45) 0%, rgba(0,0,0,.05) 26%,
+    rgba(0,0,0,.05) 42%, rgba(0,0,0,.72) 100%);
 }
-.cov-badge svg{display:block}
+body:hover .scrim{opacity:1}
+
+/* ── Track info — по центру поверх обложки, всегда видно ── */
+.info-center{
+  position:absolute;inset:0;z-index:3;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:52px 22px 72px;text-align:center;
+  transition:transform .25s cubic-bezier(.4,0,.2,1);
+}
+body:hover .info-center{transform:translateY(-16px)}
 .info-text{
   width:100%;min-width:0;display:flex;flex-direction:column;
-  align-items:center;gap:2px;
+  align-items:center;gap:3px;
 }
 .title-wrap{
   max-width:100%;width:100%;overflow:hidden;
   display:flex;justify-content:center;
 }
 .title{
-  font-size:14px;font-weight:700;color:var(--text);
+  font-size:17px;font-weight:800;color:#fff;letter-spacing:-.01em;
   white-space:nowrap;cursor:pointer;transition:color .12s;
-  display:inline-block;
+  display:inline-block;pointer-events:auto;
+  text-shadow:0 1px 3px rgba(0,0,0,.55);
 }
 .title:hover{color:var(--accent)}
 @keyframes mp-marquee{0%{transform:translateX(0)}100%{transform:translateX(var(--mp-off,0))}}
@@ -103,11 +101,22 @@ html,body{
 .title-wrap.scrolling .title{animation:mp-marquee linear infinite;will-change:transform}
 .title-wrap.scrolling:hover .title{animation-play-state:paused}
 .artist{
-  max-width:100%;font-size:12px;color:var(--text2);
+  max-width:100%;font-size:13px;color:rgba(255,255,255,.82);pointer-events:auto;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-shadow:0 1px 2px rgba(0,0,0,.5);
 }
 .tra-link{cursor:pointer;transition:color .1s}
-.tra-link:hover{color:var(--text);text-decoration:underline}
+.tra-link:hover{color:#fff;text-decoration:underline}
+
+/* ── Hover UI — прогресс/кнопки/громкость, появляются при наведении ── */
+.hover-ui{
+  position:absolute;left:0;right:0;bottom:0;z-index:4;
+  padding:0 12px 8px;
+  display:flex;flex-direction:column;
+  opacity:0;transform:translateY(10px);
+  transition:opacity .18s,transform .18s;
+}
+body:hover .hover-ui{opacity:1;transform:none}
 
 /* ── Toast ─────────────────────────────────────────── */
 .toast{
@@ -151,9 +160,9 @@ html,body{
 .cx-sep{height:1px;background:rgba(255,255,255,.08);margin:4px 3px;opacity:.65}
 
 /* ── Progress ─────────────────────────────────────── */
-.prog-wrap{margin-bottom:6px;flex-shrink:0}
+.prog-wrap{margin-bottom:4px;flex-shrink:0}
 .prog-track{
-  height:3px;background:rgba(255,255,255,.1);
+  height:3px;background:rgba(255,255,255,.28);
   border-radius:2px;cursor:pointer;position:relative;
 }
 .prog-fill{
@@ -163,11 +172,12 @@ html,body{
 }
 .prog-times{
   display:flex;justify-content:space-between;
-  font-size:10px;color:var(--text2);
+  font-size:10px;color:rgba(255,255,255,.7);
   font-variant-numeric:tabular-nums;
   margin-top:5px;
+  text-shadow:0 1px 4px rgba(0,0,0,.5);
 }
-.prog-times .cur{color:var(--text)}
+.prog-times .cur{color:#fff}
 
 /* ── Controls ─────────────────────────────────────── */
 .ctrl{
@@ -176,11 +186,11 @@ html,body{
 }
 .cc{
   width:34px;height:34px;border-radius:calc(var(--radius)*0.7);
-  background:none;border:none;color:var(--text2);cursor:pointer;
+  background:none;border:none;color:rgba(255,255,255,.82);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:background .12s,color .12s;position:relative;
 }
-.cc:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.cc:hover{color:#fff;background:rgba(255,255,255,.15)}
 .cc.on{color:var(--accent)}
 .cc.on::after{
   content:'';position:absolute;bottom:3px;left:50%;
@@ -199,8 +209,8 @@ html,body{
 .cc-play:hover{background:var(--accent2)}
 .cc-play:active{transform:scale(.94)}
 /* Плоская кнопка play: без фона + крупная иконка, как в осн. окне. Ведёт себя как .cc. */
-body.play-flat .cc-play{width:34px;height:34px;border-radius:calc(var(--radius)*0.7);background:none;color:var(--text2)}
-body.play-flat .cc-play:hover{background:rgba(255,255,255,.07);color:var(--accent)}
+body.play-flat .cc-play{width:38px;height:38px;border-radius:calc(var(--radius)*0.7);background:none;color:#fff}
+body.play-flat .cc-play:hover{background:rgba(255,255,255,.15);color:var(--accent)}
 body.play-flat .cc-play svg{width:22px;height:22px}
 
 /* ── Volume ───────────────────────────────────────── */
@@ -210,23 +220,24 @@ body.play-flat .cc-play svg{width:22px;height:22px}
 }
 .vol-btn{
   width:28px;height:28px;border:none;background:transparent;
-  color:var(--text2);cursor:pointer;border-radius:calc(var(--radius)*0.4);
+  color:rgba(255,255,255,.82);cursor:pointer;border-radius:calc(var(--radius)*0.4);
   display:flex;align-items:center;justify-content:center;
   transition:background .12s,color .12s;flex-shrink:0;
 }
-.vol-btn:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.vol-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 .vol-sl{
   -webkit-appearance:none;appearance:none;flex:1;height:3px;border-radius:2px;
-  background:rgba(255,255,255,.12);outline:none;cursor:pointer;
+  background:rgba(255,255,255,.28);outline:none;cursor:pointer;
 }
 .vol-sl::-webkit-slider-thumb{
   -webkit-appearance:none;appearance:none;width:11px;height:11px;
   border-radius:50%;background:var(--text);cursor:pointer;
 }
 .vol-num{
-  font-size:10px;color:var(--text2);
+  font-size:10px;color:rgba(255,255,255,.7);
   font-variant-numeric:tabular-nums;
   min-width:26px;text-align:right;
+  text-shadow:0 1px 4px rgba(0,0,0,.5);
 }
 </style>
 </head>
@@ -254,22 +265,27 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   </div>
 </div>
 
-<!-- Body -->
-<div class="body">
+<!-- Full-window cover (background) -->
+<div class="cover" id="tCover">
+  <svg width="28" height="28" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>
+</div>
 
-  <!-- Track info -->
-  <div class="info">
-    <div class="cover" id="tCover">
-      <svg width="28" height="28" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>
-    </div>
-    <div class="info-text">
-      <div class="title-wrap"><div class="title" id="tTitle"></div></div>
-      <div class="artist" id="tArtist">—</div>
-    </div>
+<!-- Hover scrim (darkens for legibility) -->
+<div class="scrim"></div>
+
+<!-- Centered title / artist (always visible over the cover) -->
+<div class="info-center">
+  <div class="info-text">
+    <div class="title-wrap"><div class="title" id="tTitle"></div></div>
+    <div class="artist" id="tArtist">—</div>
   </div>
+</div>
 
-  <div class="toast" id="toast"></div>
-  <div class="add-popup" id="addPopup"></div>
+<div class="toast" id="toast"></div>
+<div class="add-popup" id="addPopup"></div>
+
+<!-- Hover controls: progress + transport + volume -->
+<div class="hover-ui">
 
   <!-- Progress -->
   <div class="prog-wrap">
@@ -559,7 +575,7 @@ body.play-flat .cc-play svg{width:22px;height:22px}
     setFavIcon(st.fav);
 
     var cov = document.getElementById('tCover');
-    var badge = sourceBadgeHTML(st.source);
+    var badge = '';
     if (st.artwork) {
       cov.innerHTML = '<img src="' + st.artwork + '" alt="">' + badge;
     } else {

@@ -37,7 +37,7 @@ export default defineConfig(async () => ({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
-        miniplayer: path.resolve(__dirname, 'miniplayer.html'),
+        miniplayer: path.resolve(__dirname, 'picture-in-picture.html'),
         'tray-popup': path.resolve(__dirname, 'tray-popup.html'),
         overlay: path.resolve(__dirname, 'overlay.html'),
       },

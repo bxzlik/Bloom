@@ -70,6 +70,11 @@ export interface PlaylistState {
    * `playlists.forEach(p=>p.trs=p.trs.filter(x=>x!==id))`.
    */
   purgeTracks: (ids: string[]) => void
+  /**
+   * Заменить id трека во ВСЕХ плейлистах (переключение площадки — id меняется).
+   * Позиция сохраняется; если newId уже был в плейлисте — дубль убираем.
+   */
+  remapTrack: (oldId: string, newId: string) => void
 }
 
 export const usePlaylistStore = create<PlaylistState>((set) => {
@@ -165,6 +170,20 @@ export const usePlaylistStore = create<PlaylistState>((set) => {
           if (!p.trs.some((id) => remove.has(id))) return p
           changed = true
           return { ...p, trs: p.trs.filter((id) => !remove.has(id)) }
+        })
+        return changed ? persist(next) : s
+      }),
+
+    remapTrack: (oldId, newId) =>
+      set((s) => {
+        let changed = false
+        const next = s.playlists.map((p) => {
+          if (!p.trs.includes(oldId)) return p
+          changed = true
+          const trs = p.trs
+            .map((id) => (id === oldId ? newId : id))
+            .filter((id, i, arr) => arr.indexOf(id) === i) // убрать дубль, если newId уже был
+          return { ...p, trs }
         })
         return changed ? persist(next) : s
       }),

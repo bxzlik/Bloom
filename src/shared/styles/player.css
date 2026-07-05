@@ -231,7 +231,11 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 .cc:hover{color:var(--text);background:var(--hover)}
 .cc.on{color:var(--accent)}
 /* «Умная» перемешка — мини-значок в белом кружке сверху справа над shuffle. */
-.cc-badge{position:absolute;top:3px;right:3px;width:13px;height:13px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;line-height:1;color:#000;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.cc-badge{position:absolute;top:3px;right:3px;width:13px;height:13px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;line-height:1;color:#000;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.3);animation:cc-badge-pop .18s ease-out}
+/* Лёгкое появление бейджика: плавно проявляется (без масштабирования, чтобы
+   иконка/цифра внутри не смещалась). */
+@keyframes cc-badge-pop{0%{opacity:0}100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.cc-badge{animation:none}}
 /* Числовые бейджи (repeat-one, громкость): цифры оптически сидят выше центра —
    компенсируем небольшим отступом сверху, чтобы визуально были по центру. */
 .cc-badge.num{padding-top:1px}

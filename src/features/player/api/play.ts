@@ -1,7 +1,7 @@
 import type { Track } from '@entities/track'
 import { trackRegistry } from '@entities/track'
 import { invoke } from '@shared/tauri'
-import { useLibStore, useFavStore, useHistoryStore, useActivityStore, saveTrackToLibrary, usePlaylistStore, useNewPlModalStore } from '@features/library'
+import { useLibStore, useFavStore, useHistoryStore, useActivityStore, saveTrackToLibrary, replaceLibTrack, usePlaylistStore, useNewPlModalStore } from '@features/library'
 import { toast, notify } from '@shared/ui'
 import { t as i18nT } from '@shared/i18n'
 import { requestLyrics, useLyricsStore } from '@features/lyrics'
@@ -522,6 +522,72 @@ export const switchPlatform = async (providerId: string): Promise<void> => {
 
   if (posBefore > 2) setPendingResumeSeek(posBefore)
   await loadPlay(match.id)
+  toast(i18nT('toast.srcNow', { label: provider.label }))
+}
+
+/**
+ * Переключить трек библиотеки на версию с другой площадки — ПЕРСИСТЕНТНАЯ замена
+ * записи в библиотеке (в отличие от `switchPlatform`, который свапает только
+ * играющий элемент очереди). Ищем по «название + артист» в целевом провайдере,
+ * берём лучшее совпадение и ремапим все ссылки на трек (`replaceLibTrack`:
+ * плейлисты, лайки, порядок, IDB). Зовётся из контекстного меню трека библиотеки.
+ */
+export const switchTrackPlatform = async (
+  track: Track,
+  providerId: string,
+): Promise<void> => {
+  if (trackProviderId(track) === providerId) return // уже на этой площадке
+
+  const provider = getProvider(providerId)
+  if (!provider) {
+    toast(i18nT('toast.srcUnavailable'))
+    return
+  }
+
+  let tracks: Track[] = []
+  try {
+    const res = await provider.search(`${track.name} ${track.artist}`.trim())
+    tracks = res.tracks ?? []
+  } catch {
+    toast(i18nT('toast.srcSwitchFail'))
+    return
+  }
+
+  const match = pickPlatformMatch(tracks, track)
+  if (!match) {
+    toast(i18nT('toast.trackNotOnSrc', { label: provider.label }))
+    notify({
+      kind: 'error',
+      titleKey: 'notif.trackUnavailable.title',
+      body: i18nT('toast.trackNotOnSrc', { label: provider.label }),
+    })
+    return
+  }
+
+  // Снимаем temp-флаги и сохраняем позицию сортировки «по дате» — переносим
+  // addedAt старого трека. Blob/stream URL не персистим.
+  const next: Track = {
+    ...match,
+    _scTemp: false,
+    _ymTemp: false,
+    addedAt: track.addedAt ?? match.addedAt ?? Date.now(),
+    url: null,
+  }
+
+  replaceLibTrack(track.id, next)
+
+  // Если трек сейчас в очереди/играет — ремапим id, чтобы очередь не ссылалась
+  // на исчезнувший трек. Позицию воспроизведения не трогаем (это не «слушать
+  // сейчас», а замена записи): текущий стрим доиграет, следующий возьмётся уже
+  // с новой площадки.
+  const { queue, curId } = useQueueStore.getState()
+  if (queue.includes(track.id)) {
+    useQueueStore.setState({
+      queue: queue.map((id) => (id === track.id ? next.id : id)),
+      curId: curId === track.id ? next.id : curId,
+    })
+  }
+
   toast(i18nT('toast.srcNow', { label: provider.label }))
 }
 

@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import {
   useLibStore,
   useHistoryStore,
   useActivityStore,
   useUsageStore,
 } from '@features/library'
-import { toast } from '@shared/ui'
 import { useT, useLocale, t as tt } from '@shared/i18n'
 import { fmtDurLong } from '../lib/formatStats'
 import {
@@ -21,11 +20,10 @@ import { Ico } from '@shared/ui/icons/solar'
 /**
  * Вкладка «Достижения» на странице профиля. Считает прогресс реактивно из тех же
  * сторов, что и статистика, и хранит только даты разблокировки
- * (`achievementsStore`). При появлении новых анлоков — тост (кроме первого
- * seeding-прогона у существующего пользователя).
+ * (`achievementsStore`). Синхронизацию/тосты новых анлоков ведёт глобальный
+ * `useAchievementsWatcher` (App) — чтобы достижения приходили в реальном
+ * времени, а не только при открытии этой вкладки; здесь только рендер.
  */
-
-const tierLabelKey = { bronze: 'ach.tier.bronze', silver: 'ach.tier.silver', gold: 'ach.tier.gold' } as const
 
 const fmtVal = (n: number, unit: AchUnit): string =>
   unit === 'time' ? fmtDurLong(n) : String(n)
@@ -38,7 +36,6 @@ export const AchievementsSection = () => {
   const log = useActivityStore((s) => s.log)
   const appMs = useUsageStore((s) => s.appMs)
   const unlocked = useAchievementsStore((s) => s.unlocked)
-  const sync = useAchievementsStore((s) => s.sync)
 
   const list = useMemo(() => {
     const ctx = buildAchContext({
@@ -52,25 +49,6 @@ export const AchievementsSection = () => {
 
   const done = list.reduce((n, a) => n + a.tierReached, 0)
   const total = list.length * TIER_ORDER.length
-
-  // Синхронизируем разблокировки и тостим новые. `list` пересчитывается при
-  // любом изменении исходных данных — sync сам игнорирует, если нового нет.
-  const lastSig = useRef('')
-  useEffect(() => {
-    const reached: Record<string, number> = {}
-    for (const a of list) reached[a.def.id] = a.tierReached
-    const sig = JSON.stringify(reached)
-    if (sig === lastSig.current) return
-    lastSig.current = sig
-    const fresh = sync(reached)
-    for (const k of fresh) {
-      const [id, idxStr] = k.split(':')
-      const a = list.find((x) => x.def.id === id)
-      if (!a) continue
-      const tier = TIER_ORDER[Number(idxStr)]!
-      toast(`🏅 ${t('ach.unlocked')} ${t(a.def.nameKey)} — ${t(tierLabelKey[tier])}`)
-    }
-  }, [list, sync, t])
 
   return (
     <div className="ach-page">

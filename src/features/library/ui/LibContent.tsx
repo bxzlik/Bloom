@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { useUiPrefsStore } from '@features/settings'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
-import { VinylCover } from '@shared/ui'
+import { PlaylistCover } from '@shared/ui'
 import { useLibStore, usePlaylistStore, useFavStore, usePlEditStore } from '../model'
 import type { LibMode, Playlist } from '../model'
 import type { Track } from '@entities/track'
@@ -163,10 +163,20 @@ export const LibContent = () => {
     stopEdit()
   }
 
-  // При смене раздела закрываем поиск.
+  // При смене раздела закрываем поиск и чистим запрос (иначе висел бы «невидимый»
+  // фильтр — строка закрыта, а список отфильтрован).
   useEffect(() => {
     setSearchOpen(false)
-  }, [mode, plId, folderPath])
+    setSearchQuery('')
+  }, [mode, plId, folderPath, setSearchQuery])
+
+  // Запрос выставили извне при закрытой строке (клик по альбому локального
+  // трека → фильтр по названию) — раскрываем строку, чтобы фильтр был виден и
+  // его можно было снять.
+  useEffect(() => {
+    if (searchQuery && !searchOpen) setSearchOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery])
 
   // При открытии — фокус на input.
   useEffect(() => {
@@ -569,10 +579,12 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
       return {
         heroName: pl?.name ?? tFn('lib.playlist'),
         heroSub: tracksAndDuration(pl?.trs.length ?? 0, dur),
-        // Без обложки рисуем винил (без бирюзовой подложки off-icon); цвет
-        // лейбла детерминирован по id плейлиста.
+        // Без обложки рисуем мозаику из обложек треков (≥4) либо винил-фолбэк;
+        // цвет/вид детерминирован по id плейлиста.
         heroIconClass: pl?.cover ? 'off-icon' : '',
-        HeroIcon: pl ? () => <VinylCover seed={pl.id} /> : NoteHeroIcon,
+        HeroIcon: pl
+          ? () => <PlaylistCover covers={pl.trs.map((id) => byId.get(id)?.cover)} seed={pl.id} />
+          : NoteHeroIcon,
         heroCover: pl?.cover,
       }
     }

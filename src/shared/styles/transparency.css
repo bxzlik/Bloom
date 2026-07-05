@@ -207,3 +207,27 @@ body.glass-overlays .ti-modal .ti-desc-cell,
 body.glass-overlays .ti-modal .ti-genre-tag {
   background: transparent !important;
 }
+
+/* ── Нативная (OS-уровня) прозрачность окна ────────────────────────────────────
+   Класс `native-transparent` на <html> (ставит transparencyStore, только при
+   trMode==='on'). Требует окна, созданного с `transparent: true` (tauri.conf).
+
+   Гасим непрозрачные базовые слои, чтобы сквозь окно был виден рабочий стол:
+     • <html> — фон #000 (base.css);
+     • <body> — фон var(--bg) !important (overrides-main.css).
+   Слой #bgl (обложка/картинка-фон + затемнение, inline background-image) НЕ
+   гасим полностью, а делаем БЛЁКЛЫМ (частичная opacity) — картинка-фон чуть
+   просвечивает поверх стола. Без картинки #bgl.no-bg прозрачен → виден чистый
+   стол. Значение --native-bg-op (0..1) — регулятор «яркости» картинки над столом.
+   Блоки (.sidebar/.main и т.п.) остаются со своим фоном/стеклом — стол виден
+   в зазорах и сквозь полупрозрачное стекло. */
+html.native-transparent {
+  --native-bg-op: 0.28;
+}
+html.native-transparent,
+html.native-transparent body {
+  background: transparent !important;
+}
+html.native-transparent #bgl {
+  opacity: var(--native-bg-op) !important;
+}

@@ -1,6 +1,7 @@
 export * from './LibPage'
 export * from './LibSidebar'
 export * from './LibContent'
+export * from './PlCover'
 export * from './LibTracklist'
 export * from './AddFromLibModal'
 export * from './TrackCtxMenu'
