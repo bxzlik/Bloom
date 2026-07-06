@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Bloom</title>
+<title>Bloom PiP</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
 :root{
@@ -395,6 +395,10 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   var scrubbing = false;   // блок пушей/тикера (drag ИЛИ колесо) — st.pos не трогаем
   var dragging = false;    // зажат указатель на баре (только drag — для pointermove)
   var scrubLast = 0;       // троттлинг live-сика во время перетаскивания
+  // Окно видимо (Rust шлёт bloom-win-vis на show/hide). Пока скрыто — состояние
+  // копим в st без DOM-работы и глушим тикер; при показе рендерим разом.
+  var winVisible = true;
+  var needRender = false;
 
   function readTitlebarPref() {
     try { showTrackInTitle = localStorage.getItem('bloom_changeTitlebar') === 'true'; } catch(e) {}
@@ -544,7 +548,6 @@ body.play-flat .cc-play svg{width:22px;height:22px}
 
   function updateUI(s) {
     if (!s) return;
-    refreshLocale();
     if (s.source   !== undefined) st.source  = s.source;
     if (s.title    !== undefined) st.title   = s.title;
     if (s.artist   !== undefined) st.artist  = s.artist;
@@ -560,12 +563,18 @@ body.play-flat .cc-play svg{width:22px;height:22px}
     if (s.fav      !== undefined) st.fav     = !!s.fav;
     if (s.canAddToLib !== undefined) st.canAddToLib = !!s.canAddToLib;
     if (s.can_add_to_lib !== undefined) st.canAddToLib = !!s.can_add_to_lib;
-    if (s.volume   !== undefined) {
-      st.volume = s.volume;
-      document.getElementById('volSl').value = s.volume;
-      document.getElementById('volNum').textContent = s.volume;
-      updateVolumeIcon(s.volume);
-    }
+    if (s.volume   !== undefined) st.volume  = s.volume;
+
+    if (!winVisible) { needRender = true; stopTicker(); return; }
+    renderAll();
+  }
+
+  // Обложку пересобираем только при реальной смене артворка: innerHTML с <img>
+  // на каждом пуше (~1/с) заставлял вебвью пересоздавать и декодировать картинку.
+  var _coverKey = null;
+  function renderAll() {
+    needRender = false;
+    refreshLocale();
 
     // Текст заголовка ставит сам updateMarquee (владеет одиночным/двухкопийным
     // содержимым). Отдельный textContent тут затирал бы 2 копии на каждом пуше.
@@ -574,12 +583,15 @@ body.play-flat .cc-play svg{width:22px;height:22px}
     updateMarquee();
     setFavIcon(st.fav);
 
-    var cov = document.getElementById('tCover');
-    var badge = '';
-    if (st.artwork) {
-      cov.innerHTML = '<img src="' + st.artwork + '" alt="">' + badge;
-    } else {
-      cov.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>' + badge;
+    var key = st.artwork || '';
+    if (key !== _coverKey) {
+      _coverKey = key;
+      var cov = document.getElementById('tCover');
+      if (st.artwork) {
+        cov.innerHTML = '<img src="' + st.artwork + '" alt="">';
+      } else {
+        cov.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>';
+      }
     }
 
     setPlayIcon(st.playing);
@@ -588,6 +600,10 @@ body.play-flat .cc-play svg{width:22px;height:22px}
 
     document.getElementById('btnShuf').classList.toggle('on', !!st.shuffle);
     document.getElementById('btnRep').classList.toggle('on', st.repeat > 0);
+
+    document.getElementById('volSl').value = st.volume;
+    document.getElementById('volNum').textContent = st.volume;
+    updateVolumeIcon(st.volume);
   }
 
   // ── Add popup ─────────────────────────────────────
@@ -891,6 +907,15 @@ body.play-flat .cc-play svg{width:22px;height:22px}
       }
     });
     window.addEventListener('focus', refreshLocale);
+
+    // Показ/скрытие окна (шлёт Rust): скрыто → глушим тикер, при показе
+    // дорисовываем накопленное состояние.
+    listenEvent('bloom-win-vis', function(v) {
+      winVisible = !!v;
+      if (!winVisible) { stopTicker(); return; }
+      if (needRender) renderAll();
+      else if (st.playing) startTicker();
+    });
 
     listenEvent('bloom-mp-state',    function(p) { updateUI(p); });
     listenEvent('bloom-mp-accent',   function(c) { if (c) document.documentElement.style.setProperty('--accent', c); });

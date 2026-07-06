@@ -10,7 +10,7 @@ import { useUiPrefsStore } from '@features/settings'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
 import { PlaylistCover } from '@shared/ui'
 import { useLibStore, usePlaylistStore, useFavStore, usePlEditStore } from '../model'
-import type { LibMode, Playlist } from '../model'
+import type { LibMode, Playlist, PlSourceRef } from '../model'
 import type { Track } from '@entities/track'
 import {
   tracksAndDuration,
@@ -24,6 +24,7 @@ import {
 import { playFromSource, playShuffledFromSource } from '@features/player'
 import { LibTracklist } from './LibTracklist'
 import { LibGridOverview } from './LibGridOverview'
+import { PlSourcesEditor } from './PlSourcesEditor'
 import { PlMenu } from './PlMenu'
 import { AddFromLibModal } from './AddFromLibModal'
 import { SelBar } from './SelBar'
@@ -52,12 +53,28 @@ export const LibContent = () => {
   const renamePl = usePlaylistStore((s) => s.renamePl)
   const setPlDesc = usePlaylistStore((s) => s.setPlDesc)
   const setPlCover = usePlaylistStore((s) => s.setPlCover)
+  const setPlSources = usePlaylistStore((s) => s.setPlSources)
   const deletePl = usePlaylistStore((s) => s.deletePl)
   const editingId = usePlEditStore((s) => s.editingId)
   const isNewEdit = usePlEditStore((s) => s.isNew)
   const startEdit = usePlEditStore((s) => s.startEdit)
   const stopEdit = usePlEditStore((s) => s.stop)
   const editing = mode === 'pl' && !!activePlaylist && editingId === activePlaylist.id
+
+  // Выход из редактора: держим PlSourcesEditor смонтированным ещё ~180мс с
+  // классом is-closing (fade-out), и только потом монтируем трек-лист (fade-in).
+  const [editorClosing, setEditorClosing] = useState(false)
+  const prevEditingRef = useRef(editing)
+  useEffect(() => {
+    const was = prevEditingRef.current
+    prevEditingRef.current = editing
+    if (was && !editing) {
+      setEditorClosing(true)
+      const tm = setTimeout(() => setEditorClosing(false), 180)
+      return () => clearTimeout(tm)
+    }
+    if (editing) setEditorClosing(false)
+  }, [editing])
   const searchQuery = useLibStore((s) => s.searchQuery)
   const setSearchQuery = useLibStore((s) => s.setSearchQuery)
   const selectBuiltin = useLibStore((s) => s.selectBuiltin)
@@ -80,10 +97,11 @@ export const LibContent = () => {
   const [plMenuCursor, setPlMenuCursor] = useState<{ x: number; y: number } | null>(null)
   const [addToPlId, setAddToPlId] = useState<string | null>(null)
 
-  // Inline-редактирование плейлиста (вместо модалки).
+  // Редактирование плейлиста: шапка + большой редактор на месте трек-листа.
   const [editName, setEditName] = useState('')
   const [editDesc, setEditDesc] = useState('')
   const [editCover, setEditCover] = useState<string | undefined>(undefined)
+  const [editSources, setEditSources] = useState<PlSourceRef[]>([])
   const [coverBusy, setCoverBusy] = useState(false)
   const editNameRef = useRef<HTMLInputElement>(null)
 
@@ -99,6 +117,7 @@ export const LibContent = () => {
       setEditName(pl?.name ?? '')
       setEditDesc(pl?.desc ?? '')
       setEditCover(pl?.cover)
+      setEditSources(pl?.sources ?? [])
       setCoverBusy(false)
     }
   }
@@ -149,6 +168,7 @@ export const LibContent = () => {
     renamePl(activePlaylist.id, name)
     setPlDesc(activePlaylist.id, editDesc.trim() || undefined)
     setPlCover(activePlaylist.id, editCover)
+    setPlSources(activePlaylist.id, editSources)
     stopEdit()
   }
 
@@ -481,9 +501,16 @@ export const LibContent = () => {
           </div>
         </div>
       </div>
-      <LibTracklist />
-      {/* SelBar — снизу `insertBefore(bar, list.nextSibling)`. */}
-      <SelBar />
+      {editing || editorClosing ? (
+        // Большой редактор: трек-лист скрыт, на его месте — источники обновления.
+        <PlSourcesEditor sources={editSources} onChange={setEditSources} closing={!editing} />
+      ) : (
+        <>
+          <LibTracklist />
+          {/* SelBar — снизу `insertBefore(bar, list.nextSibling)`. */}
+          <SelBar />
+        </>
+      )}
       </>
       )}
 

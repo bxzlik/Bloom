@@ -17,7 +17,7 @@ import { PlCover } from './PlCover'
 import { playFromSource, playShuffledFromSource, downloadPlaylistTracks, type PlaySource } from '@features/player'
 import { Ico } from '@shared/ui/icons/solar'
 import { exportPlaylistFile, folderScan, folderRemove } from '../api'
-import { buildExportBundle, refreshScPlaylist, deleteUploadedTrack } from '../lib'
+import { buildExportBundle, refreshPlaylistTracks, deleteUploadedTrack } from '../lib'
 import {
   usePlaylistStore,
   useHistoryStore,
@@ -437,15 +437,15 @@ export const PlMenu = ({
         />
       ),
     ]
-    if (playlist.scSource || playlist.scLikes) {
+    if (playlist.sources?.length) {
       tools.push(
         <Item
-          key="refresh-sc"
+          key="refresh-sources"
           icon={<RefreshIcon />}
           label={t('lib.plmenu.refreshTracks')}
           onClick={() => {
             onClose()
-            void refreshScPlaylist(playlist.id)
+            void refreshPlaylistTracks(playlist.id)
           }}
         />,
       )

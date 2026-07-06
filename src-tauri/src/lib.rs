@@ -12,9 +12,11 @@ mod folder_watcher;
 mod global_hotkey;
 mod logger;
 mod lyrics_service;
+mod mirror;
 mod overlay;
 mod pipe;
 mod smtc;
+mod soundcloud;
 mod thumb_toolbar;
 mod tray;
 mod updater;
@@ -214,6 +216,26 @@ pub fn run() {
             commands::sp_has_creds,
             commands::sp_check,
             commands::sp_clear_creds,
+            commands::sc_set_client_id,
+            commands::sc_check_connection,
+            commands::sc_api_fetch,
+            commands::sc_search_tracks,
+            commands::sc_search_artists,
+            commands::sc_search_playlists,
+            commands::sc_search_albums,
+            commands::sc_get_user,
+            commands::sc_user_playlists,
+            commands::sc_user_likes,
+            commands::sc_artist_reposts,
+            commands::sc_artist_reposts_page,
+            commands::sc_artist_top_tracks,
+            commands::sc_artist_data,
+            commands::sc_artist_tracks_page,
+            commands::sc_playlist_tracks,
+            commands::sc_playlist_by_id,
+            commands::sc_track_by_id,
+            commands::sc_resolve_url,
+            commands::sc_stream_url,
         ]);
 
     builder
@@ -226,24 +248,13 @@ pub fn run() {
 
                 // Отключаем браузерные accelerator-клавиши WebView2 (Ctrl+F «найти на
                 // странице», F5 reload, Ctrl+P print и т.п.) — Bloom это приложение, а не
-                // браузер. Применяем ко всем окнам (main, overlay, miniplayer, tray-popup).
+                // браузер. На старте существует только main; зеркальные окна
+                // (miniplayer/tray-popup/overlay) создаются лениво и получают то же
+                // самое в mirror.rs при создании.
                 // Обычные клавиши редактирования (Ctrl+C/V/X/A) не затрагиваются.
                 // F5/Ctrl+R возвращаем вручную во фронте, F12 DevTools — командой open_devtools.
                 for (_label, w) in app.webview_windows() {
                     disable_browser_accelerator_keys(&w);
-                }
-                // Apply DWM rounded corners to mini player window too
-                if let Some(mp) = app.get_webview_window("miniplayer") {
-                    use windows::Win32::Foundation::HWND;
-                    if let Ok(hwnd) = mp.hwnd() {
-                        window_chrome::apply_dwm(HWND(hwnd.0));
-                    }
-                }
-                if let Some(tp) = app.get_webview_window("tray-popup") {
-                    use windows::Win32::Foundation::HWND;
-                    if let Ok(hwnd) = tp.hwnd() {
-                        window_chrome::apply_dwm(HWND(hwnd.0));
-                    }
                 }
             }
 
@@ -323,17 +334,6 @@ pub fn run() {
                             let _ = config::save_window_state(&ws);
                         }
                         _ => {}
-                    }
-                });
-            }
-
-            // Оверлей: в режиме ручного размещения ловим перемещения окна (OS-drag)
-            // и сообщаем main-окну новые доли позиции для persist.
-            if let Some(ov) = app.get_webview_window("overlay") {
-                let ov_app = app.handle().clone();
-                ov.on_window_event(move |event| {
-                    if let tauri::WindowEvent::Moved(_) = event {
-                        overlay::report_moved(&ov_app);
                     }
                 });
             }

@@ -51,7 +51,14 @@
 .app.sidebar-top.playerbar-left.mp-col-visible .main-wrap{margin-left:80px}
 .app.sidebar-top.playerbar-right.mp-col-visible .main-wrap{margin-right:80px}
 .page{display:none;flex:1;overflow:hidden;flex-direction:column;min-height:0}
-.page.active{display:flex}
+/* Переход между страницами: все страницы смонтированы, переключается класс
+   `active` (display:none↔flex). display не анимируется, поэтому вешаем входную
+   анимацию — страница, получая `active`, плавно проявляется снизу вверх.
+   Уходящая исчезает мгновенно (уходит в display:none) — визуально это читается
+   как аккуратный кроссфейд без затрат на удержание старой страницы в DOM. */
+.page.active{display:flex;animation:page-in .2s ease-out}
+@keyframes page-in{from{opacity:.55}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.page.active{animation:none}}
 #page-lib{flex-direction:row;gap:0;padding:0}
 #bloom-loading{position:fixed;inset:0;z-index:9999;background:#0f0f0f;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;transition:opacity .35s}
 #bloom-loading.fade{opacity:0;pointer-events:none}

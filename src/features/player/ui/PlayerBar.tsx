@@ -1,8 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type WheelEvent as ReactWheelEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import {
   useFavStore,
   useLibStore,
+  usePlaylistStore,
+  saveTrackToLibrary,
   createPlaylistInline,
   TrackCtxMenu,
   TagEditor,
@@ -29,6 +31,7 @@ import {
 } from '../api/play'
 import { audioEngine } from '../lib/audioEngine'
 import { MarqueeTitle } from './MarqueeTitle'
+import { AddPopup } from './AddPopup'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
@@ -72,6 +75,8 @@ export const PlayerBar = () => {
   const curTrack =
     useLibStore((s) => (curId ? s.tracks.find((t) => t.id === curId) ?? null : null)) ??
     (curId ? trackRegistry.get(curId) ?? null : null)
+  const inLib = useLibStore((s) => (curId ? s.tracks.some((t) => t.id === curId) : false))
+  const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
 
   // Настройки бара (раздел «Плеер» → Мини-плеер): вкл/выкл, фон, форма обложки.
   const mpEnabled = usePlayerViewStore((s) => s.mpEnabled)
@@ -151,7 +156,7 @@ export const PlayerBar = () => {
     centerRef.current?.style.setProperty('--mp-cw', `${Math.ceil(center)}px`)
     // +48: горизонтальный паддинг .mp-inner (16×2) + 2 межколоночных зазора (8×2).
     bar.style.setProperty('--mp-fw', `${Math.ceil(side * 2 + center + 48)}px`)
-  }, [mpCompact, curId, page, title, artist, playing, volume, mpHide.fav, mpHide.repeat, mpHide.shuffle, mpHide.time, mpHide.queue, mpHide.lyrics, mpHide.bigpic, t])
+  }, [mpCompact, curId, page, title, artist, playing, volume, mpHide.fav, mpHide.add, mpHide.repeat, mpHide.shuffle, mpHide.time, mpHide.queue, mpHide.lyrics, mpHide.bigpic, t])
 
   const goNav = useNavStore((s) => s.goNav)
 
@@ -167,6 +172,21 @@ export const PlayerBar = () => {
   // Ctx-меню трека по ПКМ на баре (как на обложке page-player).
   const [ctxPos, setCtxPos] = useState<{ x: number; y: number } | null>(null)
   const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
+
+  // Попап «Добавить в …» у кнопки «+» рядом с сердечком (как #mainCovAdd в page-player).
+  // Toggle: повторный клик по «+» закрывает попап.
+  const addAnchorRef = useRef<HTMLElement | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const openAddPopup = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    const btn = e.currentTarget
+    if (addOpen && addAnchorRef.current === btn) {
+      setAddOpen(false)
+      return
+    }
+    addAnchorRef.current = btn
+    setAddOpen(true)
+  }
 
   // Глобальная правая панель (очередь/текст). Хуки ДО early-return ниже.
   const grpOpen = useGrpStore((s) => s.open)
@@ -376,6 +396,29 @@ export const PlayerBar = () => {
                 <HeartSvg size={14} filled={isFav} />
               </button>
             )}
+            {!mpHide.add && (
+              <button
+                id="mpAdd"
+                onClick={openAddPopup}
+                aria-label={t('player.aria.add')}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 'calc(var(--radius) * 0.7)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text2)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: '.15s',
+                  flexShrink: 0,
+                }}
+              >
+                <Ico name="addCircle" width={15} height={15} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -479,6 +522,29 @@ export const PlayerBar = () => {
         onEditTags={(tr) => setTagEditTrack(tr)}
       />
       <TagEditor track={tagEditTrack} onClose={() => setTagEditTrack(null)} />
+
+      {/* Попап «Добавить в …» у кнопки «+» рядом с сердечком. */}
+      <AddPopup
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        anchorRef={addAnchorRef}
+        hasTrack={!!curId}
+        canAddToLib={!!curTrack && !inLib}
+        trackId={curId ?? undefined}
+        onAddToLib={() => {
+          if (curTrack) saveTrackToLibrary(curTrack)
+        }}
+        onPickPlaylist={(plId) => {
+          // SC-трек сперва персистим (иначе после рестарта не зарезолвится).
+          if (curTrack) {
+            saveTrackToLibrary(curTrack)
+            addTrackToPl(plId, curTrack.id)
+          }
+        }}
+        onCreateNewPlaylist={() => {
+          if (curId) createPlForTrack(curId)
+        }}
+      />
     </>
   )
 }

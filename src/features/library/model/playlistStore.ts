@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import type { Playlist } from './playlist'
-import { newPlaylistId } from './playlist'
+import type { Playlist, PlSourceRef } from './playlist'
+import { newPlaylistId, migratePlSources } from './playlist'
 
 const LS_KEY = 'bloom_playlists'
 
@@ -9,10 +9,12 @@ const loadFromStorage = (): Playlist[] => {
     const raw = localStorage.getItem(LS_KEY) || '[]'
     const arr = JSON.parse(raw)
     if (!Array.isArray(arr)) return []
-    return arr.filter(
-      (p): p is Playlist =>
-        p && typeof p.id === 'string' && typeof p.name === 'string' && Array.isArray(p.trs),
-    )
+    return arr
+      .filter(
+        (p): p is Playlist =>
+          p && typeof p.id === 'string' && typeof p.name === 'string' && Array.isArray(p.trs),
+      )
+      .map(migratePlSources)
   } catch {
     return []
   }
@@ -27,8 +29,7 @@ const saveToStorage = (playlists: Playlist[]): void => {
       trs: p.trs,
       desc: p.desc,
       cover: p.cover,
-      scSource: p.scSource,
-      scLikes: p.scLikes,
+      sources: p.sources,
     }))
     localStorage.setItem(LS_KEY, JSON.stringify(slim))
   } catch {
@@ -51,11 +52,13 @@ export interface PlaylistState {
     name: string,
     desc?: string,
     cover?: string,
-    opts?: { scSource?: string; scLikes?: string },
+    opts?: { sources?: PlSourceRef[] },
   ) => Playlist
   renamePl: (id: string, name: string) => void
   setPlDesc: (id: string, desc: string | undefined) => void
   setPlCover: (id: string, cover: string | undefined) => void
+  /** Заменить список источников «Обновить треки» целиком. */
+  setPlSources: (id: string, sources: PlSourceRef[]) => void
   deletePl: (id: string) => void
   addTrackToPl: (id: string, trackId: string) => void
   removeTrackFromPl: (id: string, trackId: string) => void
@@ -93,8 +96,7 @@ export const usePlaylistStore = create<PlaylistState>((set) => {
         trs: [],
         ...(desc ? { desc } : {}),
         ...(cover ? { cover } : {}),
-        ...(opts?.scSource ? { scSource: opts.scSource } : {}),
-        ...(opts?.scLikes ? { scLikes: opts.scLikes } : {}),
+        ...(opts?.sources?.length ? { sources: opts.sources } : {}),
       }
       set((s) => persist([...s.playlists, pl]))
       return pl
@@ -111,6 +113,17 @@ export const usePlaylistStore = create<PlaylistState>((set) => {
     setPlCover: (id, cover) =>
       set((s) =>
         persist(s.playlists.map((p) => (p.id === id ? { ...p, cover } : p))),
+      ),
+
+    setPlSources: (id, sources) =>
+      set((s) =>
+        persist(
+          s.playlists.map((p) =>
+            p.id === id
+              ? { ...p, sources: sources.length ? sources : undefined }
+              : p,
+          ),
+        ),
       ),
 
     deletePl: (id) =>

@@ -1,6 +1,7 @@
 import type { Track } from '@entities/track'
 import { resolveUrlAny, getProvider } from '@features/providers'
 import { t as tFn } from '@shared/i18n'
+import type { PlSourceRef } from '../model/playlist'
 import { usePlaylistStore } from '../model/playlistStore'
 import { useFavStore } from '../model/favStore'
 import { saveTrackToLibrary } from './saveToLibrary'
@@ -35,9 +36,15 @@ export interface ImportSource {
   title: string
   cover?: string | null
   tracks: Track[]
-  /** permalink источника — для «Обновить треки» (только SC-коллекции). */
-  scSource?: string
+  /** Источник — привязывается к плейлисту для «Обновить треки» (любая площадка). */
+  source?: PlSourceRef
 }
+
+/** Совпадение источников (для дедупликации привязок). */
+export const samePlSource = (a: PlSourceRef, b: PlSourceRef): boolean =>
+  a.kind === 'url'
+    ? b.kind === 'url' && a.url === b.url
+    : b.kind === 'scLikes' && a.userId === b.userId
 
 export interface ApplyImportResult {
   /** Сколько треков реально добавлено (без дублей). */
@@ -51,11 +58,11 @@ export interface ApplyImportResult {
  * (без сети) — общая для импорта по ссылке и импорта с детальной страницы.
  */
 export const applyImport = (target: ImportTarget, src: ImportSource): ApplyImportResult => {
-  const { title, cover, tracks, scSource } = src
+  const { title, cover, tracks, source } = src
   const ps = usePlaylistStore.getState()
 
   if (target.kind === 'create') {
-    const pl = ps.createPl(title, undefined, cover ?? undefined, scSource ? { scSource } : undefined)
+    const pl = ps.createPl(title, undefined, cover ?? undefined, source ? { sources: [source] } : undefined)
     tracks.forEach((t) => saveTrackToLibrary(t))
     // Точный порядок источника (addTrackToPl prepend'ит по одному — перевернул бы список).
     ps.reorderPlTracks(pl.id, tracks.map((t) => t.id))
@@ -89,6 +96,11 @@ export const applyImport = (target: ImportTarget, src: ImportSource): ApplyImpor
   const existing = pl ? pl.trs : []
   const newIds = tracks.map((t) => t.id).filter((id) => !existing.includes(id))
   ps.reorderPlTracks(target.id, [...existing, ...newIds])
+  // Импортированная коллекция становится источником «Обновить треки» плейлиста
+  // (привязок может быть сколько угодно, с разных площадок).
+  if (pl && source && !(pl.sources ?? []).some((s) => samePlSource(s, source))) {
+    ps.setPlSources(target.id, [...(pl.sources ?? []), source])
+  }
   return { added: newIds.length, createdId: target.id }
 }
 
@@ -103,7 +115,7 @@ export interface UrlImportResult {
   createdId?: string
 }
 
-interface ResolvedSource {
+export interface ResolvedCollection {
   title: string
   cover: string | null
   tracks: Track[]
@@ -114,8 +126,11 @@ interface ResolvedSource {
  * Резолв вставленной ссылки в набор треков. Разрешены ТОЛЬКО коллекции:
  * плейлист, альбом и лайки (профиль). Ссылку на одиночный трек/артиста
  * отклоняем (бросаем ошибку с понятным сообщением).
+ *
+ * Общая точка для импорта по ссылке, привязки источника в редакторе плейлиста
+ * и «Обновить треки» (повторный резолв привязанного URL).
  */
-const resolveSource = async (url: string): Promise<ResolvedSource> => {
+export const resolveCollectionUrl = async (url: string): Promise<ResolvedCollection> => {
   const hit = await resolveUrlAny(url.trim())
   if (!hit) throw new Error(tFn('lib.import.toast.unresolved'))
   const { providerId, resolved } = hit
@@ -153,14 +168,16 @@ export const importFromUrl = async (
   url: string,
   target: ImportTarget,
 ): Promise<UrlImportResult> => {
-  const src = await resolveSource(url)
+  const src = await resolveCollectionUrl(url)
   if (!src.tracks.length) throw new Error(tFn('lib.import.toast.empty'))
 
   const res = applyImport(target, {
     title: src.title,
     cover: src.cover,
     tracks: src.tracks,
-    scSource: src.sourceUrl,
+    // Канонический URL от площадки, иначе — вставленная ссылка как есть
+    // (у профилей-лайков sourceUrl нет, но сама ссылка резолвится повторно).
+    source: { kind: 'url', url: src.sourceUrl ?? url.trim(), title: src.title },
   })
   return { title: src.title, added: res.added, total: src.tracks.length, createdId: res.createdId }
 }

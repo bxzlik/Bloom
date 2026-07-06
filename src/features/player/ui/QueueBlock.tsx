@@ -1,5 +1,6 @@
-import { memo, useDeferredValue, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode, type RefObject } from 'react'
 import { useSortable } from '@shared/lib/useSortable'
+import { useWindowedList } from '@shared/lib/useWindowedList'
 import { useT, type TFunc } from '@shared/i18n'
 import {
   useLibStore,
@@ -122,6 +123,10 @@ const QueueBlockImpl = ({
     reorderQueue(which === 'played' ? [...newIds, cur, ...after] : [...before, cur, ...newIds])
   }
 
+  // API оконного списка обычного вида (проскроллить к треку, чья строка может
+  // быть не отрендерена окном виртуализации).
+  const scrollApiRef = useRef<QueueScrollApi | null>(null)
+
   // Слежка за играющим треком: при СМЕНЕ curId (не на каждый рендер — иначе
   // дёргалось бы на play/pause/fav) скроллим строку к ВЕРХУ списка ('start',
   // VList.scrollToIndex(playingIdx,'start','smooth')).
@@ -134,18 +139,23 @@ const QueueBlockImpl = ({
       requestAnimationFrame(() => {
         const cont = scrollRef.current
         if (!cont) return
-        const row = Array.from(cont.querySelectorAll<HTMLElement>('[data-id]')).find(
-          (el) => el.dataset.id === curId,
-        )
-        if (!row) return
         // В расширенном виде над строкой стоит заголовок «Сейчас играет»
         // (помечен data-q-now) — скроллим к нему, иначе заголовок уезжает за верх.
         const nowLabel = cont.querySelector<HTMLElement>('[data-q-now]')
+        const row = Array.from(cont.querySelectorAll<HTMLElement>('[data-id]')).find(
+          (el) => el.dataset.id === curId,
+        )
         const target = nowLabel ?? row
-        const cRect = cont.getBoundingClientRect()
-        const tRect = target.getBoundingClientRect()
-        const top = cont.scrollTop + (tRect.top - cRect.top)
-        cont.scrollTo({ top, behavior: 'smooth' })
+        if (target) {
+          const cRect = cont.getBoundingClientRect()
+          const tRect = target.getBoundingClientRect()
+          const top = cont.scrollTop + (tRect.top - cRect.top)
+          cont.scrollTo({ top, behavior: 'smooth' })
+        } else {
+          // Обычный вид: строка за пределами окна виртуализации — считаем
+          // позицию по индексу.
+          scrollApiRef.current?.scrollToId(curId)
+        }
       })
     }
     prevCurRef.current = curId
@@ -225,7 +235,7 @@ const QueueBlockImpl = ({
             {played.length > 0 && (
               <>
                 <QueueSectionLabel>{t('player.queue.section.played')}</QueueSectionLabel>
-                <QueueSortList items={played} onReorder={reorderSection('played')} handlers={rowHandlers} />
+                <QueueSortList items={played} onReorder={reorderSection('played')} handlers={rowHandlers} scrollRef={scrollRef} />
               </>
             )}
             {nowItem && (
@@ -247,12 +257,18 @@ const QueueBlockImpl = ({
             {upNext.length > 0 && (
               <>
                 <QueueSectionLabel>{t('player.queue.section.next')}</QueueSectionLabel>
-                <QueueSortList items={upNext} onReorder={reorderSection('next')} handlers={rowHandlers} />
+                <QueueSortList items={upNext} onReorder={reorderSection('next')} handlers={rowHandlers} scrollRef={scrollRef} />
               </>
             )}
           </>
         ) : (
-          <QueueSortList items={items} onReorder={(ids) => reorderQueue(ids)} handlers={rowHandlers} />
+          <QueueSortList
+            items={items}
+            onReorder={(ids) => reorderQueue(ids)}
+            handlers={rowHandlers}
+            scrollRef={scrollRef}
+            scrollApiRef={scrollApiRef}
+          />
         )}
       </div>
       <TrackCtxMenu
@@ -612,35 +628,92 @@ interface RowHandlers {
   onRemove: (id: string) => void
 }
 
+/** Наружное API оконного списка: скролл к треку по id (см. слежку за curId). */
+interface QueueScrollApi {
+  scrollToId: (id: string) => void
+}
+
 /**
  * Sortable-список треков одной секции (обычный вид = вся очередь; расширенный =
  * «Прослушано»/«Далее»). Свой useSortable-контейнер на секцию: drag не выходит
  * за её границы (cross-section перетаскивание физически невозможно), а заголовки
  * секций живут снаружи и не участвуют в DOM-перестановках реордера.
+ *
+ * Виртуализирован окном (useWindowedList) относительно общего скролла #qpList:
+ * рендерится только видимый срез строк + спейсеры.
  */
 const QueueSortList = ({
   items,
   onReorder,
   handlers,
+  scrollRef,
+  scrollApiRef,
 }: {
   items: { id: string; track: Track | null }[]
   onReorder: (newIds: string[]) => void
   handlers: RowHandlers
+  /** Скролл-контейнер #qpList (общий для секций расширенного вида). */
+  scrollRef: RefObject<HTMLDivElement | null>
+  /** Заполняется API скролла к треку (только обычный вид). */
+  scrollApiRef?: RefObject<QueueScrollApi | null>
 }) => {
+  const freezeRef = useRef(false)
+  const dragExpandRef = useRef(0)
+  const win = useWindowedList({
+    count: items.length,
+    scrollRef,
+    estimate: 68,
+    freezeRef,
+    expandRef: dragExpandRef,
+  })
   const sortable = useSortable<{ id: string; track: Track | null }>({
     items,
     getId: (x) => x.id,
     enabled: items.length > 1,
     onReorder,
+    getWindowStart: () => win.start,
+    // Старт drag: небольшой запас строк асинхронно (мгновенный захват), дальше
+    // окно в grow-only режиме дорастает при скролле — тащить можно сколь угодно
+    // далеко; на дропе сжимается обратно.
+    onDragChange: (active) => {
+      if (active) {
+        dragExpandRef.current = 40
+        win.refresh()
+        freezeRef.current = true
+      } else {
+        freezeRef.current = false
+        dragExpandRef.current = 0
+        win.refresh()
+      }
+    },
+  })
+  useEffect(() => {
+    if (!scrollApiRef) return
+    scrollApiRef.current = {
+      scrollToId: (id) => {
+        const idx = items.findIndex((x) => x.id === id)
+        if (idx >= 0) win.scrollToIndex(idx, 'smooth')
+      },
+    }
+    return () => {
+      scrollApiRef.current = null
+    }
   })
   return (
-    <div ref={sortable.containerRef}>
-      {items.map(({ id, track }) => {
+    <div
+      ref={(el) => {
+        sortable.containerRef.current = el
+        win.containerRef.current = el
+      }}
+    >
+      <div data-w-spacer style={{ height: win.padTop }} />
+      {items.slice(win.start, win.end).map(({ id, track }, i) => {
         const { rootProps, handleProps } = sortable.itemProps(id, () => handlers.onPlay(id))
         return (
           <QueueRow
             key={id}
             id={id}
+            widx={win.start + i}
             track={track}
             isPlaying={id === handlers.curId}
             rootProps={rootProps}
@@ -652,6 +725,7 @@ const QueueSortList = ({
           />
         )
       })}
+      <div data-w-spacer style={{ height: win.padBottom }} />
     </div>
   )
 }
@@ -660,6 +734,7 @@ const QueueSortList = ({
 
 const QueueRow = ({
   id,
+  widx,
   track,
   isPlaying,
   rootProps,
@@ -670,6 +745,8 @@ const QueueRow = ({
   onRemove,
 }: {
   id: string
+  /** Индекс в оконном списке (data-widx — замер высоты строки). */
+  widx?: number
   track: Track | null
   isPlaying: boolean
   rootProps: {
@@ -695,6 +772,7 @@ const QueueRow = ({
     <div
       className={`tr${isPlaying ? ' playing' : ''}${track?.disliked ? ' is-disliked' : ''}`}
       data-id={id}
+      data-widx={widx}
       onClick={onClick}
       onContextMenu={onContextMenu}
       style={{ cursor: 'pointer', ...rootProps.style }}

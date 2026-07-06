@@ -49,6 +49,19 @@ impl Default for OverlayCfg {
 static CFG: OnceCell<Mutex<OverlayCfg>> = OnceCell::new();
 /// OS-окно уже показано хотя бы раз (после этого не прячем при авто-скрытии).
 static SHOWN: AtomicBool = AtomicBool::new(false);
+/// ПЛАШКА (остров) сейчас видима на экране. Ставит JS через
+/// `overlay_set_interactive` — он зовётся ровно при показе/скрытии острова.
+/// Пока false, `now_playing` не шлёт `bloom-mp-state` в окно оверлея: OS-окно
+/// остаётся видимым и после CSS-скрытия плашки, так что `is_visible()` тут не помощник.
+static ISLAND: AtomicBool = AtomicBool::new(false);
+
+pub fn set_island_visible(v: bool) {
+    ISLAND.store(v, Ordering::Relaxed);
+}
+
+pub fn island_visible() -> bool {
+    ISLAND.load(Ordering::Relaxed)
+}
 /// Режим ручного размещения активен: плашка закреплена и таскается мышью.
 /// Пока он включён — set_config НЕ репозиционирует окно (иначе drag дёргался бы).
 static PLACING: AtomicBool = AtomicBool::new(false);
@@ -90,12 +103,17 @@ pub fn set_config(app: &AppHandle, enabled: bool, anchor: String, size: f64, cus
     if PLACING.load(Ordering::Relaxed) {
         return;
     }
-    let Some(win) = app.get_webview_window("overlay") else { return };
     if !enabled {
-        let _ = win.hide();
+        // Выключено — окно (если было создано) прячем; не создаём его зря.
+        if let Some(win) = app.get_webview_window("overlay") {
+            let _ = win.hide();
+        }
         SHOWN.store(false, Ordering::Relaxed);
+        ISLAND.store(false, Ordering::Relaxed);
         return;
     }
+    // Окно создаётся лениво — только когда оверлей реально включён (mirror.rs).
+    let Some(win) = crate::mirror::ensure_overlay(app) else { return };
     if preview {
         // Живой предпросмотр при включении / смене позиции / масштаба.
         let c = cfg().lock().clone();
@@ -115,7 +133,7 @@ pub fn flash(app: &AppHandle) {
     if !c.enabled {
         return;
     }
-    let Some(win) = app.get_webview_window("overlay") else { return };
+    let Some(win) = crate::mirror::ensure_overlay(app) else { return };
     ensure_shown(&win);
     position(&win);
     push_state(&win);
@@ -128,7 +146,7 @@ pub fn toggle(app: &AppHandle) {
     if !c.enabled {
         return;
     }
-    let Some(win) = app.get_webview_window("overlay") else { return };
+    let Some(win) = crate::mirror::ensure_overlay(app) else { return };
     ensure_shown(&win);
     position(&win);
     push_state(&win);
@@ -153,11 +171,11 @@ struct OvPlaced {
 /// Выход — снимаем закрепление и возвращаем обычное поведение (авто-скрытие).
 pub fn set_place_mode(app: &AppHandle, on: bool) {
     let c = cfg().lock().clone();
-    let Some(win) = app.get_webview_window("overlay") else { return };
     if on {
         if !c.enabled {
             return;
         }
+        let Some(win) = crate::mirror::ensure_overlay(app) else { return };
         PLACING.store(true, Ordering::Relaxed);
         ensure_shown(&win);
         // Ловим мышь, чтобы можно было схватить плашку.
@@ -178,6 +196,7 @@ pub fn set_place_mode(app: &AppHandle, on: bool) {
         if !PLACING.swap(false, Ordering::Relaxed) {
             return;
         }
+        let Some(win) = app.get_webview_window("overlay") else { return };
         let _ = win.emit("bloom-ov-place", OvPlace { on: false });
     }
 }

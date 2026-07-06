@@ -338,6 +338,10 @@ export const ViewSection = () => {
                 <Ico name="heart" width={18} height={18} />
                 {t('settings.view.mpEl.fav')}
               </OptBtn>
+              <OptBtn active={!p.mpHide.add} onClick={() => toggleHide('add')}>
+                <Ico name="addCircle" width={18} height={18} />
+                {t('settings.view.mpEl.add')}
+              </OptBtn>
               <OptBtn active={!p.mpHide.lyrics} onClick={() => toggleHide('lyrics')}>
                 <Ico name="lyrics" width={18} height={18} />
                 {t('settings.view.mpEl.lyrics')}

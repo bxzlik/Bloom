@@ -60,6 +60,8 @@ export interface MpHide {
   repeat: boolean
   time: boolean
   fav: boolean
+  /** Кнопка «+» (добавить в плейлист/библиотеку) рядом с сердечком. */
+  add: boolean
 }
 
 export interface PlayerViewPrefs {
@@ -142,7 +144,7 @@ const DEFAULTS: PlayerViewPrefs = {
   mpProgress: { line: true, bg: false, circle: false },
   mpCoverShape: 'default',
   mpRounded: false,
-  mpHide: { lyrics: false, queue: false, bigpic: false, shuffle: false, repeat: false, time: false, fav: false },
+  mpHide: { lyrics: false, queue: false, bigpic: false, shuffle: false, repeat: false, time: false, fav: false, add: false },
   overlayMode: 'off',
   overlayPos: 'tr',
   overlayX: 0.98,
@@ -236,6 +238,7 @@ const load = (): PlayerViewPrefs => {
         repeat: !!(p.mpHide && p.mpHide.repeat),
         time: !!(p.mpHide && p.mpHide.time),
         fav: !!(p.mpHide && p.mpHide.fav),
+        add: !!(p.mpHide && p.mpHide.add),
       },
       overlayMode:
         p.overlayMode === 'island' || p.overlayMode === 'compact' || p.overlayMode === 'bar'

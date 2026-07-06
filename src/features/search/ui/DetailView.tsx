@@ -27,7 +27,7 @@ import {
 import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
 import { extractMpBgColor } from '@features/settings'
-import { toast, useShareStore } from '@shared/ui'
+import { toast, useShareStore, WindowedRows } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { useDetailStore, type DetailTarget } from '../model/detailStore'
@@ -132,6 +132,7 @@ const TrackRow = ({
   onCtxMenu,
   onAddClick,
   reposter,
+  widx,
 }: {
   track: Track
   onPlay: () => void
@@ -139,6 +140,8 @@ const TrackRow = ({
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>) => void
   /** Имя репостнувшего (для вкладки «Репосты»): «⟲ name» рядом с заголовком. */
   reposter?: string
+  /** Индекс в оконном списке (data-widx — замер высоты строки WindowedRows). */
+  widx?: number
 }) => {
   const tt = useT()
   const isFav = useFavStore((s) => s.favs.has(track.id))
@@ -150,7 +153,7 @@ const TrackRow = ({
     toggleFav(track.id)
   }
   return (
-    <div className="tr" onClick={onPlay} onContextMenu={onCtxMenu}>
+    <div className="tr" data-widx={widx} onClick={onPlay} onContextMenu={onCtxMenu}>
       <TrackRowCover track={track} placeholder={<PhTrack />} />
       <div className="tri">
         <div className="trn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -309,6 +312,9 @@ export const DetailView = () => {
   // Поповер выбора цели импорта (кнопка «Импортировать» в hero).
   const importAnchorRef = useRef<HTMLButtonElement | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+
+  // Скролл-контейнер оверлея — для оконной виртуализации списков треков.
+  const rootRef = useRef<HTMLDivElement | null>(null)
 
   // Поповер «Добавить в …» по кнопке «+» — список плейлистов + «В библиотеку», НЕ полное ctx-меню.
   const addAnchorRef = useRef<HTMLElement | null>(null)
@@ -504,9 +510,14 @@ export const DetailView = () => {
       toast(t('search.toast.noImport'))
       return
     }
-    // permalink для «Обновить треки» (только у SC-плейлистов/альбомов с handle).
-    const scSource = loaded && loaded.kind !== 'artist' ? loaded.playlist.sourceUrl ?? undefined : undefined
-    const res = applyImport(target, { title: heroName, cover: heroCover, tracks: mainTracks, scSource })
+    // URL коллекции — источник «Обновить треки» (если площадка его отдаёт).
+    const sourceUrl = loaded && loaded.kind !== 'artist' ? loaded.playlist.sourceUrl ?? undefined : undefined
+    const res = applyImport(target, {
+      title: heroName,
+      cover: heroCover,
+      tracks: mainTracks,
+      source: sourceUrl ? { kind: 'url', url: sourceUrl, title: heroName } : undefined,
+    })
     if (target.kind === 'create') {
       toast(t('search.toast.plImported', { name: heroName, n: res.added }))
       close()
@@ -610,6 +621,7 @@ export const DetailView = () => {
 
   return (
     <div
+      ref={rootRef}
       className="sp-detail-view sp-dv-body-in"
       style={{
         position: 'absolute',
@@ -705,6 +717,7 @@ export const DetailView = () => {
 
         {loaded?.kind === 'artist' && (
           <ArtistBody
+            scrollRef={rootRef}
             data={loaded.data}
             tracks={artistTracks}
             reposts={artistReposts}
@@ -744,6 +757,7 @@ export const DetailView = () => {
 
         {loaded && loaded.kind !== 'artist' && (
           <PlaylistBody
+            scrollRef={rootRef}
             tracks={loaded.tracks}
             onPlayTrack={playOne}
             onCtxMenu={onCtxMenu}
@@ -906,6 +920,7 @@ const MoreBtn = ({ loading, onClick, label }: { loading: boolean; onClick: () =>
 
 /* ── Тело страницы артиста ────────────────────────────────────────────── */
 const ArtistBody = ({
+  scrollRef,
   data,
   tracks,
   reposts,
@@ -921,6 +936,8 @@ const ArtistBody = ({
   onOpenPlaylist,
   onLoadAlbumTracks,
 }: {
+  /** Скролл-контейнер оверлея (для оконной виртуализации списков). */
+  scrollRef: React.RefObject<HTMLDivElement | null>
   data: ArtistPageData
   /** Пагинируемые списки приходят из родителя (DetailView), не из data. */
   tracks: Track[]
@@ -1035,15 +1052,21 @@ const ArtistBody = ({
           {/* «Все» — горизонтальная лента карточек, как раньше;
               отдельная вкладка «Популярные» — вертикальный список строк. */}
           {activeTab === 'popular' ? (
-            topTracks.map((t) => (
-              <TrackRow
-                key={t.id}
-                track={t}
-                onPlay={() => onPlayTrack(t)}
-                onCtxMenu={(e) => onCtxMenu(e, t)}
-                onAddClick={(e) => onAddTrack(e, t)}
-              />
-            ))
+            <WindowedRows
+              items={topTracks}
+              scrollRef={scrollRef}
+              estimate={68}
+              renderItem={(t, i) => (
+                <TrackRow
+                  key={t.id}
+                  track={t}
+                  widx={i}
+                  onPlay={() => onPlayTrack(t)}
+                  onCtxMenu={(e) => onCtxMenu(e, t)}
+                  onAddClick={(e) => onAddTrack(e, t)}
+                />
+              )}
+            />
           ) : (
             <div className="sp-am-tracks-grid">
               {topTracks.map((t) => (
@@ -1069,11 +1092,16 @@ const ArtistBody = ({
           {showHdr && <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.reposts')}</span></div>}
           {/* Всегда список: треки — строкой (с атрибуцией «⟲ репостнул»),
               плейлисты/альбомы — кликабельной строкой. */}
-          {repostsToShow.map((r, i) =>
+          <WindowedRows
+            items={repostsToShow}
+            scrollRef={scrollRef}
+            estimate={68}
+            renderItem={(r, i) =>
             r.kind === 'track' ? (
               <TrackRow
                 key={`t_${r.track.id}_${i}`}
                 track={r.track}
+                widx={i}
                 reposter={artist.name || undefined}
                 onPlay={() => onPlayTrack(r.track)}
                 onCtxMenu={(e) => onCtxMenu(e, r.track)}
@@ -1083,6 +1111,7 @@ const ArtistBody = ({
               <div
                 key={`p_${r.playlist.id}_${i}`}
                 className="tr"
+                data-widx={i}
                 onClick={() => onOpenPlaylist(r.playlist, r.kind)}
               >
                 <div className="trcov">
@@ -1107,8 +1136,9 @@ const ArtistBody = ({
                 </div>
                 <div className="trd">{t('search.tracksCount', { n: r.playlist.trackCount ?? 0 })}</div>
               </div>
-            ),
-          )}
+            )
+          }
+          />
           {activeTab === 'reposts' && repostsHasMore && (
             <MoreBtn loading={loadingMore === 'reposts'} onClick={onLoadMoreReposts} label={t('search.loadMore')} />
           )}
@@ -1156,15 +1186,21 @@ const ArtistBody = ({
       {showTracks && tracks.length > 0 && (
         <div className="sp-am-section">
           {showHdr && <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.tab.tracks')}</span></div>}
-          {tracksToShow.map((tr) => (
-            <TrackRow
-              key={tr.id}
-              track={tr}
-              onPlay={() => onPlayTrack(tr)}
-              onCtxMenu={(e) => onCtxMenu(e, tr)}
-              onAddClick={(e) => onAddTrack(e, tr)}
-            />
-          ))}
+          <WindowedRows
+            items={tracksToShow}
+            scrollRef={scrollRef}
+            estimate={68}
+            renderItem={(tr, i) => (
+              <TrackRow
+                key={tr.id}
+                track={tr}
+                widx={i}
+                onPlay={() => onPlayTrack(tr)}
+                onCtxMenu={(e) => onCtxMenu(e, tr)}
+                onAddClick={(e) => onAddTrack(e, tr)}
+              />
+            )}
+          />
           {activeTab === 'tracks' && tracksHasMore && (
             <MoreBtn loading={loadingMore === 'tracks'} onClick={onLoadMoreTracks} label={t('search.loadMore')} />
           )}
@@ -1183,11 +1219,14 @@ const ArtistBody = ({
 
 /* ── Тело альбома / плейлиста ─────────────────────────────────────────── */
 const PlaylistBody = ({
+  scrollRef,
   tracks,
   onPlayTrack,
   onCtxMenu,
   onAddTrack,
 }: {
+  /** Скролл-контейнер оверлея (для оконной виртуализации списка). */
+  scrollRef: React.RefObject<HTMLDivElement | null>
   tracks: Track[]
   onPlayTrack: (track: Track) => void
   onCtxMenu: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
@@ -1197,15 +1236,21 @@ const PlaylistBody = ({
   if (!tracks.length) return <div className="sc-status">{t('search.noTracks')}</div>
   return (
     <div className="sp-am-section">
-      {tracks.map((t) => (
-        <TrackRow
-          key={t.id}
-          track={t}
-          onPlay={() => onPlayTrack(t)}
-          onCtxMenu={(e) => onCtxMenu(e, t)}
-          onAddClick={(e) => onAddTrack(e, t)}
-        />
-      ))}
+      <WindowedRows
+        items={tracks}
+        scrollRef={scrollRef}
+        estimate={68}
+        renderItem={(tr, i) => (
+          <TrackRow
+            key={tr.id}
+            track={tr}
+            widx={i}
+            onPlay={() => onPlayTrack(tr)}
+            onCtxMenu={(e) => onCtxMenu(e, tr)}
+            onAddClick={(e) => onAddTrack(e, tr)}
+          />
+        )}
+      />
     </div>
   )
 }

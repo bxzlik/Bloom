@@ -69,6 +69,18 @@ export interface UseSortableOpts<T> {
    * (`width:100%`) не применяются, и обложка схлопывалась бы в дефолтный размер.
    */
   ghostAdjust?: (ghost: HTMLElement, srcRow: HTMLElement) => void
+  /**
+   * Оконная виртуализация (useWindowedList): в DOM отрендерен только срез
+   * items[start, start+N). Возвращает текущий start. Если задано — финальный
+   * порядок собирается из полного списка + DOM-порядка среза (multi-drag
+   * группа с невидимыми выделенными переносится блоком, как без окна).
+   */
+  getWindowStart?: () => number
+  /**
+   * Смена активности drag. Используется для заморозки окна виртуализации:
+   * во время drag ре-рендер среза срубил бы императивные placeholder-стили.
+   */
+  onDragChange?: (active: boolean) => void
 }
 
 export interface SortableItemBindings {
@@ -156,6 +168,8 @@ export const useSortable = <T,>({
   getDragGroup,
   getGroupRank,
   ghostAdjust,
+  getWindowStart,
+  onDragChange,
 }: UseSortableOpts<T>): UseSortableResult => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const stateRef = useRef<DragState>(initialState())
@@ -167,6 +181,10 @@ export const useSortable = <T,>({
   // Ref для ghostAdjust (та же причина — свежий колбэк без пересоздания onMove).
   const ghostAdjustRef = useRef(ghostAdjust)
   ghostAdjustRef.current = ghostAdjust
+  const getWindowStartRef = useRef(getWindowStart)
+  getWindowStartRef.current = getWindowStart
+  const onDragChangeRef = useRef(onDragChange)
+  onDragChangeRef.current = onDragChange
 
   // Текущий список id для сравнения «изменился ли порядок» (актуализируется
   // на каждый рендер; ставим в ref чтобы handlers видели свежее значение без
@@ -181,6 +199,24 @@ export const useSortable = <T,>({
     return Array.from(c.querySelectorAll<HTMLElement>('[data-sortable-id]')).filter(
       (r) => r !== srcRow,
     )
+  }
+
+  /**
+   * «Вставить в конец списка» с учётом виртуализации: нельзя appendChild —
+   * в контейнере после строк стоит нижний спейсер (+ попапы). Возвращает узел,
+   * ПЕРЕД которым надо вставлять, чтобы встать после последней sortable-строки
+   * (null = контейнер без строк → append).
+   */
+  const afterRowsAnchor = (container: HTMLElement): ChildNode | null => {
+    const rows = container.querySelectorAll<HTMLElement>('[data-sortable-id]')
+    const last = rows[rows.length - 1]
+    return last ? last.nextSibling : null
+  }
+
+  /** Последняя sortable-строка контейнера (для no-change проверок). */
+  const lastRow = (container: HTMLElement): HTMLElement | null => {
+    const rows = container.querySelectorAll<HTMLElement>('[data-sortable-id]')
+    return rows[rows.length - 1] ?? null
   }
 
   /**
@@ -219,11 +255,11 @@ export const useSortable = <T,>({
     }
     const noChange = insertBefore
       ? srcRow.nextSibling === insertBefore
-      : container.lastElementChild === srcRow
+      : lastRow(container) === srcRow
     if (noChange) return
 
     if (insertBefore) container.insertBefore(srcRow, insertBefore)
-    else container.appendChild(srcRow)
+    else container.insertBefore(srcRow, afterRowsAnchor(container))
 
     // FLIP: инвертированный transform → cancel в следующем кадре с transition.
     others.forEach((row, i) => {
@@ -295,11 +331,11 @@ export const useSortable = <T,>({
 
     const noChange = insertBefore
       ? srcRow.nextSibling === insertBefore || insertBefore === srcRow
-      : container.lastElementChild === srcRow
+      : lastRow(container) === srcRow
     if (noChange) return
 
     if (insertBefore) container.insertBefore(srcRow, insertBefore)
-    else container.appendChild(srcRow)
+    else container.insertBefore(srcRow, afterRowsAnchor(container))
 
     // 2D FLIP: инвертируем смещение по обеим осям → отпускаем в следующем кадре.
     others.forEach((row, i) => {
@@ -369,7 +405,7 @@ export const useSortable = <T,>({
       }
       if (contiguous) return
     }
-    if (!insertBefore && groupOrdered[groupOrdered.length - 1] === container.lastElementChild) {
+    if (!insertBefore && groupOrdered[groupOrdered.length - 1] === lastRow(container)) {
       let contiguous = true
       for (let i = 0; i < groupOrdered.length - 1; i++) {
         if (groupOrdered[i]!.nextSibling !== groupOrdered[i + 1]) {
@@ -379,10 +415,10 @@ export const useSortable = <T,>({
       }
       if (contiguous) return
     }
-    // Перемещаем группу как блок.
+    // Перемещаем группу как блок (в конец — перед нижним спейсером окна).
+    const endAnchor = insertBefore ?? afterRowsAnchor(container)
     groupOrdered.forEach((row) => {
-      if (insertBefore) container.insertBefore(row, insertBefore)
-      else container.appendChild(row)
+      container.insertBefore(row, endAnchor)
     })
     // FLIP для видимых соседей.
     visible.forEach((row, i) => {
@@ -466,10 +502,17 @@ export const useSortable = <T,>({
 
     let commit: string[] | null = null
     if (wasActive && containerRef.current) {
-      const finalIds = Array.from(
+      const domIds = Array.from(
         containerRef.current.querySelectorAll<HTMLElement>('[data-sortable-id]'),
       ).map((el) => el.dataset.sortableId ?? '')
       const orig = s.originalOrder
+      // Окно: в DOM только срез — восстанавливаем полный порядок. Старт окна
+      // читаем сейчас (окно расширено и заморожено с активации drag).
+      const winStart = getWindowStartRef.current ? getWindowStartRef.current() : null
+      const finalIds =
+        winStart != null
+          ? mergeWindowedOrder(orig, winStart, domIds, s.multiIds)
+          : domIds
       const changed =
         finalIds.length !== orig.length || finalIds.some((id, i) => orig[i] !== id)
       if (changed) commit = finalIds
@@ -477,6 +520,7 @@ export const useSortable = <T,>({
     const wasPending = s.pending
     stateRef.current = initialState()
 
+    if (wasActive) onDragChangeRef.current?.(false)
     if (commit) onReorder(commit)
     // Click-fallback: pointerdown без активации drag.
     else if (!wasActive && wasPending && clickAction) clickAction()
@@ -502,6 +546,10 @@ export const useSortable = <T,>({
         onEnd()
         return
       }
+      // Уведомляем список: он ставит запас строк окну (асинхронный коммит —
+      // захват мгновенный) и переводит окно в grow-only режим. Строки
+      // multi-drag-группы, домонтированные позже, допрячет rAF-цикл onMove.
+      onDragChangeRef.current?.(true)
       const rect = srcRow.getBoundingClientRect()
 
       // Multi-drag detection: getDragGroup может вернуть массив (включая id).
@@ -574,6 +622,21 @@ export const useSortable = <T,>({
         if (!s.active) return
         if (s.multiIds) {
           const hiddenSet = new Set(s.hiddenRows)
+          // Окно виртуализации во время drag дорастает при скролле — прячем
+          // домонтированные строки группы (иначе они видны, пока едут в ghost).
+          const container = containerRef.current
+          if (container) {
+            const idSet = new Set(s.multiIds)
+            container
+              .querySelectorAll<HTMLElement>('[data-sortable-id]')
+              .forEach((r) => {
+                if (!idSet.has(r.dataset.sortableId ?? '') || hiddenSet.has(r)) return
+                r.style.opacity = '0'
+                r.style.pointerEvents = 'none'
+                s.hiddenRows.push(r)
+                hiddenSet.add(r)
+              })
+          }
           domShiftMulti(s.lastClientY, hiddenSet)
         } else if (s.srcRow) {
           if (mode === 'grid') gridShiftFlip(s.srcRow, s.lastClientX, s.lastClientY)
@@ -636,6 +699,41 @@ export const useSortable = <T,>({
   }, [])
 
   return { containerRef, itemProps }
+}
+
+/**
+ * Восстановление полного порядка после drag в оконно-виртуализированном списке.
+ * В DOM был только срез full[start, start+domIds.length) — подставляем его
+ * новый порядок на место. Multi-drag: часть группы могла быть за пределами
+ * окна (выделение через поиск/скролл) — переносим ВСЮ группу блоком к точке
+ * дропа, сохраняя её исходный видимый порядок (поведение безоконного пути).
+ */
+const mergeWindowedOrder = (
+  full: string[],
+  start: number,
+  domIds: string[],
+  groupIds: string[] | null,
+): string[] => {
+  const end = Math.min(start + domIds.length, full.length)
+  let out = [...full.slice(0, start), ...domIds, ...full.slice(end)]
+  if (groupIds && groupIds.length > 1) {
+    const gset = new Set(groupIds)
+    // Якорь — первый групповой id в отрендеренном срезе (drop-позиция блока).
+    const anchor = domIds.find((id) => gset.has(id))
+    if (anchor) {
+      const orderedGroup = full.filter((id) => gset.has(id))
+      // Позиция якоря среди не-групповых элементов.
+      let insertAt = 0
+      for (const id of out) {
+        if (id === anchor) break
+        if (!gset.has(id)) insertAt++
+      }
+      const without = out.filter((id) => !gset.has(id))
+      without.splice(insertAt, 0, ...orderedGroup)
+      out = without
+    }
+  }
+  return out
 }
 
 // CSS.escape polyfill для значений в селекторах.

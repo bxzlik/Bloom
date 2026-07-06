@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { WindowedRows } from '@shared/ui'
 import { useT, useLocale } from '@shared/i18n'
 import { PlCover } from './PlCover'
 import type { Track } from '@entities/track'
@@ -66,6 +67,8 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   const sortBtnRef = useRef<HTMLButtonElement>(null)
+  // Скролл-контейнер списка (.mpl-list) — для оконной виртуализации.
+  const listScrollRef = useRef<HTMLDivElement | null>(null)
   const sortMenuRef = useRef<HTMLDivElement>(null)
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [sortMenuPos, setSortMenuPos] = useState<{ top: number; right: number } | null>(null)
@@ -311,40 +314,46 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
             </button>
           </div>
 
-          <div className="mpl-list afs-list" id="addFromLibList">
+          <div className="mpl-list afs-list" id="addFromLibList" ref={listScrollRef}>
             {available.length === 0 ? (
               <div className="mpl-empty">{t('lib.addModal.allAdded')}</div>
             ) : filtered.length === 0 ? (
               <div className="mpl-empty">{t('lib.merge.nothingFound')}</div>
             ) : (
-              filtered.map((tr) => {
-                const isSel = selected.has(tr.id)
-                return (
-                  <div
-                    className={`mpl-item${isSel ? ' sel' : ''}`}
-                    key={tr.id}
-                    onClick={() => toggleOne(tr.id)}
-                  >
-                    <div className="mpl-item-cov">
-                      {tr.cover ? (
-                        <img src={tr.cover} alt="" />
-                      ) : (
-                        <Ico name="note" width={16} height={16} style={{ opacity: 0.4 }} />
-                      )}
+              <WindowedRows
+                items={filtered}
+                scrollRef={listScrollRef}
+                estimate={50}
+                renderItem={(tr, i) => {
+                  const isSel = selected.has(tr.id)
+                  return (
+                    <div
+                      className={`mpl-item${isSel ? ' sel' : ''}`}
+                      key={tr.id}
+                      data-widx={i}
+                      onClick={() => toggleOne(tr.id)}
+                    >
+                      <div className="mpl-item-cov">
+                        {tr.cover ? (
+                          <img src={tr.cover} alt="" />
+                        ) : (
+                          <Ico name="note" width={16} height={16} style={{ opacity: 0.4 }} />
+                        )}
+                      </div>
+                      <div className="mpl-item-info">
+                        <div className="mpl-item-name">{tr.name || ''}</div>
+                        <div className="mpl-item-sub">{tr.artist || ''}</div>
+                      </div>
+                      {tr.dur && <span className="afs-dur">{tr.dur}</span>}
+                      <div className="mpl-item-check">
+                        {isSel && (
+                          <Ico name="check" variant="bold" width={11} height={11} />
+                        )}
+                      </div>
                     </div>
-                    <div className="mpl-item-info">
-                      <div className="mpl-item-name">{tr.name || ''}</div>
-                      <div className="mpl-item-sub">{tr.artist || ''}</div>
-                    </div>
-                    {tr.dur && <span className="afs-dur">{tr.dur}</span>}
-                    <div className="mpl-item-check">
-                      {isSel && (
-                        <Ico name="check" variant="bold" width={11} height={11} />
-                      )}
-                    </div>
-                  </div>
-                )
-              })
+                  )
+                }}
+              />
             )}
           </div>
         </div>

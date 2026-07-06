@@ -1,4 +1,24 @@
 {
+  "1.6.0": {
+    "title": { "ru": "Что нового в 1.6.0", "en": "What's new in 1.6.0" },
+    "date": "2026-07-06",
+    "pages": [
+      {
+        "title": { "ru": "Оптимизировано приложение", "en": "App optimized" },
+        "body": {
+          "ru": "- Переписан SoundCloud на бэкенд\n- Добавлена виртуализация списков\n- Проделана оптимизация в оверлее, PiP и трее",
+          "en": "- Moved SoundCloud to the backend\n- Added list virtualization\n- Optimized the overlay, PiP and tray"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Обновлён редактор плейлистов — добавлена привязка нескольких плейлистов в одном\n- Плюсик добавления в плейлист в миниплеере\n- Добавлены анимации приложения",
+          "en": "- Reworked the playlist editor — link several playlists into one\n- Add-to-playlist button in the mini player\n- Added app animations"
+        }
+      }
+    ]
+  },
   "1.5.0": {
     "title": { "ru": "Что нового в 1.5.0", "en": "What's new in 1.5.0" },
     "date": "2026-07-05",

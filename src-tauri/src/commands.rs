@@ -309,10 +309,12 @@ pub fn now_playing(
     } else {
         "Bloom".to_string()
     };
+    // Только в main: app.emit — broadcast во все окна, а слушает событие один
+    // кастомный тайтлбар главного окна (пуш идёт ~раз в секунду).
     if let Some(win) = app.get_webview_window("main") {
         let _ = win.set_title(&display_title);
+        let _ = win.emit("bloom-set-title", &display_title);
     }
-    let _ = app.emit("bloom-set-title", &display_title);
 
     // Обложка для Discord RPC.
     if let Some(ref aw) = artwork {
@@ -399,18 +401,29 @@ pub fn now_playing(
         if let Some(rp) = repeat { s.repeat = rp; }
         s.source = source;
     }
+    // Зеркальные окна: шлём состояние только ВИДИМЫМ — скрытое окно незачем
+    // будить каждую секунду (свежее состояние оно получит при показе). Окон
+    // может и не быть вовсе: они создаются лениво при первом использовании.
     if let Some(mp) = app.get_webview_window("miniplayer") {
-        let s = mp_state().lock().clone();
-        let _ = mp.emit("bloom-mp-state", s);
+        if mp.is_visible().unwrap_or(false) {
+            let s = mp_state().lock().clone();
+            let _ = mp.emit("bloom-mp-state", s);
+        }
     }
     if let Some(tp) = app.get_webview_window("tray-popup") {
-        let s = mp_state().lock().clone();
-        let _ = tp.emit("bloom-mp-state", s);
+        if tp.is_visible().unwrap_or(false) {
+            let s = mp_state().lock().clone();
+            let _ = tp.emit("bloom-mp-state", s);
+        }
     }
-    // Оверлей-«остров»: держим контент свежим, пока плашка закреплена/видна.
+    // Оверлей: OS-окно после первого показа остаётся видимым (плашку прячет CSS),
+    // поэтому смотрим на видимость самой ПЛАШКИ (флаг ставит JS через
+    // overlay_set_interactive при показе/скрытии).
     if let Some(ov) = app.get_webview_window("overlay") {
-        let s = mp_state().lock().clone();
-        let _ = ov.emit("bloom-mp-state", s);
+        if crate::overlay::island_visible() && ov.is_visible().unwrap_or(false) {
+            let s = mp_state().lock().clone();
+            let _ = ov.emit("bloom-mp-state", s);
+        }
     }
 
     Ok(())
@@ -419,8 +432,10 @@ pub fn now_playing(
 // ============= Overlay (HUD-«остров») =============
 
 /// Конфиг оверлея с фронта (режим/якорь/масштаб + свободная позиция). enabled=false прячет окно.
+// Команды оверлея, способные лениво СОЗДАТЬ его окно, — async: sync-команда
+// исполняется на главном потоке и дедлочит создание вебвью (см. open_miniplayer).
 #[tauri::command]
-pub fn overlay_set_config(
+pub async fn overlay_set_config(
     app: AppHandle,
     enabled: bool,
     anchor: String,
@@ -435,7 +450,7 @@ pub fn overlay_set_config(
 
 /// Вкл/выкл режим ручного размещения плашки (перетаскивание мышью).
 #[tauri::command]
-pub fn overlay_place_mode(app: AppHandle, on: bool) -> Result<(), String> {
+pub async fn overlay_place_mode(app: AppHandle, on: bool) -> Result<(), String> {
     crate::overlay::set_place_mode(&app, on);
     Ok(())
 }
@@ -449,14 +464,14 @@ pub fn overlay_drag_by(app: AppHandle, dx: f64, dy: f64) -> Result<(), String> {
 
 /// Всплытие плашки на смену трека (фронт зовёт, если включено в настройках).
 #[tauri::command]
-pub fn overlay_flash(app: AppHandle) -> Result<(), String> {
+pub async fn overlay_flash(app: AppHandle) -> Result<(), String> {
     crate::overlay::flash(&app);
     Ok(())
 }
 
 /// Тогл закрепления плашки (дублирует глобальный хоткей для UI-кнопок).
 #[tauri::command]
-pub fn overlay_toggle(app: AppHandle) -> Result<(), String> {
+pub async fn overlay_toggle(app: AppHandle) -> Result<(), String> {
     crate::overlay::toggle(&app);
     Ok(())
 }
@@ -465,6 +480,9 @@ pub fn overlay_toggle(app: AppHandle) -> Result<(), String> {
 /// кликабельны), false → клики проходят насквозь. Зовётся плашкой при показе/скрытии.
 #[tauri::command]
 pub fn overlay_set_interactive(app: AppHandle, interactive: bool) -> Result<(), String> {
+    // Заодно источник правды «плашка видима»: JS зовёт это ровно при показе/скрытии
+    // острова. Пока false — now_playing не шлёт состояние в окно оверлея.
+    crate::overlay::set_island_visible(interactive);
     if let Some(w) = app.get_webview_window("overlay") {
         let _ = w.set_ignore_cursor_events(!interactive);
     }
@@ -479,12 +497,17 @@ pub fn miniplayer_get_state() -> MpState {
 }
 
 #[tauri::command]
-pub fn open_miniplayer(app: AppHandle) -> Result<(), String> {
-    if let Some(w) = app.get_webview_window("miniplayer") {
-        let _ = w.show();
-        let _ = w.set_focus();
+pub async fn open_miniplayer(app: AppHandle) -> Result<(), String> {
+    // Окно создаётся лениво при первом открытии (см. mirror.rs). Команда async
+    // ОБЯЗАТЕЛЬНО: sync-команда исполняется на главном потоке, а создание
+    // вебвью само ждёт главный цикл — получается дедлок (окно «замирает»).
+    if let Some(w) = crate::mirror::ensure_miniplayer(&app) {
+        // Состояние и «окно видимо» — до show, чтобы UI не моргал старыми данными.
         let s = mp_state().lock().clone();
         let _ = w.emit("bloom-mp-state", s);
+        let _ = w.emit("bloom-win-vis", true);
+        let _ = w.show();
+        let _ = w.set_focus();
     }
     Ok(())
 }
@@ -492,6 +515,8 @@ pub fn open_miniplayer(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn close_miniplayer(app: AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("miniplayer") {
+        // Глушим тикер/рендер в JS скрытого окна.
+        let _ = w.emit("bloom-win-vis", false);
         let _ = w.hide();
     }
     if let Some(main) = app.get_webview_window("main") {
@@ -570,6 +595,7 @@ pub fn open_main_window(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn hide_tray_popup(app: AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("tray-popup") {
+        let _ = w.emit("bloom-win-vis", false);
         let _ = w.hide();
     }
     Ok(())
@@ -590,6 +616,7 @@ pub fn tray_open_artist(app: AppHandle, artist: String) -> Result<(), String> {
         let _ = w.emit("bloom-open-artist", artist);
     }
     if let Some(tp) = app.get_webview_window("tray-popup") {
+        let _ = tp.emit("bloom-win-vis", false);
         let _ = tp.hide();
     }
     Ok(())
@@ -1611,4 +1638,134 @@ pub async fn sp_check() -> Result<(), String> {
 #[tauri::command]
 pub fn sp_clear_creds() -> Result<(), String> {
     config::clear_spotify().map_err(|e| e.to_string())
+}
+
+// ============================ SoundCloud ============================
+
+use crate::soundcloud as sc;
+
+/// Ручной client_id из настроек (фронт хранит в localStorage и прокидывает
+/// при старте и изменении). None/пусто — сброс.
+#[tauri::command]
+pub fn sc_set_client_id(id: Option<String>) {
+    sc::set_manual_client_id(id);
+}
+
+/// Проверка соединения/client_id (карточка SoundCloud в настройках).
+#[tauri::command]
+pub async fn sc_check_connection() -> sc::ScCheckResult {
+    sc::check_connection().await
+}
+
+/// Сырой запрос к api-v2 с подстановкой client_id (волна, скачивание).
+#[tauri::command]
+pub async fn sc_api_fetch(url: String, no_retry: Option<bool>) -> Result<serde_json::Value, String> {
+    sc::api_fetch(&url, no_retry.unwrap_or(false)).await.map_err(|e| e.to_string())
+}
+
+/// Поиск треков. `sort`: "relevance" | "new".
+#[tauri::command]
+pub async fn sc_search_tracks(
+    query: String,
+    limit: u32,
+    offset: u32,
+    sort: String,
+) -> Result<sc::ScPage<sc::ScRawTrack>, String> {
+    sc::search_tracks(&query, limit, offset, &sort).await.map_err(|e| e.to_string())
+}
+
+/// Поиск артистов (пользователей).
+#[tauri::command]
+pub async fn sc_search_artists(query: String, limit: u32) -> Result<sc::ScPage<sc::ScRawArtist>, String> {
+    sc::search_artists(&query, limit).await.map_err(|e| e.to_string())
+}
+
+/// Поиск плейлистов.
+#[tauri::command]
+pub async fn sc_search_playlists(query: String, limit: u32) -> Result<sc::ScPage<sc::ScRawPlaylist>, String> {
+    sc::search_playlists(&query, limit).await.map_err(|e| e.to_string())
+}
+
+/// Поиск альбомов.
+#[tauri::command]
+pub async fn sc_search_albums(query: String, limit: u32) -> Result<sc::ScPage<sc::ScRawPlaylist>, String> {
+    sc::search_albums(&query, limit).await.map_err(|e| e.to_string())
+}
+
+/// Данные пользователя (hero артиста); null при ошибке.
+#[tauri::command]
+pub async fn sc_get_user(id_or_url: String) -> Option<sc::ScRawUser> {
+    sc::get_user(&id_or_url).await
+}
+
+/// Плейлисты пользователя (профиль по ссылке); ошибки — пустой список.
+#[tauri::command]
+pub async fn sc_user_playlists(id_or_url: String) -> Vec<sc::ScRawPlaylist> {
+    sc::user_playlists(&id_or_url).await
+}
+
+/// Лайки пользователя (профиль по ссылке); ошибки — пустой список.
+#[tauri::command]
+pub async fn sc_user_likes(id_or_url: String) -> Vec<sc::ScRawTrack> {
+    sc::user_likes(&id_or_url).await
+}
+
+/// Репосты артиста (первая страница).
+#[tauri::command]
+pub async fn sc_artist_reposts(id_or_url: String) -> sc::ScRepostsPage {
+    sc::artist_reposts(&id_or_url).await
+}
+
+/// Следующая страница репостов по курсору.
+#[tauri::command]
+pub async fn sc_artist_reposts_page(cursor: String) -> sc::ScRepostsPage {
+    sc::artist_reposts_page(&cursor).await
+}
+
+/// Популярные треки артиста (toptracks → spotlight → tracks → поиск).
+#[tauri::command]
+pub async fn sc_artist_top_tracks(id_or_url: String, artist_name: Option<String>) -> Vec<sc::ScRawTrack> {
+    sc::artist_top_tracks(&id_or_url, artist_name.as_deref()).await
+}
+
+/// Треки (страница + курсор) и альбомы артиста.
+#[tauri::command]
+pub async fn sc_artist_data(id_or_url: String, artist_name: Option<String>) -> sc::ScArtistData {
+    sc::artist_data(&id_or_url, artist_name.as_deref()).await
+}
+
+/// Следующая страница треков артиста по курсору.
+#[tauri::command]
+pub async fn sc_artist_tracks_page(cursor: String) -> sc::ScTracksCursorPage {
+    sc::artist_tracks_page(&cursor).await
+}
+
+/// Треки плейлиста/альбома по permalink-URL (ошибки пробрасываются — импорт).
+#[tauri::command]
+pub async fn sc_playlist_tracks(permalink_url: String) -> Result<Vec<sc::ScRawTrack>, String> {
+    sc::playlist_tracks(&permalink_url).await.map_err(|e| e.to_string())
+}
+
+/// Полные данные плейлиста по числовому SC-id.
+#[tauri::command]
+pub async fn sc_playlist_by_id(id: u64) -> Result<sc::ScPlaylistFull, String> {
+    sc::playlist_by_id(id).await.map_err(|e| e.to_string())
+}
+
+/// Один трек по числовому SC-id; null при ошибке.
+#[tauri::command]
+pub async fn sc_track_by_id(id: u64) -> Option<sc::ScRawTrack> {
+    sc::track_by_id(id).await
+}
+
+/// Резолв SC-ссылки в сущность; null если не распознали.
+#[tauri::command]
+pub async fn sc_resolve_url(url: String) -> Result<Option<sc::ScResolved>, String> {
+    sc::resolve_url(&url).await.map_err(|e| e.to_string())
+}
+
+/// Играбельный signed CDN-URL из media.transcodings трека.
+#[tauri::command]
+pub async fn sc_stream_url(media: Option<serde_json::Value>) -> Result<sc::ScStream, String> {
+    sc::stream_url(media).await.map_err(|e| e.to_string())
 }

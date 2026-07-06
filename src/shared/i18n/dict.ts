@@ -410,6 +410,7 @@ export const ru = {
   'settings.view.mpEl.repeat': 'Повтор',
   'settings.view.mpEl.time': 'Время',
   'settings.view.mpEl.fav': 'Сердечко',
+  'settings.view.mpEl.add': 'Добавить',
   'settings.view.mpPos': 'Позиция мини-плеера',
   'settings.view.mpPos.desc': 'Где отображается панель управления воспроизведением',
   'settings.view.mpPos.bottom': 'Снизу',
@@ -823,6 +824,15 @@ export const ru = {
   'lib.newpl.removeCover': 'Удалить обложку',
   'lib.newpl.namePlaceholder': 'Мой плейлист...',
   'lib.newpl.descPlaceholder': 'Описание плейлиста...',
+
+  // Большой редактор плейлиста: источники «Обновить треки»
+  'lib.pledit.sources': 'Источники обновления',
+  'lib.pledit.sourcesHint': 'Привяжите плейлисты, альбомы или лайки с любых площадок — «Обновить треки» добавит из них новые треки наверх плейлиста.',
+  'lib.pledit.addPlaceholder': 'Вставьте ссылку на плейлист, альбом или профиль…',
+  'lib.pledit.addSource': 'Привязать',
+  'lib.pledit.removeSource': 'Отвязать',
+  'lib.pledit.dupSource': 'Этот источник уже привязан',
+  'lib.pledit.scLikes': 'Лайки пользователя SoundCloud',
 
   // TagEditor
   'lib.tag.title': 'Название',
@@ -1681,6 +1691,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.view.mpEl.repeat': 'Repeat',
   'settings.view.mpEl.time': 'Time',
   'settings.view.mpEl.fav': 'Heart',
+  'settings.view.mpEl.add': 'Add',
   'settings.view.mpPos': 'Mini-player position',
   'settings.view.mpPos.desc': 'Where the playback control bar appears',
   'settings.view.mpPos.bottom': 'Bottom',
@@ -2094,6 +2105,15 @@ export const en: Record<TranslationKey, string> = {
   'lib.newpl.removeCover': 'Remove cover',
   'lib.newpl.namePlaceholder': 'My playlist...',
   'lib.newpl.descPlaceholder': 'Playlist description...',
+
+  // Большой редактор плейлиста: источники «Обновить треки»
+  'lib.pledit.sources': 'Update sources',
+  'lib.pledit.sourcesHint': 'Link playlists, albums or likes from any platform — “Refresh tracks” will add new tracks from them to the top of this playlist.',
+  'lib.pledit.addPlaceholder': 'Paste a playlist, album or profile link…',
+  'lib.pledit.addSource': 'Link',
+  'lib.pledit.removeSource': 'Unlink',
+  'lib.pledit.dupSource': 'This source is already linked',
+  'lib.pledit.scLikes': 'SoundCloud user likes',
 
   // TagEditor
   'lib.tag.title': 'Title',

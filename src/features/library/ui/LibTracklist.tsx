@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
 import { useSortable } from '@shared/lib/useSortable'
+import { useWindowedList } from '@shared/lib/useWindowedList'
 import { useUiPrefsStore } from '@features/settings'
 import { useT, useLocale } from '@shared/i18n'
 import {
@@ -29,6 +30,10 @@ import { Ico } from '@shared/ui/icons/solar'
  *
  * Фаза C: добавлен режим `pl` (треки активного плейлиста, в его порядке `trs`).
  */
+
+/** Стартовый запас строк окна на время drag — небольшой: дальше окно дорастает
+ *  при скролле само (grow-only), а большой буфер делал захват трека медленным. */
+const DRAG_WINDOW_EXPAND = 40
 export const LibTracklist = () => {
   const mode = useLibStore((s) => s.mode)
   const folderPath = useLibStore((s) => s.folderPath)
@@ -101,6 +106,52 @@ export const LibTracklist = () => {
     setAddPopupTrackId(trackId)
   }
 
+  // ── Оконная виртуализация ──
+  // История — плоская лента «заголовок группы | трек» (два типа элементов),
+  // остальные режимы — однородные строки. Высоты замеряются хуком по факту.
+  const histFlat = useMemo(() => {
+    if (mode !== 'history') return null
+    const byId = new Map(historyEntries.map((e) => [e.id, e]))
+    type Item =
+      | { type: 1; label: string; key: string }
+      | { type: 0; track: Track; idx: number; meta: { time: string; count: number } }
+    const out: Item[] = []
+    let lastLabel = ''
+    viewTracks.forEach((t, idx) => {
+      const entry = byId.get(t.id)
+      if (!entry) return
+      const lbl = historyLabel(entry.ts)
+      if (lbl !== lastLabel) {
+        out.push({ type: 1, label: lbl, key: `h_${lbl}_${entry.ts}` })
+        lastLabel = lbl
+      }
+      out.push({
+        type: 0,
+        track: t,
+        idx,
+        meta: { time: historyTime(entry.ts), count: entry.count },
+      })
+    })
+    return out
+  }, [mode, viewTracks, historyEntries])
+
+  // Заморозка окна на время drag (useSortable двигает строки императивно) +
+  // запас строк, чтобы при подскролле во время drag не было пустых спейсеров.
+  const freezeRef = useRef(false)
+  const dragExpandRef = useRef(0)
+  const getHistType = useCallback(
+    (i: number): 0 | 1 => (histFlat ? histFlat[i]!.type : 0),
+    [histFlat],
+  )
+  const win = useWindowedList({
+    count: histFlat ? histFlat.length : viewTracks.length,
+    estimate: libDensity === 'compact' ? 46 : 68,
+    estimate1: 28,
+    getType: histFlat ? getHistType : undefined,
+    freezeRef,
+    expandRef: dragExpandRef,
+  })
+
   // Drag-reorder активен:
   //  - mode='all'    — persist через saveTracksOrder (localStorage)
   //  - mode='fav'    — persist через favAt timestamps (reorderFavs)
@@ -127,6 +178,25 @@ export const LibTracklist = () => {
       if (!sel.selMode || !sel.selected.has(id) || sel.selected.size < 2) return null
       return Array.from(sel.selected)
     },
+    // Виртуализация: в DOM только срез [win.start, win.end) — useSortable
+    // восстановит полный порядок. На старте drag окну даётся запас строк и
+    // grow-only режим: при скролле дорастает без размонтирования, тащить можно
+    // сколь угодно далеко; на дропе сжимается обратно.
+    getWindowStart: () => win.start,
+    onDragChange: (active) => {
+      if (active) {
+        // Асинхронно (НЕ flushSync): захват мгновенный, запас домонтируется
+        // следующим коммитом. Геометрия не едет (строки одинаковой высоты),
+        // группу multi-drag из запаса допрячет rAF-цикл useSortable.
+        dragExpandRef.current = DRAG_WINDOW_EXPAND
+        win.refresh()
+        freezeRef.current = true
+      } else {
+        freezeRef.current = false
+        dragExpandRef.current = 0
+        win.refresh()
+      }
+    },
   })
 
   // ── Multi-select обработчики ──
@@ -136,6 +206,18 @@ export const LibTracklist = () => {
   // Сброс выделения при смене раздела/плейлиста/папки/поиска.
   useEffect(() => {
     useSelectionStore.getState().clear()
+  }, [mode, plId, folderPath, searchQuery])
+  // Сброс скролла при смене вида: спейсеры окна держат высоту списка, поэтому
+  // scrollTop сам больше не «схлопывается» при переходе в другой плейлист.
+  // useLayoutEffect + refresh — окно пересчитывается ДО отрисовки кадра, без
+  // вспышки старой позиции.
+  useLayoutEffect(() => {
+    const el = win.containerRef.current
+    if (el && el.scrollTop !== 0) {
+      el.scrollTop = 0
+      win.refresh()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, plId, folderPath, searchQuery])
 
   // ── Инлайн-режим «Найти дубли» ──
@@ -199,42 +281,39 @@ export const LibTracklist = () => {
     )
   }
 
-  // Для history-mode строим лента с заголовками-группами. entries уже идут new→old.
-  const historyByIdMap = mode === 'history'
-    ? new Map(historyEntries.map((e) => [e.id, e]))
-    : null
-
   return (
-    <div ref={sortable.containerRef} className={listCls} id="libTracklist">
-      {(() => {
-        if (mode !== 'history') return null
-        const nodes: React.ReactNode[] = []
-        let lastLabel = ''
-        viewTracks.forEach((t, idx) => {
-          const entry = historyByIdMap?.get(t.id)
-          if (!entry) return
-          const lbl = historyLabel(entry.ts)
-          if (lbl !== lastLabel) {
-            nodes.push(<HistoryHeader key={`h_${lbl}_${entry.ts}`} label={lbl} />)
-            lastLabel = lbl
-          }
-          nodes.push(
+    <div
+      ref={(el) => {
+        sortable.containerRef.current = el
+        win.containerRef.current = el
+      }}
+      className={listCls}
+      id="libTracklist"
+    >
+      {/* Верхний спейсер окна — высота невидимой части списка над срезом. */}
+      <div data-w-spacer style={{ height: win.padTop }} />
+      {mode === 'history' &&
+        histFlat &&
+        histFlat.slice(win.start, win.end).map((item, i) =>
+          item.type === 1 ? (
+            <HistoryHeader key={item.key} label={item.label} widx={win.start + i} />
+          ) : (
             <TrackRow
-              key={t.id}
-              track={t}
-              idx={idx}
-              onContextMenu={(e) => onTrackCtx(e, t)}
-              onClick={(e) => onTrackClickWithMods(t, idx, e)}
+              key={item.track.id}
+              track={item.track}
+              idx={item.idx}
+              widx={win.start + i}
+              onContextMenu={(e) => onTrackCtx(e, item.track)}
+              onClick={(e) => onTrackClickWithMods(item.track, item.idx, e)}
               onAddClick={openAddPopup}
               showAlbum={showAlbum}
               showDate={showDate}
-              historyMeta={{ time: historyTime(entry.ts), count: entry.count }}
-            />,
-          )
-        })
-        return nodes
-      })()}
-      {mode !== 'history' && viewTracks.map((t, idx) => {
+              historyMeta={item.meta}
+            />
+          ),
+        )}
+      {mode !== 'history' && viewTracks.slice(win.start, win.end).map((t, i) => {
+        const idx = win.start + i
         // sortable click-fallback идёт ТОЛЬКО без модификаторов; модификаторы
         // обрабатываются на самом row.onClick (через onTrackClickWithMods).
         const { rootProps, handleProps } = sortable.itemProps(t.id, () => {
@@ -245,6 +324,7 @@ export const LibTracklist = () => {
             key={t.id}
             track={t}
             idx={idx}
+            widx={idx}
             onContextMenu={(e) => onTrackCtx(e, t)}
             onClick={(e) => onTrackClickWithMods(t, idx, e)}
             onAddClick={openAddPopup}
@@ -255,6 +335,8 @@ export const LibTracklist = () => {
           />
         )
       })}
+      {/* Нижний спейсер окна. */}
+      <div data-w-spacer style={{ height: win.padBottom }} />
       <TrackCtxMenu
         pos={ctx?.pos ?? null}
         track={ctx?.track ?? null}
@@ -532,6 +614,7 @@ const TrackRow = ({
   track,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   idx: _idx,
+  widx,
   onContextMenu,
   onClick,
   onAddClick,
@@ -543,6 +626,8 @@ const TrackRow = ({
 }: {
   track: Track
   idx: number
+  /** Индекс в оконном списке (data-widx — замер высоты строки в useWindowedList). */
+  widx?: number
   onContextMenu?: (e: ReactMouseEvent<HTMLDivElement>) => void
   onClick?: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick?: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
@@ -585,6 +670,7 @@ const TrackRow = ({
   <div
     className={`tr${isCurrent ? ' playing' : ''}${isSelected ? ' tr-selected' : ''}`}
     data-id={track.id}
+    data-widx={widx}
     onContextMenu={onContextMenu}
     onClick={onClick}
     style={{ cursor: 'pointer', ...(rootProps?.style ?? {}) }}
@@ -706,8 +792,9 @@ const TrackRow = ({
 }
 
 /** Заголовок группы в history-режиме. */
-const HistoryHeader = ({ label }: { label: string }) => (
+const HistoryHeader = ({ label, widx }: { label: string; widx?: number }) => (
   <div
+    data-widx={widx}
     style={{
       padding: '10px 14px 4px',
       fontSize: 10,

@@ -17,7 +17,7 @@ import type { Playlist } from '@entities/playlist'
 import { playSingleTrack, AddPopup, PlayStateOverlay } from '@features/player'
 import { getAllProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
-import { toast } from '@shared/ui'
+import { toast, WindowedRows } from '@shared/ui'
 import { useT, useLocale, t as tt, type TranslationKey } from '@shared/i18n'
 import {
   TrackCtxMenu,
@@ -116,11 +116,14 @@ const TrackListRow = ({
   onPlay,
   onCtxMenu,
   onAddClick,
+  widx,
 }: {
   track: Track
   onPlay: () => void
   onCtxMenu: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>) => void
+  /** Индекс в оконном списке (data-widx — замер высоты строки WindowedRows). */
+  widx?: number
 }) => {
   const tr = useT()
   const isFav = useFavStore((s) => s.favs.has(track.id))
@@ -132,7 +135,7 @@ const TrackListRow = ({
     toggleFav(track.id)
   }
   return (
-    <div className="tr" onClick={onPlay} onContextMenu={onCtxMenu}>
+    <div className="tr" data-widx={widx} onClick={onPlay} onContextMenu={onCtxMenu}>
       <TrackRowCover track={track} placeholder={<PhTrack />} />
       <div className="tri">
         <div className="trn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -842,10 +845,11 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   }
   const likesAsPlaylist = () => {
     if (!profile || !profile.likes.length) return
-    // scLikes = SC user-id (из entity id `sc_artist_<id>`) — для «Обновить треки».
-    const scLikes = profile.artist.id.replace(/^sc_artist_/, '') || undefined
-    const pl = createPl(t('search.likesName', { name: profile.artist.name }), undefined, profile.artist.avatar ?? undefined, {
-      scLikes,
+    // SC user-id (из entity id `sc_artist_<id>`) — источник «Обновить треки».
+    const userId = profile.artist.id.replace(/^sc_artist_/, '')
+    const plName = t('search.likesName', { name: profile.artist.name })
+    const pl = createPl(plName, undefined, profile.artist.avatar ?? undefined, {
+      sources: userId ? [{ kind: 'scLikes', userId, title: plName }] : undefined,
     })
     profile.likes.forEach((t) => saveTrackToLibrary(t))
     reorderPlTracks(pl.id, profile.likes.map((t) => t.id))
@@ -860,7 +864,10 @@ export const SearchPage = ({ active }: SearchPageProps) => {
         const prov = getProvider(p.source ?? 'soundcloud')
         if (!prov?.getPlaylist) continue
         const { playlist, tracks: trs } = await prov.getPlaylist(p.id)
-        const pl = createPl(playlist.title, undefined, playlist.cover ?? undefined)
+        // sourceUrl площадки — сразу источник «Обновить треки».
+        const pl = createPl(playlist.title, undefined, playlist.cover ?? undefined, playlist.sourceUrl
+          ? { sources: [{ kind: 'url', url: playlist.sourceUrl, title: playlist.title }] }
+          : undefined)
         trs.forEach((t) => saveTrackToLibrary(t))
         reorderPlTracks(pl.id, trs.map((t) => t.id))
         ok++
@@ -902,6 +909,8 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
   // Поповер «+» для строк трек-списка (вкладка «Треки») — как в DetailView.
   const addAnchorRef = useRef<HTMLElement | null>(null)
+  // Скролл-контейнер результатов (#spScScroll) — для оконной виртуализации.
+  const spScrollRef = useRef<HTMLDivElement | null>(null)
   const [addTrack, setAddTrack] = useState<Track | null>(null)
   const onAddTrack = (e: ReactMouseEvent<HTMLElement>, track: Track) => {
     e.stopPropagation()
@@ -1105,34 +1114,41 @@ export const SearchPage = ({ active }: SearchPageProps) => {
           </div>
         </div>
 
-        {!profile && <FilterTabs tab={tab} onTab={setTab} />}
+        {!profile && (
+          <div className="sp-filter-zone">
+            <div className="sp-filter-zone-in">
+            <FilterTabs tab={tab} onTab={setTab} />
 
-        {showMeta && (
-          <div
-            id="spMetaFilters"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              padding: '2px 28px 10px',
-              flexShrink: 0, flexWrap: 'wrap',
-            }}
-          >
-            <SpDropdown icon={<IcoClock />} label={t('search.dd.duration')} value={durFilter} options={DUR_OPTS.map((o) => ({ id: o.id, label: t(o.labelKey) }))} onPick={(v) => setDurFilter(v as never)} />
-            <SpDropdown icon={<IcoCal />} label={t('lib.ti.year')} value={yearFilter} options={YEAR_OPTS.map((o) => ({ id: o.id, label: o.labelKey ? t(o.labelKey) : o.label! }))} onPick={(v) => setYearFilter(v as never)} />
-            <SpDropdown icon={<IcoSort />} label={t('lib.plmenu.sort')} value={sortOrder} options={SORT_OPTS.map((o) => ({ id: o.id, label: t(o.labelKey) }))} onPick={(v) => setSortOrder(v as never)} />
-            {genreOptions.length > 1 && (
-              <SpDropdown
-                icon={<IcoGenre />}
-                label={t('search.dd.genre')}
-                value={genreFilter ?? 'all'}
-                options={genreOptions}
-                onPick={(v) => setGenreFilter(v === 'all' ? null : v)}
-              />
+            {showMeta && (
+              <div
+                id="spMetaFilters"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  padding: '2px 28px 10px',
+                  flexShrink: 0, flexWrap: 'wrap',
+                }}
+              >
+                <SpDropdown icon={<IcoClock />} label={t('search.dd.duration')} value={durFilter} options={DUR_OPTS.map((o) => ({ id: o.id, label: t(o.labelKey) }))} onPick={(v) => setDurFilter(v as never)} />
+                <SpDropdown icon={<IcoCal />} label={t('lib.ti.year')} value={yearFilter} options={YEAR_OPTS.map((o) => ({ id: o.id, label: o.labelKey ? t(o.labelKey) : o.label! }))} onPick={(v) => setYearFilter(v as never)} />
+                <SpDropdown icon={<IcoSort />} label={t('lib.plmenu.sort')} value={sortOrder} options={SORT_OPTS.map((o) => ({ id: o.id, label: t(o.labelKey) }))} onPick={(v) => setSortOrder(v as never)} />
+                {genreOptions.length > 1 && (
+                  <SpDropdown
+                    icon={<IcoGenre />}
+                    label={t('search.dd.genre')}
+                    value={genreFilter ?? 'all'}
+                    options={genreOptions}
+                    onPick={(v) => setGenreFilter(v === 'all' ? null : v)}
+                  />
+                )}
+              </div>
             )}
+            </div>
           </div>
         )}
 
         <div
           id="spScScroll"
+          ref={spScrollRef}
           style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '14px 28px 28px' }}
         >
           <div id="spScResults" className={layoutClass}>
@@ -1191,17 +1207,26 @@ export const SearchPage = ({ active }: SearchPageProps) => {
                   <div className="sc-uni-section" data-sp-section="tracks">
                     <div className="sp-sec-title">{t('search.tab.tracks')}</div>
                     <div className="sp-track-grid" id="spTrackGrid">
-                      {/* Вкладка «Треки» → строки списка (.tr); «Все» → лента карточек. */}
+                      {/* Вкладка «Треки» → строки списка (.tr, оконная
+                          виртуализация); «Все» → лента карточек. */}
                       {tab === 'tracks'
-                        ? filteredTracks.map((t) => (
-                            <TrackListRow
-                              key={t.id}
-                              track={t}
-                              onPlay={() => playTrackFromSearch(t)}
-                              onCtxMenu={(e) => onCtxMenu(e, t)}
-                              onAddClick={(e) => onAddTrack(e, t)}
+                        ? (
+                            <WindowedRows
+                              items={filteredTracks}
+                              scrollRef={spScrollRef}
+                              estimate={68}
+                              renderItem={(t, i) => (
+                                <TrackListRow
+                                  key={t.id}
+                                  track={t}
+                                  widx={i}
+                                  onPlay={() => playTrackFromSearch(t)}
+                                  onCtxMenu={(e) => onCtxMenu(e, t)}
+                                  onAddClick={(e) => onAddTrack(e, t)}
+                                />
+                              )}
                             />
-                          ))
+                          )
                         : filteredTracks.map((t) => (
                             <TrackCard
                               key={t.id}

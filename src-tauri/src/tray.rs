@@ -5,12 +5,11 @@ use std::sync::Mutex;
 use once_cell::sync::OnceCell;
 use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition};
 
 static TRAY_ICON: OnceCell<Mutex<Option<TrayIcon<tauri::Wry>>>> = OnceCell::new();
 struct RgbaIcon { rgba: Vec<u8>, w: u32, h: u32 }
 static DEFAULT_ICON: OnceCell<Option<RgbaIcon>> = OnceCell::new();
-static POPUP_FOCUS_HOOKED: OnceCell<()> = OnceCell::new();
 
 const POPUP_W: f64 = 300.0;
 const POPUP_H: f64 = 290.0;
@@ -39,14 +38,13 @@ pub fn initialize(app: &AppHandle) -> tauri::Result<()> {
                     rect,
                     ..
                 } => {
-                    let scale = tray
-                        .app_handle()
-                        .get_webview_window("tray-popup")
-                        .and_then(|w| w.scale_factor().ok())
-                        .unwrap_or(1.0);
-                    let pos = rect.position.to_physical::<f64>(scale);
-                    let size = rect.size.to_physical::<f64>(scale);
-                    show_popup(tray.app_handle(), pos, size);
+                    // Колбэк трея исполняется на главном потоке, а ленивое создание
+                    // окна попапа само ждёт главный цикл — уводим в async runtime,
+                    // иначе дедлок (как с sync-командами, создающими окна).
+                    let app = tray.app_handle().clone();
+                    tauri::async_runtime::spawn(async move {
+                        show_popup(&app, rect);
+                    });
                 }
                 TrayIconEvent::DoubleClick {
                     button: MouseButton::Left,
@@ -77,20 +75,14 @@ fn show_main(app: &AppHandle) {
 }
 
 /// Показывает попап над иконкой трея и эмитит свежее состояние плеера в окно.
-fn show_popup(app: &AppHandle, icon_pos: tauri::PhysicalPosition<f64>, icon_size: tauri::PhysicalSize<f64>) {
-    let Some(win) = app.get_webview_window("tray-popup") else { return };
-
-    // Регистрируем хук на потерю фокуса один раз — для автоскрытия.
-    if POPUP_FOCUS_HOOKED.set(()).is_ok() {
-        let win_for_hook = win.clone();
-        win.on_window_event(move |event| {
-            if let WindowEvent::Focused(false) = event {
-                let _ = win_for_hook.hide();
-            }
-        });
-    }
+/// Окно создаётся лениво при первом показе (mirror.rs); хук автоскрытия по
+/// потере фокуса вешается там же при создании.
+fn show_popup(app: &AppHandle, rect: tauri::Rect) {
+    let Some(win) = crate::mirror::ensure_tray_popup(app) else { return };
 
     let scale = win.scale_factor().unwrap_or(1.0);
+    let icon_pos = rect.position.to_physical::<f64>(scale);
+    let icon_size = rect.size.to_physical::<f64>(scale);
 
     // Размер попапа в физических пикселях.
     let popup_w_phys = POPUP_W * scale;
@@ -125,6 +117,7 @@ fn show_popup(app: &AppHandle, icon_pos: tauri::PhysicalPosition<f64>, icon_size
     // Сначала эмитим текущее состояние, потом показываем — чтобы UI не моргал старыми данными.
     let s = crate::commands::miniplayer_get_state();
     let _ = win.emit("bloom-mp-state", s);
+    let _ = win.emit("bloom-win-vis", true);
 
     let _ = win.show();
     let _ = win.set_focus();
