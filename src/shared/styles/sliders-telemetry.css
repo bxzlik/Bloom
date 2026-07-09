@@ -70,7 +70,7 @@ body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glas
 .tele-sw-track{position:absolute;inset:0;border-radius:12px;background:var(--border);cursor:pointer;transition:.2s}
 .tele-sw-track::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:50%;left:3px;transform:translateY(-50%);transition:.2s}
 .tele-sw input:checked+.tele-sw-track{background:var(--accent)}
-.tele-sw input:checked+.tele-sw-track::after{transform:translateX(20px) translateY(-50%)}
+.tele-sw input:checked+.tele-sw-track::after{transform:translateX(20px) translateY(-50%);background:var(--accent-text,#fff)}
 .tele-clean-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius)*0.8);padding:12px 14px;transition:.15s;cursor:default}
 .tele-clean-row:hover{border-color:rgba(255,255,255,.12);background:var(--hover)}
 .tele-clean-title{font-size:13px;font-weight:600}

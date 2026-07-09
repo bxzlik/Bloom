@@ -120,7 +120,7 @@ pub fn set_config(app: &AppHandle, enabled: bool, anchor: String, size: f64, cus
         ensure_shown(&win);
         position(&win);
         push_state(&win);
-        let _ = win.emit("bloom-ov-show", OvShow { pinned: false, anchor: c.anchor });
+        let _ = win.emit_to("overlay", "bloom-ov-show", OvShow { pinned: false, anchor: c.anchor });
     } else if win.is_visible().unwrap_or(false) {
         // Старт при уже видимой плашке — просто применяем позицию/размер.
         position(&win);
@@ -137,7 +137,7 @@ pub fn flash(app: &AppHandle) {
     ensure_shown(&win);
     position(&win);
     push_state(&win);
-    let _ = win.emit("bloom-ov-show", OvShow { pinned: false, anchor: c.anchor });
+    let _ = win.emit_to("overlay", "bloom-ov-show", OvShow { pinned: false, anchor: c.anchor });
 }
 
 /// Тогл по хоткею: закрепить/снять плашку (логика пина — на стороне JS).
@@ -150,7 +150,7 @@ pub fn toggle(app: &AppHandle) {
     ensure_shown(&win);
     position(&win);
     push_state(&win);
-    let _ = win.emit("bloom-ov-toggle", OvShow { pinned: true, anchor: c.anchor });
+    let _ = win.emit_to("overlay", "bloom-ov-toggle", OvShow { pinned: true, anchor: c.anchor });
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -188,7 +188,7 @@ pub fn set_place_mode(app: &AppHandle, on: bool) {
             *DRAG_RAW.get_or_init(|| Mutex::new((0.0, 0.0))).lock() =
                 (p.x as f64 + pad, p.y as f64 + pad);
         }
-        let _ = win.emit("bloom-ov-place", OvPlace { on: true });
+        let _ = win.emit_to("overlay", "bloom-ov-place", OvPlace { on: true });
     } else {
         // Если режим размещения и так не активен — ничего не делаем. Иначе любой
         // «выключающий» вызов (размонтирование секции настроек, в т.ч. двойной
@@ -197,7 +197,7 @@ pub fn set_place_mode(app: &AppHandle, on: bool) {
             return;
         }
         let Some(win) = app.get_webview_window("overlay") else { return };
-        let _ = win.emit("bloom-ov-place", OvPlace { on: false });
+        let _ = win.emit_to("overlay", "bloom-ov-place", OvPlace { on: false });
     }
 }
 
@@ -270,15 +270,15 @@ pub fn report_moved(app: &AppHandle) {
         c.cust_y = fy;
     }
     if let Some(main) = app.get_webview_window("main") {
-        let _ = main.emit("bloom-ov-placed", OvPlaced { x: fx, y: fy });
+        let _ = main.emit_to("main", "bloom-ov-placed", OvPlaced { x: fx, y: fy });
     }
     // Плашке — для живого бейджа с координатами во время перетаскивания.
-    let _ = win.emit("bloom-ov-placed", OvPlaced { x: fx, y: fy });
+    let _ = win.emit_to("overlay", "bloom-ov-placed", OvPlaced { x: fx, y: fy });
 }
 
 fn push_state(win: &WebviewWindow) {
     let s = crate::commands::miniplayer_get_state();
-    let _ = win.emit("bloom-mp-state", s);
+    let _ = win.emit_to("overlay", "bloom-mp-state", s);
 }
 
 fn ensure_shown(win: &WebviewWindow) {

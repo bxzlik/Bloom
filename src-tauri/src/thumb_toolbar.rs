@@ -19,8 +19,10 @@ use windows::Win32::UI::Shell::{
     THB_ICON, THB_TOOLTIP, THUMBBUTTON, THUMBBUTTONMASK,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    LoadImageW, HICON, IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE, WM_COMMAND,
+    LoadImageW, RegisterWindowMessageW, HICON, IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE,
+    WM_COMMAND,
 };
+use windows::core::w;
 
 const BTN_PREV: u32 = 1;
 const BTN_PLAY: u32 = 2;
@@ -28,6 +30,9 @@ const BTN_NEXT: u32 = 3;
 const THBN_CLICKED: u16 = 0x1800;
 
 static APP_HANDLE: OnceCell<AppHandle> = OnceCell::new();
+/// Регистрируемое системой сообщение, шлётся когда кнопка окна в панели задач
+/// создаётся заново (в т.ч. после hide→show при сворачивании в трей).
+static WM_TASKBAR_BUTTON_CREATED: OnceCell<u32> = OnceCell::new();
 
 struct ToolbarState {
     hwnd: isize,
@@ -100,6 +105,7 @@ pub fn initialize(app: &AppHandle) {
 
     let _ = APP_HANDLE.set(app.clone());
     unsafe {
+        let _ = WM_TASKBAR_BUTTON_CREATED.set(RegisterWindowMessageW(w!("TaskbarButtonCreated")));
         let ok = SetWindowSubclass(hwnd, Some(subclass_proc), 0xBEEF, 0);
         if !ok.as_bool() {
             tracing::warn!("thumb_toolbar: SetWindowSubclass failed");
@@ -115,6 +121,14 @@ unsafe extern "system" fn subclass_proc(
     _uidsubclass: usize,
     _dwrefdata: usize,
 ) -> LRESULT {
+    // Панель задач пересоздала кнопку окна (например, после hide→show при
+    // сворачивании в трей) — thumb-кнопки при этом теряются, добавляем заново.
+    if let Some(&tb_msg) = WM_TASKBAR_BUTTON_CREATED.get() {
+        if msg == tb_msg {
+            reinstall_from_state();
+            // не return — даём системе доиграть сообщение штатно.
+        }
+    }
     if msg == WM_COMMAND {
         let hi = ((wparam.0 as u32) >> 16) as u16;
         let lo = wparam.0 as u32 & 0xFFFF;
@@ -134,6 +148,53 @@ unsafe extern "system" fn subclass_proc(
         }
     }
     DefSubclassProc(hwnd, msg, wparam, lparam)
+}
+
+fn make_button(id: u32, icon: Option<HICON>, tip: &str) -> THUMBBUTTON {
+    let mut btn = THUMBBUTTON {
+        dwMask: THUMBBUTTONMASK(THB_FLAGS.0 | THB_TOOLTIP.0),
+        iId: id,
+        iBitmap: 0,
+        hIcon: icon.unwrap_or(HICON(std::ptr::null_mut())),
+        szTip: [0; 260],
+        dwFlags: THBF_ENABLED,
+    };
+    if icon.is_some() {
+        btn.dwMask = THUMBBUTTONMASK(btn.dwMask.0 | THB_ICON.0);
+    }
+    for (i, ch) in tip.encode_utf16().take(259).enumerate() {
+        btn.szTip[i] = ch;
+    }
+    btn
+}
+
+/// Пере-добавляет кнопки в панель задач по текущему состоянию (после
+/// пересоздания кнопки окна). Использует `ThumbBarAddButtons`, т.к. набор
+/// кнопок для новой кнопки окна пуст.
+fn reinstall_from_state() {
+    let Some(cell) = STATE.get() else { return };
+    let st = cell.lock().unwrap();
+    let hwnd = HWND(st.hwnd as *mut core::ffi::c_void);
+    let prev = st.prev_icon;
+    let next = st.next_icon;
+    let playing = st.is_playing;
+    let play = if playing { st.pause_icon } else { st.play_icon };
+    drop(st);
+    unsafe {
+        let taskbar: Result<ITaskbarList3, _> =
+            CoCreateInstance(&TaskbarList, None, CLSCTX_INPROC_SERVER);
+        let Ok(taskbar) = taskbar else { return };
+        if taskbar.HrInit().is_err() {
+            return;
+        }
+        let tip = if playing { "Пауза" } else { "Воспроизвести" };
+        let buttons = [
+            make_button(BTN_PREV, prev, "Предыдущий трек"),
+            make_button(BTN_PLAY, play, tip),
+            make_button(BTN_NEXT, next, "Следующий трек"),
+        ];
+        let _ = taskbar.ThumbBarAddButtons(hwnd, &buttons);
+    }
 }
 
 fn load_hicon(path: &Path) -> Option<HICON> {
@@ -169,28 +230,10 @@ fn install(
         let taskbar: ITaskbarList3 = CoCreateInstance(&TaskbarList, None, CLSCTX_INPROC_SERVER)?;
         taskbar.HrInit()?;
 
-        let make = |id: u32, icon: Option<HICON>, tip: &str| -> THUMBBUTTON {
-            let mut btn = THUMBBUTTON {
-                dwMask: THUMBBUTTONMASK(THB_FLAGS.0 | THB_TOOLTIP.0),
-                iId: id,
-                iBitmap: 0,
-                hIcon: icon.unwrap_or(HICON(std::ptr::null_mut())),
-                szTip: [0; 260],
-                dwFlags: THBF_ENABLED,
-            };
-            if icon.is_some() {
-                btn.dwMask = THUMBBUTTONMASK(btn.dwMask.0 | THB_ICON.0);
-            }
-            for (i, ch) in tip.encode_utf16().take(259).enumerate() {
-                btn.szTip[i] = ch;
-            }
-            btn
-        };
-
         let buttons = [
-            make(BTN_PREV, prev, "Предыдущий трек"),
-            make(BTN_PLAY, play, "Воспроизвести / Пауза"),
-            make(BTN_NEXT, next, "Следующий трек"),
+            make_button(BTN_PREV, prev, "Предыдущий трек"),
+            make_button(BTN_PLAY, play, "Воспроизвести / Пауза"),
+            make_button(BTN_NEXT, next, "Следующий трек"),
         ];
         taskbar.ThumbBarAddButtons(hwnd, &buttons)?;
     }
@@ -220,28 +263,11 @@ pub fn set_playing(playing: bool) {
         if taskbar.HrInit().is_err() {
             return;
         }
-        let make = |id: u32, icon: Option<HICON>, tip: &str| -> THUMBBUTTON {
-            let mut btn = THUMBBUTTON {
-                dwMask: THUMBBUTTONMASK(THB_FLAGS.0 | THB_TOOLTIP.0),
-                iId: id,
-                iBitmap: 0,
-                hIcon: icon.unwrap_or(HICON(std::ptr::null_mut())),
-                szTip: [0; 260],
-                dwFlags: THBF_ENABLED,
-            };
-            if icon.is_some() {
-                btn.dwMask = THUMBBUTTONMASK(btn.dwMask.0 | THB_ICON.0);
-            }
-            for (i, ch) in tip.encode_utf16().take(259).enumerate() {
-                btn.szTip[i] = ch;
-            }
-            btn
-        };
         let tip = if playing { "Пауза" } else { "Воспроизвести" };
         let buttons = [
-            make(BTN_PREV, prev, "Предыдущий трек"),
-            make(BTN_PLAY, icon, tip),
-            make(BTN_NEXT, next, "Следующий трек"),
+            make_button(BTN_PREV, prev, "Предыдущий трек"),
+            make_button(BTN_PLAY, icon, tip),
+            make_button(BTN_NEXT, next, "Следующий трек"),
         ];
         let _ = taskbar.ThumbBarUpdateButtons(hwnd, &buttons);
     }

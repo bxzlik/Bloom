@@ -280,7 +280,7 @@
   align-items:center;
   justify-content:center;
   gap:14px;
-  padding:6px 18px 0;
+  padding:8px 18px 18px;
 }
 .unm-arrow{
   display:flex;

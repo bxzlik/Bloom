@@ -529,8 +529,12 @@ export const TrackCtxMenu = ({
                     key={pl.id}
                     className={already ? 'ci ci-active' : 'ci'}
                     onClick={() => {
-                      ensurePersisted()
-                      if (!already) addTrackToPl(pl.id, track.id)
+                      // Повторный клик по отмеченному плейлисту — убрать трек из него.
+                      if (already) removeTrackFromPl(pl.id, track.id)
+                      else {
+                        ensurePersisted()
+                        addTrackToPl(pl.id, track.id)
+                      }
                       onClose()
                     }}
                   >

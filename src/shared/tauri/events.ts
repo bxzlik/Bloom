@@ -1,4 +1,5 @@
 import { listen, type EventCallback, type UnlistenFn } from '@tauri-apps/api/event'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import type {
   DownloadState,
   LocalTrackInfo,
@@ -47,6 +48,17 @@ export interface AppEvents {
 export type AppEventName = keyof AppEvents
 
 /**
+ * Метка своего окна как target подписки. С дефолтным `{kind:'Any'}` слушатель
+ * ловит и адресные `emit_to(другое_окно, ..)` из Rust — так, например, «стоп
+ * рендера» скрываемого tray-popup замораживал открытый PiP. Помеченный
+ * слушатель получает только свои адресные события + broadcast `app.emit`.
+ *
+ * Лениво: `getCurrentWindow()` требует уже внедрённый `__TAURI_INTERNALS__`.
+ */
+let selfLabel: string | undefined
+const label = (): string => (selfLabel ??= getCurrentWindow().label)
+
+/**
  * Типизированная подписка на событие из Rust. Возвращает функцию отписки.
  *
  * @example
@@ -60,5 +72,5 @@ export const onAppEvent = <K extends AppEventName>(
   handler: (payload: AppEvents[K]) => void,
 ): Promise<UnlistenFn> => {
   const cb: EventCallback<AppEvents[K]> = (e) => handler(e.payload)
-  return listen<AppEvents[K]>(name, cb)
+  return listen<AppEvents[K]>(name, cb, { target: label() })
 }

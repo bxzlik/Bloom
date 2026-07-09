@@ -81,10 +81,12 @@ pub fn ensure_tray_popup(app: &AppHandle) -> Option<WebviewWindow> {
     post_create(&win);
     apply_dwm(&win);
     // Потерял фокус → спрятать. `bloom-win-vis` глушит тикер/рендер в JS окна.
+    // ВНИМАНИЕ: `emit` на окне в Tauri v2 — broadcast во ВСЕ окна (не в себя, как
+    // в v1). Только `emit_to(label, ..)` адресует одно окно.
     let hook = win.clone();
     win.on_window_event(move |event| {
         if let tauri::WindowEvent::Focused(false) = event {
-            let _ = hook.emit("bloom-win-vis", false);
+            let _ = hook.emit_to("tray-popup", "bloom-win-vis", false);
             let _ = hook.hide();
         }
     });

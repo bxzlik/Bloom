@@ -106,6 +106,9 @@ body.perf .eq{display:none}
 body.perf .title{overflow:hidden;text-overflow:ellipsis;max-width:100%}
 body.perf .prog{display:none}
 body.perf .island:hover .prog{display:block}
+/* Эквалайзера в правом слоте нет — он бы пустовал в покое, поэтому кнопки
+   управления держим показанными всегда, а не только на наведении. */
+body.perf .ctrl{opacity:1;transform:none;pointer-events:auto}
 
 /* ── Компактный режим ────────────────────────────────────
    Покой: только обложка + эквалайзер (текст схлопнут). Наведение: плашка
@@ -123,6 +126,9 @@ body.compact.perf .island:hover{width:380px;padding:8px 18px 8px 8px;gap:12px}
    управления (самый широкий элемент) и эквалайзер уезжает в обрезку. */
 body.compact .right{width:34px;grid-template-columns:100%;transition:width .26s cubic-bezier(.22,1,.36,1)}
 body.compact.perf .right{width:0}
+/* В свёрнутом компакте правый слот схлопнут в ноль — постоянно показанные
+   кнопки (perf) вылезли бы поверх обложки. Возвращаем их на hover-поведение. */
+body.compact.perf .island:not(:hover) .ctrl{opacity:0;pointer-events:none}
 body.compact .info{opacity:0;transition:opacity .12s ease}
 body.compact .island:hover{width:380px}
 body.compact .island:hover .right{width:106px}
@@ -198,12 +204,16 @@ body.bar .bar-wrap{display:flex;align-items:center;gap:8px;width:100%;height:100
 /* Визуализатор в правом круге — тот же эквалайзер, 5 столбиков. Перебиваем
    островной кроссфейд `.island:hover .eq{opacity:0}`, чтобы при наведении на
    полосу визуализатор не гас. */
+.bcircle-viz{position:relative;overflow:hidden}
 .bcircle-viz .eq{height:20px;padding:0;gap:3px}
 body.bar .bcircle-viz .eq{opacity:1;transform:none}
-/* Оптимизация: визуализатор анимировать дорого (постоянный repaint), поэтому
-   правый круг убираем целиком — центральная полоса (flex:1) растягивается на
-   освободившееся место, плашка остаётся сбалансированной. */
-body.bar.perf .bcircle-viz{display:none}
+/* Оптимизация: анимировать эквалайзер дорого (постоянный repaint), но и убирать
+   круг жалко — вместо столбиков показываем в нём статичную обложку трека.
+   inset:0 не заезжает на рамку круга, так что «стеклянный» кант остаётся. */
+.bcover{display:none;position:absolute;inset:0;
+  align-items:center;justify-content:center;color:var(--muted);background:var(--bg)}
+.bcover img{width:100%;height:100%;object-fit:cover;display:block}
+body.bar.perf .bcover{display:flex}
 </style>
 </head>
 <body>
@@ -242,6 +252,7 @@ body.bar.perf .bcircle-viz{display:none}
     </div>
     <div class="bcircle bcircle-viz">
       <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="bcover" id="barCover"></div>
     </div>
   </div>
 </div>
@@ -262,10 +273,13 @@ body.bar.perf .bcircle-viz{display:none}
 
   function $(id){ return document.getElementById(id); }
 
+  // target = метка окна, а не 'Any': слушатель с 'Any' принимает и адресные
+  // emit_to() в ДРУГИЕ окна (см. tauri match_any_or_filter). Broadcast app.emit()
+  // помеченный слушатель по-прежнему получает.
   function listenEvent(event, fn){
     try{
       var hid = ti.transformCallback(function(e){ fn(e.payload); });
-      ti.invoke('plugin:event|listen', { event: event, target: { kind: 'Any' }, handler: hid });
+      ti.invoke('plugin:event|listen', { event: event, target: { kind: 'AnyLabel', label: 'overlay' }, handler: hid });
     }catch(e){ console.warn('[ov] listen', event, e); }
   }
 
@@ -465,12 +479,12 @@ body.bar.perf .bcircle-viz{display:none}
     var key = st.artwork || '';
     if (key !== _coverKey){
       _coverKey = key;
-      var cov = $('cover');
-      if (st.artwork){
-        cov.innerHTML = '<img src="' + esc(st.artwork) + '" alt="">';
-      } else {
-        cov.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>';
-      }
+      var html = st.artwork
+        ? '<img src="' + esc(st.artwork) + '" alt="">'
+        : '<svg width="22" height="22" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>';
+      $('cover').innerHTML = html;
+      var bcov = $('barCover');
+      if (bcov) bcov.innerHTML = html;
     }
     document.body.classList.toggle('paused', !st.playing);
     setPlayIcon();

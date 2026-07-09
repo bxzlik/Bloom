@@ -309,11 +309,11 @@ pub fn now_playing(
     } else {
         "Bloom".to_string()
     };
-    // Только в main: app.emit — broadcast во все окна, а слушает событие один
-    // кастомный тайтлбар главного окна (пуш идёт ~раз в секунду).
+    // Только в main: слушает событие один кастомный тайтлбар главного окна
+    // (пуш идёт ~раз в секунду).
     if let Some(win) = app.get_webview_window("main") {
         let _ = win.set_title(&display_title);
-        let _ = win.emit("bloom-set-title", &display_title);
+        let _ = win.emit_to("main", "bloom-set-title", &display_title);
     }
 
     // Обложка для Discord RPC.
@@ -404,16 +404,17 @@ pub fn now_playing(
     // Зеркальные окна: шлём состояние только ВИДИМЫМ — скрытое окно незачем
     // будить каждую секунду (свежее состояние оно получит при показе). Окон
     // может и не быть вовсе: они создаются лениво при первом использовании.
+    // Строго `emit_to(label, ..)`: `emit` на окне — broadcast во все окна.
     if let Some(mp) = app.get_webview_window("miniplayer") {
         if mp.is_visible().unwrap_or(false) {
             let s = mp_state().lock().clone();
-            let _ = mp.emit("bloom-mp-state", s);
+            let _ = mp.emit_to("miniplayer", "bloom-mp-state", s);
         }
     }
     if let Some(tp) = app.get_webview_window("tray-popup") {
         if tp.is_visible().unwrap_or(false) {
             let s = mp_state().lock().clone();
-            let _ = tp.emit("bloom-mp-state", s);
+            let _ = tp.emit_to("tray-popup", "bloom-mp-state", s);
         }
     }
     // Оверлей: OS-окно после первого показа остаётся видимым (плашку прячет CSS),
@@ -422,7 +423,7 @@ pub fn now_playing(
     if let Some(ov) = app.get_webview_window("overlay") {
         if crate::overlay::island_visible() && ov.is_visible().unwrap_or(false) {
             let s = mp_state().lock().clone();
-            let _ = ov.emit("bloom-mp-state", s);
+            let _ = ov.emit_to("overlay", "bloom-mp-state", s);
         }
     }
 
@@ -504,8 +505,8 @@ pub async fn open_miniplayer(app: AppHandle) -> Result<(), String> {
     if let Some(w) = crate::mirror::ensure_miniplayer(&app) {
         // Состояние и «окно видимо» — до show, чтобы UI не моргал старыми данными.
         let s = mp_state().lock().clone();
-        let _ = w.emit("bloom-mp-state", s);
-        let _ = w.emit("bloom-win-vis", true);
+        let _ = w.emit_to("miniplayer", "bloom-mp-state", s);
+        let _ = w.emit_to("miniplayer", "bloom-win-vis", true);
         let _ = w.show();
         let _ = w.set_focus();
     }
@@ -516,11 +517,11 @@ pub async fn open_miniplayer(app: AppHandle) -> Result<(), String> {
 pub fn close_miniplayer(app: AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("miniplayer") {
         // Глушим тикер/рендер в JS скрытого окна.
-        let _ = w.emit("bloom-win-vis", false);
+        let _ = w.emit_to("miniplayer", "bloom-win-vis", false);
         let _ = w.hide();
     }
     if let Some(main) = app.get_webview_window("main") {
-        let _ = main.emit("bloom-mp-closed", ());
+        let _ = main.emit_to("main", "bloom-mp-closed", ());
     }
     Ok(())
 }
@@ -537,7 +538,7 @@ pub fn miniplayer_cmd(window: tauri::Window, app: AppHandle, cmd: String, value:
         "seek" => {
             if let Some(v) = value {
                 if let Some(main) = app.get_webview_window("main") {
-                    let _ = main.emit("bloom-mp-seek", v);
+                    let _ = main.emit_to("main", "bloom-mp-seek", v);
                 }
             }
         }
@@ -549,7 +550,7 @@ pub fn miniplayer_cmd(window: tauri::Window, app: AppHandle, cmd: String, value:
                 for label in ["main", "miniplayer", "tray-popup"] {
                     if label == src { continue; }
                     if let Some(w) = app.get_webview_window(label) {
-                        let _ = w.emit("bloom-mp-volume", vi);
+                        let _ = w.emit_to(label, "bloom-mp-volume", vi);
                     }
                 }
             }
@@ -595,7 +596,7 @@ pub fn open_main_window(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn hide_tray_popup(app: AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("tray-popup") {
-        let _ = w.emit("bloom-win-vis", false);
+        let _ = w.emit_to("tray-popup", "bloom-win-vis", false);
         let _ = w.hide();
     }
     Ok(())
@@ -613,10 +614,10 @@ pub fn tray_open_artist(app: AppHandle, artist: String) -> Result<(), String> {
         let _ = w.show();
         let _ = w.unminimize();
         let _ = w.set_focus();
-        let _ = w.emit("bloom-open-artist", artist);
+        let _ = w.emit_to("main", "bloom-open-artist", artist);
     }
     if let Some(tp) = app.get_webview_window("tray-popup") {
-        let _ = tp.emit("bloom-win-vis", false);
+        let _ = tp.emit_to("tray-popup", "bloom-win-vis", false);
         let _ = tp.hide();
     }
     Ok(())

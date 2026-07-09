@@ -116,8 +116,8 @@ fn show_popup(app: &AppHandle, rect: tauri::Rect) {
 
     // Сначала эмитим текущее состояние, потом показываем — чтобы UI не моргал старыми данными.
     let s = crate::commands::miniplayer_get_state();
-    let _ = win.emit("bloom-mp-state", s);
-    let _ = win.emit("bloom-win-vis", true);
+    let _ = win.emit_to("tray-popup", "bloom-mp-state", s);
+    let _ = win.emit_to("tray-popup", "bloom-win-vis", true);
 
     let _ = win.show();
     let _ = win.set_focus();

@@ -116,7 +116,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'dark',
     name: 'Dark',
-    bg: '#000000',
+    bg: '#0f0f0f',
     blockColor: '#0f0f0f',
     accent: '#888888',
     palette: { '--bg2': '#141414', '--card': '#1a1a1a', '--hover': '#222222', '--border': '#2a2a2a', '--accent2': '#666666', '--glow': 'rgba(136,136,136,.2)', '--text': '#ffffff', '--text2': '#999999', '--muted': '#555555' },
@@ -125,7 +125,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'amoled',
     name: 'AMOLED',
-    bg: '#000000',
+    bg: '#0a0a0a',
     blockColor: '#0a0a0a',
     accent: '#ffffff',
     palette: { '--bg2': '#050505', '--card': '#0a0a0a', '--hover': '#111111', '--border': '#2e2e2e', '--accent2': '#cccccc', '--glow': 'rgba(255,255,255,.15)', '--text': '#ffffff', '--text2': '#888888', '--muted': '#444444' },
@@ -134,7 +134,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'midnight',
     name: 'Midnight',
-    bg: '#080c14',
+    bg: '#101828',
     blockColor: '#101828',
     accent: '#4d9fff',
     palette: { '--bg2': '#0b1020', '--card': '#101828', '--hover': '#162135', '--border': '#1e2d42', '--accent2': '#2e7acc', '--glow': 'rgba(77,159,255,.2)', '--text': '#e8f0ff', '--text2': '#7a9cc4', '--muted': '#3a5070' },
@@ -143,7 +143,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'nord',
     name: 'Nord',
-    bg: '#242933',
+    bg: '#3b4252',
     blockColor: '#3b4252',
     accent: '#88c0d0',
     palette: { '--bg2': '#2e3440', '--card': '#3b4252', '--hover': '#434c5e', '--border': '#3d4758', '--accent2': '#81a1c1', '--glow': 'rgba(136,192,208,.2)', '--text': '#eceff4', '--text2': '#d8dee9', '--muted': '#7a889e' },
@@ -152,7 +152,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'warm',
     name: 'Warm',
-    bg: '#0d0b08',
+    bg: '#1c1610',
     blockColor: '#1c1610',
     accent: '#d4875a',
     palette: { '--bg2': '#131009', '--card': '#1c1610', '--hover': '#25201a', '--border': '#2e2518', '--accent2': '#b86a3a', '--glow': 'rgba(212,135,90,.2)', '--text': '#f5ede4', '--text2': '#a08060', '--muted': '#5a4030' },

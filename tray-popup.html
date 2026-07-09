@@ -356,10 +356,13 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   function invoke(c, a) {
     try { return ti.invoke(c, a || {}); } catch(e) { console.warn('[tp] invoke', c, e); }
   }
+  // target = метка окна, а не 'Any': слушатель с 'Any' принимает и адресные
+  // emit_to() в ДРУГИЕ окна (см. tauri match_any_or_filter). Broadcast app.emit()
+  // помеченный слушатель по-прежнему получает.
   function listenEvent(event, fn) {
     try {
       var hid = ti.transformCallback(function(e) { fn(e.payload); });
-      invoke('plugin:event|listen', { event: event, target: { kind: 'Any' }, handler: hid });
+      invoke('plugin:event|listen', { event: event, target: { kind: 'AnyLabel', label: 'tray-popup' }, handler: hid });
     } catch(e) { console.warn('[tp] listen', event, e); }
   }
 

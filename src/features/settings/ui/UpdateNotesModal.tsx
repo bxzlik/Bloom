@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import ReactMarkdown from 'react-markdown'
 import { openUrl } from '@tauri-apps/plugin-opener'
@@ -57,6 +57,25 @@ export const UpdateNotesModal = () => {
   const cur = pages[idx]
   const go = (d: number) => setPage((p) => Math.min(Math.max(p + d, 0), Math.max(total - 1, 0)))
 
+  // История сгруппирована по «глобальной» версии (мажор.минор → «1.4.x»): каждая
+  // группа — заголовок-семейство, под ним патч-версии этого семейства. Порядок
+  // групп и пунктов сохраняем как в historyVersions (новые сверху).
+  const historyGroups = useMemo(() => {
+    const groups: { key: string; label: string; items: typeof historyVersions }[] = []
+    const byKey = new Map<string, (typeof groups)[number]>()
+    for (const h of historyVersions) {
+      const key = h.version.split('.').slice(0, 2).join('.')
+      let g = byKey.get(key)
+      if (!g) {
+        g = { key, label: `${key}.x`, items: [] }
+        byKey.set(key, g)
+        groups.push(g)
+      }
+      g.items.push(h)
+    }
+    return groups
+  }, [historyVersions])
+
   useEffect(() => {
     if (open) {
       setMounted(true)
@@ -67,10 +86,19 @@ export const UpdateNotesModal = () => {
     return () => clearTimeout(id)
   }, [open])
 
+  // Выбранное семейство версий (мажор.минор) в истории: null → список семейств,
+  // иначе — список патч-версий этого семейства.
+  const [family, setFamily] = useState<string | null>(null)
+
   // Сброс на первую страницу при открытии/смене заметки.
   useEffect(() => {
     setPage(0)
   }, [note, open])
+
+  // При каждом открытии модалки начинаем историю с корня (списка семейств).
+  useEffect(() => {
+    if (open) setFamily(null)
+  }, [open])
 
   // Escape — закрыть; ←/→ — листать.
   useEffect(() => {
@@ -89,8 +117,21 @@ export const UpdateNotesModal = () => {
 
   // В режиме истории без выбранной заметки показываем список версий.
   const historyList = mode === 'history' && !note
-  const title = historyList ? t('update.history') : note?.title || t('update.notesTitle')
+  const curFamily = family ? historyGroups.find((g) => g.key === family) : null
+  const title = historyList
+    ? curFamily
+      ? curFamily.label
+      : t('update.history')
+    : note?.title || t('update.notesTitle')
   const multi = total > 1
+
+  // Кнопка «назад» в шапке: из заметки → к списку версий семейства; из списка
+  // версий семейства → к списку семейств.
+  const showBack = mode === 'history' && (!!note || !!family)
+  const onBack = () => {
+    if (note) backToHistory()
+    else setFamily(null)
+  }
 
   return createPortal(
     <div
@@ -102,8 +143,8 @@ export const UpdateNotesModal = () => {
       <div className="unm-modal" role="dialog" aria-label={title}>
         {/* Шапка */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px 12px' }}>
-          {mode === 'history' && note ? (
-            <button className="unm-close" aria-label={t('update.back')} onClick={backToHistory}>
+          {showBack ? (
+            <button className="unm-close" aria-label={t('update.back')} onClick={onBack}>
               <Ico name="arrowLeft" width={16} height={16} />
             </button>
           ) : (
@@ -142,18 +183,33 @@ export const UpdateNotesModal = () => {
               <div style={{ fontSize: 13, color: 'var(--text2)' }}>{t('update.historyEmpty')}</div>
             ) : (
               <div className="unm-history">
-                {historyVersions.map((h) => (
-                  <button
-                    key={h.version}
-                    className="unm-history-item"
-                    onClick={() => void openHistoryNote(h.version)}
-                  >
-                    <span className="unm-history-ver">v{h.version}</span>
-                    {h.title && <span className="unm-history-title">{h.title}</span>}
-                    {h.date && <span className="unm-history-date">{h.date}</span>}
-                    <Ico name="arrowRight" width={16} height={16} className="unm-history-chev" />
-                  </button>
-                ))}
+                {curFamily
+                  ? // Уровень 2: патч-версии выбранного семейства.
+                    curFamily.items.map((h) => (
+                      <button
+                        key={h.version}
+                        className="unm-history-item"
+                        onClick={() => void openHistoryNote(h.version)}
+                      >
+                        <span className="unm-history-ver">v{h.version}</span>
+                        {h.title && <span className="unm-history-title">{h.title}</span>}
+                        {h.date && <span className="unm-history-date">{h.date}</span>}
+                        <Ico name="arrowRight" width={16} height={16} className="unm-history-chev" />
+                      </button>
+                    ))
+                  : // Уровень 1: семейства версий (мажор.минор).
+                    historyGroups.map((g) => {
+                      const newest = g.items[0]?.version
+                      const oldest = g.items[g.items.length - 1]?.version
+                      const range = oldest === newest ? `v${newest}` : `v${oldest} – v${newest}`
+                      return (
+                        <button key={g.key} className="unm-history-item" onClick={() => setFamily(g.key)}>
+                          <span className="unm-history-ver">{g.label}</span>
+                          <span className="unm-history-title">{range}</span>
+                          <Ico name="arrowRight" width={16} height={16} className="unm-history-chev" />
+                        </button>
+                      )
+                    })}
               </div>
             )
           ) : !cur ? (
@@ -227,31 +283,26 @@ export const UpdateNotesModal = () => {
           </div>
         )}
 
-        {/* Подвал: действия */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, padding: '12px 18px 16px' }}>
-          {mode === 'whatsnew' || mode === 'history' ? (
-            <button className="btn bta" onClick={close} style={{ fontSize: 12.5, padding: '7px 18px' }}>
-              {t('update.gotIt')}
+        {/* Подвал: действия (только режим анонса — с кнопками «Позже»/«Обновить».
+            В «Что нового»/истории закрываем крестиком, отдельная кнопка не нужна). */}
+        {mode === 'announce' && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, padding: '12px 18px 16px' }}>
+            <button className="unm-ghost" onClick={close}>
+              {t('update.later')}
             </button>
-          ) : (
-            <>
-              <button className="unm-ghost" onClick={close}>
-                {t('update.later')}
-              </button>
-              <button
-                className="btn bta"
-                disabled={phase === 'downloading'}
-                onClick={() => {
-                  close()
-                  void downloadInstall()
-                }}
-                style={{ fontSize: 12.5, padding: '7px 18px' }}
-              >
-                {t('settings.about.update')}
-              </button>
-            </>
-          )}
-        </div>
+            <button
+              className="btn bta"
+              disabled={phase === 'downloading'}
+              onClick={() => {
+                close()
+                void downloadInstall()
+              }}
+              style={{ fontSize: 12.5, padding: '7px 18px' }}
+            >
+              {t('settings.about.update')}
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

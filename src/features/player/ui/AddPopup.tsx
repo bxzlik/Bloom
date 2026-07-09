@@ -62,6 +62,7 @@ export const AddPopup = ({
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
   const playlists = usePlaylistStore((s) => s.playlists)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
+  const removeTrackFromPl = usePlaylistStore((s) => s.removeTrackFromPl)
 
   // Унифицированный «добавить в плейлист».
   const addToPl = (plId: string) => {
@@ -197,7 +198,9 @@ export const AddPopup = ({
                 key={pl.id}
                 className={already ? 'ci ci-active' : 'ci'}
                 onClick={() => {
-                  addToPl(pl.id)
+                  // Повторный клик по отмеченному плейлисту — убрать трек из него.
+                  if (trackId && already) removeTrackFromPl(pl.id, trackId)
+                  else addToPl(pl.id)
                   onClose()
                 }}
               >
