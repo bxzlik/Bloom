@@ -30,6 +30,7 @@ import {
 import { LibAddMenu } from './LibAddMenu'
 import { LibSortMenu } from './LibSortMenu'
 import { PlMenu } from './PlMenu'
+import { PlaylistOfflineTag } from './PlaylistOfflineTag'
 import { AddFromLibModal } from './AddFromLibModal'
 
 // Hover-кнопки play на системных строках сайдбара. Берём треки императивно
@@ -231,7 +232,7 @@ export const LibSidebar = () => {
             onClick={() => selectBuiltin('fav')}
           >
             <div className="lib-icon fav-icon">
-              <Ico name="heart" variant="bold" width={16} height={16} style={{ color: '#fff' }} />
+              <Ico name="heart" variant="bold" width={16} height={16} />
             </div>
             <div className="lib-item-info">
               <div className="lib-item-name">{t('lib.liked')}</div>
@@ -685,6 +686,7 @@ const UnifiedList = ({
                     const total = sumDurations(pl.trs.map((id) => tracksById.get(id)?.dur))
                     return tracksAndDuration(pl.trs.length, total)
                   })()}
+                  <PlaylistOfflineTag trackIds={pl.trs} />
                 </div>
               </div>
               <button
@@ -765,11 +767,7 @@ const UnifiedList = ({
             {...rowHandle}
           >
             <div style={{ position: 'relative', flexShrink: 0 }}>
-              <div
-                className="lib-icon"
-                style={{ background: 'rgba(var(--accent-rgb),.12)' }}
-                {...iconHandle}
-              >
+              <div className="lib-icon" style={{ background: 'var(--folder-tint)' }} {...iconHandle}>
                 <Ico name="folder" width={16} height={16} style={{ color: 'var(--accent)' }} />
               </div>
               {isPinnedEntry && <span className="lib-pin-dot" />}

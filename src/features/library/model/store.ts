@@ -76,6 +76,15 @@ export interface LibState {
   addTracks: (batch: Track[], opts?: { prepend?: boolean }) => void
   /** Удалить все треки указанной папки (на event bloom-folder-removed). */
   removeFolderTracks: (folderPath: string) => void
+  /**
+   * После скана убрать треки просканированных папок, которых больше нет на диске
+   * (файл удалили, пока watcher не слушал). Папки, которые не удалось прочитать,
+   * в `scannedFolders` не приходят — их треки не трогаем, иначе отключённая
+   * флешка вычистила бы всю свою музыку из плейлистов.
+   *
+   * Возвращает id вычищенных треков — для каскадной чистки ссылок.
+   */
+  pruneFolderTracks: (scannedFolders: string[], aliveIds: string[]) => string[]
   /** Удалить один трек по id. */
   removeTrack: (trackId: string) => void
   /**
@@ -102,7 +111,7 @@ export interface LibState {
   setSort: (mode: TrackSortMode) => void
 }
 
-export const useLibStore = create<LibState>((set) => ({
+export const useLibStore = create<LibState>((set, get) => ({
   mode: 'all',
   plId: null,
   folderPath: null,
@@ -176,6 +185,21 @@ export const useLibStore = create<LibState>((set) => ({
     set((s) => ({
       tracks: s.tracks.filter((t) => t._folder !== folderPath),
     })),
+
+  pruneFolderTracks: (scannedFolders, aliveIds) => {
+    const scanned = new Set(scannedFolders.map((f) => f.toLowerCase()))
+    const alive = new Set(aliveIds)
+    const goneIds = get()
+      .tracks.filter(
+        (t) => t._folder && scanned.has(t._folder.toLowerCase()) && !alive.has(t.id),
+      )
+      .map((t) => t.id)
+    if (goneIds.length) {
+      const gone = new Set(goneIds)
+      set((s) => ({ tracks: s.tracks.filter((t) => !gone.has(t.id)) }))
+    }
+    return goneIds
+  },
 
   removeTrack: (trackId) =>
     set((s) => ({

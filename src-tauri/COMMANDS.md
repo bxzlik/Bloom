@@ -60,6 +60,7 @@
 | `folder_remove` | `path: string` | `()` |
 | `folder_scan` | `path: string` | `()` |
 | `folder_get` | — | `string[]` |
+| `open_folder` | `path: string` | `()` — открыть папку в проводнике; не-директория → `Err` |
 
 ### Downloads → features/soundcloud/api (SC), features/library/api (local), features/player/api (cover)
 | Команда | Аргументы | Возврат |
@@ -67,6 +68,13 @@
 | `sc_download` | url, filename, cover_url?, title?, artist? | `()` |
 | `local_download` | `local_path: string, filename: string` | `()` |
 | `cover_download` | data_url?, url?, filename | `()` |
+
+### Offline cache (локальное прослушивание) → features/offline/api
+| Команда | Аргументы | Возврат |
+|---|---|---|
+| `offline_download` | id, url, filename, cover_url?, title?, artist?, referer? | `string` (путь копии) |
+| `offline_remove` | `id: string` | `()` |
+| `offline_scan_all` | — | `{ id, path }[]` |
 
 ### Lyrics → features/lyrics/api
 | Команда | Аргументы | Возврат |

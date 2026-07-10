@@ -166,13 +166,17 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .hpc-sub{font-size:10px;color:var(--text2);text-align:center;margin-top:2px}
 .home-pl-new{width:140px;height:140px;border-radius:var(--radius);background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font);transition:.15s}
 .home-pl-new:hover{background:rgba(255,255,255,.08);color:var(--text)}
-/* ===== LIB SIDEBAR SYSTEM ITEM GRADIENTS ===== */
+/* ===== LIB SIDEBAR SYSTEM ITEM COVERS =====
+   Плоская тинт-подложка + цветная иконка — как у папок (--folder-tint),
+   но каждый пункт держит свой смысловой цвет (синий/красный/золотой). */
 .lib-item-sys{position:relative;isolation:isolate}
 .lib-item-sys .lib-icon,.lib-item-sys .lib-item-info{position:relative;z-index:1}
-#libItemAll .lib-icon{background:linear-gradient(135deg,#1a3a4a,#0d2535)!important}
-#libItemFav .lib-icon{background:linear-gradient(135deg,#c0144e,#7a0030)!important}
-#libItemHistory .lib-icon{background:linear-gradient(135deg,#3d300f,#231a06)!important}
-#libItemHistory .lib-icon svg{color:#ffb400}
+#libItemAll .lib-icon{background:var(--sys-all-tint)!important}
+#libItemAll .lib-icon svg{color:var(--sys-all-ico)}
+#libItemFav .lib-icon{background:var(--sys-fav-tint)!important}
+#libItemFav .lib-icon svg{color:var(--sys-fav-ico)!important}
+#libItemHistory .lib-icon{background:var(--sys-hist-tint)!important}
+#libItemHistory .lib-icon svg{color:var(--sys-hist-ico)}
 /* ===== HOME QUICK CARDS (История / Любимые) ===== */
 .home-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .home-quick-card{display:flex;flex-direction:column;justify-content:space-between;border-radius:var(--radius);overflow:hidden;border:1px solid rgba(255,255,255,var(--wb));cursor:pointer;transition:.15s;position:relative;height:80px;padding:11px 14px;isolation:isolate}

@@ -23,6 +23,7 @@ import { playFromSource, playTrack, useQueueStore, AddPopup } from '@features/pl
 import { TrackCtxMenu } from './TrackCtxMenu'
 import { TagEditor } from './TagEditor'
 import { Ico } from '@shared/ui/icons/solar'
+import { useOfflineStore } from '@features/offline'
 
 /**
  * Tracklist `#libTracklist` + `function trHTML()`.
@@ -653,6 +654,7 @@ const TrackRow = ({
   const isCurrent = useQueueStore((s) => s.curId === track.id)
   const isLoading = useQueueStore((s) => s.loadingId === track.id)
   const isSelected = useSelectionStore((s) => s.selected.has(track.id))
+  const isOffline = useOfflineStore((s) => s.paths.has(track.id))
 
   // Провайдер альбома для клика по колонке «Альбом» (глоб. делегат .alb-link
   // в App резолвит по имени у нужной площадки; local → фильтр по названию).
@@ -786,6 +788,13 @@ const TrackRow = ({
         <Ico name="add" width={13} height={13} />
       </button>
     </div>
+    {/* Индикатор «доступно офлайн» (скачано для локального прослушивания) —
+        слева от пилюли длительности. */}
+    {isOffline && (
+      <span className="tr-offline">
+        <Ico name="save" width={13} height={13} />
+      </span>
+    )}
     <div className="trd">{track.dur || '—'}</div>
   </div>
   )

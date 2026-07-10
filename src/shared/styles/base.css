@@ -116,7 +116,7 @@ input,textarea{user-select:text;-webkit-user-select:text}
 /* Плоская кнопка play в нижнем баре (body.play-flat — по умолчанию). Перебивает
    id-специфичные правила выше. */
 body.play-flat #miniPlayer .cc-play{background:none;color:rgba(255,255,255,0.55)}
-body.play-flat #miniPlayer .cc-play:hover{background:rgba(255,255,255,0.1)!important;color:var(--accent)}
+body.play-flat #miniPlayer .cc-play:hover{background:rgba(var(--accent-rgb),0.1)!important;color:var(--accent)}
 .app.playerbar-left #miniPlayer,.app.playerbar-right #miniPlayer{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* ===== GLOBAL SIDE PANEL (queue/lyrics from mini player) ===== */
 #globalRightPanel{display:flex;flex-shrink:0;overflow:hidden;width:0;flex-direction:column;transition:width .3s cubic-bezier(.32,.72,0,1);}

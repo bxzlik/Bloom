@@ -19,6 +19,7 @@ import {
   providerLogo,
 } from '@features/player'
 import { getProviders } from '@features/providers'
+import { useOfflineStore, toggleTrackOffline } from '@features/offline'
 import waveApi from '@/wave'
 import { useShareStore } from '@shared/ui'
 import { PlCover } from './PlCover'
@@ -60,6 +61,7 @@ export const TrackCtxMenu = ({
   const flyoutRef = useRef<HTMLDivElement>(null)
   const addItemRef = useRef<HTMLDivElement>(null)
   const srcItemRef = useRef<HTMLDivElement>(null)
+  const dlItemRef = useRef<HTMLDivElement>(null)
   const isFav = useFavStore((s) => (track ? s.favs.has(track.id) : false))
   const toggleFav = useFavStore((s) => s.toggleFav)
   const playlists = usePlaylistStore((s) => s.playlists)
@@ -74,10 +76,13 @@ export const TrackCtxMenu = ({
   // В библиотеке ли трек. Для треков площадок (SC/Yandex) из поиска — false:
   // показываем «В библиотеку», а fav/в-плейлист сперва персистят трек.
   const inLib = useLibStore((s) => (track ? s.tracks.some((t) => t.id === track.id) : false))
+  // Доступен ли трек офлайн (для тоггла «Слушать офлайн / Убрать из офлайна»).
+  const isOffline = useOfflineStore((s) => (track ? s.paths.has(track.id) : false))
 
   const [clampedPos, setClampedPos] = useState<{ x: number; y: number } | null>(null)
-  // Какое подменю-флайаут открыто: 'pl' (в плейлист) или 'src' (сменить площадку).
-  const [sub, setSub] = useState<null | 'pl' | 'src'>(null)
+  // Какое подменю-флайаут открыто: 'pl' (в плейлист), 'src' (сменить площадку)
+  // или 'dl' (скачать / слушать офлайн).
+  const [sub, setSub] = useState<null | 'pl' | 'src' | 'dl'>(null)
   const [flyoutPos, setFlyoutPos] = useState<{ left: number; top: number } | null>(null)
   const hideTimer = useRef<number | null>(null)
 
@@ -104,7 +109,7 @@ export const TrackCtxMenu = ({
       hideTimer.current = null
     }
   }
-  const openSub = (which: 'pl' | 'src') => {
+  const openSub = (which: 'pl' | 'src' | 'dl') => {
     cancelHide()
     setSub(which)
   }
@@ -134,7 +139,8 @@ export const TrackCtxMenu = ({
   }, [pos])
 
   // Позиционирование flyout: справа от пункта-якоря, при недостатке места — слева.
-  const anchorEl = sub === 'src' ? srcItemRef.current : addItemRef.current
+  const anchorEl =
+    sub === 'src' ? srcItemRef.current : sub === 'dl' ? dlItemRef.current : addItemRef.current
   useLayoutEffect(() => {
     if (!sub || !anchorEl || !flyoutRef.current) {
       setFlyoutPos(null)
@@ -177,9 +183,10 @@ export const TrackCtxMenu = ({
 
   const renderPos = clampedPos ?? pos
   // Удалять можно «свои» библиотечные записи: загруженные файлы + сохранённые
-  // треки площадок (SC/Yandex). Папочные (folder_watcher) — нельзя (вернутся
-  // при пересканировании, управляются папкой).
-  const isDeletable = inLib && !track._localPath && !track._folder
+  // треки площадок (SC/Yandex) и одиночные локальные файлы (у них есть
+  // `_localPath`, но нет `_folder`). Папочные — нельзя: вернутся при
+  // пересканировании, ими управляет папка.
+  const isDeletable = inLib && !track._folder
   // Перед fav/в-плейлист для не-библиотечного трека — сохраняем его навсегда,
   // иначе после перезапуска fav/запись плейлиста не зарезолвятся (трек был temp).
   const ensurePersisted = () => {
@@ -367,20 +374,25 @@ export const TrackCtxMenu = ({
           </div>
         )}
 
-        {/* cxdl — «Скачать», только для треков площадок (SC/Yandex/YTM/Spotify). */}
+        {/* cxdl — «Скачать» → флайаут (скачать файл / слушать офлайн), только для
+            треков площадок (SC/Yandex/YTM/Spotify). Объединено ради экономии места. */}
         {hasDl && (
           <div
+            ref={dlItemRef}
             className="ci"
             id="cxdl"
-            onClick={() => {
-              onClose()
-              void downloadTrack(track)
+            onMouseEnter={() => openSub('dl')}
+            onMouseLeave={onAddLeave}
+            onClick={(e) => {
+              e.stopPropagation()
+              openSub('dl')
             }}
           >
             <span className="ci-icon">
               <Ico name="download" width={12} height={12} />
             </span>{' '}
             {t('lib.ctx.download')}
+            <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
           </div>
         )}
 
@@ -603,6 +615,36 @@ export const TrackCtxMenu = ({
                 </div>
               )
             })}
+
+          {/* ── Подменю «Скачать»: скачать файл на диск / слушать офлайн (тоггл). ── */}
+          {sub === 'dl' && (
+            <>
+              <div
+                className="ci"
+                onClick={() => {
+                  onClose()
+                  void downloadTrack(track)
+                }}
+              >
+                <span className="ci-icon">
+                  <Ico name="download" width={12} height={12} />
+                </span>{' '}
+                {t('player.dl.track')}
+              </div>
+              <div
+                className="ci"
+                onClick={() => {
+                  onClose()
+                  toggleTrackOffline(track)
+                }}
+              >
+                <span className="ci-icon" style={isOffline ? { color: 'var(--accent)' } : undefined}>
+                  <Ico name={isOffline ? 'check' : 'save'} width={12} height={12} />
+                </span>{' '}
+                {isOffline ? t('lib.ctx.removeOffline') : t('lib.ctx.downloadOffline')}
+              </div>
+            </>
+          )}
         </div>
       )}
     </>,

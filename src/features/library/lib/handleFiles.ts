@@ -1,31 +1,10 @@
-import type { Track } from '@entities/track'
 import { t as i18nT } from '@shared/i18n'
+import { toast } from '@shared/ui'
 import { useLibStore } from '../model'
-import { idbSaveTrack, idbUpdateMeta, idbDeleteTrack } from './idb'
-import { readTags } from './readTags'
+import { idbDeleteTrack } from './idb'
 import { cascadePurgeTrackRefs } from './cascadePurge'
-
-const AUDIO_EXT = /\.(mp3|m4a|aac|flac|ogg|opus|wav|webm)$/i
-export const isAudioFile = (f: File): boolean =>
-  f.type.startsWith('audio/') || AUDIO_EXT.test(f.name)
-
-/**
- * Парсинг «Artist - Title» из имени файла.
- */
-const parseName = (filename: string): { name: string; artist: string } => {
-  const raw = filename.replace(/\.[^.]+$/, '')
-  const d = raw.indexOf(' - ')
-  if (d > -1) {
-    return {
-      artist: raw.slice(0, d).trim() || i18nT('common.unknownArtist'),
-      name: raw.slice(d + 3).trim() || raw,
-    }
-  }
-  return { name: raw, artist: i18nT('common.unknownArtist') }
-}
-
-const genId = (): string =>
-  'tr' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+import { fromLocal } from './fromLocal'
+import { fileAdd, fileRemove } from '../api'
 
 /**
  * Реестр blob-URL по trackId. При удалении трека / закрытии — освобождаем
@@ -58,78 +37,51 @@ class BlobMgr {
 export const blobMgr = new BlobMgr()
 
 /**
- * Загрузить файлы в библиотеку. с handleFiles из:
- * 1) для каждого файла создаём базовый Track (имя/артист из filename)
- * 2) добавляем в стор сразу (UI отзывчив)
- * 3) сохраняем в IndexedDB (persistence через F5)
- * 4) асинхронно читаем ID3 теги → улучшаем мета (real title/artist/album/cover/dur)
- *    → обновляем стор + IDB
+ * Импорт одиночных треков — плюсик в «Все треки» и перетаскивание в окно.
  *
- * Не-аудио файлы пропускаются молча.
+ * Работает так же, как папки: Rust запоминает путь к файлу (в режиме «В Bloom»
+ * сперва копирует его к себе), читает теги через lofty и отдаёт готовые треки.
+ * Байты через IPC не гоняются, в IndexedDB ничего не кладётся.
+ *
+ * `paths` не задан — откроется системный диалог выбора файлов.
+ * Возвращает число реально добавленных треков (дубли и не-аудио Rust отсеет).
  */
-export const handleFiles = (files: FileList | File[]): number => {
-  const now = Date.now()
-  const arr = Array.from(files).filter(isAudioFile)
-  if (!arr.length) return 0
-
-  const newTracks: Track[] = arr.map((f) => {
-    const id = genId()
-    const { name, artist } = parseName(f.name)
-    const url = blobMgr.create(id, f)
-    return {
-      id,
-      name,
-      artist,
-      dur: '—',
-      cover: null,
-      fav: false,
-      addedAt: now,
-      genres: [],
-      album: '',
-      year: '',
-      publisher: '',
-      url,
-    }
-  })
-
-  // Загруженные файлы — наверх «Все треки» (любой новый трек добавляется вверх).
-  useLibStore.getState().addTracks(newTracks, { prepend: true })
-
-  // Persist + дочитать теги в фоне.
-  void Promise.all(
-    newTracks.map(async (t, i) => {
-      const file = arr[i]
-      try {
-        await idbSaveTrack(t, file)
-      } catch (e) {
-        console.warn('idbSaveTrack failed', e)
-      }
-      try {
-        const enriched = await readTags(file)
-        if (Object.keys(enriched).length === 0) return
-        // Сливаем (теги имеют приоритет над filename-парсингом).
-        const updated: Track = { ...t, ...enriched }
-        useLibStore.getState().addTracks([updated])
-        await idbUpdateMeta(updated)
-      } catch (e) {
-        console.warn('readTags failed', e)
-      }
-    }),
-  )
-
-  return newTracks.length
+export const importTracks = async (paths?: string[]): Promise<number> => {
+  const added = await fileAdd(paths)
+  if (added === null) return 0 // диалог отменили
+  if (!added.length) {
+    // Файлы выбрали, но ничего не добавилось — объясняем, иначе клик выглядит
+    // проигнорированным.
+    toast(i18nT('lib.import.nothingAdded'))
+    return 0
+  }
+  // Новые треки — наверх «Все треки».
+  useLibStore.getState().addTracks(added.map(fromLocal), { prepend: true })
+  return added.length
 }
 
 /**
- * Удалить загруженный трек из библиотеки + IDB. Освобождает blob URL.
- * Не трогает folder_watcher треки (у них нет файла в IDB).
+ * Удалить трек библиотеки, который принадлежит пользователю: одиночный локальный
+ * файл, либо легаси-трек, чьи байты лежат в IndexedDB, либо сохранённый трек
+ * площадки. Треки из отслеживаемых папок так не удаляют — ими управляет папка.
  */
 export const deleteUploadedTrack = async (trackId: string): Promise<void> => {
+  const track = useLibStore.getState().tracks.find((t) => t.id === trackId)
+
   blobMgr.revoke(trackId)
   useLibStore.getState().removeTrack(trackId)
   // Чистим ссылки из плейлистов/лайков/истории, иначе остаются «висячие» id
-  // (счётчики показывают, вид — нет). __bloomFolderTrackRemoved.
+  // (счётчики показывают, вид — нет).
   cascadePurgeTrackRefs([trackId])
+
+  // Одиночный локальный трек: путь убирается из files.json, а копию,
+  // сделанную режимом «В Bloom», Rust стирает с диска.
+  if (track?._localPath && !track._folder) {
+    await fileRemove(track._localPath).catch((e) => console.warn('fileRemove failed', e))
+    return
+  }
+
+  // Легаси: треки, загруженные старым импортом, хранят байты в IndexedDB.
   try {
     await idbDeleteTrack(trackId)
   } catch (e) {

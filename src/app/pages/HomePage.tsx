@@ -30,6 +30,7 @@ import {
   type PlaySource,
 } from '@features/player'
 import { seek, seekLive } from '@features/player/api/play'
+import { extractAccentFromCover } from '@features/settings'
 import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
 import { PlaylistCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
@@ -378,6 +379,24 @@ const ContinueView = ({
   const [dragFrac, setDragFrac] = useState<number | null>(null)
   const seekable = !!onSeekCommit
 
+  // Заливка полосы всегда красится акцентом ТРЕКА (тон обложки), а не акцентом
+  // приложения — независимо от настройки «Авто акцент». Извлекаем из обложки;
+  // при провале (нет обложки / CORS) откатываемся на --accent через CSS-фолбэк.
+  const [barAccent, setBarAccent] = useState<string | null>(null)
+  useEffect(() => {
+    if (!cover) {
+      setBarAccent(null)
+      return
+    }
+    let cancelled = false
+    void extractAccentFromCover(cover).then((hex) => {
+      if (!cancelled) setBarAccent(hex)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [cover])
+
   // Попап кнопки «!» — источник + активность. Fixed-портал у кнопки (как в
   // WaveCard): попап рендерится в body, иначе overflow:hidden карточки/скролл
   // главной его обрежут. `cx` — центр кнопки, попап центрируется translateX(-50%).
@@ -484,7 +503,11 @@ const ContinueView = ({
         >
           <div
             className="hcc-seek-fill"
-            style={{ width: `${pct}%`, ...(dragFrac != null ? { transition: 'none' } : null) }}
+            style={{
+              width: `${pct}%`,
+              ...(barAccent ? { background: barAccent } : null),
+              ...(dragFrac != null ? { transition: 'none' } : null),
+            }}
           />
           <div className="hcc-seek-label">
             <div className="hcc-seek-main">

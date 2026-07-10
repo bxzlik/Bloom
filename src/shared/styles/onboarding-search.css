@@ -1,25 +1,4 @@
-@keyframes obIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes obOut{from{opacity:1}to{opacity:0}}
-#ob-step1,#ob-step2{animation:obIn .4s cubic-bezier(.22,1,.36,1)}
-#obAvaWrap:hover #obAvaOverlay{opacity:1!important}
-/* Cover hover: always show hint when no cover; show change/remove when cover exists */
-#obCoverWrap:not(.has-cover):hover #obCoverEmpty{color:#999!important}
-#obCoverWrap.has-cover #obCoverEmpty{opacity:0;pointer-events:none}
-#obCoverWrap.has-cover:hover #obCoverOverlay{opacity:1!important;pointer-events:auto!important}
-#obAvaRemoveBtn{pointer-events:auto}
-#obStartBtn:hover{background:#e8e8e8;transform:translateY(-1px)}
-#obStartBtn:active{transform:none}
-.ob-theme-card{border-radius:10px;border:1.5px solid rgba(255,255,255,.1);cursor:pointer;overflow:hidden;transition:border-color .18s,box-shadow .18s,transform .18s;position:relative;will-change:transform}
-.ob-theme-card:hover{border-color:rgba(255,255,255,.3);transform:translateY(-1px)}
-.ob-theme-card.active{border-color:var(--ob-accent,#888);box-shadow:0 0 0 1px var(--ob-accent,#888)}
-.ob-tc-preview{height:40px;display:flex;gap:3px;padding:6px;align-items:flex-end}
-.ob-tc-bar{flex:1;border-radius:2px;height:100%}
-.ob-tc-bar:nth-child(2){height:65%}
-.ob-tc-bar:nth-child(3){height:40%}
-.ob-tc-dot{width:8px;height:8px;border-radius:50%;position:absolute;top:6px;right:6px}
-.ob-tc-foot{padding:4px 6px 5px;display:flex;align-items:center;justify-content:flex-end}
-.ob-tc-name{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.45)}
-.ob-theme-card.active .ob-tc-name{color:rgba(255,255,255,.85)}
+/* Онбординг переехал в ./onboarding.css — здесь остались только стили поиска. */
 /* ── Search Page ── */
 .search-page{display:flex;flex-direction:column;height:100%;overflow:hidden}
 .sp-header{padding:24px 28px 16px;flex-shrink:0}

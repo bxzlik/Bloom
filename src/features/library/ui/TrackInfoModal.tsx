@@ -4,6 +4,7 @@ import type { Track } from '@entities/track'
 import { useThemeStore } from '@features/settings'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
+import { PathLine } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -154,7 +155,7 @@ export const TrackInfoModal = ({
             </div>
           </div>
           <div className="ti-body">
-            {(t?.album || hasYear || hasDur || t?.publisher || genres.length > 0) && (
+            {(t?.album || hasYear || hasDur || t?.publisher || genres.length > 0 || t?._localPath || t?._folder) && (
               <div className="ti-grid" id="tiGrid">
                 {t?.album && (
                   <div className="ti-cell full">
@@ -198,6 +199,20 @@ export const TrackInfoModal = ({
                         <span className="ti-genre-tag" key={`${g}-${i}`}>{g}</span>
                       ))}
                     </div>
+                  </div>
+                )}
+                {/* Треки площадок путей не имеют — ячейки только у локальных.
+                    У папочного трека показываем обе: папку-источник и сам файл. */}
+                {t?._folder && (
+                  <div className="ti-cell full">
+                    <div className="ti-lbl">{tr('lib.ti.folderPath')}</div>
+                    <PathLine className="ti-val muted" path={t._folder} kind="folder" />
+                  </div>
+                )}
+                {t?._localPath && (
+                  <div className="ti-cell full">
+                    <div className="ti-lbl">{tr('lib.ti.file')}</div>
+                    <PathLine className="ti-val muted" path={t._localPath} kind="file" />
                   </div>
                 )}
               </div>

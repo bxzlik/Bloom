@@ -83,6 +83,17 @@ export const ru = {
   'settings.interface.libCols.date': 'Колонка «Добавлено»',
   'settings.interface.libCols.dateSub': 'Показывать дату добавления на широком окне',
 
+  'settings.library.import.title': 'Локальная библиотека',
+  'settings.library.import.desc':
+    'Что Bloom делает с файлами добавляемой папки. Уже добавленные папки не меняются.',
+  'settings.library.import.inPlace': 'На месте',
+  'settings.library.import.inPlaceTip':
+    'Файлы остаются по своим путям. При удалении файла Bloom убирает трек из библиотеки.',
+  'settings.library.import.copy': 'В Bloom',
+  'settings.library.import.copyTip':
+    'Bloom копирует файлы папки в свою и следит уже за ней. Оригиналы не трогаются.',
+  'settings.library.import.copying': 'Копирую файлы в Bloom…',
+
   'settings.interface.libSys.accent': 'Акцент',
 
   'settings.interface.zoom.fullscreen': 'Полноэкранный',
@@ -315,6 +326,7 @@ export const ru = {
   'settings.view.ovMode.island': 'Остров',
   'settings.view.ovMode.compact': 'Компактный',
   'settings.view.ovMode.bar': 'Полоса',
+  'settings.view.ovMode.expanded': 'Расширенный',
   'settings.view.ovPos': 'Положение на экране',
   'settings.view.ovPos.desc': 'Где появляется плашка оверлея',
   'settings.view.ovPos.custom': 'Свободно',
@@ -346,7 +358,7 @@ export const ru = {
   'settings.view.style.large': 'Большой',
   'settings.view.style.cinema': 'Кино',
   'settings.view.slider': 'Тип слайдера',
-  'settings.view.slider.desc': 'Стиль полосы прогресса и громкости',
+  'settings.view.slider.desc': 'Стиль полосы прогресса',
   'settings.view.slider.default': 'Обычный',
   'settings.view.slider.thin': 'Тонкий',
   'settings.view.slider.wave': 'Волновой',
@@ -638,6 +650,8 @@ export const ru = {
   'player.queueTitle.history': 'История',
   'player.dl.track': 'Скачать трек',
   'player.dl.cover': 'Скачать обложку',
+  'player.dl.offline': 'Слушать офлайн',
+  'player.dl.offlineRemove': 'Убрать из офлайна',
   'player.add.toLib': 'В библиотеку',
   'player.add.createPlaylist': 'Создать плейлист',
   'player.add.newPlaylist': 'Новый плейлист',
@@ -727,6 +741,13 @@ export const ru = {
   'lib.ti.publisher': 'Паблишер',
   'lib.ti.genres': 'Жанры',
   'lib.ti.description': 'Описание',
+  'lib.ti.file': 'Файл',
+  'lib.ti.folderPath': 'Папка',
+
+  // PathLine — путь к локальному файлу/папке (инфо о треке, шапка папки)
+  'lib.path.copy': 'Скопировать путь',
+  'lib.path.copied': 'Путь скопирован',
+  'lib.path.revealFailed': 'Не удалось открыть путь',
 
   // DeepLinkModal
   'lib.deeplink.toast.fav': 'Добавлено в любимое',
@@ -776,6 +797,8 @@ export const ru = {
   'lib.ctx.waveByTrack': 'Волна по треку',
   'lib.ctx.switchSrc': 'Сменить площадку',
   'lib.ctx.download': 'Скачать',
+  'lib.ctx.downloadOffline': 'Слушать офлайн',
+  'lib.ctx.removeOffline': 'Убрать из офлайна',
   'lib.ctx.toQueue': 'В очередь',
   'lib.ctx.playNext': 'Играть следующим',
   'lib.ctx.removeFromPl': 'Убрать из плейлиста',
@@ -801,7 +824,10 @@ export const ru = {
   'lib.plmenu.confirmDeletePl': 'Удалить плейлист «{name}»?',
   'lib.plmenu.confirmDeletePlWithTracks':
     'Удалить плейлист «{name}» вместе со всеми треками из библиотеки?',
+  'lib.import.nothingAdded': 'Нечего добавить: эти треки уже в библиотеке или формат не поддерживается',
   'lib.plmenu.confirmUnlinkFolder': 'Отвязать папку «{name}»?',
+  'lib.plmenu.confirmDeleteCopiedFolder':
+    'Удалить папку «{name}»? Bloom копировал эти файлы к себе — они будут стёрты с диска. Оригиналы не затронуты.',
   'lib.plmenu.confirmClearHistory': 'Очистить историю прослушиваний?',
   'lib.plmenu.shuffleStart': 'Перемешать и запустить',
   'lib.plmenu.addTracks': 'Добавить треки',
@@ -810,7 +836,11 @@ export const ru = {
   'lib.plmenu.findDups': 'Найти дубли',
   'lib.plmenu.refreshTracks': 'Обновить треки',
   'lib.plmenu.exportPlaylist': 'Экспорт плейлиста',
+  'lib.plmenu.download': 'Скачать',
   'lib.plmenu.downloadPlaylist': 'Скачать плейлист',
+  'lib.plmenu.downloadOfflinePlaylist': 'Слушать офлайн',
+  'lib.plmenu.removeOfflinePlaylist': 'Убрать из офлайна',
+  'lib.plmenu.offlineBadge': 'офлайн',
   'lib.plmenu.rescan': 'Пересканировать',
   'lib.plmenu.clearHistory': 'Очистить историю',
   'lib.plmenu.sort': 'Сортировка',
@@ -931,6 +961,26 @@ export const ru = {
   'onb.start': 'Начать',
   'onb.welcome': 'Привет, {name}!',
   'onb.welcomeSub': 'Добро пожаловать в Bloom',
+  'onb.next': 'Далее',
+  'onb.back': 'Назад',
+  'onb.done': 'Готово',
+  'onb.hello.cta': 'Поехали',
+  'onb.hello.sub': 'Пара шагов — и плеер будет настроен под тебя',
+  'onb.profile.title': 'Расскажи о себе',
+  'onb.profile.sub': 'Аватар, обложка и имя. Всё это можно поменять позже в профиле.',
+  'onb.theme.title': 'Выбери оформление',
+  'onb.theme.sub': 'Тема применяется сразу — посмотри, как она выглядит.',
+  'onb.theme.hint': 'Больше тем — в настройках',
+  'onb.library.title': 'Подключи музыку',
+  'onb.library.sub': 'Укажи папку с треками — Bloom будет следить за ней и подхватывать новые файлы.',
+  'onb.library.pick': 'Выбрать папку',
+  'onb.library.pickMore': 'Добавить ещё папку',
+  'onb.library.skip': 'Ничего из этого не обязательно — всё есть в настройках',
+  'onb.music.local': 'Локальные файлы',
+  'onb.music.platforms': 'Площадки',
+  'onb.plat.connected': 'Подключено',
+  'onb.plat.notConnected': 'Не подключено',
+  'onb.plat.autoCheck': 'Проверить',
 
   // Профиль
   'profile.nickPlaceholder': 'Введи никнейм...',
@@ -1073,6 +1123,8 @@ export const ru = {
   'notif.trackUnavailable.title': 'Недоступный трек',
   'notif.trackUnavailable.body': 'Этот трек не найден или больше не существует',
   'notif.trackDl.title': 'Трек скачан',
+  'notif.offline.title': 'Трек доступен офлайн',
+  'notif.offlineError.title': 'Не удалось скачать офлайн',
   'notif.dlError.title': 'Ошибка скачивания',
   'notif.update.title': 'Доступно обновление',
   'notif.update.body': 'Версия {v} готова к установке',
@@ -1174,6 +1226,7 @@ export const ru = {
   'toast.dlScError': 'Ошибка SC: {msg}',
   'toast.dlUnavailable': 'Скачивание недоступно для этого трека',
   'toast.plDlNoTracks': 'В плейлисте нет треков площадок для скачивания',
+  'toast.plOfflineNoTracks': 'В плейлисте нет треков для офлайна',
   'dlbanner.titleDownloading': 'Скачивание плейлиста',
   'dlbanner.titleDone': 'Скачивание завершено',
   'dlbanner.count': '{cur} из {total}',
@@ -1253,6 +1306,11 @@ export const ru = {
   'toast.dlStart': 'Скачивание…',
   'toast.dlCoverSaved': '✓ Обложка сохранена',
   'toast.dlSaved': '✓ Сохранено: {name}',
+  'toast.offlineStart': 'Сохранение для офлайна…',
+  'toast.offlineSaved': '✓ Доступно офлайн: {name}',
+  'toast.offlineRemoved': 'Убрано из офлайна',
+  'toast.offlineError': 'Не удалось сохранить офлайн: {msg}',
+  'toast.offlineUnavailable': 'Этот трек нельзя сохранить офлайн',
 
 
 
@@ -1363,6 +1421,17 @@ export const en: Record<TranslationKey, string> = {
   'settings.interface.libCols.albumSub': 'Show the album in the track list on a wide window',
   'settings.interface.libCols.date': 'Date added column',
   'settings.interface.libCols.dateSub': 'Show the date added on a wide window',
+
+  'settings.library.import.title': 'Local library',
+  'settings.library.import.desc':
+    'What Bloom does with the files of a folder you add. Folders already added stay as they are.',
+  'settings.library.import.inPlace': 'In place',
+  'settings.library.import.inPlaceTip':
+    'Files stay where they are. If a file is deleted, Bloom drops the track from the library.',
+  'settings.library.import.copy': 'Into Bloom',
+  'settings.library.import.copyTip':
+    'Bloom copies the folder’s files into its own folder and watches that instead. Originals are left alone.',
+  'settings.library.import.copying': 'Copying files into Bloom…',
 
   'settings.interface.libSys.accent': 'Accent',
 
@@ -1596,6 +1665,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.view.ovMode.island': 'Island',
   'settings.view.ovMode.compact': 'Compact',
   'settings.view.ovMode.bar': 'Bar',
+  'settings.view.ovMode.expanded': 'Expanded',
   'settings.view.ovPos': 'Screen position',
   'settings.view.ovPos.desc': 'Where the overlay pill appears',
   'settings.view.ovPos.custom': 'Free',
@@ -1627,7 +1697,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.view.style.large': 'Large',
   'settings.view.style.cinema': 'Cinema',
   'settings.view.slider': 'Slider type',
-  'settings.view.slider.desc': 'Style of the progress and volume bars',
+  'settings.view.slider.desc': 'Style of the progress bar',
   'settings.view.slider.default': 'Standard',
   'settings.view.slider.thin': 'Thin',
   'settings.view.slider.wave': 'Wave',
@@ -1919,6 +1989,8 @@ export const en: Record<TranslationKey, string> = {
   'player.queueTitle.history': 'History',
   'player.dl.track': 'Download track',
   'player.dl.cover': 'Download cover',
+  'player.dl.offline': 'Listen offline',
+  'player.dl.offlineRemove': 'Remove from offline',
   'player.add.toLib': 'Add to library',
   'player.add.createPlaylist': 'Create playlist',
   'player.add.newPlaylist': 'New playlist',
@@ -2008,6 +2080,13 @@ export const en: Record<TranslationKey, string> = {
   'lib.ti.publisher': 'Publisher',
   'lib.ti.genres': 'Genres',
   'lib.ti.description': 'Description',
+  'lib.ti.file': 'File',
+  'lib.ti.folderPath': 'Folder',
+
+  // PathLine
+  'lib.path.copy': 'Copy path',
+  'lib.path.copied': 'Path copied',
+  'lib.path.revealFailed': 'Could not open the path',
 
   // DeepLinkModal
   'lib.deeplink.toast.fav': 'Added to Liked',
@@ -2057,6 +2136,8 @@ export const en: Record<TranslationKey, string> = {
   'lib.ctx.waveByTrack': 'Wave by track',
   'lib.ctx.switchSrc': 'Switch source',
   'lib.ctx.download': 'Download',
+  'lib.ctx.downloadOffline': 'Listen offline',
+  'lib.ctx.removeOffline': 'Remove from offline',
   'lib.ctx.toQueue': 'To queue',
   'lib.ctx.playNext': 'Play next',
   'lib.ctx.removeFromPl': 'Remove from playlist',
@@ -2082,7 +2163,10 @@ export const en: Record<TranslationKey, string> = {
   'lib.plmenu.confirmDeletePl': 'Delete playlist “{name}”?',
   'lib.plmenu.confirmDeletePlWithTracks':
     'Delete playlist “{name}” along with all its tracks from the library?',
+  'lib.import.nothingAdded': 'Nothing to add: these tracks are already in the library, or the format is unsupported',
   'lib.plmenu.confirmUnlinkFolder': 'Unlink folder “{name}”?',
+  'lib.plmenu.confirmDeleteCopiedFolder':
+    'Delete folder “{name}”? Bloom copied these files into itself — they will be erased from disk. Your originals are untouched.',
   'lib.plmenu.confirmClearHistory': 'Clear listening history?',
   'lib.plmenu.shuffleStart': 'Shuffle and play',
   'lib.plmenu.addTracks': 'Add tracks',
@@ -2091,7 +2175,11 @@ export const en: Record<TranslationKey, string> = {
   'lib.plmenu.findDups': 'Find duplicates',
   'lib.plmenu.refreshTracks': 'Refresh tracks',
   'lib.plmenu.exportPlaylist': 'Export playlist',
+  'lib.plmenu.download': 'Download',
   'lib.plmenu.downloadPlaylist': 'Download playlist',
+  'lib.plmenu.downloadOfflinePlaylist': 'Listen offline',
+  'lib.plmenu.removeOfflinePlaylist': 'Remove from offline',
+  'lib.plmenu.offlineBadge': 'offline',
   'lib.plmenu.rescan': 'Rescan',
   'lib.plmenu.clearHistory': 'Clear history',
   'lib.plmenu.sort': 'Sort',
@@ -2212,6 +2300,26 @@ export const en: Record<TranslationKey, string> = {
   'onb.start': 'Get started',
   'onb.welcome': 'Hi, {name}!',
   'onb.welcomeSub': 'Welcome to Bloom',
+  'onb.next': 'Next',
+  'onb.back': 'Back',
+  'onb.done': 'Done',
+  'onb.hello.cta': "Let's go",
+  'onb.hello.sub': 'A few quick steps and the player is yours',
+  'onb.profile.title': 'Tell us about yourself',
+  'onb.profile.sub': 'Avatar, cover and name. You can change all of it later in your profile.',
+  'onb.theme.title': 'Pick a look',
+  'onb.theme.sub': 'The theme applies instantly — see how it feels.',
+  'onb.theme.hint': 'More themes live in settings',
+  'onb.library.title': 'Connect your music',
+  'onb.library.sub': 'Point Bloom at a folder of tracks — it will watch it and pick up new files.',
+  'onb.library.pick': 'Choose folder',
+  'onb.library.pickMore': 'Add another folder',
+  'onb.library.skip': 'None of this is required — it all lives in settings',
+  'onb.music.local': 'Local files',
+  'onb.music.platforms': 'Platforms',
+  'onb.plat.connected': 'Connected',
+  'onb.plat.notConnected': 'Not connected',
+  'onb.plat.autoCheck': 'Check',
 
   // Profile
   'profile.nickPlaceholder': 'Enter a nickname...',
@@ -2354,6 +2462,8 @@ export const en: Record<TranslationKey, string> = {
   'notif.trackUnavailable.title': 'Track unavailable',
   'notif.trackUnavailable.body': 'This track was not found or no longer exists',
   'notif.trackDl.title': 'Track downloaded',
+  'notif.offline.title': 'Track available offline',
+  'notif.offlineError.title': 'Offline download failed',
   'notif.dlError.title': 'Download error',
   'notif.update.title': 'Update available',
   'notif.update.body': 'Version {v} is ready to install',
@@ -2455,6 +2565,7 @@ export const en: Record<TranslationKey, string> = {
   'toast.dlScError': 'SC error: {msg}',
   'toast.dlUnavailable': 'Download unavailable for this track',
   'toast.plDlNoTracks': 'No platform tracks to download in this playlist',
+  'toast.plOfflineNoTracks': 'No tracks to save offline in this playlist',
   'dlbanner.titleDownloading': 'Downloading playlist',
   'dlbanner.titleDone': 'Download complete',
   'dlbanner.count': '{cur} of {total}',
@@ -2534,6 +2645,11 @@ export const en: Record<TranslationKey, string> = {
   'toast.dlStart': 'Downloading…',
   'toast.dlCoverSaved': '✓ Cover saved',
   'toast.dlSaved': '✓ Saved: {name}',
+  'toast.offlineStart': 'Saving for offline…',
+  'toast.offlineSaved': '✓ Available offline: {name}',
+  'toast.offlineRemoved': 'Removed from offline',
+  'toast.offlineError': 'Offline save failed: {msg}',
+  'toast.offlineUnavailable': 'This track can’t be saved offline',
 
 
 

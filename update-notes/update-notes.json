@@ -1,4 +1,24 @@
 {
+  "1.7.0": {
+    "title": { "ru": "Что нового в 1.7.0", "en": "What's new in 1.7.0" },
+    "date": "2026-07-11",
+    "pages": [
+      {
+        "title": { "ru": "Главное", "en": "Highlights" },
+        "body": {
+          "ru": "- Обновлена стартовая страница\n- Новый стиль оверлея\n- Переработана система локальных файлов",
+          "en": "- Redesigned the start page\n- New overlay style\n- Reworked the local files system"
+        }
+      },
+      {
+        "title": { "ru": "Оффлайн скачивание", "en": "Offline downloads" },
+        "body": {
+          "ru": "- Теперь можно скачивать треки и слушать оффлайн одной кнопкой",
+          "en": "- Now you can download tracks and listen offline with a single button"
+        }
+      }
+    ]
+  },
   "1.6.1": {
     "title": { "ru": "Что нового в 1.6.1", "en": "What's new in 1.6.1" },
     "date": "2026-07-09",

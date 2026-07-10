@@ -6,7 +6,7 @@ import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Раздел «Оверлей» (`#ssec-overlay`) — настройки всплывающей плашки now-playing
- * поверх всех окон. Режим (выкл/остров/компактный), позиция на экране,
+ * поверх всех окон. Режим (выкл/остров/компактный/полоса/расширенный), позиция на экране,
  * прозрачность, размер, длительность авто-показа, тумблеры показа при смене
  * трека, перемотки по бару и режима оптимизации (без эквалайзера/бегущей строки).
  *
@@ -110,6 +110,10 @@ export const OverlaySection = () => {
           <OptBtn active={p.overlayMode === 'bar'} onClick={() => p.set('overlayMode', 'bar')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="5" cy="12" r="2.5" /><rect x="9" y="9" width="11" height="6" rx="3" /></svg>
             {t('settings.view.ovMode.bar')}
+          </OptBtn>
+          <OptBtn active={p.overlayMode === 'expanded'} onClick={() => p.set('overlayMode', 'expanded')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}><rect x="2" y="5" width="20" height="14" rx="4" /><rect x="5" y="8" width="5" height="5" rx="1.4" /><path strokeLinecap="round" d="M12.5 9.5h6M5 16h14" /></svg>
+            {t('settings.view.ovMode.expanded')}
           </OptBtn>
         </div>
       </div>

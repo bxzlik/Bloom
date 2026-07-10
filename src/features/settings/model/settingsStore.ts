@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
-import type { AppSettings } from '@shared/tauri'
+import type { AppSettings, LocalImportMode } from '@shared/tauri'
 import { invoke } from '@shared/tauri'
 
 /**
@@ -24,6 +24,7 @@ const DEFAULTS: AppSettings = {
   change_titlebar: false,
   change_tray_cover: false,
   lyrics_disk_cache: false,
+  local_import_mode: 'inPlace',
   discord_show_progress: true,
   discord_custom_artwork: '',
   discord_show_small_img: false,
@@ -54,6 +55,8 @@ export interface SettingsState extends AppSettings {
    */
   setDiscordSettings: (patch: Partial<DiscordFields>) => Promise<void>
   setLyricsDiskCache: (v: boolean) => Promise<void>
+  /** Куда класть файлы добавляемой папки. Влияет только на новые папки. */
+  setLocalImportMode: (v: LocalImportMode) => Promise<void>
   setAutostart: (v: boolean) => Promise<void>
 }
 
@@ -127,6 +130,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setLyricsDiskCache: async (v) => {
     set({ lyrics_disk_cache: v })
     await wrap('set_lyrics_cache', () => invoke('set_lyrics_cache', { enabled: v }))
+  },
+  setLocalImportMode: async (v) => {
+    set({ local_import_mode: v })
+    await wrap('set_local_import_mode', () => invoke('set_local_import_mode', { mode: v }))
   },
   setAutostart: async (v) => {
     set({ autostart: v })

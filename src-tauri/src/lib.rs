@@ -80,8 +80,10 @@ pub fn run() {
 
     let builder = tauri::Builder::default()
         // --- Кастомный протокол bloom-file:// (локальные аудио с HTTP Range) ---
-        .register_uri_scheme_protocol(file_protocol::SCHEME, |ctx, req| {
-            file_protocol::handle(ctx, req)
+        // Асинхронный: синхронный обработчик крутится на UI-потоке WebView2, и
+        // каждый range-чанк аудио с разбором тегов обложки подвешивал бы окно.
+        .register_asynchronous_uri_scheme_protocol(file_protocol::SCHEME, |ctx, req, responder| {
+            file_protocol::handle(ctx, req, responder)
         })
         // --- Плагины ---
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
@@ -143,10 +145,20 @@ pub fn run() {
             commands::folder_add,
             commands::folder_remove,
             commands::folder_scan,
+            commands::folder_scan_all,
             commands::folder_get,
+            commands::folder_is_copy,
+            commands::open_folder,
+            commands::file_add,
+            commands::file_remove,
+            commands::file_scan_all,
+            commands::set_local_import_mode,
             commands::sc_download,
             commands::pick_playlist_dir,
             commands::download_to_dir,
+            commands::offline_download,
+            commands::offline_remove,
+            commands::offline_scan_all,
             commands::local_download,
             commands::cover_download,
             commands::fetch_image_data_url,

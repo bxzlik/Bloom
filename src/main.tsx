@@ -28,3 +28,13 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Гасим стартовый сплэш (#splash из index.html) после первого кадра React —
+// requestAnimationFrame даёт дереву отрисоваться под сплэшем, затем плавный
+// fade-out (CSS transition) и удаление из DOM по его завершении.
+requestAnimationFrame(() => {
+  const splash = document.getElementById('splash')
+  if (!splash) return
+  splash.classList.add('hide')
+  splash.addEventListener('transitionend', () => splash.remove(), { once: true })
+})

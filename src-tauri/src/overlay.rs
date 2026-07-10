@@ -20,6 +20,9 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Webview
 /// Логический размер дизайна плашки (без поля под тень).
 const PILL_W: f64 = 380.0;
 const PILL_H: f64 = 64.0;
+/// Расширенный режим — карточка с обложкой, прогрессом и полным набором кнопок.
+const EXP_W: f64 = 840.0;
+const EXP_H: f64 = 180.0;
 /// Поле вокруг плашки внутри окна — чтобы мягкая тень не обрезалась краем окна.
 const PAD: f64 = 28.0;
 /// Отступ окна от края рабочей области экрана.
@@ -30,6 +33,9 @@ const SNAP: f64 = 16.0;
 #[derive(Clone)]
 struct OverlayCfg {
     enabled: bool,
+    /// Режим плашки: "island"|"compact"|"bar"|"expanded". Влияет только на габарит
+    /// окна — раскладку внутри выбирает сам JS по `bloom_view_prefs`.
+    mode: String,
     /// Якорь на экране: "tl"|"tc"|"tr"|"bl"|"bc"|"br" (верт. t/b + гориз. l/c/r)
     /// либо "custom" — свободная позиция по долям cust_x/cust_y.
     anchor: String,
@@ -42,8 +48,20 @@ struct OverlayCfg {
 
 impl Default for OverlayCfg {
     fn default() -> Self {
-        Self { enabled: false, anchor: "tr".to_string(), size: 1.0, cust_x: 0.98, cust_y: 0.02 }
+        Self {
+            enabled: false,
+            mode: "island".to_string(),
+            anchor: "tr".to_string(),
+            size: 1.0,
+            cust_x: 0.98,
+            cust_y: 0.02,
+        }
     }
+}
+
+/// Габарит плашки (логич. px, без поля под тень) для режима.
+fn pill_size(mode: &str) -> (f64, f64) {
+    if mode == "expanded" { (EXP_W, EXP_H) } else { (PILL_W, PILL_H) }
 }
 
 static CFG: OnceCell<Mutex<OverlayCfg>> = OnceCell::new();
@@ -90,10 +108,20 @@ struct OvShow {
 /// Обновить конфиг (режим/якорь/размер). Зовётся фронтом при старте (preview=false)
 /// и при смене настроек оверлея пользователем (preview=true → живой показ плашки).
 /// При выключении — прячем окно (и сбрасываем «показано»).
-pub fn set_config(app: &AppHandle, enabled: bool, anchor: String, size: f64, cust_x: f64, cust_y: f64, preview: bool) {
+pub fn set_config(
+    app: &AppHandle,
+    enabled: bool,
+    mode: String,
+    anchor: String,
+    size: f64,
+    cust_x: f64,
+    cust_y: f64,
+    preview: bool,
+) {
     {
         let mut c = cfg().lock();
         c.enabled = enabled;
+        c.mode = mode;
         c.anchor = anchor;
         c.size = size.clamp(0.5, 1.6);
         c.cust_x = cust_x.clamp(0.0, 1.0);
@@ -293,8 +321,9 @@ fn ensure_shown(win: &WebviewWindow) {
 fn position(win: &WebviewWindow) {
     let c = cfg().lock().clone();
     let scale = win.scale_factor().unwrap_or(1.0);
-    let w_log = (PILL_W + 2.0 * PAD) * c.size;
-    let h_log = (PILL_H + 2.0 * PAD) * c.size;
+    let (pill_w, pill_h) = pill_size(&c.mode);
+    let w_log = (pill_w + 2.0 * PAD) * c.size;
+    let h_log = (pill_h + 2.0 * PAD) * c.size;
     let w = w_log * scale;
     let h = h_log * scale;
     let _ = win.set_size(PhysicalSize::new(w.round().max(1.0) as u32, h.round().max(1.0) as u32));

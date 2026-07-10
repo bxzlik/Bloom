@@ -368,16 +368,16 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
     case 'lib-all':
       return (
         <div id="qpSourceIcon" style={box}>
-          <div style={{ ...innerStyle, background: 'linear-gradient(135deg,#1a3a4a,#0d2535)' }}>
-            <Ico name="note" width={13} height={13} style={{ color: 'rgba(255,255,255,0.8)' }} />
+          <div style={{ ...innerStyle, background: 'var(--sys-all-tint)' }}>
+            <Ico name="note" width={13} height={13} style={{ color: 'var(--sys-all-ico)' }} />
           </div>
         </div>
       )
     case 'lib-fav':
       return (
         <div id="qpSourceIcon" style={box}>
-          <div style={{ ...innerStyle, background: 'linear-gradient(135deg,#c0144e,#7a0030)' }}>
-            <Ico name="heart" variant="bold" width={13} height={13} style={{ color: '#fff' }} />
+          <div style={{ ...innerStyle, background: 'var(--sys-fav-tint)' }}>
+            <Ico name="heart" variant="bold" width={13} height={13} style={{ color: 'var(--sys-fav-ico)' }} />
           </div>
         </div>
       )
@@ -385,16 +385,18 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
       // Для источника 'history' рисуем clock на нейтральном фоне.
       return (
         <div id="qpSourceIcon" style={box}>
-          <div style={{ ...innerStyle, background: 'linear-gradient(135deg,#3a3a3a,#1a1a1a)' }}>
-            <Ico name="clock" width={13} height={13} style={{ color: 'rgba(255,255,255,0.8)' }} />
+          <div style={{ ...innerStyle, background: 'var(--sys-hist-tint)' }}>
+            <Ico name="clock" width={13} height={13} style={{ color: 'var(--sys-hist-ico)' }} />
           </div>
         </div>
       )
     case 'folder':
+      // Папка выглядит одинаково везде: акцентная подложка + акцентная иконка
+      // (сайдбар, сетка библиотеки, шапка).
       return (
         <div id="qpSourceIcon" style={box}>
-          <div style={{ ...innerStyle, background: 'linear-gradient(135deg,#1a3a2a,#0d2518)' }}>
-            <Ico name="folder" width={13} height={13} style={{ color: 'rgba(255,255,255,0.75)' }} />
+          <div style={{ ...innerStyle, background: 'var(--folder-tint)' }}>
+            <Ico name="folder" width={13} height={13} style={{ color: 'var(--accent)' }} />
           </div>
         </div>
       )

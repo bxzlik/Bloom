@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { useUiPrefsStore } from '@features/settings'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
-import { PlaylistCover } from '@shared/ui'
+import { PathLine, PlaylistCover } from '@shared/ui'
 import { useLibStore, usePlaylistStore, useFavStore, usePlEditStore } from '../model'
 import type { LibMode, Playlist, PlSourceRef } from '../model'
 import type { Track } from '@entities/track'
@@ -17,7 +17,7 @@ import {
   recordsLabel,
   sumDurations,
   usePlayHistoryCount,
-  handleFiles,
+  importTracks,
   getCurrentView,
   compressCover,
 } from '../lib'
@@ -26,6 +26,7 @@ import { LibTracklist } from './LibTracklist'
 import { LibGridOverview } from './LibGridOverview'
 import { PlSourcesEditor } from './PlSourcesEditor'
 import { PlMenu } from './PlMenu'
+import { PlaylistOfflineTag } from './PlaylistOfflineTag'
 import { AddFromLibModal } from './AddFromLibModal'
 import { SelBar } from './SelBar'
 import { Ico } from '@shared/ui/icons/solar'
@@ -295,7 +296,7 @@ export const LibContent = () => {
                       background: `center / cover no-repeat url(${heroCover})`,
                     }
                   : mode === 'history'
-                    ? { background: 'linear-gradient(135deg,#3d300f,#231a06)' }
+                    ? { background: 'var(--sys-hist-tint)' }
                     : {}),
               }}
             >
@@ -335,7 +336,16 @@ export const LibContent = () => {
               <div className="lib-hero-name" id="libHeroName">
                 {heroName}
               </div>
-              {activePlaylist?.desc ? (
+              {/* Слот описания: у плейлиста — его текст, у папки — полный путь
+                  (клик открывает её в проводнике). */}
+              {mode === 'folder' && folderPath ? (
+                <PathLine
+                  className="lib-hero-desc"
+                  id="libHeroDesc"
+                  path={folderPath}
+                  kind="folder"
+                />
+              ) : activePlaylist?.desc ? (
                 <div className="lib-hero-desc" id="libHeroDesc">
                   {activePlaylist.desc}
                 </div>
@@ -344,6 +354,9 @@ export const LibContent = () => {
               )}
               <div className="lib-hero-sub" id="libHeroSub">
                 {heroSub}
+                {mode === 'pl' && activePlaylist && (
+                  <PlaylistOfflineTag trackIds={activePlaylist.trs} />
+                )}
               </div>
             </div>
           ) : null}
@@ -434,27 +447,17 @@ export const LibContent = () => {
             >
               <Ico name="shuffle" width={13} height={13} />
             </button>
-            <label
+            {/* Системный диалог Tauri, а не <input type=file>: нужен путь к
+                файлу, а браузерный File его не отдаёт. */}
+            <button
               key="upload"
               id="libUploadBtn"
               className="btn-icon"
-              style={{
-                display: mode === 'all' ? 'flex' : 'none',
-                cursor: 'pointer',
-              }}
+              style={{ display: mode === 'all' ? 'flex' : 'none' }}
+              onClick={() => void importTracks().catch((e) => console.warn('importTracks failed', e))}
             >
               <Ico name="add" width={14} height={14} />
-              <input
-                type="file"
-                accept="audio/*"
-                multiple
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  if (e.target.files) handleFiles(e.target.files)
-                  e.target.value = '' // сбрасываем чтобы можно было выбрать тот же файл снова
-                }}
-              />
-            </label>
+            </button>
             <button
               key="search"
               className="btn-icon"
@@ -595,8 +598,9 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
       return {
         heroName: c.folderPath ? folderName(c.folderPath) : tFn('lib.folder'),
         heroSub: tracksAndDuration(c.folderTracksCount, dur),
-        heroIconClass: 'off-icon',
-        HeroIcon: NoteHeroIcon,
+        // Как в сайдбаре и сетке: акцентная подложка и папка, а не нотка.
+        heroIconClass: 'folder-icon',
+        HeroIcon: FolderHeroIcon,
       }
     }
     case 'pl': {
@@ -629,13 +633,17 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
 }
 
 const NoteHeroIcon = () => (
-  <Ico name="note" width={44} height={44} style={{ color: 'rgba(255,255,255,0.7)' }} />
+  <Ico name="note" width={44} height={44} style={{ color: 'var(--sys-all-ico)' }} />
 )
 
 const HeartHeroIcon = () => (
-  <Ico name="heart" variant="bold" width={44} height={44} style={{ color: 'white' }} />
+  <Ico name="heart" variant="bold" width={44} height={44} style={{ color: 'var(--sys-fav-ico)' }} />
 )
 
 const HistoryHeroIcon = () => (
-  <Ico name="clock" width={44} height={44} style={{ color: '#ffb400' }} />
+  <Ico name="clock" width={44} height={44} style={{ color: 'var(--sys-hist-ico)' }} />
+)
+
+const FolderHeroIcon = () => (
+  <Ico name="folder" width={44} height={44} style={{ color: 'var(--accent)' }} />
 )

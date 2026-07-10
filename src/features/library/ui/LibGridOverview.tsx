@@ -283,7 +283,7 @@ export const LibGridOverview = () => {
             return (
               <div key={`f_${path}`} className="home-pl-card" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
                 <div style={{ position: 'relative' }}>
-                  <div className="hpc-cover" style={{ background: 'rgba(var(--accent-rgb),.1)' }}>
+                  <div className="hpc-cover" style={{ background: 'var(--folder-tint)' }}>
                     <Ico name="folder" width={32} height={32} style={{ color: 'var(--accent)' }} />
                     <PlayOverlay />
                   </div>

@@ -13,6 +13,7 @@ import { toast } from '@shared/ui'
 import { PlCover } from './PlCover'
 import { ScLogo, YmLogo, YtmLogo, SpLogo, providerBrandColor } from '@entities/track'
 import { Ico } from '@shared/ui/icons/solar'
+import { useSettingsStore } from '@features/settings'
 import { folderAdd, importPlaylistFile } from '../api'
 import {
   importPlaylistData,
@@ -60,17 +61,17 @@ const CreateThumb = () => (
   </span>
 )
 
-/** Цель «Все треки» — фирменная обложка раздела (синий градиент + нота). */
+/** Цель «Все треки» — фирменная обложка раздела (тинт + нота, как у папки). */
 const AllTracksThumb = () => (
   <span className="lam-all-thumb">
-    <Ico name="note" width={13} height={13} style={{ color: '#fff' }} />
+    <Ico name="note" width={13} height={13} style={{ color: 'var(--sys-all-ico)' }} />
   </span>
 )
 
-/** Цель «Любимые» — красный градиент + сердце. */
+/** Цель «Любимые» — красный тинт + сердце. */
 const FavThumb = () => (
-  <span className="lam-all-thumb" style={{ background: 'linear-gradient(135deg,#c0144e,#7a0030)' }}>
-    <Ico name="heart" variant="bold" width={12} height={12} style={{ color: '#fff' }} />
+  <span className="lam-all-thumb" style={{ background: 'var(--sys-fav-tint)' }}>
+    <Ico name="heart" variant="bold" width={12} height={12} style={{ color: 'var(--sys-fav-ico)' }} />
   </span>
 )
 
@@ -263,7 +264,16 @@ export const LibAddMenu = ({
           <button
             onClick={() => {
               onClose()
-              folderAdd().catch((e) => console.warn('folderAdd failed', e))
+              folderAdd(undefined, () => {
+                // В режиме «В Bloom» команда копирует файлы и молчит до конца —
+                // без тоста кнопка выглядит зависшей.
+                if (useSettingsStore.getState().local_import_mode === 'copy') {
+                  toast(t('settings.library.import.copying'))
+                }
+              }).catch((e) => {
+                console.warn('folderAdd failed', e)
+                toast(String(e))
+              })
             }}
           >
             <Ico name="folder" width={13} height={13} />

@@ -1,3 +1,4 @@
+import { localFileUrl } from '@shared/lib/localFile'
 import type { Track } from '@entities/track'
 
 /**
@@ -36,19 +37,6 @@ export const registerSourceResolver = (r: SourceResolver): void => {
 }
 
 /**
- * Строит URL для локального файла из folder_watcher через custom URI scheme
- * `bloom-file://` (Rust `file_protocol::SCHEME`, поддержка Range).
- * `encodeURIComponent` процентит всё включая `/` и `:` —
- * раскодируем обратно, чтобы `C:\dir\f.mp3` стал `C:/dir/f.mp3` в URL.
- */
-const buildLocalUrl = (localPath: string): string => {
-  const enc = encodeURIComponent(localPath)
-    .replace(/%5C/gi, '/')
-    .replace(/%3A/gi, ':')
-  return `http://bloom-file.localhost/${enc}`
-}
-
-/**
  * Единая точка получения играбельного URL для любого трека.
  *
  * Встроенные источники (синхронно):
@@ -61,7 +49,7 @@ const buildLocalUrl = (localPath: string): string => {
  */
 export const resolvePlayableUrl = async (t: Track): Promise<PlayableSource | null> => {
   if (t.url) return { url: t.url }
-  if (t._localPath) return { url: buildLocalUrl(t._localPath) }
+  if (t._localPath) return { url: localFileUrl(t._localPath) }
   for (const r of _resolvers) {
     const u = await r(t)
     if (u) return typeof u === 'string' ? { url: u } : u

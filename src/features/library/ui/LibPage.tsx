@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { getCurrentWebview } from '@tauri-apps/api/webview'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import { cn } from '@shared/lib/cn'
 import { useUiPrefsStore } from '@features/settings'
-import { useLibraryBridge, handleFiles, getCurrentView } from '../lib'
+import { useLibraryBridge, importTracks, getCurrentView } from '../lib'
 import { useSelectionStore, useLibStore } from '../model'
 import { LibSidebar } from './LibSidebar'
 import { LibContent } from './LibContent'
@@ -10,12 +12,11 @@ import { LibContent } from './LibContent'
  * Корень `.page#page-lib`.
  * Структура: `.lib-sidebar` + `.lib-content`.
  *
- * `useLibraryBridge` подписывается на folder_watcher события — наполняет
- * `useLibStore` папками и треками.
+ * `useLibraryBridge` наполняет `useLibStore` папками и треками.
  *
- * Drag-drop: на странице активен handler для аудиофайлов — попадают через
- * `handleFiles` в стор. `document.addEventListener('drop', ...)`,
- * только локально на page-lib, чтобы не конфликтовать с другими drop-зонами.
+ * Drag-drop идёт через событие Tauri, а не через HTML5: при `dragDropEnabled`
+ * (по умолчанию) вебвью системный дроп файлов вообще не видит, а нам всё равно
+ * нужен путь на диске — браузерный `File` его не отдаёт.
  */
 export const LibPage = ({ active }: { active: boolean }) => {
   useLibraryBridge()
@@ -23,7 +24,10 @@ export const LibPage = ({ active }: { active: boolean }) => {
   const libView = useUiPrefsStore((s) => s.libView)
 
   const [dragOver, setDragOver] = useState(false)
-  const counter = useRef(0)
+  // Событие приходит на всё окно, поэтому проверяем активность страницы внутри
+  // обработчика, а не пере-подписываемся на каждый переход.
+  const activeRef = useRef(active)
+  activeRef.current = active
 
   // Переключение вида списка↔сетка во время нахождения в библиотеке: если включили
   // «сетку» и мы не в плейлисте/папке — показываем обзор. ВХОД в библиотеку
@@ -38,13 +42,42 @@ export const LibPage = ({ active }: { active: boolean }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [libView])
 
-  // Если страница неактивна — drag handlers не вешаются.
   useEffect(() => {
-    if (!active) {
-      counter.current = 0
-      setDragOver(false)
-    }
+    if (!active) setDragOver(false)
   }, [active])
+
+  // Перетаскивание аудиофайлов в окно.
+  useEffect(() => {
+    let unlisten: UnlistenFn | undefined
+    let disposed = false
+
+    void getCurrentWebview()
+      .onDragDropEvent((e) => {
+        if (!activeRef.current) return
+        const p = e.payload
+        if (p.type === 'enter' || p.type === 'over') {
+          setDragOver(true)
+        } else if (p.type === 'leave') {
+          setDragOver(false)
+        } else if (p.type === 'drop') {
+          setDragOver(false)
+          if (p.paths.length) {
+            // Не-аудио и дубликаты отсеет Rust.
+            void importTracks(p.paths).catch((err) => console.warn('importTracks failed', err))
+          }
+        }
+      })
+      .then((fn) => {
+        if (disposed) fn()
+        else unlisten = fn
+      })
+      .catch((e) => console.warn('onDragDropEvent failed', e))
+
+    return () => {
+      disposed = true
+      unlisten?.()
+    }
+  }, [])
 
   // Ctrl+A = выбрать все треки в текущем view. Esc = снять выделение.
   useEffect(() => {
@@ -69,38 +102,10 @@ export const LibPage = ({ active }: { active: boolean }) => {
     return () => window.removeEventListener('keydown', onKey)
   }, [active])
 
-  const onDragEnter = (e: ReactDragEvent<HTMLDivElement>) => {
-    if (!e.dataTransfer.types.includes('Files')) return
-    e.preventDefault()
-    counter.current += 1
-    setDragOver(true)
-  }
-  const onDragOver = (e: ReactDragEvent<HTMLDivElement>) => {
-    if (!e.dataTransfer.types.includes('Files')) return
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
-  }
-  const onDragLeave = (e: ReactDragEvent<HTMLDivElement>) => {
-    if (!e.dataTransfer.types.includes('Files')) return
-    counter.current = Math.max(0, counter.current - 1)
-    if (counter.current === 0) setDragOver(false)
-  }
-  const onDrop = (e: ReactDragEvent<HTMLDivElement>) => {
-    if (!e.dataTransfer.files.length) return
-    e.preventDefault()
-    counter.current = 0
-    setDragOver(false)
-    handleFiles(e.dataTransfer.files)
-  }
-
   return (
     <div
       className={cn(`page${active ? ' active' : ''}`, dragOver && 'lib-drag-over')}
       id="page-lib"
-      onDragEnter={onDragEnter}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
     >
       {libView === 'list' && <LibSidebar />}
       <LibContent />

@@ -7,7 +7,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
 :root{
   --bg:#1b1b1d;--bg2:#262628;--accent:#fff;--accent-rgb:255,255,255;
-  --text:#fff;--text2:#9a9a9a;--muted:#5a5a5a;
+  --text:#fff;--text2:#9a9a9a;--muted:#5a5a5a;--radius:14px;
+  /* Подложка кнопок на наведении — как `--hover` в overrides-main.css. */
+  --hover:rgba(255,255,255,.05);
   --font:-apple-system,'SF Pro Display','SF Pro Text','Segoe UI','Roboto',system-ui,sans-serif;
   --ov-op:0.9;--ov-from:-14px;
 }
@@ -26,7 +28,6 @@ body{display:flex;align-items:center;justify-content:center;pointer-events:none}
   background:linear-gradient(180deg,var(--bg2),var(--bg));
   border:1px solid rgba(255,255,255,.07);
   border-radius:40px;
-  box-shadow:0 8px 22px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.04);
   opacity:0;transform:translateY(var(--ov-from)) scale(.96);
   transition:opacity .26s ease,transform .26s cubic-bezier(.22,1,.36,1);
   pointer-events:auto;
@@ -47,7 +48,6 @@ body{display:flex;align-items:center;justify-content:center;pointer-events:none}
   width:48px;height:48px;flex-shrink:0;position:relative;
   border-radius:50%;background:var(--bg);overflow:hidden;
   display:flex;align-items:center;justify-content:center;color:var(--muted);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
 }
 .cover img{width:100%;height:100%;object-fit:cover;display:block}
 
@@ -95,8 +95,10 @@ body.paused .eq i{animation-play-state:paused;height:30%}
 }
 .cbtn:hover{background:rgba(255,255,255,.14);opacity:1}
 .cbtn:active{transform:scale(.92)}
-.cbtn-play{width:34px;height:34px;background:var(--accent);color:#000;opacity:1}
-.cbtn-play:hover{background:var(--accent);filter:brightness(1.1)}
+/* Play без заливки: та же плоская кнопка, что и соседи, только крупнее иконка
+   (как `play-flat` в трей-попапе). */
+.cbtn-play{width:34px;height:34px;background:none;color:var(--text);opacity:1}
+.cbtn-play:hover{background:rgba(255,255,255,.14)}
 
 /* ── Режим оптимизации ───────────────────────────────────
    Убираем эквалайзер, отключаем бегущую строку (заголовок обрезается «…») и
@@ -155,7 +157,7 @@ body.placing .bcenter,body.placing .bcircle-play{pointer-events:none}
   display:none;white-space:nowrap;padding:2px 9px;border-radius:9px;
   font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.2px;
   background:rgba(0,0,0,.72);color:#fff;border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 3px 10px rgba(0,0,0,.4);pointer-events:none;z-index:10}
+  pointer-events:none;z-index:10}
 body.placing .place-coords{display:block}
 
 /* ── Режим «Полоса» ──────────────────────────────────────
@@ -177,7 +179,6 @@ body.bar .bar-wrap{display:flex;align-items:center;gap:8px;width:100%;height:100
   display:flex;align-items:center;justify-content:center;color:var(--text);
   background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.03));
   border:1px solid rgba(255,255,255,.10);
-  box-shadow:0 5px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.13);
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .bcircle-play{cursor:pointer;opacity:.95;transition:filter .12s,transform .08s}
 .bcircle-play:hover{filter:brightness(1.15);opacity:1}
@@ -189,7 +190,6 @@ body.bar .bar-wrap{display:flex;align-items:center;gap:8px;width:100%;height:100
   border-radius:24px;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.04));
   border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 5px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15);
   -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .bcenter::before{content:'';position:absolute;left:0;right:0;top:0;height:50%;
   background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0));
@@ -214,6 +214,101 @@ body.bar .bcircle-viz .eq{opacity:1;transform:none}
   align-items:center;justify-content:center;color:var(--muted);background:var(--bg)}
 .bcover img{width:100%;height:100%;object-fit:cover;display:block}
 body.bar.perf .bcover{display:flex}
+
+/* ── Расширенный режим ───────────────────────────────────
+   Карточка: слева колонка «обложка + сердце», справа три ряда — шапка
+   (лейбл/название/артист), прогресс с таймингами и ряд управления.
+   Сам .island служит фоном карточки (показ/скрытие, drag, масштаб). */
+.exp-wrap{display:none}
+body.expanded .island{
+  width:840px;height:180px;border-radius:38px;padding:13px 22px;gap:0;
+  /* Плоский цвет блока из темы приложения (--block-color), без градиентной
+     подсветки верха: карточка большая, градиент на ней читается как грязь. */
+  background:var(--bg);
+  /* Поп-ап громкости выезжает за верхнюю кромку карточки — в поле под тень. */
+  overflow:visible;
+}
+body.expanded .cover,body.expanded .info,body.expanded .right,body.expanded .prog{display:none}
+body.expanded .island:hover .prog{display:none}
+/* Шапка (обложка + текст) и прогресс живут в правой колонке, а ряд кнопок
+   растянут на обе — иначе он центрировался бы по остатку ширины за обложкой и
+   визуально сидел бы правее середины карточки. */
+body.expanded .exp-wrap{display:grid;
+  grid-template-columns:63px 1fr;grid-template-rows:auto auto auto;
+  column-gap:18px;row-gap:8px;align-content:center;
+  width:100%;height:100%}
+.exp-cover{grid-area:1/1;align-self:start;
+  width:63px;height:63px;border-radius:18px;overflow:hidden;
+  background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.exp-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.exp-head{grid-area:1/2}
+.exp-row{grid-area:2/2}
+.exp-ctrl{grid-area:3/1/4/3}
+
+.exp-head{min-width:0;align-self:center}
+.exp-label{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--text2);opacity:.8;line-height:1}
+.exp-title-wrap{margin-top:7px}
+.exp-title-wrap .title{font-size:20px}
+.exp-artist{margin-top:6px;font-size:12px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--text2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1}
+
+/* Прогресс: капсулы с таймингами по краям, полоса между ними. */
+.exp-row{display:flex;align-items:center;gap:15px;padding:0 12px 0 0;min-width:0}
+.exp-time{flex-shrink:0;min-width:58px;text-align:center;padding:4px 12px;border-radius:11px;
+  background:rgba(255,255,255,.07);color:var(--text2);
+  font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.3}
+.exp-prog{position:relative;flex:1;min-width:0;height:6px;border-radius:4px;
+  background:rgba(255,255,255,.14)}
+.exp-fill{height:100%;width:0%;border-radius:4px;background:var(--accent);
+  transition:width .25s linear}
+/* Зона клика шире тонкой полосы (невидимые «поля» сверху и снизу). */
+.exp-prog.seekable{cursor:pointer}
+.exp-prog.seekable::before{content:'';position:absolute;left:0;right:0;top:-11px;bottom:-11px}
+.exp-prog.seekable:hover{height:9px}
+
+.exp-ctrl{display:flex;align-items:center;justify-content:center;gap:8px}
+/* Копия кнопок нижнего бара с учётом перебивок overrides-main.css: в покое
+   приглушённый белый, на наведении — акцентный цвет и акцентный тинт подложки. */
+.ebtn{position:relative;width:40px;height:40px;flex-shrink:0;border:none;background:none;
+  color:rgba(255,255,255,.55);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  border-radius:calc(var(--radius)*0.7);transition:.15s}
+.ebtn:hover{background:rgba(var(--accent-rgb),.1);color:var(--accent)}
+.ebtn.on{color:var(--accent)}
+/* Play — обычная кнопка ряда: тот же габарит, ховер и тинт, что у соседей;
+   отличается крупной иконкой и вжатием scale(.94) при нажатии. */
+.ebtn-play{margin:0 6px;transition:background .12s,color .12s,transform .08s;
+  will-change:transform}
+.ebtn-play:active{transform:scale(.94)}
+.ebtn-play svg{width:26px;height:26px}
+/* Бейджи на кнопках — белый кружок сверху справа, как `.cc-badge` в баре
+   приложения: «1» на повторе одного трека и звёздочка на умной перемешке. */
+.ebtn-badge{display:none;position:absolute;top:3px;right:3px;width:13px;height:13px;
+  border-radius:50%;background:#fff;color:#000;align-items:center;justify-content:center;
+  line-height:1;pointer-events:none;
+  animation:ebtn-badge-pop .18s ease-out}
+.ebtn-badge.num{font-size:8px;font-weight:700;padding-top:1px}
+@keyframes ebtn-badge-pop{0%{opacity:0}100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.ebtn-badge{animation:none}}
+.ebtn.one .ebtn-badge,.ebtn.smart .ebtn-badge{display:flex}
+
+/* Поп-ап громкости — вертикальный слайдер над кнопкой (как в плеере приложения). */
+.exp-vol{position:relative;display:flex;align-items:center}
+.volpop{display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
+  flex-direction:column;align-items:center;padding:11px 10px;border-radius:14px;
+  background:var(--bg);border:1px solid rgba(255,255,255,.12);
+  z-index:20}
+.exp-vol.open .volpop{display:flex}
+.vol-track{position:relative;width:5px;height:96px;border-radius:3px;
+  background:rgba(255,255,255,.15);cursor:pointer;touch-action:none}
+.vol-fill{position:absolute;left:0;right:0;bottom:0;border-radius:3px;
+  background:var(--accent);pointer-events:none}
+.vol-knob{position:absolute;left:50%;transform:translateX(-50%);width:14px;height:14px;
+  border-radius:50%;background:var(--accent);pointer-events:none}
+
+/* Ручное размещение: карточка целиком — drag-ручка, её кнопки не мешают. */
+body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-events:none}
 </style>
 </head>
 <body>
@@ -222,7 +317,7 @@ body.bar.perf .bcover{display:flex}
     <svg width="22" height="22" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>
   </div>
   <div class="info">
-    <div class="title-wrap"><div class="title" id="title">—</div></div>
+    <div class="title-wrap" id="titleWrap"><div class="title" id="title">—</div></div>
     <div class="artist" id="artist"></div>
   </div>
   <div class="right">
@@ -232,7 +327,7 @@ body.bar.perf .bcover{display:flex}
         <svg width="17" height="17" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7.34 9.353c-1.787 1.154-1.787 4.14 0 5.294l10.79 6.967c1.736 1.122 3.87-.338 3.87-2.647V5.033c0-2.31-2.134-3.769-3.87-2.648z"/><path stroke-linecap="round" d="M2 5v14"/></g></svg>
       </button>
       <button class="cbtn cbtn-play" id="btnPlay">
-        <svg id="ovPlayIcon" width="16" height="16" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M20.409 9.353a2.998 2.998 0 0 1 0 5.294L7.597 21.614C5.534 22.737 3 21.277 3 18.968V5.033c0-2.31 2.534-3.769 4.597-2.648z"/></svg>
+        <svg id="ovPlayIcon" width="21" height="21" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M20.409 9.353a2.998 2.998 0 0 1 0 5.294L7.597 21.614C5.534 22.737 3 21.277 3 18.968V5.033c0-2.31 2.534-3.769 4.597-2.648z"/></svg>
       </button>
       <button class="cbtn" id="btnNext">
         <svg width="17" height="17" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16.66 9.353c1.787 1.154 1.787 4.14 0 5.294L5.87 21.614C4.135 22.737 2 21.277 2 18.968V5.033c0-2.31 2.134-3.769 3.87-2.648z"/><path stroke-linecap="round" d="M22 5v14"/></g></svg>
@@ -255,6 +350,55 @@ body.bar.perf .bcover{display:flex}
       <div class="bcover" id="barCover"></div>
     </div>
   </div>
+
+  <!-- Раскладка расширенного режима (показывается при body.expanded). -->
+  <div class="exp-wrap" id="expWrap">
+    <div class="exp-cover" id="expCover"></div>
+    <div class="exp-head">
+      <div class="exp-label" id="expLabel">PLAYING</div>
+      <div class="title-wrap exp-title-wrap" id="expTitleWrap"><div class="title" id="expTitle">—</div></div>
+      <div class="exp-artist" id="expArtist"></div>
+    </div>
+    <div class="exp-row">
+      <span class="exp-time" id="expCur">0:00</span>
+      <div class="exp-prog" id="expProg"><div class="exp-fill" id="expFill"></div></div>
+      <span class="exp-time" id="expDur">0:00</span>
+    </div>
+    <!-- Порядок как в баре приложения: fav | repeat | prev | PLAY | next | shuffle. -->
+    <div class="exp-ctrl">
+      <button class="ebtn" id="btnFav">
+        <svg id="expFavIcon" width="21" height="21" viewBox="0 0 24 24"></svg>
+      </button>
+      <button class="ebtn" id="btnRepeat">
+        <svg id="expRepIcon" width="21" height="21" viewBox="0 0 24 24"></svg>
+        <span class="ebtn-badge num">1</span>
+      </button>
+      <button class="ebtn" id="btnPrevExp">
+        <svg width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7.34 9.353c-1.787 1.154-1.787 4.14 0 5.294l10.79 6.967c1.736 1.122 3.87-.338 3.87-2.647V5.033c0-2.31-2.134-3.769-3.87-2.648z"/><path stroke-linecap="round" d="M2 5v14"/></g></svg>
+      </button>
+      <button class="ebtn ebtn-play" id="btnPlayExp">
+        <svg id="ovPlayIconExp" width="26" height="26" viewBox="0 0 24 24"></svg>
+      </button>
+      <button class="ebtn" id="btnNextExp">
+        <svg width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16.66 9.353c1.787 1.154 1.787 4.14 0 5.294L5.87 21.614C4.135 22.737 2 21.277 2 18.968V5.033c0-2.31 2.134-3.769 3.87-2.648z"/><path stroke-linecap="round" d="M22 5v14"/></g></svg>
+      </button>
+      <button class="ebtn" id="btnShuffle">
+        <svg id="expShufIcon" width="21" height="21" viewBox="0 0 24 24"></svg>
+        <span class="ebtn-badge" id="expSmartBadge"></span>
+      </button>
+      <div class="exp-vol" id="expVol">
+        <button class="ebtn" id="btnVol">
+          <svg id="expVolIcon" width="22" height="22" viewBox="0 0 24 24"></svg>
+        </button>
+        <div class="volpop" id="volPop">
+          <div class="vol-track" id="volTrack">
+            <div class="vol-fill" id="volFill"></div>
+            <div class="vol-knob" id="volKnob"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="place-coords" id="placeCoords"></div>
 
@@ -262,7 +406,8 @@ body.bar.perf .bcover{display:flex}
 (function(){
   'use strict';
   var ti = null;
-  var st = { title:'', artist:'', artwork:'', source:null, playing:false, pos:0, dur:0 };
+  var st = { title:'', artist:'', artwork:'', source:null, playing:false, pos:0, dur:0,
+             shuffle:false, smartShuffle:false, repeat:0, fav:false, volume:80 };
   var pinned = false;
   var hideTimer = null;
   var duration = 4;
@@ -270,8 +415,39 @@ body.bar.perf .bcover{display:flex}
   var seekEnabled = false;   // перемотка по прогресс-бару (из настроек)
   var perfMode = false;      // режим оптимизации: без эквалайзера и бегущей строки
   var scrubbing = false;     // идёт ручной скраб — не снапаем позицию из пушей
+  var volDragging = false;   // тянут ползунок громкости — не снапаем громкость из пушей
 
   function $(id){ return document.getElementById(id); }
+
+  // ── i18n (standalone, как в picture-in-picture.html: локаль из localStorage) ──
+  var I18N = {
+    ru: { playing:'ИГРАЕТ', paused:'ПАУЗА' },
+    en: { playing:'PLAYING', paused:'PAUSED' }
+  };
+  var LOCALE = 'en';
+  function readLocale(){
+    try{ var l = localStorage.getItem('bloom_locale'); if (l === 'ru' || l === 'en') LOCALE = l; }catch(e){}
+  }
+  readLocale();
+  function tr(k){ return (I18N[LOCALE] && I18N[LOCALE][k]) || I18N.en[k] || k; }
+
+  // ── Иконки расширенного режима (Solar, как в трей-попапе) ──
+  var IC = {
+    heart: '<path fill="currentColor" d="m8.962 18.91l.464-.588zM12 5.5l-.54.52a.75.75 0 0 0 1.08 0zm3.038 13.41l.465.59zm-5.612-.588C7.91 17.127 6.253 15.96 4.938 14.48C3.65 13.028 2.75 11.335 2.75 9.137h-1.5c0 2.666 1.11 4.7 2.567 6.339c1.43 1.61 3.254 2.9 4.68 4.024zM2.75 9.137c0-2.15 1.215-3.954 2.874-4.713c1.612-.737 3.778-.541 5.836 1.597l1.08-1.04C10.1 2.444 7.264 2.025 5 3.06C2.786 4.073 1.25 6.425 1.25 9.137zM8.497 19.5c.513.404 1.063.834 1.62 1.16s1.193.59 1.883.59v-1.5c-.31 0-.674-.12-1.126-.385c-.453-.264-.922-.628-1.448-1.043zm7.006 0c1.426-1.125 3.25-2.413 4.68-4.024c1.457-1.64 2.567-3.673 2.567-6.339h-1.5c0 2.198-.9 3.891-2.188 5.343c-1.315 1.48-2.972 2.647-4.488 3.842zM22.75 9.137c0-2.712-1.535-5.064-3.75-6.077c-2.264-1.035-5.098-.616-7.54 1.92l1.08 1.04c2.058-2.137 4.224-2.333 5.836-1.596c1.659.759 2.874 2.562 2.874 4.713zm-8.176 9.185c-.526.415-.995.779-1.448 1.043s-.816.385-1.126.385v1.5c.69 0 1.326-.265 1.883-.59c.558-.326 1.107-.756 1.62-1.16z"/>',
+    heartOn: '<path fill="currentColor" d="M2 9.137C2 14 6.02 16.591 8.962 18.911C10 19.729 11 20.5 12 20.5s2-.77 3.038-1.59C17.981 16.592 22 14 22 9.138S16.5.825 12 5.501C7.5.825 2 4.274 2 9.137"/>',
+    shuffle: '<path fill="currentColor" d="M2 16.25a.75.75 0 0 0 0 1.5zm8.748-2.163l-.643-.386zm2.504-4.174l.643.386zM22 7l.53.53a.75.75 0 0 0 0-1.06zm-2.53 1.47a.75.75 0 0 0 1.06 1.06zm1.06-4a.75.75 0 1 0-1.06 1.06zm-5.31 2.92l-.369-.653zM2 17.75h3.603v-1.5H2zm9.39-3.277l2.505-4.174l-1.286-.772l-2.504 4.174zm7.007-6.723H22v-1.5h-3.603zm3.073-1.28l-2 2l1.06 1.06l2-2zm1.06 0l-2-2l-1.06 1.06l2 2zm-8.635 3.829c.434-.724.734-1.22 1.006-1.589c.263-.355.468-.543.689-.668l-.739-1.305c-.467.264-.82.627-1.155 1.08c-.326.44-.668 1.011-1.087 1.71zm4.502-4.049c-.815 0-1.48 0-2.025.052c-.562.055-1.054.17-1.521.435l.739 1.305c.22-.125.487-.204.927-.247c.456-.044 1.036-.045 1.88-.045zM5.603 17.75c.815 0 1.48 0 2.025-.052c.562-.055 1.054-.17 1.521-.435l-.739-1.305c-.22.125-.487.204-.927.247c-.456.044-1.036.045-1.88.045zm4.502-4.049c-.435.724-.734 1.22-1.006 1.589c-.263.355-.468.543-.689.668l.74 1.305c.466-.264.819-.627 1.154-1.08c.326-.44.668-1.011 1.087-1.71zM2 6.25a.75.75 0 0 0 0 1.5zM22 17l.53.53a.75.75 0 0 0 0-1.06zm-1.47-2.53a.75.75 0 1 0-1.06 1.06zm-1.06 4a.75.75 0 1 0 1.06 1.06zm-3.345-1.525l.144-.736zm-1.682-2.33a.75.75 0 1 0-1.286.77zm.025 1.391l.558-.501zm-6.593-8.95l.143-.737zm1.682 2.33a.75.75 0 0 0 1.286-.772zm-.025-1.393l-.558.502zM2 7.75h4.668v-1.5H2zm15.332 10H22v-1.5h-4.668zm5.198-1.28l-2-2l-1.06 1.06l2 2zm-1.06 0l-2 2l1.06 1.06l2-2zm-4.138-.22c-.645 0-.867-.003-1.063-.041l-.287 1.472c.372.072.765.069 1.35.069zm-4.175-.864c.3.502.5.84.754 1.122l1.115-1.003c-.134-.149-.25-.337-.583-.89zm3.112.823a2.25 2.25 0 0 1-1.243-.704l-1.115 1.003a3.75 3.75 0 0 0 2.071 1.173zM6.668 7.75c.645 0 .867.003 1.063.041l.287-1.472c-.372-.072-.765-.069-1.35-.069zm4.175.864c-.3-.502-.5-.84-.754-1.122L8.974 8.495c.134.149.25.337.583.89zm-3.112-.823c.48.094.916.34 1.243.704l1.115-1.003a3.75 3.75 0 0 0-2.071-1.173z"/>',
+    repeat: '<path fill="currentColor" d="M9.5 19.75a.75.75 0 0 0 0-1.5zM11 5v.75a.75.75 0 0 0 .53-1.28zM9.53 2.47a.75.75 0 0 0-1.06 1.06zM9.5 18.25H9v1.5h.5zM9 5.75h2v-1.5H9zm2.53-1.28l-2-2l-1.06 1.06l2 2zM1.25 12A7.75 7.75 0 0 0 9 19.75v-1.5A6.25 6.25 0 0 1 2.75 12zm1.5 0A6.25 6.25 0 0 1 9 5.75v-1.5A7.75 7.75 0 0 0 1.25 12zM13 19v-.75a.75.75 0 0 0-.53 1.28zm1.47 2.53a.75.75 0 1 0 1.06-1.06zm.03-17.28a.75.75 0 0 0 0 1.5zm.5 14h-2v1.5h2zm-2.53 1.28l2 2l1.06-1.06l-2-2zM14.5 5.75h.5v-1.5h-.5zM21.25 12A6.25 6.25 0 0 1 15 18.25v1.5A7.75 7.75 0 0 0 22.75 12zm1.5 0A7.75 7.75 0 0 0 15 4.25v1.5A6.25 6.25 0 0 1 21.25 12z"/>',
+    volLoud: '<g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.535 10.971c.073-1.208.11-1.813.424-2.394a3.2 3.2 0 0 1 1.38-1.3C3.94 7 4.627 7 6 7c.512 0 .768 0 1.016-.042a3 3 0 0 0 .712-.214c.23-.101.444-.242.871-.524l.22-.144C11.36 4.399 12.632 3.56 13.7 3.925c.205.07.403.17.58.295c.922.648.993 2.157 1.133 5.174A68 68 0 0 1 15.5 12c0 .532-.035 1.488-.087 2.605c-.14 3.018-.21 4.526-1.133 5.175a2.3 2.3 0 0 1-.58.295c-1.067.364-2.339-.474-4.882-2.151L8.6 17.78c-.427-.282-.64-.423-.871-.525a3 3 0 0 0-.712-.213C6.768 17 6.512 17 6 17c-1.374 0-2.06 0-2.66-.277a3.2 3.2 0 0 1-1.381-1.3c-.314-.582-.35-1.186-.424-2.395A17 17 0 0 1 1.5 12c0-.323.013-.671.035-1.029Z"/><path stroke-linecap="round" d="M20 6s1.5 1.8 1.5 6s-1.5 6-1.5 6m-2-9s.5.9.5 3s-.5 3-.5 3"/></g>',
+    volMuted: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" d="M16.659 6c-.14-.798-.37-1.315-.792-1.628a2.1 2.1 0 0 0-.538-.29c-.992-.357-2.172.465-4.533 2.11l-.204.14c-.397.277-.595.415-.809.515a2.7 2.7 0 0 1-.66.21c-.231.04-.469.04-.944.04c-1.276 0-1.914 0-2.47.272c-.509.249-1.017.754-1.283 1.275c-.291.57-.325 1.162-.394 2.348c-.02.35-.032.692-.032 1.008s.012.658.032 1.008c.069 1.186.103 1.778.394 2.348c.266.521.774 1.026 1.282 1.275c.557.272 1.195.272 2.47.272c.476 0 .714 0 .944.04q.343.062.661.21c.214.1.412.238.81.514l.203.142c2.36 1.644 3.542 2.466 4.533 2.109c.19-.069.374-.168.538-.29c.422-.313.652-.83.792-1.628M20 9l-6 6m0-6l6 6"/>',
+    stars: '<g fill="none" stroke="currentColor" stroke-width="1.5"><path d="m9.99 16.5l-.975.474c-1.98.548-2.971.822-3.505.245c-.534-.576-.258-1.62.295-3.71l.142-.54c.157-.595.236-.891.197-1.186c-.04-.294-.193-.553-.499-1.07l-.278-.47C4.29 8.422 3.752 7.512 4.11 6.787c.36-.724 1.379-.783 3.418-.9l.527-.03c.58-.034.869-.05 1.122-.185c.252-.135.439-.372.813-.848l.34-.432c1.316-1.673 1.974-2.509 2.73-2.38s1.11 1.137 1.817 3.154l.183.522c.201.573.302.86.497 1.07c.196.212.464.324 1.001.547l.489.204c1.89.786 2.835 1.18 2.942 1.983c.092.686-.477 1.283-1.64 2.29"/><path d="M15.252 10.689c-.987-1.18-1.48-1.77-2.048-1.68c-.567.091-.832.803-1.362 2.227l-.138.368c-.15.405-.226.607-.373.756c-.146.149-.348.228-.75.386l-.367.143c-1.417.555-2.126.833-2.207 1.4s.52 1.049 1.721 2.011l.31.25c.342.273.513.41.611.597c.1.187.115.404.146.837l.029.394c.11 1.523.166 2.285.683 2.545s1.154-.155 2.427-.983l.329-.215c.362-.235.543-.353.75-.387c.208-.033.42.022.841.132l.385.1c1.485.386 2.228.58 2.629.173s.193-1.144-.221-2.62l-.108-.38c-.117-.42-.176-.63-.147-.837c.03-.208.145-.39.374-.756l.21-.332c.807-1.285 1.21-1.927.94-2.438c-.269-.511-1.033-.553-2.562-.635l-.396-.022c-.434-.023-.652-.035-.841-.13c-.19-.095-.33-.263-.61-.599z"/></g>'
+  };
+
+  /** Секунды → m:ss (как в мини-плеере). */
+  function fmt(sec){
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
 
   // target = метка окна, а не 'Any': слушатель с 'Any' принимает и адресные
   // emit_to() в ДРУГИЕ окна (см. tauri match_any_or_filter). Broadcast app.emit()
@@ -315,6 +491,19 @@ body.bar.perf .bcover{display:flex}
   // Посчитать доминантный цвет обложки и окрасить плашку. CORS-tainted/ошибка →
   // откат к цвету темы.
   function applyCoverColor(){
+    // Расширенная карточка живёт в цветах темы: доминанта обложки перекрашивала бы
+    // её в грязные оттенки (карточка большая, фон занимает пол-экрана).
+    if (document.body.classList.contains('expanded')){
+      if (coverColors || lastArt !== null){
+        coverColors = null; lastArt = null;
+        var r0 = document.documentElement;
+        r0.style.removeProperty('--bg');
+        r0.style.removeProperty('--bg2');
+        r0.style.removeProperty('--accent');
+        applyTheme();
+      }
+      return;
+    }
     var src = st.artwork;
     if (src === lastArt) { applyComputed(); return; }
     lastArt = src;
@@ -381,6 +570,8 @@ body.bar.perf .bcover{display:flex}
     if (pe) pe.classList.toggle('seekable', seekEnabled);
     var bc = $('barCenter');
     if (bc) bc.classList.toggle('seekable', seekEnabled);
+    var ep = $('expProg');
+    if (ep) ep.classList.toggle('seekable', seekEnabled);
     document.documentElement.style.setProperty('--ov-op', Math.max(0, Math.min(100, op)) / 100);
     // Масштаб плашки. Окно Rust ресайзит синхронно по той же доле.
     $('island').style.zoom = Math.max(50, Math.min(160, size)) / 100;
@@ -388,16 +579,20 @@ body.bar.perf .bcover{display:flex}
     // Режим оптимизации + компактная плашка (прижатая к якорному краю).
     var compact = p.overlayMode === 'compact';
     var bar = p.overlayMode === 'bar';
+    var expanded = p.overlayMode === 'expanded';
     var body = document.body;
     body.classList.toggle('perf', perfMode);
     body.classList.toggle('compact', compact);
     body.classList.toggle('bar', bar);
+    body.classList.toggle('expanded', expanded);
     var horiz = (typeof p.overlayPos === 'string' ? p.overlayPos.charAt(1) : 'r') || 'r';
     body.classList.toggle('al', compact && horiz === 'l');
     body.classList.toggle('ac', compact && horiz === 'c');
     body.classList.toggle('ar', compact && horiz === 'r');
     // В компакте ширина/обёртка меняются — пересчёт бегущей строки.
     updateMarquee(true);
+    // Смена режима может включить/выключить подкраску от обложки.
+    applyCoverColor();
   }
 
   // Тема (акцент + фон блока) — из настроек главного окна (как у мини-плеера).
@@ -408,7 +603,15 @@ body.bar.perf .bcover{display:flex}
     if (s.accent){
       var hex = String(s.accent).replace(/\s/g,'');
       r.style.setProperty('--accent', hex);
+      // Тинт подложки кнопок (rgba(var(--accent-rgb),.1)) — как в трей-попапе.
+      var m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      if (m){
+        r.style.setProperty('--accent-rgb',
+          parseInt(m[1],16) + ',' + parseInt(m[2],16) + ',' + parseInt(m[3],16));
+      }
     }
+    // Радиус темы («14px») — от него считается скругление кнопок карточки.
+    if (s.radius) r.style.setProperty('--radius', s.radius);
     if (typeof s.blockR === 'number' && typeof s.blockG === 'number' && typeof s.blockB === 'number'){
       r.style.setProperty('--bg', 'rgb('+s.blockR+','+s.blockG+','+s.blockB+')');
       var l = function(c){ return Math.min(255, Math.round(c + (255-c)*0.07)); };
@@ -417,13 +620,17 @@ body.bar.perf .bcover{display:flex}
   }
 
   // Артисты — кликабельные чипы (клик → страница артиста в главном окне).
+  var _artistKey = null;
   function renderArtist(){
-    var el = $('artist');
+    if (st.artist === _artistKey) return;
+    _artistKey = st.artist;
     var parts = parseArtists(st.artist);
-    if (!parts.length){ el.textContent = ''; return; }
-    el.innerHTML = parts.map(function(a){
+    var html = parts.map(function(a){
       return '<span class="tra-link" data-artist="' + esc(a) + '">' + esc(a) + '</span>';
     }).join(', ');
+    $('artist').innerHTML = html;
+    var ea = $('expArtist');
+    if (ea) ea.innerHTML = html;
   }
 
   // Бегущая строка как в приложении (MarqueeTitle): бесшовный loop — две копии
@@ -433,26 +640,28 @@ body.bar.perf .bcover{display:flex}
   // и после догрузки шрифта/смены масштаба. Видимый DOM/анимацию пересобираем
   // только когда реально изменился результат (step) — иначе частые пуши позиции
   // во время игры рвали бы анимацию рестартом в 0%. `force` — для resize.
-  var _mqText = null, _mqStep = -1, _mqMeasure = null;
-  function updateMarquee(force){
-    var wrap = document.querySelector('.title-wrap');
-    var el = $('title');
+  // Бегунков два (остров и расширенная карточка), у каждого свой кэш и свой
+  // скрытый замерщик; скрытая раскладка (display:none) даёт wrapW=0 → step=0,
+  // то есть её бегущая строка не крутится вхолостую.
+  var _mq = {};
+  function marqueeOne(key, wrap, el, force){
     if (!wrap || !el) return;
+    var m = _mq[key] || (_mq[key] = { text:null, step:-1, measure:null });
     var text = st.title || '—';
-    if (!_mqMeasure) {
-      _mqMeasure = document.createElement('div');
-      _mqMeasure.className = 'title';
-      _mqMeasure.setAttribute('aria-hidden', 'true');
-      _mqMeasure.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;white-space:nowrap;pointer-events:none';
-      wrap.appendChild(_mqMeasure);
+    if (!m.measure) {
+      m.measure = document.createElement('div');
+      m.measure.className = 'title';
+      m.measure.setAttribute('aria-hidden', 'true');
+      m.measure.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;white-space:nowrap;pointer-events:none';
+      wrap.appendChild(m.measure);
     }
-    _mqMeasure.textContent = text;
-    var singleW = _mqMeasure.scrollWidth;
+    m.measure.textContent = text;
+    var singleW = m.measure.scrollWidth;
     var wrapW = wrap.clientWidth;
     // Режим оптимизации — без прокрутки (заголовок обрезается «…» через CSS).
-    var step = (!perfMode && singleW > wrapW + 4) ? singleW + 64 : 0;
-    if (!force && text === _mqText && step === _mqStep) return;
-    _mqText = text; _mqStep = step;
+    var step = (!perfMode && wrapW > 0 && singleW > wrapW + 4) ? singleW + 64 : 0;
+    if (!force && text === m.text && step === m.step) return;
+    m.text = text; m.step = step;
     wrap.classList.remove('scrolling');
     el.style.removeProperty('--ov-off');
     el.style.removeProperty('animation-duration');
@@ -466,6 +675,10 @@ body.bar.perf .bcover{display:flex}
       el.style.setProperty('animation-duration', dur + 's');
       wrap.classList.add('scrolling');
     }
+  }
+  function updateMarquee(force){
+    marqueeOne('island', $('titleWrap'), $('title'), force);
+    marqueeOne('exp', $('expTitleWrap'), $('expTitle'), force);
   }
 
   // Обложку пересобираем только при смене артворка: innerHTML с <img> на каждом
@@ -485,12 +698,54 @@ body.bar.perf .bcover{display:flex}
       $('cover').innerHTML = html;
       var bcov = $('barCover');
       if (bcov) bcov.innerHTML = html;
+      var ecov = $('expCover');
+      if (ecov) ecov.innerHTML = html;
     }
     document.body.classList.toggle('paused', !st.playing);
     setPlayIcon();
+    renderExpState();
     applyCoverColor();
     setProgress();
     if (st.playing) startTicker(); else stopTicker();
+  }
+
+  /** Кнопки/иконки расширенной карточки: лейбл, сердце, шафл, повтор, громкость. */
+  function renderExpState(){
+    var lab = $('expLabel');
+    if (lab) lab.textContent = st.playing ? tr('playing') : tr('paused');
+    setFavIcon();
+    var sh = $('btnShuffle');
+    if (sh){
+      sh.classList.toggle('on', !!st.shuffle);
+      // Звёздочка «умной» перемешки — только при активном shuffle, как в баре.
+      sh.classList.toggle('smart', !!st.shuffle && !!st.smartShuffle);
+    }
+    var rp = $('btnRepeat');
+    if (rp){
+      rp.classList.toggle('on', st.repeat > 0);
+      rp.classList.toggle('one', st.repeat === 2);
+    }
+    setVolume(st.volume, false);
+  }
+
+  function setFavIcon(){
+    var i = $('expFavIcon');
+    if (i) i.innerHTML = st.fav ? IC.heartOn : IC.heart;
+    var b = $('btnFav');
+    if (b) b.classList.toggle('on', !!st.fav);
+  }
+
+  // Громкость: иконка + заливка/ручка слайдера. send=true — отдать команду плееру.
+  function setVolume(v, send){
+    v = Math.max(0, Math.min(100, Math.round(v)));
+    st.volume = v;
+    var i = $('expVolIcon');
+    if (i) i.innerHTML = v === 0 ? IC.volMuted : IC.volLoud;
+    var f = $('volFill');
+    if (f) f.style.height = v + '%';
+    var k = $('volKnob');
+    if (k) k.style.bottom = 'calc(' + v + '% - 7px)';
+    if (send){ try{ ti.invoke('miniplayer_cmd', { cmd: 'volume', value: v }); }catch(e){} }
   }
 
   /** Плашка сейчас видна на экране (CSS-класс show ставят reveal/hide). */
@@ -507,6 +762,8 @@ body.bar.perf .bcover{display:flex}
     if (pi) pi.innerHTML = html;
     var pib = $('ovPlayIconBar');
     if (pib) pib.innerHTML = html;
+    var pie = $('ovPlayIconExp');
+    if (pie) pie.innerHTML = html;
   }
 
   // ── Прогресс трека (локальный тикер, как в мини-плеере) ──
@@ -516,6 +773,12 @@ body.bar.perf .bcover{display:flex}
     if (f) f.style.width = pct + '%';
     var fb = $('progFillBar');
     if (fb) fb.style.width = pct + '%';
+    var fe = $('expFill');
+    if (fe) fe.style.width = pct + '%';
+    var tc = $('expCur');
+    if (tc) tc.textContent = fmt(st.pos);
+    var td = $('expDur');
+    if (td) td.textContent = fmt(st.dur);
   }
 
   // Команда плееру (играть/пауза/пред/след) — через тот же мост, что мини-плеер.
@@ -547,6 +810,13 @@ body.bar.perf .bcover{display:flex}
     if (s.artist   !== undefined) st.artist   = s.artist;
     if (s.artwork  !== undefined) st.artwork  = s.artwork;
     if (s.playing  !== undefined) st.playing  = s.playing;
+    if (s.shuffle  !== undefined) st.shuffle  = s.shuffle;
+    if (s.smart_shuffle !== undefined) st.smartShuffle = s.smart_shuffle;
+    if (s.repeat   !== undefined) st.repeat   = s.repeat;
+    if (s.fav      !== undefined) st.fav      = s.fav;
+    // Громкость не снапаем во время перетаскивания ползунка — иначе эхо-пуш
+    // отбрасывал бы ручку назад.
+    if (s.volume   !== undefined && !volDragging) st.volume = s.volume;
     // Снап позиции при заметном расхождении (seek/смена трека); мелкий дрейф
     // игнорируем — его докручивает локальный тикер, иначе бар «дёргается».
     if (s.position !== undefined && !scrubbing && Math.abs(s.position - st.pos) > 1.2) st.pos = s.position;
@@ -580,6 +850,8 @@ body.bar.perf .bcover{display:flex}
   function hide(){
     if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
     $('island').classList.remove('show');
+    var ev = $('expVol');
+    if (ev) ev.classList.remove('open');
     setInteractive(false);
     pinned = false;
     // Спрятанной плашке тикер не нужен — прогресс дорисуем при следующем показе.
@@ -590,6 +862,7 @@ body.bar.perf .bcover{display:flex}
     ti = window.__TAURI_INTERNALS__;
     // Отключаем браузерное контекстное меню вебвью (как в miniplayer/tray).
     window.addEventListener('contextmenu', function(e){ e.preventDefault(); }, false);
+    document.documentElement.lang = LOCALE;
     applyTheme();
     applyPrefs();
 
@@ -601,12 +874,81 @@ body.bar.perf .bcover{display:flex}
       st.playing = !st.playing;
       document.body.classList.toggle('paused', !st.playing);
       setPlayIcon();
+      var lab = $('expLabel');
+      if (lab) lab.textContent = st.playing ? tr('playing') : tr('paused');
       if (st.playing) startTicker(); else stopTicker();
       cmd('playpause');
     }
     $('btnPlay').addEventListener('click', togglePlay);
     var btnPlayBar = $('btnPlayBar');
     if (btnPlayBar) btnPlayBar.addEventListener('click', togglePlay);
+
+    // ── Расширенная карточка ─────────────────────────────
+    $('expShufIcon').innerHTML = IC.shuffle;
+    $('expRepIcon').innerHTML = IC.repeat;
+    $('expSmartBadge').innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24">' + IC.stars + '</svg>';
+    $('btnPrevExp').addEventListener('click', function(){ cmd('prev'); });
+    $('btnNextExp').addEventListener('click', function(){ cmd('next'); });
+    $('btnPlayExp').addEventListener('click', togglePlay);
+    // Сердце/шафл/повтор — оптимистичный отклик, состояние подтвердит пуш плеера.
+    $('btnFav').addEventListener('click', function(){
+      st.fav = !st.fav; setFavIcon(); cmd('fav');
+    });
+    $('btnShuffle').addEventListener('click', function(){
+      st.shuffle = !st.shuffle;
+      // Выключили перемешку — гасим и звёздочку; вернётся ли она при следующем
+      // включении, решит плеер (пуш состояния).
+      if (!st.shuffle) st.smartShuffle = false;
+      $('btnShuffle').classList.toggle('on', st.shuffle);
+      $('btnShuffle').classList.toggle('smart', st.shuffle && st.smartShuffle);
+      cmd('shuffle');
+    });
+    $('btnRepeat').addEventListener('click', function(){
+      st.repeat = (st.repeat + 1) % 3;
+      $('btnRepeat').classList.toggle('on', st.repeat > 0);
+      $('btnRepeat').classList.toggle('one', st.repeat === 2);
+      cmd('repeat');
+    });
+
+    // Громкость: клик по кнопке раскрывает вертикальный слайдер (как в плеере).
+    var expVol = $('expVol');
+    $('btnVol').addEventListener('click', function(e){
+      e.stopPropagation();
+      expVol.classList.toggle('open');
+    });
+    // Клик мимо поп-апа — закрыть.
+    document.addEventListener('pointerdown', function(e){
+      if (!expVol.classList.contains('open')) return;
+      if (expVol.contains(e.target)) return;
+      expVol.classList.remove('open');
+    });
+    (function(){
+      var track = $('volTrack');
+      function volFromY(e){
+        var r = track.getBoundingClientRect();
+        return (1 - (e.clientY - r.top) / r.height) * 100;
+      }
+      track.addEventListener('pointerdown', function(e){
+        volDragging = true;
+        try{ track.setPointerCapture(e.pointerId); }catch(_){}
+        setVolume(volFromY(e), true); e.preventDefault();
+      });
+      track.addEventListener('pointermove', function(e){
+        if (volDragging) setVolume(volFromY(e), true);
+      });
+      function endVol(e){
+        if (!volDragging) return;
+        volDragging = false;
+        try{ track.releasePointerCapture(e.pointerId); }catch(_){}
+      }
+      track.addEventListener('pointerup', endVol);
+      track.addEventListener('pointercancel', endVol);
+      // Колесо над кнопкой/слайдером — громкость ±2.
+      expVol.addEventListener('wheel', function(e){
+        e.preventDefault();
+        setVolume(st.volume + (e.deltaY < 0 ? 2 : -2), true);
+      }, { passive:false });
+    })();
 
     // Прогресс-бар: перемотка кликом/скрабом (если включена в настройках).
     // Логика как в мини-плеере: визуал ведём за курсором, аудио сикаем на ходу
@@ -657,15 +999,18 @@ body.bar.perf .bcover{display:flex}
     }
     attachSeek($('prog'), $('progFill'));
     attachSeek($('barCenter'), $('progFillBar'));
+    attachSeek($('expProg'), $('expFill'));
 
     // Клик по имени артиста → страница артиста в главном окне (как в мини-плеере).
-    $('artist').addEventListener('click', function(e){
+    function onArtistClick(e){
       var link = e.target.closest && e.target.closest('.tra-link');
       if (!link) return;
       var name = link.getAttribute('data-artist');
       if (!name) return;
       try{ ti.invoke('tray_open_artist', { artist: name }); }catch(err){}
-    });
+    }
+    $('artist').addEventListener('click', onArtistClick);
+    $('expArtist').addEventListener('click', onArtistClick);
 
     // Пересчёт бегущей строки при смене размера окна (меняется масштаб оверлея).
     window.addEventListener('resize', function(){ updateMarquee(true); });
@@ -715,6 +1060,10 @@ body.bar.perf .bcover{display:flex}
     })();
 
     listenEvent('bloom-mp-state', function(p){ update(p); });
+    // Громкость поменяли в другом окне — двигаем ползунок (кроме своего же drag'а).
+    listenEvent('bloom-mp-volume', function(v){
+      if (typeof v === 'number' && !volDragging) setVolume(v, false);
+    });
     listenEvent('bloom-ov-place', function(p){
       var on = !!(p && p.on);
       document.body.classList.toggle('placing', on);
@@ -746,6 +1095,12 @@ body.bar.perf .bcover{display:flex}
       } else if (e.key === 'bloom_settings'){
         applyTheme();
         applyComputed(); // цвет обложки приоритетнее темы, если посчитан
+      } else if (e.key === 'bloom_locale'){
+        // Окно не перезагружается — язык лейбла «Играет» подхватываем на лету.
+        readLocale();
+        document.documentElement.lang = LOCALE;
+        var lab = $('expLabel');
+        if (lab) lab.textContent = st.playing ? tr('playing') : tr('paused');
       }
     });
 

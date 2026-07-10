@@ -23,7 +23,8 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 
 const sanitize = (s: string): string => s.replace(/[\\/:*?"<>|]/g, '_')
 
-const trackFileBase = (t: Track): string =>
+/** Базовое имя файла трека: «Артист - Название» (без расширения, санитизировано). */
+export const trackFileBase = (t: Track): string =>
   sanitize((t.artist ? t.artist + ' - ' : '') + t.name)
 
 // ── мост состояния скачивания (единый слушатель события) ────────────────────
@@ -94,13 +95,18 @@ const resolveBridgeDownloadable = async (t: Track): Promise<Downloadable> => {
   return resolveScDownloadable(sc)
 }
 
+/** Является ли трек скачиваемым (трек сетевой площадки: SC/YM/YTM/Spotify). */
+export const isDownloadable = (t: Track): boolean => !!(t._sc || t._ym || t._ytm || t._sp)
+
 /** Резолв ссылки для трека площадки (SC/YM/YTM/Spotify). Бросает, если не качается. */
-const resolveDownloadable = (t: Track): Promise<Downloadable> => {
+export const resolveDownloadable = (t: Track): Promise<Downloadable> => {
   if (t._sc) return resolveScDownloadable(t)
   if (t._ym) return resolveYmDownloadable(t)
   if (t._ytm || t._sp) return resolveBridgeDownloadable(t)
   return Promise.reject(new Error(i18nT('toast.dlUnavailable')))
 }
+
+export type { Downloadable }
 
 /** Скачать текущий трек (площадки SC/YM → диалог сохранения; локальные/blob). */
 export const downloadTrack = async (t: Track | null): Promise<void> => {

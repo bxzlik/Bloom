@@ -1,7 +1,7 @@
 {
   "name": "bloom",
   "private": true,
-  "version": "1.6.1",
+  "version": "1.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -25,7 +25,6 @@
     "clsx": "^2.1.1",
     "hls.js": "^1.6.16",
     "idb": "^8.0.3",
-    "music-metadata": "^11.12.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",

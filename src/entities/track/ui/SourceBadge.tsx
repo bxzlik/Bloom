@@ -215,16 +215,24 @@ export const FolderBadge = ({ size = 22, cover }: { size?: number; cover?: boole
   </SourcePlaque>
 )
 
-/** Трек из отслеживаемой папки (folder_watcher) — `_localPath`/`_folder`. */
-const isFolderTrack = (t: Track): boolean =>
-  !t._sc && !t._ym && !t._ytm && !t._sp && Boolean(t._localPath || t._folder)
-/** Загруженный вручную в библиотеку трек — blob/IDB `url`, без папки/площадки. */
+const isPlatformTrack = (t: Track): boolean => Boolean(t._sc || t._ym || t._ytm || t._sp)
+
+/**
+ * Трек из отслеживаемой папки. Признак — именно `_folder`: `_localPath` есть и у
+ * одиночных файлов, добавленных плюсиком, а они не «папочные».
+ */
+const isFolderTrack = (t: Track): boolean => !isPlatformTrack(t) && Boolean(t._folder)
+
+/**
+ * Одиночный файл с диска: добавленный плюсиком/перетаскиванием (`_localPath`)
+ * либо легаси-трек, чьи байты лежат в IndexedDB (`url`).
+ */
 const isLocalTrack = (t: Track): boolean =>
-  !t._sc && !t._ym && !t._ytm && !t._sp && !isFolderTrack(t) && Boolean(t.url)
+  !isPlatformTrack(t) && !isFolderTrack(t) && Boolean(t._localPath || t.url)
 
 /**
  * Бейдж источника трека. Для треков площадок — лого SoundCloud / Яндекс / YTM /
- * Spotify; для треков из папки — иконка папки; для загруженных вручную — иконка
+ * Spotify; для треков из папки — иконка папки; для одиночных файлов — иконка
  * жёсткого диска. Цвет/фон — акцентные.
  */
 export const SourceBadge = ({ track, size = 22 }: { track: Track; size?: number }) => {

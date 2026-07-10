@@ -61,6 +61,7 @@ const pushNowPlaying = (opts?: { positionOverride?: number }): void => {
     fav: p.fav,
     canAddToLib: p.canAddToLib,
     shuffle: q.shuffle,
+    smartShuffle: q.smartShuffle,
     repeat: q.repeat,
     source: source ?? undefined,
   }).catch(() => {})

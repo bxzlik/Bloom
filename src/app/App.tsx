@@ -18,6 +18,7 @@ import { useLyricsBridge } from '@features/lyrics'
 import { useLastfmBridge } from '@features/lastfm'
 import { SearchPage, DetailView, useDetailStore } from '@features/search'
 import { bootstrapProviders, getProvider } from '@features/providers'
+import { bootstrapOffline } from '@features/offline'
 import { bootstrapSoundcloud } from '@features/soundcloud'
 import { bootstrapYandex } from '@features/yandex'
 import { bootstrapYtmusic } from '@features/ytmusic'
@@ -166,6 +167,8 @@ export const App = () => {
   // Регистрируем провайдеры: встроенный локальный + SoundCloud (поиск + стрим).
   useEffect(() => {
     bootstrapProviders()
+    // Раньше площадок: офлайн-копия трека должна выигрывать у сетевого стрима.
+    bootstrapOffline()
     bootstrapSoundcloud()
     bootstrapYandex()
     bootstrapYtmusic()

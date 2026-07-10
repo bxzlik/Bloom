@@ -2,7 +2,7 @@
 //! http://127.0.0.1:{port}/cover.jpg.
 //! Порты 49200–49299, хранение JPEG/PNG/WebP/GIF в памяти (без записи на диск).
 
-use std::sync::atomic::{AtomicU16, Ordering};
+use std::sync::atomic::{AtomicU16, AtomicU32, Ordering};
 use std::thread;
 use std::time::Duration;
 
@@ -28,6 +28,9 @@ static STATE: Lazy<RwLock<ImageState>> = Lazy::new(|| {
     })
 });
 static PORT: AtomicU16 = AtomicU16::new(0);
+/// Растёт на каждой смене картинки. Без этого SMTC и Discord показывали бы
+/// закешированную обложку: URL-то у сервера всегда один и тот же.
+static VERSION: AtomicU32 = AtomicU32::new(0);
 
 pub fn start() {
     for port in 49200u16..=49299 {
@@ -90,6 +93,39 @@ pub fn current_bytes() -> Option<Vec<u8>> {
     STATE.read().bytes.clone()
 }
 
+/// Адрес текущей обложки на локальном сервере, либо `None`, если её нет.
+/// Через него ходят потребители, которым нужен именно URL (SMTC-тумбнейл).
+pub fn public_url() -> Option<String> {
+    let port = PORT.load(Ordering::Relaxed);
+    if port == 0 || STATE.read().bytes.is_none() {
+        return None;
+    }
+    Some(format!(
+        "http://127.0.0.1:{port}/cover.jpg?v={}",
+        VERSION.load(Ordering::Relaxed)
+    ))
+}
+
+/// Готовые байты картинки — встроенная обложка локального файла.
+/// `source` служит ключом дедупликации (`now_playing` тикает раз в секунду).
+pub fn set_cover_from_bytes(bytes: Vec<u8>, source: &str) {
+    if STATE.read().source.as_deref() == Some(source) {
+        return;
+    }
+    if bytes.is_empty() {
+        clear_cover();
+        return;
+    }
+    let mime = detect_mime(&bytes);
+    let len = bytes.len();
+    let mut st = STATE.write();
+    st.mime = mime.into();
+    st.bytes = Some(bytes);
+    st.source = Some(source.to_string());
+    VERSION.fetch_add(1, Ordering::Relaxed);
+    tracing::info!("CoverServer: embedded cover set ({} KB, {mime})", len / 1024);
+}
+
 pub fn set_cover_from_data_url(data_url: &str) {
     if !data_url.starts_with("data:") {
         clear_cover();
@@ -127,6 +163,7 @@ pub fn set_cover_from_data_url(data_url: &str) {
             st.mime = mime.into();
             st.bytes = Some(bytes);
             st.source = Some(data_url.to_string());
+            VERSION.fetch_add(1, Ordering::Relaxed);
             tracing::info!("CoverServer: cover set ({} KB, {mime})", len / 1024);
         }
         Err(e) => {
@@ -204,6 +241,7 @@ pub fn fetch_cover_async(url: String) {
         let mut st = STATE.write();
         st.mime = mime.into();
         st.bytes = Some(bytes);
+        VERSION.fetch_add(1, Ordering::Relaxed);
         tracing::info!("CoverServer: fetched {} KB ({mime})", len / 1024);
     });
 }

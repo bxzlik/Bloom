@@ -255,7 +255,9 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 /* В плоском режиме play ведёт себя как обычная кнопка .cc (тот же размер/радиус/
    ховер) — отличается только более крупной иконкой. */
 body.play-flat .cc-play{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;color:var(--text2);transition:.15s}
-body.play-flat .cc-play:hover{background:var(--hover);color:var(--accent)}
+/* Ховер — как у `.cc` после перебивки в overrides-main.css: акцентный тинт
+   подложки, а не нейтральный --hover (иначе play выпадает из ряда кнопок). */
+body.play-flat .cc-play:hover{background:rgba(var(--accent-rgb),.1);color:var(--accent)}
 body.play-flat .cc-play svg{width:26px;height:26px}
 /* В BigPicture у .cc свой, более тусклый ховер-фон — повторяем его для play. */
 body.play-flat #bigPicOverlay .cc-play:hover{background:rgba(255,255,255,.06)}

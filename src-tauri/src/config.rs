@@ -79,6 +79,12 @@ pub struct AppSettings {
     pub change_tray_cover: bool,
     #[serde(default)]
     pub lyrics_disk_cache: bool,
+    /// Что делать с папкой, которую добавляют в библиотеку:
+    /// `"inPlace"` — держать ссылку на исходный путь (по умолчанию),
+    /// `"copy"` — скопировать аудиофайлы в профиль и следить уже за копией.
+    /// Действует только на новые папки; ранее добавленные не трогаются.
+    #[serde(default = "default_import_mode")]
+    pub local_import_mode: String,
     // Discord RPC extended settings
     #[serde(default = "default_true")]
     pub discord_show_progress: bool,
@@ -110,6 +116,24 @@ fn default_true() -> bool {
     true
 }
 
+pub const IMPORT_IN_PLACE: &str = "inPlace";
+pub const IMPORT_COPY: &str = "copy";
+
+fn default_import_mode() -> String {
+    IMPORT_IN_PLACE.to_string()
+}
+
+/// Корень для копий папок в режиме `"copy"`: `%LocalAppData%\com.bloom.app\music`.
+pub fn library_root() -> Result<PathBuf> {
+    Ok(local_appdata_dir()?.join("music"))
+}
+
+/// Корень для копий одиночных треков в режиме `"copy"`. Отдельно от `music`,
+/// чтобы копии файлов не выглядели как добавленная пользователем папка.
+pub fn tracks_root() -> Result<PathBuf> {
+    Ok(local_appdata_dir()?.join("tracks"))
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
@@ -119,6 +143,7 @@ impl Default for AppSettings {
             change_titlebar: true,
             change_tray_cover: false,
             lyrics_disk_cache: false,
+            local_import_mode: default_import_mode(),
             discord_show_progress: true,
             discord_custom_artwork: String::new(),
             discord_show_small_img: true,
@@ -218,9 +243,9 @@ pub fn clear_spotify() -> Result<()> {
     Ok(())
 }
 
-// ---------------- folders.json ----------------
-pub fn load_folders() -> Result<Vec<PathBuf>> {
-    let path = local_appdata_dir()?.join("folders.json");
+// ---------------- folders.json / files.json ----------------
+fn load_path_list(name: &str) -> Result<Vec<PathBuf>> {
+    let path = local_appdata_dir()?.join(name);
     if !path.exists() {
         return Ok(Vec::new());
     }
@@ -229,13 +254,61 @@ pub fn load_folders() -> Result<Vec<PathBuf>> {
     Ok(list.into_iter().map(PathBuf::from).collect())
 }
 
-pub fn save_folders(folders: &[PathBuf]) -> Result<()> {
+fn save_path_list(name: &str, items: &[PathBuf]) -> Result<()> {
     let dir = local_appdata_dir()?;
     std::fs::create_dir_all(&dir)?;
-    let list: Vec<String> = folders
-        .iter()
-        .map(|p| p.to_string_lossy().to_string())
-        .collect();
-    std::fs::write(dir.join("folders.json"), serde_json::to_string_pretty(&list)?)?;
+    let list: Vec<String> = items.iter().map(|p| p.to_string_lossy().to_string()).collect();
+    std::fs::write(dir.join(name), serde_json::to_string_pretty(&list)?)?;
+    Ok(())
+}
+
+pub fn load_folders() -> Result<Vec<PathBuf>> {
+    load_path_list("folders.json")
+}
+
+pub fn save_folders(folders: &[PathBuf]) -> Result<()> {
+    save_path_list("folders.json", folders)
+}
+
+/// Одиночные треки, добавленные плюсиком или перетаскиванием.
+/// Хранят путь к файлу — как папки, только поштучно.
+pub fn load_files() -> Result<Vec<PathBuf>> {
+    load_path_list("files.json")
+}
+
+pub fn save_files(files: &[PathBuf]) -> Result<()> {
+    save_path_list("files.json", files)
+}
+
+// ---------------- offline.json ----------------
+
+/// Корень для офлайн-копий треков площадок (SC/YM/YTM/Spotify), скачанных
+/// кнопкой «Скачать офлайн». Отдельно от `music`/`tracks`: это невидимый кеш,
+/// а не добавленная пользователем библиотека — в UI такие треки остаются
+/// треками своей площадки, просто играют из локальной копии.
+pub fn offline_root() -> Result<PathBuf> {
+    Ok(local_appdata_dir()?.join("offline"))
+}
+
+/// Запись офлайн-кеша: сквозной id трека → путь к скачанному файлу.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OfflineEntry {
+    pub id: String,
+    pub path: String,
+}
+
+pub fn load_offline() -> Result<Vec<OfflineEntry>> {
+    let path = local_appdata_dir()?.join("offline.json");
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let raw = std::fs::read_to_string(&path)?;
+    Ok(serde_json::from_str(&raw).unwrap_or_default())
+}
+
+pub fn save_offline(list: &[OfflineEntry]) -> Result<()> {
+    let dir = local_appdata_dir()?;
+    std::fs::create_dir_all(&dir)?;
+    std::fs::write(dir.join("offline.json"), serde_json::to_string_pretty(list)?)?;
     Ok(())
 }

@@ -4,6 +4,8 @@ import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { Ico } from '@shared/ui/icons/solar'
+import { useOfflineStore, toggleTrackOffline } from '@features/offline'
+import { isDownloadable } from '../lib/download'
 import { downloadTrack, downloadCover } from '../lib/download'
 
 /**
@@ -33,6 +35,9 @@ export const DlMenu = ({
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
   const hasCover = !!(coverOverride || track?.cover)
+  // Офлайн-статус текущего трека (для тоггла «Слушать офлайн / Убрать»).
+  const isOffline = useOfflineStore((s) => (track ? s.paths.has(track.id) : false))
+  const canOffline = !!track && isDownloadable(track)
 
   // Позиционирование по центру над анкором, flip вниз при нехватке места —
   // showDlMenu.
@@ -109,6 +114,23 @@ export const DlMenu = ({
         >
           {iconIm} {t('player.dl.cover')}
         </button>
+        {canOffline && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose()
+              toggleTrackOffline(track)
+            }}
+          >
+            <Ico
+              name={isOffline ? 'check' : 'save'}
+              width={15}
+              height={15}
+              style={isOffline ? { color: 'var(--accent)' } : undefined}
+            />{' '}
+            {isOffline ? t('player.dl.offlineRemove') : t('player.dl.offline')}
+          </button>
+        )}
       </div>
     </div>,
     document.body,

@@ -220,6 +220,7 @@ const SEARCH_RULES: Record<SectionId, { include: string[]; exclude?: string[] }>
   },
   library: {
     include: [
+      'settings.library.',
       'settings.interface.libView',
       'settings.interface.libDensity',
       'settings.interface.libCols',

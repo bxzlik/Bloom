@@ -36,3 +36,27 @@
 #tiDescPopup::-webkit-scrollbar{display:none}
 #tiDescPopup a{color:var(--accent);text-decoration:none}
 #tiDescPopup a:hover{text-decoration:underline}
+
+/* ===== PATH LINE (shared/ui/PathLine) =====
+   Строка пути к локальному файлу/папке. Два потребителя: ячейки инфо о треке
+   (`.ti-val`) и шапка папки в библиотеке (`.lib-hero-desc`) — оба задают
+   nowrap/ellipsis для себя, поэтому переносы настраиваются компаундами ниже.
+
+   `inline-flex` + `flex:0 1 auto` на тексте: контейнер сжимается по содержимому,
+   и кнопка копирования стоит вплотную за концом пути, а не улетает к правому
+   краю шапки. Ширину ограничивает сам слот (`max-width` у `.lib-hero-desc`) —
+   поэтому здесь его НЕ задаём: этот файл грузится после search-misc.css и
+   `max-width` отсюда перебил бы слотовый при равной специфичности. */
+.path-line{display:inline-flex;align-items:center;gap:6px;min-width:0;vertical-align:top}
+.path-line-txt{flex:0 1 auto;min-width:0;cursor:pointer;transition:color .15s}
+.path-line-txt:hover{color:var(--accent);text-decoration:underline}
+.path-line-copy{flex-shrink:0;background:none;border:none;padding:2px;margin:-2px;display:flex;align-items:center;color:var(--muted);cursor:pointer;border-radius:4px;opacity:0;transition:opacity .15s,color .15s,background .15s}
+.path-line:hover .path-line-copy{opacity:1}
+.path-line-copy:hover{color:var(--text);background:var(--hover)}
+.path-line-copy:focus-visible{opacity:1}
+/* Инфо о треке: путь длинный — переносим по символам, максимум две строки.
+   Иконку при этом прижимаем к первой строке, а не центрируем по двум. */
+.ti-val.path-line{white-space:normal;overflow:visible;align-items:flex-start}
+.ti-val.path-line .path-line-txt{word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
+/* Шапка папки: одна строка с ellipsis (max-width задаёт .lib-hero-desc). */
+.lib-hero-desc.path-line .path-line-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

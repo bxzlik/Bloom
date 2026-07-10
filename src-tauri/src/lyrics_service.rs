@@ -365,24 +365,33 @@ pub fn dispatch_request(
 }
 
 // ---------------- 1. Локальный тег ----------------
-fn try_read_local_tag(path: &str) -> LyricsResult {
-    let tagged = match lofty::read_from_path(path) {
-        Ok(t) => t,
-        Err(e) => {
-            tracing::warn!("LyricsService.try_read_local_tag: {e}");
-            return LyricsResult::not_found();
-        }
-    };
 
-    let tag = match tagged.primary_tag().or_else(|| tagged.first_tag()) {
-        Some(t) => t,
-        None => return LyricsResult::not_found(),
+/// USLT через резервный ID3-ридер: файлы с обрезанным тегом lofty не открывает
+/// вовсе, и встроенный текст у них терялся (см. `folder_watcher::read_tagged`).
+fn lyrics_via_id3(path: &std::path::Path) -> String {
+    let Some(tag) = crate::folder_watcher::read_id3_fallback(path) else {
+        return String::new();
     };
-
-    let lyrics = tag
-        .get_string(&ItemKey::Lyrics)
-        .map(|s| s.to_string())
+    let text = tag
+        .lyrics()
+        .map(|l| l.text.clone())
+        .find(|t| !t.trim().is_empty())
         .unwrap_or_default();
+    text
+}
+
+fn try_read_local_tag(path: &str) -> LyricsResult {
+    let p = std::path::Path::new(path);
+
+    let lyrics = match crate::folder_watcher::read_tagged(p) {
+        Some(tagged) => tagged
+            .primary_tag()
+            .or_else(|| tagged.first_tag())
+            .and_then(|tag| tag.get_string(&ItemKey::Lyrics))
+            .map(str::to_string)
+            .unwrap_or_default(),
+        None => lyrics_via_id3(p),
+    };
 
     if lyrics.trim().is_empty() {
         return LyricsResult::not_found();

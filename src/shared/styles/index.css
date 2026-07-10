@@ -25,6 +25,7 @@
 
 /* отдельные блоки */
 @import './onboarding-search.css';
+@import './onboarding.css';
 @import './merge-playlists.css';
 @import './quick-wheel.css';
 

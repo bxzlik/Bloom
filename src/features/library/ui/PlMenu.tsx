@@ -14,10 +14,12 @@ import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { toast } from '@shared/ui'
 import { PlCover } from './PlCover'
-import { playFromSource, playShuffledFromSource, downloadPlaylistTracks, type PlaySource } from '@features/player'
+import { playFromSource, playShuffledFromSource, downloadPlaylistTracks, isDownloadable, type PlaySource } from '@features/player'
+import { downloadPlaylistOffline, removePlaylistOffline, useOfflineStore } from '@features/offline'
 import { Ico } from '@shared/ui/icons/solar'
-import { exportPlaylistFile, folderScan, folderRemove } from '../api'
-import { buildExportBundle, refreshPlaylistTracks, deleteUploadedTrack } from '../lib'
+import { PlaylistOfflineTag } from './PlaylistOfflineTag'
+import { exportPlaylistFile, folderScan, folderRemove, folderIsCopy } from '../api'
+import { buildExportBundle, refreshPlaylistTracks, deleteUploadedTrack, applyFolderScan } from '../lib'
 import {
   usePlaylistStore,
   useHistoryStore,
@@ -87,6 +89,8 @@ export const PlMenu = ({
   // Режим «Найти дубли» активен для этого плейлиста → пункт становится «Закрыть».
   const dupsActive = useDupsStore((s) => s.active)
   const dupsPlId = useDupsStore((s) => s.plId)
+  // Офлайн-карта — для тоггла «Слушать офлайн / Убрать из офлайна» плейлиста.
+  const offlinePaths = useOfflineStore((s) => s.paths)
 
   const menuRef = useRef<HTMLDivElement>(null)
   // Позиция: либо anchor-based (top + right), либо cursor-based (top + left).
@@ -101,13 +105,58 @@ export const PlMenu = ({
   const [cursorMeasured, setCursorMeasured] = useState(false)
   // Sub-страница сортировки.
   const [sortPage, setSortPage] = useState(false)
-  // Сбрасываем sub-страницу при закрытии меню.
+  // Боковой флайаут «Скачать» (экспорт файлов / офлайн) — как у контекст-меню трека.
+  const [dlFlyout, setDlFlyout] = useState(false)
+  const [dlFlyoutPos, setDlFlyoutPos] = useState<{ left: number; top: number } | null>(null)
+  const dlItemRef = useRef<HTMLDivElement>(null)
+  const dlFlyoutRef = useRef<HTMLDivElement>(null)
+  const dlHideTimer = useRef<number | null>(null)
+  // Сбрасываем sub-страницу / флайаут при закрытии меню.
   useEffect(() => {
-    if (!open) setSortPage(false)
+    if (!open) {
+      setSortPage(false)
+      setDlFlyout(false)
+    }
   }, [open])
 
-  // Плавная open-анимация (вместо ctxIn).
+  const cancelDlHide = () => {
+    if (dlHideTimer.current !== null) {
+      window.clearTimeout(dlHideTimer.current)
+      dlHideTimer.current = null
+    }
+  }
+  const openDlFlyout = () => {
+    cancelDlHide()
+    setDlFlyout(true)
+  }
+  const scheduleDlHide = () => {
+    cancelDlHide()
+    dlHideTimer.current = window.setTimeout(() => setDlFlyout(false), 180)
+  }
+
+  // Позиционирование флайаута: справа от пункта-якоря, при нехватке места — слева.
+  useLayoutEffect(() => {
+    if (!dlFlyout || !dlItemRef.current || !dlFlyoutRef.current) {
+      setDlFlyoutPos(null)
+      return
+    }
+    const ar = dlItemRef.current.getBoundingClientRect()
+    const fw = dlFlyoutRef.current.offsetWidth
+    const fh = dlFlyoutRef.current.offsetHeight
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    let left = ar.right + 4
+    let top = ar.top - 4
+    if (left + fw > vw - 8) left = ar.left - fw - 4
+    if (top + fh > vh - 8) top = vh - fh - 8
+    if (top < 8) top = 8
+    setDlFlyoutPos({ left, top })
+  }, [dlFlyout])
+
+  // Плавная open-анимация (вместо ctxIn) — и для меню, и для флайаута «Скачать»
+  // (иначе ctxIn с overshoot+сдвигом дёргает иконки, как было замечено).
   usePopupOpenAnimation(menuRef, pos)
+  usePopupOpenAnimation(dlFlyoutRef, dlFlyoutPos)
 
   useLayoutEffect(() => {
     if (!open) {
@@ -168,6 +217,7 @@ export const PlMenu = ({
       const t = e.target as Node
       if (anchorRef?.current?.contains(t)) return
       if (menuRef.current?.contains(t)) return
+      if (dlFlyoutRef.current?.contains(t)) return
       onClose()
     }
     window.addEventListener('mousedown', onDown)
@@ -191,17 +241,44 @@ export const PlMenu = ({
     }
   }
 
+  // Собрать Track[] плейлиста из библиотеки (для скачивания/офлайна).
+  const collectPlTracks = (): Track[] => {
+    if (!playlist) return []
+    const byId = new Map(useLibStore.getState().tracks.map((tr) => [tr.id, tr]))
+    return playlist.trs.map((id) => byId.get(id)).filter((tr): tr is Track => !!tr)
+  }
+
   // Скачать треки плейлиста (только площадок SC/YM) в выбранную папку.
   const downloadPl = () => {
     if (!playlist) return
     onClose()
-    const all = useLibStore.getState().tracks
-    const byId = new Map(all.map((tr) => [tr.id, tr]))
-    const tracks = playlist.trs
-      .map((id) => byId.get(id))
-      .filter((tr): tr is Track => !!tr)
-    void downloadPlaylistTracks(playlist.name, tracks)
+    void downloadPlaylistTracks(playlist.name, collectPlTracks())
   }
+
+  // Скачать треки плейлиста в офлайн-кеш (локальное прослушивание).
+  const downloadPlOffline = () => {
+    if (!playlist) return
+    onClose()
+    void downloadPlaylistOffline(playlist.name, collectPlTracks())
+  }
+
+  // Убрать все офлайн-копии треков плейлиста.
+  const removePlOffline = () => {
+    if (!playlist) return
+    onClose()
+    void removePlaylistOffline(collectPlTracks())
+  }
+
+  // Офлайн-статус плейлиста: `any` — хоть один трек в кеше (→ доступно «Убрать
+  // из офлайна»), `all` — все скачиваемые уже в кеше (→ «Слушать офлайн» скрыто).
+  // В частично скачанном плейлисте показываем ОБА пункта.
+  const plOfflineState = (() => {
+    if (!playlist) return { any: false, all: false, cached: 0, total: 0 }
+    const dlable = collectPlTracks().filter(isDownloadable)
+    if (!dlable.length) return { any: false, all: false, cached: 0, total: 0 }
+    const cached = dlable.filter((tr) => offlinePaths.has(tr.id)).length
+    return { any: cached > 0, all: cached === dlable.length, cached, total: dlable.length }
+  })()
 
   const removePl = () => {
     if (!playlist) return
@@ -227,8 +304,8 @@ export const PlMenu = ({
   }
 
   // Удалить плейлист ВМЕСТЕ с треками из библиотеки. Физически удаляем только
-  // «свои» записи (загруженные файлы + сохранённые треки площадок SC/YM);
-  // папочные / локальные не трогаем — ими управляет папка (вернутся при
+  // «свои» записи (одиночные локальные файлы + сохранённые треки площадок
+  // SC/YM); папочные не трогаем — ими управляет папка (вернутся при
   // пересканировании). deleteUploadedTrack сам чистит ссылки из плейлистов,
   // после чего удаляем сам плейлист.
   const removePlWithTracks = () => {
@@ -244,7 +321,7 @@ export const PlMenu = ({
         const byId = new Map(useLibStore.getState().tracks.map((tr) => [tr.id, tr]))
         for (const id of pl.trs) {
           const tr = byId.get(id)
-          if (tr && !tr._localPath && !tr._folder) void deleteUploadedTrack(id)
+          if (tr && !tr._folder) void deleteUploadedTrack(id)
         }
         deletePl(pl.id)
         onReset?.()
@@ -255,13 +332,20 @@ export const PlMenu = ({
   const rescanFolder = () => {
     if (!folderPath) return
     onClose()
-    folderScan(folderPath).catch((e) => console.warn('folderScan failed', e))
+    folderScan(folderPath)
+      .then(applyFolderScan)
+      .catch((e) => console.warn('folderScan failed', e))
   }
 
-  const removeFolder = () => {
+  const removeFolder = async () => {
     if (!folderPath) return
     onClose()
-    if (!confirm(t('lib.plmenu.confirmUnlinkFolder', { name: heroName }))) return
+    // Копию из профиля («В Bloom») отвязка стирает с диска — предупреждаем иначе.
+    const isCopy = await folderIsCopy(folderPath).catch(() => false)
+    const question = isCopy
+      ? t('lib.plmenu.confirmDeleteCopiedFolder', { name: heroName })
+      : t('lib.plmenu.confirmUnlinkFolder', { name: heroName })
+    if (!confirm(question)) return
     folderRemove(folderPath).catch((e) => console.warn('folderRemove failed', e))
     onReset?.()
   }
@@ -324,7 +408,7 @@ export const PlMenu = ({
       return <PlCover trs={playlist.trs} seed={playlist.id} />
     }
     if (mode === 'fav') {
-      return <Ico name="heart" variant="bold" width={14} height={14} style={{ color: '#fff' }} />
+      return <Ico name="heart" variant="bold" width={14} height={14} />
     }
     if (mode === 'history') {
       return <Ico name="clock" width={14} height={14} />
@@ -452,10 +536,25 @@ export const PlMenu = ({
     }
     groups.push(tools)
 
-    // 5. Экспорт / скачивание.
+    // 5. Экспорт (файл .bloomplaylist) + «Скачать» → боковой флайаут (скачать файлы
+    //    / слушать офлайн / убрать из офлайна) — свёрнуто ради экономии места.
     groups.push([
       <Item key="export" icon={<ExportIcon />} label={t('lib.plmenu.exportPlaylist')} onClick={exportPl} />,
-      <Item key="download" icon={<DownloadIcon />} label={t('lib.plmenu.downloadPlaylist')} onClick={downloadPl} />,
+      <div
+        key="download"
+        ref={dlItemRef}
+        className="ci"
+        onMouseEnter={openDlFlyout}
+        onMouseLeave={scheduleDlHide}
+        onClick={(e) => {
+          e.stopPropagation()
+          openDlFlyout()
+        }}
+      >
+        <span className="ci-icon"><DownloadIcon /></span>
+        <span style={{ flex: 1 }}>{t('lib.plmenu.download')}</span>
+        <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
+      </div>,
     ])
   } else if (mode === 'folder' && folderPath) {
     const content: ReactNode[] = [
@@ -536,6 +635,7 @@ export const PlMenu = ({
     })
 
   return createPortal(
+    <>
     <div
       ref={menuRef}
       id="plMenu"
@@ -582,7 +682,10 @@ export const PlMenu = ({
         </div>
         <div style={{ minWidth: 0 }}>
           <div id="plMenuHeaderName">{heroName}</div>
-          <div id="plMenuHeaderSub">{heroSub}</div>
+          <div id="plMenuHeaderSub">
+            {heroSub}
+            {mode === 'pl' && playlist && <PlaylistOfflineTag trackIds={playlist.trs} />}
+          </div>
         </div>
       </div>
       {sortPage ? (
@@ -590,7 +693,41 @@ export const PlMenu = ({
       ) : (
         items.length > 0 && <div id="plMenuPage1">{items}</div>
       )}
-    </div>,
+      </div>
+
+      {/* Боковой флайаут «Скачать» — справа от пункта (как #cxPlFlyout у трека). */}
+      {dlFlyout && (
+        <div
+          ref={dlFlyoutRef}
+          id="cxPlFlyout"
+          className="open"
+          onMouseEnter={cancelDlHide}
+          onMouseLeave={scheduleDlHide}
+          style={{
+            left: dlFlyoutPos?.left ?? -9999,
+            top: dlFlyoutPos?.top ?? -9999,
+            visibility: dlFlyoutPos ? 'visible' : 'hidden',
+          }}
+        >
+          <div className="ci" onClick={downloadPl}>
+            <span className="ci-icon"><DownloadIcon /></span>
+            <span style={{ flex: 1 }}>{t('lib.plmenu.downloadPlaylist')}</span>
+          </div>
+          {!plOfflineState.all && (
+            <div className="ci" onClick={downloadPlOffline}>
+              <span className="ci-icon"><DiskIcon /></span>
+              <span style={{ flex: 1 }}>{t('lib.plmenu.downloadOfflinePlaylist')}</span>
+            </div>
+          )}
+          {plOfflineState.any && (
+            <div className="ci" onClick={removePlOffline}>
+              <span className="ci-icon"><OfflineOffIcon /></span>
+              <span style={{ flex: 1 }}>{t('lib.plmenu.removeOfflinePlaylist')}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </>,
     document.body,
   )
 }
@@ -690,6 +827,8 @@ const RepeatIcon = () => <Ico name="repeat" width={11} height={11} />
 const EditIcon = () => <Ico name="edit" width={11} height={11} />
 const ExportIcon = () => <Ico name="export" width={11} height={11} />
 const DownloadIcon = () => <Ico name="download" width={11} height={11} />
+const DiskIcon = () => <Ico name="save" width={11} height={11} />
+const OfflineOffIcon = () => <Ico name="trash" width={11} height={11} />
 const TrashIcon = () => <Ico name="trash" width={11} height={11} />
 const MergeIcon = () => <Ico name="merge" width={11} height={11} />
 const DupsIcon = () => <Ico name="copy" width={11} height={11} />

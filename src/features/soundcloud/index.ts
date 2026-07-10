@@ -4,6 +4,7 @@ export * from './ui/ScClientIdCard'
 export {
   setManualClientId,
   getManualClientId,
+  checkConnection,
   searchArtists,
   apiFetch,
 } from './api/scClient'

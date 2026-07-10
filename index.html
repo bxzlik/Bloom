@@ -7,8 +7,68 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bloom</title>
+    <!-- Сплэш инлайном в <head>: рендерится мгновенно, ДО загрузки JS-бандла
+         (иначе экран, ради которого он и нужен, ждал бы сам себя). main.tsx после
+         монтирования React плавно гасит его и удаляет из DOM. -->
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        /* Следует за фоном приложения (тема/кастомный фон). Фолбэк #0a0a0a —
+           дефолт --bg на время до загрузки CSS-бандла, где переменная задаётся. */
+        background: var(--bg, #0a0a0a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.4s ease;
+      }
+      #splash.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash img {
+        width: 96px;
+        height: 96px;
+        opacity: 0.9;
+        animation: splash-breathe 2.2s ease-in-out infinite;
+      }
+      @keyframes splash-breathe {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.55;
+        }
+        50% {
+          transform: scale(1.09);
+          opacity: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash img {
+          animation: none;
+          opacity: 0.9;
+        }
+      }
+    </style>
+    <!-- Применяем сохранённый цвет фона (--bg) ДО загрузки бандла, чтобы сплэш
+         (background:var(--bg)) сразу совпадал с темой, а не мигал дефолтом. Бандл
+         позже переустановит то же значение. Источник — localStorage['bloom_theme']. -->
+    <script>
+      try {
+        var bg = JSON.parse(localStorage.getItem('bloom_theme') || '{}').bg
+        if (typeof bg === 'string' && bg) document.documentElement.style.setProperty('--bg', bg)
+      } catch (e) {}
+      // Гасим браузерное контекстное меню сразу: одноимённый обработчик в main.tsx
+      // вешается лишь после загрузки бандла, поэтому во время сплэша правый клик
+      // иначе открывал бы нативное меню WebView2.
+      window.addEventListener('contextmenu', function (e) {
+        e.preventDefault()
+      })
+    </script>
   </head>
   <body>
+    <div id="splash"><img src="/logo.png" alt="" /></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

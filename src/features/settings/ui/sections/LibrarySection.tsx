@@ -1,19 +1,22 @@
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
+import { useSettingsStore } from '../../model/settingsStore'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Раздел «Библиотека» (`#ssec-library`). Вынесен из «Интерфейса»
  * (категория «БИБЛИОТЕКА»): вид библиотеки (список/сетка), плотность треклиста,
- * видимость колонок «Альбом» / «Добавлено».
+ * видимость колонок «Альбом» / «Добавлено», режим хранения локальных файлов.
  *
- * i18n-ключи остались в namespace `settings.interface.lib*` (см. dict.ts) — их
- * не переносили, чтобы не плодить дубликаты; поиск по вкладкам сопоставляет их
- * этой секции через SEARCH_RULES (SettingsNav).
+ * i18n-ключи вида библиотеки остались в namespace `settings.interface.lib*`
+ * (см. dict.ts) — их не переносили, чтобы не плодить дубликаты; поиск по
+ * вкладкам сопоставляет их этой секции через SEARCH_RULES (SettingsNav).
  */
 export const LibrarySection = () => {
   const t = useT()
   const p = useUiPrefsStore()
+  const importMode = useSettingsStore((s) => s.local_import_mode)
+  const setImportMode = useSettingsStore((s) => s.setLocalImportMode)
 
   return (
     <div className="s-section active" id="ssec-library">
@@ -26,6 +29,29 @@ export const LibrarySection = () => {
           <Ico name="refresh" width={10} height={10} />{' '}
           {t('common.reset')}
         </button>
+      </div>
+
+      <div className="sc sc-keep">
+        <div className="sc-title">{t('settings.library.import.title')}</div>
+        <div className="sc-desc">{t('settings.library.import.desc')}</div>
+        <div className="s-opt-row">
+          <TipBtn
+            active={importMode === 'inPlace'}
+            tip={t('settings.library.import.inPlaceTip')}
+            onClick={() => void setImportMode('inPlace')}
+          >
+            <Ico name="folder" width={20} height={20} />
+            {t('settings.library.import.inPlace')}
+          </TipBtn>
+          <TipBtn
+            active={importMode === 'copy'}
+            tip={t('settings.library.import.copyTip')}
+            onClick={() => void setImportMode('copy')}
+          >
+            <Ico name="download" width={20} height={20} />
+            {t('settings.library.import.copy')}
+          </TipBtn>
+        </div>
       </div>
 
       <div className="sc sc-keep">
@@ -82,6 +108,31 @@ const OptBtn = ({ active, onClick, children }: { active: boolean; onClick: () =>
   <button className={`s-opt-btn ${active ? 'bta' : 'btg'}`} onClick={onClick}>
     {children}
   </button>
+)
+
+/**
+ * OptBtn с всплывающей подсказкой над кнопкой. Своя, а не браузерная: нативные
+ * title-тултипы в интерфейсе не используем.
+ */
+const TipBtn = ({
+  active,
+  tip,
+  onClick,
+  children,
+}: {
+  active: boolean
+  tip: string
+  onClick: () => void
+  children: React.ReactNode
+}) => (
+  <div className="s-opt-tipwrap">
+    <OptBtn active={active} onClick={onClick}>
+      {children}
+    </OptBtn>
+    <span className="s-opt-tip" role="tooltip">
+      {tip}
+    </span>
+  </div>
 )
 
 const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (

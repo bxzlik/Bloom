@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useDetailStore } from '@features/search'
+import { useOnboardingStore } from '@features/onboarding/model/onboardingStore'
 import { useUiPrefsStore, UpdateButton } from '@features/settings'
 import { useNavStore, type PageId } from './navigationStore'
 import { NotifBell } from '@shared/ui'
@@ -23,6 +24,8 @@ export const TitleBar = () => {
   // На странице поиска при открытом детальном виде метка = тип сущности
   // ( _updateTitlebarLabel('search','artist'|'album'|'playlist')).
   const detailKind = useDetailStore((s) => s.stack[s.stack.length - 1]?.kind ?? null)
+  // Онбординг перекрывает всё окно — метка «Главная» под ним читается как баг.
+  const onboarding = useOnboardingStore((s) => !s.done)
   const titlebarLabel = useUiPrefsStore((s) => s.titlebarLabel)
   const tbLogo = useUiPrefsStore((s) => s.tbLogo)
   const tbVersion = useUiPrefsStore((s) => s.tbVersion)
@@ -66,7 +69,7 @@ export const TitleBar = () => {
         Bloom
       </span>
       {tbVersion && <span className="win-ver">v{__APP_VERSION__}</span>}
-      <div id="winTitleCenter" style={titlebarLabel ? undefined : { display: 'none' }}>
+      <div id="winTitleCenter" style={titlebarLabel && !onboarding ? undefined : { display: 'none' }}>
         <Icon />
         <span id="wtcLabel" className="wtc-label">
           {label}

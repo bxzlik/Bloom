@@ -1,0 +1,522 @@
+/* ── Онбординг первого запуска ──
+   Оверлей #onboarding → карточка .ob-shell → .ob-stage со слайдами.
+
+   Слайды абсолютно спозиционированы друг над другом: во время перехода
+   уходящий (.ob-leave) и приходящий (.ob-enter) живут одновременно ~340мс,
+   потом уходящий размонтируется (см. Onboarding.tsx). Направление задаётся
+   атрибутом data-dir (1 = вперёд, -1 = назад), от него зависит, в какую
+   сторону едут оба слайда.
+
+   Высота .ob-shell фиксирована — иначе карточка прыгала бы на каждом переходе,
+   пока в стадии два слайда разной высоты. Контент слайда при нехватке места
+   скроллится внутри себя.
+
+   Все цвета — на CSS-переменных темы: слайд «Тема» применяет её live
+   (applyTheme → :root), и карточка перекрашивается сама, с transition. */
+
+@keyframes obOverlayIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes obOut { from { opacity: 1 } to { opacity: 0 } }
+@keyframes obShellIn { from { opacity: 0; transform: translateY(18px) scale(.97) } to { opacity: 1; transform: none } }
+@keyframes obSlideInR { from { opacity: 0; transform: translateX(36px) } to { opacity: 1; transform: none } }
+@keyframes obSlideOutL { from { opacity: 1; transform: none } to { opacity: 0; transform: translateX(-36px) } }
+@keyframes obSlideInL { from { opacity: 0; transform: translateX(-36px) } to { opacity: 1; transform: none } }
+@keyframes obSlideOutR { from { opacity: 1; transform: none } to { opacity: 0; transform: translateX(36px) } }
+@keyframes obRise { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+@keyframes obOrbFloat { 0%, 100% { transform: none } 50% { transform: translate(20px, -26px) scale(1.09) } }
+@keyframes obPulse { 0% { transform: scale(1); opacity: .5 } 100% { transform: scale(1.5); opacity: 0 } }
+@keyframes obPop { from { opacity: 0; transform: scale(.86) } to { opacity: 1; transform: none } }
+
+/* ── Оверлей + фоновые «орбы» ── */
+#onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg, #0f0f0f);
+  transition: background .35s;
+  animation: obOverlayIn .35s ease both;
+}
+#onboarding.ob-exiting { animation: obOut .42s ease forwards }
+
+.ob-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: .16;
+  pointer-events: none;
+  will-change: transform;
+}
+.ob-orb-1 { width: 420px; height: 420px; top: -130px; left: -110px; background: var(--accent, #888); animation: obOrbFloat 15s ease-in-out infinite }
+.ob-orb-2 { width: 360px; height: 360px; bottom: -150px; right: -100px; background: var(--accent2, #666); animation: obOrbFloat 19s ease-in-out infinite reverse }
+
+/* ── Карточка-оболочка ── */
+.ob-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 460px;
+  height: min(600px, 92vh);
+  margin: 0 16px;
+  background: var(--card, #1a1a1a);
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .45);
+  overflow: hidden;
+  transition: background .35s, border-color .35s;
+  animation: obShellIn .5s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.ob-progress { flex-shrink: 0; height: 3px; background: var(--hover, #222) }
+.ob-progress-fill {
+  height: 100%;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent, #fff);
+  transition: width .42s cubic-bezier(.22, 1, .36, 1), background .35s;
+}
+
+/* ── Стадия + слайды ── */
+.ob-stage { position: relative; flex: 1; min-height: 0 }
+
+.ob-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.ob-slide::-webkit-scrollbar { display: none }
+.ob-slide.ob-enter[data-dir="1"] { animation: obSlideInR .34s cubic-bezier(.22, 1, .36, 1) both }
+.ob-slide.ob-enter[data-dir="-1"] { animation: obSlideInL .34s cubic-bezier(.22, 1, .36, 1) both }
+.ob-slide.ob-leave { pointer-events: none }
+.ob-slide.ob-leave[data-dir="1"] { animation: obSlideOutL .3s cubic-bezier(.4, 0, 1, 1) both }
+.ob-slide.ob-leave[data-dir="-1"] { animation: obSlideOutR .3s cubic-bezier(.4, 0, 1, 1) both }
+
+/* margin-block:auto (а не justify-content:center на .ob-slide) центрирует контент
+   по вертикали и при этом НЕ обрезает его сверху, когда слайд переполнен и скроллится. */
+.ob-body { display: flex; flex-direction: column; margin-block: auto; padding: 28px 26px }
+.ob-slide-center .ob-body { align-items: center; text-align: center }
+/* Профиль: баннер во всю ширину карточки, поэтому паддинги — на внутреннем блоке. */
+.ob-body-flush { padding: 0 0 26px }
+.ob-profile-mid { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 26px }
+
+/* Каскад: прямые дети .ob-body проявляются по очереди поверх заезда слайда. */
+.ob-body > * { animation: obRise .44s cubic-bezier(.22, 1, .36, 1) both }
+.ob-body > *:nth-child(1) { animation-delay: .05s }
+.ob-body > *:nth-child(2) { animation-delay: .10s }
+.ob-body > *:nth-child(3) { animation-delay: .15s }
+.ob-body > *:nth-child(4) { animation-delay: .20s }
+.ob-body > *:nth-child(5) { animation-delay: .25s }
+.ob-body > *:nth-child(6) { animation-delay: .30s }
+/* Каскад на уходящем слайде НЕ гасим: дети не перемонтируются (ключ слайда тот же),
+   значит obRise не переигрывается, а `both` держит их видимыми. Сбросить animation
+   здесь — значит дёрнуть недоигравший каскад в конечное состояние при быстром клике. */
+
+.ob-title { font-size: 21px; font-weight: 800; letter-spacing: -.4px; color: var(--text, #fff); margin-bottom: 7px }
+.ob-sub { font-size: 12.5px; line-height: 1.55; color: var(--text2, #999); margin-bottom: 22px }
+.ob-slide-center .ob-sub { max-width: 300px; margin-bottom: 0 }
+
+/* ── Подвал: назад / точки / далее ── */
+.ob-foot { display: flex; align-items: center; gap: 12px; flex-shrink: 0; padding: 12px 24px 20px }
+
+.ob-dots { display: flex; align-items: center; gap: 6px; margin: 0 auto }
+.ob-dot { width: 6px; height: 6px; border-radius: 3px; background: var(--border, #2a2a2a); transition: width .3s, background .3s }
+.ob-dot.active { width: 18px; background: var(--accent, #fff) }
+
+.ob-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 24px;
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .15s, transform .15s, background .2s, color .2s;
+}
+.ob-btn:active { transform: scale(.97) }
+.ob-btn:disabled { opacity: .55; cursor: default; transform: none }
+.ob-btn-primary { background: var(--accent, #fff); color: var(--accent-text, #000) }
+.ob-btn-primary:hover { filter: brightness(1.12) }
+.ob-btn-block { width: 100% }
+.ob-btn-ghost { background: transparent; color: var(--text2, #999); padding: 11px 14px }
+.ob-btn-ghost:hover { background: var(--hover, #222); color: var(--text, #fff) }
+.ob-btn-outline {
+  background: transparent;
+  border: 1px dashed var(--border, #2a2a2a);
+  color: var(--text, #fff);
+  width: 100%;
+  padding: 13px 20px;
+}
+.ob-btn-outline:hover { border-color: var(--accent, #888); background: var(--hover, #222) }
+
+/* ── Слайд «Привет» ── */
+.ob-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 24px;
+}
+.ob-mark-img { width: 78px; height: 78px; object-fit: contain }
+/* Две расходящиеся волны со сдвигом фазы — «дыхание» логотипа. */
+.ob-mark::before,
+.ob-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--accent, #fff);
+  border-radius: 50%;
+  animation: obPulse 2.8s ease-out infinite;
+}
+.ob-mark::after { animation-delay: 1.4s }
+
+.ob-wordmark { font-size: 38px; font-weight: 900; letter-spacing: -1.6px; color: var(--text, #fff); margin-bottom: 6px }
+.ob-tagline { font-size: 13px; color: var(--muted, #555); margin-bottom: 18px }
+
+/* ── Слайд «Профиль» ── */
+/* Баннер full-bleed: без обёртки-карточки, растянут на всю ширину оболочки. */
+.ob-cover {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--hover, #222), var(--bg2, #141414));
+  transition: background .35s;
+}
+.ob-cover-img { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity .4s }
+.ob-cover.has-cover .ob-cover-img { opacity: 1 }
+.ob-cover-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--muted, #555);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color .2s, opacity .2s;
+}
+.ob-cover:not(.has-cover):hover .ob-cover-empty { color: var(--text2, #999) }
+.ob-cover.has-cover .ob-cover-empty { opacity: 0; pointer-events: none }
+.ob-cover-actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, .5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.ob-cover.has-cover:hover .ob-cover-actions { opacity: 1; pointer-events: auto }
+.ob-cover-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .15);
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.ob-cover-btn:hover { background: rgba(255, 255, 255, .28) }
+.ob-cover-btn.danger { background: rgba(224, 48, 48, .25); border-color: rgba(224, 48, 48, .5); color: #ff7070 }
+.ob-cover-btn.danger:hover { background: rgba(224, 48, 48, .45) }
+
+.ob-ava-wrap { position: relative; z-index: 2; margin: -36px 0 16px; flex-shrink: 0 }
+.ob-ava {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg2, #141414);
+  box-shadow: 0 0 0 4px var(--card, #1a1a1a), 0 0 0 5px var(--border, #2a2a2a);
+  cursor: pointer;
+  transition: box-shadow .35s, background .35s;
+}
+.ob-ava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
+.ob-ava-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.ob-ava-wrap:hover .ob-ava-overlay { opacity: 1 }
+.ob-ava-remove {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 2px solid var(--card, #1a1a1a);
+  border-radius: 50%;
+  background: #e03030;
+  color: #fff;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.ob-ava-remove:hover { filter: brightness(1.15) }
+
+.ob-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 10px;
+  background: var(--hover, #222);
+  color: var(--text, #fff);
+  font-family: inherit;
+  font-size: 13.5px;
+  text-align: center;
+  outline: none;
+  transition: border-color .2s, background .35s, color .35s;
+}
+.ob-input::placeholder { color: var(--muted, #555) }
+.ob-input:focus { border-color: var(--accent, #888) }
+
+/* ── Слайд «Тема» ── */
+.ob-theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px }
+/* Карточка — это само превью плюс подпись ПОД ним, на фоне оболочки. Никакой
+   рамки-контейнера: она читалась как «коробка внутри коробки». */
+.ob-theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ob-tc-preview {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 64px;
+  padding: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .22);
+  transition: box-shadow .18s, transform .18s;
+  will-change: transform;
+}
+.ob-theme-card:hover .ob-tc-preview { transform: translateY(-2px) }
+.ob-theme-card.active .ob-tc-preview { box-shadow: 0 0 0 2px var(--ob-accent, #888) }
+.ob-tc-bar { flex: 1; height: 100%; border-radius: 3px }
+.ob-tc-bar:nth-child(2) { height: 65% }
+.ob-tc-bar:nth-child(3) { height: 40% }
+.ob-tc-dot { position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 50% }
+.ob-tc-name { font-size: 11px; font-weight: 600; text-align: center; color: var(--text2, #999); transition: color .18s }
+.ob-theme-card.active .ob-tc-name { color: var(--text, #fff); font-weight: 700 }
+
+/* Строка с тумблером (авто-акцент). Сам переключатель — общие классы .tele-sw. */
+.ob-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 12px;
+  background: var(--bg2, #141414);
+  transition: background .35s, border-color .35s;
+}
+.ob-switch-text { flex: 1; min-width: 0 }
+.ob-switch-title { color: var(--text, #fff); font-size: 12.5px; font-weight: 600 }
+.ob-switch-sub { margin-top: 2px; color: var(--text2, #999); font-size: 11px; line-height: 1.45 }
+
+.ob-hint { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 18px; color: var(--muted, #555); font-size: 11.5px }
+
+/* Заголовок группы («Локальные файлы» / «Площадки»). */
+.ob-group-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: var(--muted, #555);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .9px;
+}
+.ob-group-label-gap { margin-top: 20px }
+
+/* ── Слайд «Библиотека» ── */
+.ob-folders { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px }
+.ob-folder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 10px;
+  background: var(--bg2, #141414);
+  animation: obPop .3s cubic-bezier(.22, 1, .36, 1) both;
+}
+.ob-folder-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text, #fff);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ob-folder-check { flex-shrink: 0; color: var(--accent, #888) }
+
+/* ── Аккордеон площадок ── */
+.ob-plats { display: flex; flex-direction: column; gap: 7px }
+.ob-plat {
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 10px;
+  background: var(--bg2, #141414);
+  overflow: hidden;
+  transition: border-color .18s, background .35s;
+}
+/* Раскрытая строка подсвечивается фирменным цветом площадки, а не акцентом темы. */
+.ob-plat.open { border-color: color-mix(in srgb, var(--ob-tint, var(--accent, #888)), transparent 55%) }
+
+.ob-plat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 13px;
+  border: none;
+  background: none;
+  color: var(--text, #fff);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+}
+.ob-plat-head:disabled { cursor: default }
+.ob-plat-head:not(:disabled):hover { background: var(--hover, #222) }
+/* Лого площадок — single-path на `currentColor`, поэтому фирменный цвет задаётся
+   здесь, а не в самом SVG (в бейджах трека те же компоненты наследуют акцент). */
+.ob-plat-logo { display: flex; flex-shrink: 0; width: 18px; justify-content: center; color: var(--ob-tint, var(--text2, #999)) }
+.ob-plat-name { flex: 1; min-width: 0; text-align: left; font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.ob-plat-status { flex-shrink: 0; color: var(--muted, #555); font-size: 11px; font-weight: 600 }
+.ob-plat-status.ok { color: #1ED760 }
+.ob-plat-chev { flex-shrink: 0; color: var(--muted, #555); transition: transform .22s }
+.ob-plat.open .ob-plat-chev { transform: rotate(180deg) }
+
+/* Раскрытие через grid-rows 0fr→1fr — тот же приём, что у фильтров поиска. */
+.ob-plat-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s cubic-bezier(.4, 0, .2, 1) }
+.ob-plat.open .ob-plat-body { grid-template-rows: 1fr }
+.ob-plat-body-in { min-height: 0; overflow: hidden }
+.ob-plat-form { display: flex; flex-direction: column; gap: 8px; padding: 4px 13px 13px }
+
+.ob-plat-inp {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 8px;
+  background: var(--hover, #222);
+  color: var(--text, #fff);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color .2s;
+}
+.ob-plat-inp::placeholder { color: var(--muted, #555) }
+.ob-plat-inp:focus { border-color: var(--accent, #888) }
+
+.ob-plat-actions { display: flex; gap: 7px }
+.ob-plat-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 8px;
+  background: var(--hover, #222);
+  color: var(--text, #fff);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .15s, background .15s;
+}
+.ob-plat-btn:hover:not(:disabled) { filter: brightness(1.18) }
+.ob-plat-btn:disabled { opacity: .55; cursor: default }
+.ob-plat-btn.primary { background: var(--accent, #fff); border-color: transparent; color: var(--accent-text, #000) }
+
+.ob-plat-note { color: var(--text2, #999); font-size: 11.5px; line-height: 1.55 }
+.ob-plat-code {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: var(--hover, #222);
+  color: var(--text2, #999);
+  font-size: 11px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+.ob-plat-code b { color: var(--text, #fff); font-size: 17px; letter-spacing: 2px }
+
+.ob-plat-status-line { font-size: 11px; line-height: 1.5 }
+.ob-plat-status-line.ok { color: #4caf50 }
+.ob-plat-status-line.err { color: #ef5350 }
+.ob-plat-status-line.info { color: var(--muted, #555) }
+
+/* ── Слайд «Финал» ── */
+.ob-final-ava {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg2, #141414);
+  box-shadow: 0 0 0 4px var(--border, #2a2a2a);
+  animation: obPop .55s cubic-bezier(.22, 1, .36, 1) both;
+}
+.ob-final-ava img { width: 100%; height: 100%; object-fit: cover }
+.ob-final-title { font-size: 25px; font-weight: 800; letter-spacing: -.5px; color: var(--text, #fff); margin-bottom: 10px }
+.ob-final-sub { display: flex; align-items: center; gap: 6px; color: var(--text2, #999); font-size: 13px }
+
+@media (prefers-reduced-motion: reduce) {
+  #onboarding,
+  #onboarding.ob-exiting,
+  .ob-shell,
+  .ob-slide.ob-enter[data-dir="1"],
+  .ob-slide.ob-enter[data-dir="-1"],
+  .ob-slide.ob-leave[data-dir="1"],
+  .ob-slide.ob-leave[data-dir="-1"],
+  .ob-body > *,
+  .ob-folder,
+  .ob-final-ava { animation: none }
+  .ob-orb, .ob-mark::before, .ob-mark::after { animation: none; opacity: 0 }
+}

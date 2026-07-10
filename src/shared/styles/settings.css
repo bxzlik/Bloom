@@ -380,6 +380,13 @@
 .s-opt-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
 .s-opt-btn.active,.s-opt-btn.bta{background:rgba(255,255,255,.12)!important;color:var(--text)!important;border:none!important}
 .s-opt-btn.btg{background:rgba(255,255,255,.04)!important;color:var(--text2)!important;border:none!important}
+
+/* Подсказка над s-opt-btn (см. TipBtn в LibrarySection). Обёртка держит flex:1
+   вместо самой кнопки, иначе ряд перестаёт делиться поровну. */
+.s-opt-tipwrap{position:relative;flex:1;display:flex;min-width:0}
+.s-opt-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);z-index:5;width:max-content;max-width:260px;padding:8px 10px;border-radius:calc(var(--radius)*0.5);background:var(--card-solid,#1c1c1e);box-shadow:0 6px 22px rgba(0,0,0,.45);color:var(--text);font-size:11px;font-weight:500;line-height:1.45;text-align:left;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
+.s-opt-tipwrap:hover .s-opt-tip,.s-opt-tipwrap:focus-within .s-opt-tip{opacity:1;transform:translateX(-50%) translateY(0)}
+
 .s-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 2px}
 .s-lang-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:26px 12px;border-radius:calc(var(--radius)*0.75);background:rgba(255,255,255,.035);border:1.5px solid transparent;color:var(--text2);cursor:pointer;font-family:var(--font);transition:.15s;user-select:none}
 .s-lang-card:hover{background:rgba(255,255,255,.07);color:var(--text)}

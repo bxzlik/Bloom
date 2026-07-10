@@ -19,6 +19,8 @@ pub struct MpState {
     pub duration: f64,
     pub volume: i32,
     pub shuffle: bool,
+    /// «Умная» перемешка (подвид shuffle) — бейдж-звёздочка на кнопке.
+    pub smart_shuffle: bool,
     pub repeat: i32,
     pub fav: bool,
     pub can_add_to_lib: bool,
@@ -49,6 +51,8 @@ use crate::config::{self, AppSettings};
 use crate::cover_server;
 #[cfg(windows)]
 use crate::discord_rpc;
+use crate::events;
+use crate::file_protocol;
 use crate::folder_watcher;
 use crate::lyrics_service;
 #[cfg(windows)]
@@ -273,6 +277,7 @@ pub fn now_playing(
     fav: Option<bool>,
     can_add_to_lib: Option<bool>,
     shuffle: Option<bool>,
+    smart_shuffle: Option<bool>,
     repeat: Option<i32>,
     source: Option<String>,
 ) -> Result<(), String> {
@@ -316,22 +321,42 @@ pub fn now_playing(
         let _ = win.emit_to("main", "bloom-set-title", &display_title);
     }
 
-    // Обложка для Discord RPC.
-    if let Some(ref aw) = artwork {
-        if aw.starts_with("data:") {
-            cover_server::set_cover_from_data_url(aw);
-        } else if aw.starts_with("http") {
-            cover_server::fetch_cover_async(aw.clone());
-        } else if aw.is_empty() {
-            cover_server::clear_cover();
+    // Обложка для Discord RPC / трея / SMTC.
+    //
+    // У локального трека cover указывает на bloom-file — этот хост живёт только
+    // внутри WebView2, наружу по нему не сходить. Читаем встроенную картинку с
+    // диска и подсовываем потребителям адрес cover_server'а.
+    let mut artwork_url = artwork.clone();
+    match artwork.as_deref() {
+        Some(aw) if !aw.is_empty() => {
+            if let Some(path) = file_protocol::local_cover_path(aw) {
+                let embedded = if folder_watcher::is_path_allowed(&path) {
+                    folder_watcher::read_cover(&path)
+                } else {
+                    None
+                };
+                match embedded {
+                    Some((bytes, _mime)) => {
+                        cover_server::set_cover_from_bytes(bytes, aw);
+                        artwork_url = cover_server::public_url();
+                    }
+                    None => {
+                        cover_server::clear_cover();
+                        artwork_url = None;
+                    }
+                }
+            } else if aw.starts_with("data:") {
+                cover_server::set_cover_from_data_url(aw);
+            } else if aw.starts_with("http") {
+                cover_server::fetch_cover_async(aw.to_string());
+            }
         }
-    } else {
-        cover_server::clear_cover();
+        _ => cover_server::clear_cover(),
     }
 
     #[cfg(windows)]
     {
-        smtc::update_display(&title, &artist, playing, artwork.as_deref());
+        smtc::update_display(&title, &artist, playing, artwork_url.as_deref());
         tray::update_now_playing(&title, &artist, playing);
         thumb_toolbar::set_playing(playing);
         // Обложка в трее: если data:-URL → уже в cover_server. Иначе ждём cover_data.
@@ -398,6 +423,7 @@ pub fn now_playing(
         if let Some(f) = fav { s.fav = f; }
         if let Some(b) = can_add_to_lib { s.can_add_to_lib = b; }
         if let Some(sh) = shuffle { s.shuffle = sh; }
+        if let Some(ss) = smart_shuffle { s.smart_shuffle = ss; }
         if let Some(rp) = repeat { s.repeat = rp; }
         s.source = source;
     }
@@ -439,13 +465,14 @@ pub fn now_playing(
 pub async fn overlay_set_config(
     app: AppHandle,
     enabled: bool,
+    mode: String,
     anchor: String,
     size: f64,
     custom_x: f64,
     custom_y: f64,
     preview: bool,
 ) -> Result<(), String> {
-    crate::overlay::set_config(&app, enabled, anchor, size, custom_x, custom_y, preview);
+    crate::overlay::set_config(&app, enabled, mode, anchor, size, custom_x, custom_y, preview);
     Ok(())
 }
 
@@ -547,7 +574,7 @@ pub fn miniplayer_cmd(window: tauri::Window, app: AppHandle, cmd: String, value:
                 let vi = v as i32;
                 mp_state().lock().volume = vi;
                 let src = window.label().to_string();
-                for label in ["main", "miniplayer", "tray-popup"] {
+                for label in ["main", "miniplayer", "tray-popup", "overlay"] {
                     if label == src { continue; }
                     if let Some(w) = app.get_webview_window(label) {
                         let _ = w.emit_to(label, "bloom-mp-volume", vi);
@@ -623,11 +650,29 @@ pub fn tray_open_artist(app: AppHandle, artist: String) -> Result<(), String> {
     Ok(())
 }
 
-// ============= Заглушки (будут реализованы) =============
+// ============= Локальные папки =============
+
+/// Асинхронная: в режиме `copy` копирование папки может занять минуты, и
+/// синхронная команда подвесила бы IPC-поток.
+#[tauri::command]
+pub async fn folder_add(app: AppHandle, path: String) -> Result<(), String> {
+    let copy = config::load_app_settings()
+        .map(|s| s.local_import_mode == config::IMPORT_COPY)
+        .unwrap_or(false);
+    tokio::task::spawn_blocking(move || folder_watcher::add_folder(&app, PathBuf::from(path), copy))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
 
 #[tauri::command]
-pub fn folder_add(app: AppHandle, path: String) -> Result<(), String> {
-    folder_watcher::add_folder(&app, PathBuf::from(path)).map_err(|e| e.to_string())
+pub fn set_local_import_mode(mode: String) -> Result<(), String> {
+    if mode != config::IMPORT_IN_PLACE && mode != config::IMPORT_COPY {
+        return Err(format!("unknown import mode: {mode}"));
+    }
+    let mut s = config::load_app_settings().unwrap_or_default();
+    s.local_import_mode = mode;
+    config::save_app_settings(&s).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -635,15 +680,82 @@ pub fn folder_remove(app: AppHandle, path: String) -> Result<(), String> {
     folder_watcher::remove_folder(&app, Path::new(&path)).map_err(|e| e.to_string())
 }
 
+/// Скан одной папки. Треки возвращаются ОТВЕТОМ, а не событием: событие,
+/// отправленное раньше, чем фронт успел подписаться, теряется без следа.
 #[tauri::command]
-pub fn folder_scan(app: AppHandle, path: String) -> Result<(), String> {
-    folder_watcher::scan_folder(&app, PathBuf::from(path));
-    Ok(())
+pub async fn folder_scan(path: String) -> Result<folder_watcher::ScanResult, String> {
+    tokio::task::spawn_blocking(move || folder_watcher::scan_one(&PathBuf::from(path)))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Первичная загрузка локальной библиотеки: скан всех папок из folders.json.
+#[tauri::command]
+pub async fn folder_scan_all() -> Result<folder_watcher::ScanResult, String> {
+    tokio::task::spawn_blocking(folder_watcher::scan_all)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub fn folder_get() -> Result<Vec<String>, String> {
     folder_watcher::get_folders().map_err(|e| e.to_string())
+}
+
+/// Это копия внутри профиля (режим «В Bloom»)? Фронт по этому флагу решает,
+/// каким текстом подтверждать удаление: копию он сотрёт с диска.
+#[tauri::command]
+pub fn folder_is_copy(path: String) -> bool {
+    folder_watcher::is_copied_folder(Path::new(&path))
+}
+
+/// Открыть папку в системном файловом менеджере (клик по пути в шапке папки).
+///
+/// Не `tauri_plugin_opener`-команда `open_path`: та проверяет scope плагина, а
+/// `opener:allow-open-path` даёт её «without any pre-configured scope» → любой
+/// путь запрещён. Дать scope `**` значило бы разрешить вебвью открывать
+/// дефолтным приложением ЛЮБОЙ файл, включая `.exe`. Поэтому зовём свободную
+/// функцию плагина (она scope не смотрит) и сами сужаем до директорий.
+///
+/// Файлы так не открываем: у трека клик делает `revealItemInDir` — она scope
+/// не проверяет вовсе и лишь выделяет файл в родительской папке.
+#[tauri::command]
+pub fn open_folder(path: String) -> Result<(), String> {
+    let p = Path::new(&path);
+    if !p.is_dir() {
+        return Err(format!("not a directory: {path}"));
+    }
+    tauri_plugin_opener::open_path(p, None::<&str>).map_err(|e| e.to_string())
+}
+
+// ============= Одиночные треки =============
+
+/// Добавить треки по путям (плюсик / перетаскивание). Режим хранения берётся из
+/// `local_import_mode`. Возвращает только реально добавленные — дубликаты и
+/// не-аудио отсеиваются молча.
+#[tauri::command]
+pub async fn file_add(paths: Vec<String>) -> Result<Vec<events::LocalTrackInfo>, String> {
+    let copy = config::load_app_settings()
+        .map(|s| s.local_import_mode == config::IMPORT_COPY)
+        .unwrap_or(false);
+    let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+    tokio::task::spawn_blocking(move || folder_watcher::add_files(paths, copy))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn file_remove(path: String) -> Result<(), String> {
+    folder_watcher::remove_file(Path::new(&path)).map_err(|e| e.to_string())
+}
+
+/// Первичная загрузка одиночных треков — ответом, а не событием (см. folder_scan_all).
+#[tauri::command]
+pub async fn file_scan_all() -> Result<Vec<events::LocalTrackInfo>, String> {
+    tokio::task::spawn_blocking(folder_watcher::scan_files)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -705,6 +817,83 @@ pub async fn download_to_dir(
     std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
     embed_tags_async(&path, cover_url.as_deref(), title.as_deref(), artist.as_deref(), referer.as_deref()).await;
     Ok(())
+}
+
+// ============= Офлайн-кеш (скачать для локального прослушивания) =============
+
+/// Скачать трек площадки в невидимый офлайн-кеш профиля и запомнить связь
+/// `id → путь` в offline.json. В отличие от `sc_download`/`download_to_dir`
+/// (экспорт файла на диск через диалог) — файл ложится в `offline/` и трек
+/// потом играется из этой копии (см. resolvePlayableUrl + offline source-resolver).
+/// Возвращает путь к файлу. Идемпотентна: если копия уже есть — не качает заново.
+#[tauri::command]
+pub async fn offline_download(
+    id: String,
+    url: String,
+    filename: String,
+    cover_url: Option<String>,
+    title: Option<String>,
+    artist: Option<String>,
+    referer: Option<String>,
+) -> Result<String, String> {
+    let mut list = config::load_offline().unwrap_or_default();
+    if let Some(e) = list.iter().find(|e| e.id == id) {
+        if Path::new(&e.path).is_file() {
+            return Ok(e.path.clone());
+        }
+    }
+    let bytes = fetch_audio(&url, referer.as_deref()).await?;
+    let ext = audio_ext(&bytes);
+    let dir = config::offline_root().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let safe = sanitize_filename(&filename);
+    let path = unique_path(&dir, &safe, ext);
+    std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
+    embed_tags_async(&path, cover_url.as_deref(), title.as_deref(), artist.as_deref(), referer.as_deref()).await;
+    let path_str = path.to_string_lossy().to_string();
+    // Заменяем прежнюю (возможно битую) запись того же id.
+    list.retain(|e| e.id != id);
+    list.push(config::OfflineEntry { id, path: path_str.clone() });
+    config::save_offline(&list).map_err(|e| e.to_string())?;
+    // Чтобы `bloom-file` сразу пустил свежую копию к воспроизведению.
+    folder_watcher::refresh_allowlist();
+    Ok(path_str)
+}
+
+/// Убрать трек из офлайн-кеша: стереть файл и запись offline.json.
+#[tauri::command]
+pub fn offline_remove(id: String) -> Result<(), String> {
+    let mut list = config::load_offline().unwrap_or_default();
+    let mut removed: Option<String> = None;
+    list.retain(|e| {
+        if e.id == id {
+            removed = Some(e.path.clone());
+            false
+        } else {
+            true
+        }
+    });
+    if removed.is_none() {
+        return Ok(());
+    }
+    config::save_offline(&list).map_err(|e| e.to_string())?;
+    if let Some(p) = removed {
+        match std::fs::remove_file(&p) {
+            Ok(()) => tracing::info!("offline: deleted {p}"),
+            Err(e) => tracing::warn!("offline: delete {p} failed: {e}"),
+        }
+    }
+    folder_watcher::refresh_allowlist();
+    Ok(())
+}
+
+/// Первичная загрузка офлайн-кеша: только записи, чей файл ещё на месте.
+/// Пропавшие из offline.json НЕ вычищаем — как и одиночные треки, путь на
+/// отключённом диске это не «удалённый трек».
+#[tauri::command]
+pub fn offline_scan_all() -> Result<Vec<config::OfflineEntry>, String> {
+    let list = config::load_offline().unwrap_or_default();
+    Ok(list.into_iter().filter(|e| Path::new(&e.path).is_file()).collect())
 }
 
 /// MIME по magic-bytes для `data:`-URL (по умолчанию JPEG).
@@ -1105,6 +1294,21 @@ async fn download_cover(app: AppHandle, data_url: Option<String>, url: Option<St
         match base64::engine::general_purpose::STANDARD.decode(&du[comma + 1..]) {
             Ok(b) => b,
             Err(e) => { emit_download_state(&app, "error", Some(&e.to_string())); return; }
+        }
+    } else if let Some(path) = url.as_deref().and_then(file_protocol::local_cover_path) {
+        // Обложка локального трека лежит в тегах файла, а не в сети: по
+        // bloom-file.localhost наружу не сходить.
+        let embedded = if folder_watcher::is_path_allowed(&path) {
+            folder_watcher::read_cover(&path)
+        } else {
+            None
+        };
+        match embedded {
+            Some((bytes, _mime)) => bytes,
+            None => {
+                emit_download_state(&app, "error", Some("У трека нет встроенной обложки"));
+                return;
+            }
         }
     } else if let Some(ref src_url) = url {
         let client = match reqwest::Client::builder()

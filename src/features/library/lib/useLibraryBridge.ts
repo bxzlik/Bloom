@@ -1,34 +1,34 @@
 import { useEffect } from 'react'
 import { useTauriEvent } from '@shared/hooks'
-import type { LocalTrackInfo } from '@shared/tauri'
+import type { FolderScanResult } from '@shared/tauri'
 import type { Track } from '@entities/track'
 import { useLibStore } from '../model'
-import { folderGet } from '../api'
+import { folderGet, folderScanAll, fileScanAll } from '../api'
 import { idbLoadAll } from './idb'
 import { blobMgr } from './handleFiles'
+import { fromLocal } from './fromLocal'
 import { cascadePurgeTrackRefs } from './cascadePurge'
 
 /**
- * Конвертирует LocalTrackInfo (Rust folder_watcher) в унифицированный Track.
+ * Применяет результат скана папок: upsert треков + чистка тех, чьи файлы
+ * исчезли. Общий путь для первичной загрузки и ручного «Обновить».
  */
-const fromLocal = (t: LocalTrackInfo): Track => ({
-  id: t.id,
-  name: t.name,
-  artist: t.artist,
-  album: t.album,
-  year: t.year,
-  publisher: t.publisher,
-  genres: t.genres,
-  _folder: t._folder,
-  _localPath: t._localPath,
-  dur: '—',
-  cover: null,
-})
+export const applyFolderScan = (res: FolderScanResult): void => {
+  const st = useLibStore.getState()
+  const tracks = res.tracks.map(fromLocal)
+  const gone = st.pruneFolderTracks(
+    res.folders,
+    tracks.map((tr) => tr.id),
+  )
+  if (tracks.length) st.addTracks(tracks, { prepend: true })
+  if (gone.length) cascadePurgeTrackRefs(gone)
+}
 
 /**
  * Заливает данные библиотеки:
- * - При монтировании: IDB-rehydrate загруженных пользователем треков + список папок из Rust.
- * - Подписки на 4 события folder_watcher (см. shared/tauri/events.ts).
+ * - При монтировании: IDB-rehydrate загруженных пользователем треков, список
+ *   папок и скан их содержимого.
+ * - Подписки на события folder_watcher (см. shared/tauri/events.ts).
  *
  * Подключается ОДИН раз в LibPage.
  */
@@ -58,7 +58,8 @@ export const useLibraryBridge = () => {
     }
   }, [addTracks])
 
-  // Список папок из Rust (folder_watcher).
+  // Список папок из Rust (folder_watcher). Включая недоступные — их видно в
+  // сайдбаре, даже если диск сейчас отключён.
   useEffect(() => {
     let cancelled = false
     folderGet()
@@ -70,6 +71,33 @@ export const useLibraryBridge = () => {
       cancelled = true
     }
   }, [setFolders])
+
+  // Треки папок. Тянем ОТВЕТОМ команды, а не событием: Rust сканировал из
+  // setup() и его emit улетал раньше, чем React успевал подписаться.
+  useEffect(() => {
+    let cancelled = false
+    folderScanAll()
+      .then((res) => {
+        if (!cancelled) applyFolderScan(res)
+      })
+      .catch((e) => console.warn('folderScanAll failed', e))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Одиночные треки (плюсик / перетаскивание) — тем же путём, из files.json.
+  useEffect(() => {
+    let cancelled = false
+    fileScanAll()
+      .then((list) => {
+        if (!cancelled && list.length) addTracks(list.map(fromLocal), { prepend: true })
+      })
+      .catch((e) => console.warn('fileScanAll failed', e))
+    return () => {
+      cancelled = true
+    }
+  }, [addTracks])
 
   useTauriEvent('bloom-folder-list', (paths) => setFolders(paths))
   useTauriEvent('bloom-folder-tracks', (batch) => addTracks(batch.map(fromLocal), { prepend: true }))

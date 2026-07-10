@@ -6,4 +6,11 @@ export * from './sourceResolvers'
 export * from './resume'
 export * from './useMainPlayerBridge'
 export { useAudioEffects, applyAudioDevice } from './audioEffects'
-export { downloadTrack, downloadCover, downloadPlaylistTracks } from './download'
+export {
+  downloadTrack,
+  downloadCover,
+  downloadPlaylistTracks,
+  resolveDownloadable,
+  isDownloadable,
+  trackFileBase,
+} from './download'

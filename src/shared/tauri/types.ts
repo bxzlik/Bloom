@@ -4,6 +4,13 @@
 
 // ---------------- AppSettings (commands.get_app_settings) ----------------
 // snake_case, как приходит из serde Rust (Tauri передаёт без преобразования).
+/**
+ * Что делать с папкой, которую добавляют в библиотеку.
+ * `inPlace` — держать ссылку на исходный путь; `copy` — скопировать аудио
+ * в профиль и следить за копией. Влияет только на новые папки.
+ */
+export type LocalImportMode = 'inPlace' | 'copy'
+
 export interface AppSettings {
   minimize_to_tray: boolean
   autoplay: boolean
@@ -11,6 +18,7 @@ export interface AppSettings {
   change_titlebar: boolean
   change_tray_cover: boolean
   lyrics_disk_cache: boolean
+  local_import_mode: LocalImportMode
   discord_show_progress: boolean
   discord_custom_artwork: string
   discord_show_small_img: boolean
@@ -95,6 +103,8 @@ export interface MpState {
   duration: number
   volume: number
   shuffle: boolean
+  /** «Умная» перемешка — бейдж-звёздочка на кнопке шафла. */
+  smart_shuffle: boolean
   repeat: number
   fav: boolean
   can_add_to_lib: boolean
@@ -131,13 +141,28 @@ export interface LyricsResult {
 export interface LocalTrackInfo {
   id: string
   name: string
+  /** Пусто, если ни в тегах, ни в имени файла артиста нет. */
   artist: string
   album: string
   year: string
   publisher: string
   genres: string[]
+  /** «m:ss» либо «h:mm:ss»; пусто, если длительность прочитать не удалось. */
+  dur: string
+  /** Есть ли встроенная обложка — байты тянет `<img>` по `localCoverUrl`. */
+  hasCover: boolean
   _localPath: string
   _folder: string
+}
+
+/** Ответ команд `folder_scan` / `folder_scan_all`. */
+export interface FolderScanResult {
+  /**
+   * Папки, которые реально удалось прочитать. Недоступные (отключённый диск,
+   * вынутая флешка) сюда не попадают — их треки нельзя считать удалёнными.
+   */
+  folders: string[]
+  tracks: LocalTrackInfo[]
 }
 
 // ---------------- DownloadState (event bloom-download-state) ----------------

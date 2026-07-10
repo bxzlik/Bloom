@@ -46,8 +46,8 @@ export interface MpProgress {
   bg: boolean
   circle: boolean
 }
-/** Режим оверлея-«острова»: выключен / плашка / компактная плашка (раскрытие по наведению) / полоса (круг-play + стеклянная полоса с названием + круг-визуализатор). */
-export type OverlayMode = 'off' | 'island' | 'compact' | 'bar'
+/** Режим оверлея-«острова»: выключен / плашка / компактная плашка (раскрытие по наведению) / полоса (круг-play + стеклянная полоса с названием + круг-визуализатор) / расширенная карточка (обложка + прогресс + полный набор кнопок). */
+export type OverlayMode = 'off' | 'island' | 'compact' | 'bar' | 'expanded'
 /** Якорь оверлея на экране: верт. (t/b) + гориз. (l/c/r); `custom` — свободная
  *  позиция, заданная вручную перетаскиванием (доли overlayX/overlayY). */
 export type OverlayPos = 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br' | 'custom'
@@ -158,6 +158,7 @@ const DEFAULTS: PlayerViewPrefs = {
 }
 
 const OVERLAY_POSITIONS: OverlayPos[] = ['tl', 'tc', 'tr', 'bl', 'bc', 'br']
+const OVERLAY_MODES: OverlayMode[] = ['island', 'compact', 'bar', 'expanded']
 const clampNum = (v: unknown, min: number, max: number, def: number): number => {
   const n = typeof v === 'number' && Number.isFinite(v) ? v : def
   return Math.max(min, Math.min(max, n))
@@ -240,10 +241,7 @@ const load = (): PlayerViewPrefs => {
         fav: !!(p.mpHide && p.mpHide.fav),
         add: !!(p.mpHide && p.mpHide.add),
       },
-      overlayMode:
-        p.overlayMode === 'island' || p.overlayMode === 'compact' || p.overlayMode === 'bar'
-          ? p.overlayMode
-          : 'off',
+      overlayMode: OVERLAY_MODES.includes(p.overlayMode) ? p.overlayMode : 'off',
       overlayPos: OVERLAY_POSITIONS.includes(p.overlayPos) || p.overlayPos === 'custom' ? p.overlayPos : 'tr',
       overlayX: clampNum(p.overlayX, 0, 1, 0.98),
       overlayY: clampNum(p.overlayY, 0, 1, 0.02),
