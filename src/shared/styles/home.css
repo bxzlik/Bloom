@@ -190,7 +190,7 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .hqc-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .home-quick-card-hist .hqc-icon{color:rgba(255,255,255,0.9)}
 .home-quick-card-fav .hqc-icon{color:rgba(255,255,255,0.9)}
-.hqc-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.hqc-info{display:flex;flex-direction:column;gap:1px;min-width:0}
 .hqc-title{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
 .hqc-sub{font-size:10.5px;color:rgba(255,255,255,0.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 

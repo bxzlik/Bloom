@@ -1,4 +1,17 @@
 {
+  "1.7.1": {
+    "title": { "ru": "Что нового в 1.7.1", "en": "What's new in 1.7.1" },
+    "date": "2026-07-11",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
   "1.7.0": {
     "title": { "ru": "Что нового в 1.7.0", "en": "What's new in 1.7.0" },
     "date": "2026-07-11",

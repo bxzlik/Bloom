@@ -43,7 +43,11 @@ const fetchBlock = async (mode: Mode, pid: string): Promise<BlockData | null> =>
     const r: NewReleases = await p.getNewReleases()
     data = r.kind === 'albums' ? { kind: 'albums', albums: r.albums } : { kind: 'tracks', tracks: r.tracks }
   }
-  cache.set(key, { data, at: Date.now() })
+  // Кешируем только непустой результат: пустой ответ у Яндекса почти всегда —
+  // транзиентный сбой landing3 (а не «данных нет»). Иначе один пустой ответ
+  // застревал бы на весь TTL и блок висел бы «Не удалось загрузить».
+  const empty = data.kind === 'tracks' ? data.tracks.length === 0 : data.albums.length === 0
+  if (!empty) cache.set(key, { data, at: Date.now() })
   return data
 }
 

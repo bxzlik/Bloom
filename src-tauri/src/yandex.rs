@@ -337,8 +337,11 @@ pub enum YmResolved {
 /// GET к API с авторизацией + единая обработка 401/JSON.
 async fn api_get(token: &str, url: &str, query: &[(&str, &str)]) -> Result<serde_json::Value> {
     // Лёгкий ретрай на транзиентные сбои (сеть/5xx/429), как у SC apiFetch:
-    // 2 попытки, бэкофф 600мс. 401 — фатально (не ретраим). Без этого
+    // 3 попытки, бэкофф 600мс. 401 — фатально (не ретраим). Без этого
     // одиночный сетевой блип ронял весь поиск (allSettled тоже нет).
+    // landing3 (чарты/новинки) особенно любит отдавать 5xx/битое тело —
+    // ретраим и провал разбора JSON (200 с оборванным телом).
+    const MAX_ATTEMPTS: u8 = 3;
     let mut attempt = 0u8;
     loop {
         attempt += 1;
@@ -356,7 +359,7 @@ async fn api_get(token: &str, url: &str, query: &[(&str, &str)]) -> Result<serde
             }
             Err(_) => true, // сетевая ошибка — транзиентна
         };
-        if transient && attempt < 2 {
+        if transient && attempt < MAX_ATTEMPTS {
             tokio::time::sleep(std::time::Duration::from_millis(600)).await;
             continue;
         }
@@ -364,7 +367,15 @@ async fn api_get(token: &str, url: &str, query: &[(&str, &str)]) -> Result<serde
         if resp.status() == reqwest::StatusCode::UNAUTHORIZED {
             bail!("Токен Яндекс.Музыки недействителен — авторизуйся заново");
         }
-        return resp.json().await.context("api json");
+        match resp.json().await.context("api json") {
+            Ok(v) => return Ok(v),
+            Err(e) if attempt < MAX_ATTEMPTS => {
+                tokio::time::sleep(std::time::Duration::from_millis(600)).await;
+                let _ = e;
+                continue;
+            }
+            Err(e) => return Err(e),
+        }
     }
 }
 
