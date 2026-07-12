@@ -1,4 +1,17 @@
 {
+  "1.7.2": {
+    "title": { "ru": "Что нового в 1.7.2", "en": "What's new in 1.7.2" },
+    "date": "2026-07-12",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Добавлены ещё кнопки в строках треков\n- Обновлено хранилище",
+          "en": "- Minor improvements\n- Added more buttons in track rows\n- Updated storage"
+        }
+      }
+    ]
+  },
   "1.7.1": {
     "title": { "ru": "Что нового в 1.7.1", "en": "What's new in 1.7.1" },
     "date": "2026-07-11",

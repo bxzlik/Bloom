@@ -6,6 +6,8 @@ import {
   purgeLyricsCache,
   type LyricsCacheStats,
 } from '@features/lyrics'
+import { customizationStats, useMediaLibStore, type CustomizationStats } from '@features/customization'
+import { offlineCacheStats, offlineClearAll, type OfflineCacheStats } from '@features/offline'
 import {
   TTL_OPTIONS,
   useTelemetryStore,
@@ -56,7 +58,9 @@ export const TelemetrySection = () => {
   const t = useT()
   const locale = useLocale()
   const [lyrics, setLyrics] = useState<LyricsCacheStats>({ count: 0, bytes: 0 })
-  const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null)
+  const [custom, setCustom] = useState<CustomizationStats>({ count: 0, bytes: 0 })
+  const [offline, setOffline] = useState<OfflineCacheStats>({ count: 0, bytes: 0 })
+  const [quota, setQuota] = useState(0)
   const [ttlOpen, setTtlOpen] = useState(false)
   const ttlRef = useRef<HTMLDivElement>(null)
 
@@ -66,13 +70,26 @@ export const TelemetrySection = () => {
   const diskCache = useSettingsStore((s) => s.lyrics_disk_cache)
   const setDiskCache = useSettingsStore((s) => s.setLyricsDiskCache)
 
+  const clearMediaLib = useMediaLibStore((s) => s.clearAll)
+
+  /** «N элементов • размер» с русской плюрализацией и опущенным размером при 0. */
+  const metaStr = (count: number, bytes: number): string => {
+    const items =
+      locale === 'ru'
+        ? `${count} ${ru(count, ['элемент', 'элемента', 'элементов'])}`
+        : `${count} ${count === 1 ? 'item' : 'items'}`
+    return bytes > 0 ? `${items} • ${fmtBytes(bytes)}` : items
+  }
+
   const refresh = () => {
     void lyricsCacheStats().then(setLyrics)
+    void customizationStats().then(setCustom)
+    void offlineCacheStats().then(setOffline)
+    // Квоту (знаменатель для заполнения кольца) берём из браузера; сама цифра
+    // «Занято» — это сумма наших кешей ниже, а не navigator.usage.
     try {
       if ('storage' in navigator && 'estimate' in navigator.storage) {
-        void navigator.storage.estimate().then((e) => {
-          setStorage({ usage: e.usage ?? 0, quota: e.quota ?? 0 })
-        })
+        void navigator.storage.estimate().then((e) => setQuota(e.quota ?? 0))
       }
     } catch {
       /* ignore */
@@ -113,16 +130,37 @@ export const TelemetrySection = () => {
     })
   }
 
+  const clearCustom = () => {
+    if (custom.count === 0) return
+    if (!confirm(t('settings.storage.confirm.clearCustom'))) return
+    clearMediaLib()
+    toast(t('settings.storage.toast.customCleared'))
+    refresh()
+  }
+
+  const clearOffline = () => {
+    if (offline.count === 0) return
+    if (!confirm(t('settings.storage.confirm.clearOffline'))) return
+    void offlineClearAll().then(() => {
+      toast(t('settings.storage.toast.offlineCleared'))
+      refresh()
+    })
+  }
+
   const clearAll = () => {
     if (!confirm(t('settings.storage.confirm.clearAll'))) return
-    void clearLyricsCache().then(() => {
+    clearMediaLib()
+    void Promise.all([clearLyricsCache(), offlineClearAll()]).then(() => {
       toast(t('settings.storage.toast.dataCleared'))
       refresh()
     })
   }
 
-  const usedStr = storage ? fmtBytes(storage.usage) : '—'
-  const pct = storage && storage.quota > 0 ? Math.min(100, (storage.usage / storage.quota) * 100) : 0
+  // Кольцо «Занято» = сумма перечисленных ниже кешей (тексты + кастомизация +
+  // офлайн), а не общий storage вебвью. Так очистка строки реально уменьшает круг.
+  const usedBytes = lyrics.bytes + custom.bytes + offline.bytes
+  const usedStr = fmtBytes(usedBytes)
+  const pct = quota > 0 ? Math.min(100, (usedBytes / quota) * 100) : 0
 
   return (
     <div className="s-section active" id="ssec-tele-storage">
@@ -174,12 +212,7 @@ export const TelemetrySection = () => {
         </div>
         <div className="tele-data-info">
           <span className="tele-data-name">{t('settings.storage.lyrics')}</span>
-          <span className="tele-data-meta">
-            {locale === 'ru'
-              ? `${lyrics.count} ${ru(lyrics.count, ['элемент', 'элемента', 'элементов'])}`
-              : `${lyrics.count} ${lyrics.count === 1 ? 'item' : 'items'}`}
-            {lyrics.bytes > 0 ? ` • ${fmtBytes(lyrics.bytes)}` : ''}
-          </span>
+          <span className="tele-data-meta">{metaStr(lyrics.count, lyrics.bytes)}</span>
         </div>
 
         <label
@@ -214,6 +247,34 @@ export const TelemetrySection = () => {
         </div>
 
         <button className="tele-trash" onClick={clearLyrics} disabled={lyrics.count === 0}>
+          <Ico name="trash" width={15} height={15} />
+        </button>
+      </div>
+
+      {/* Строка: Кастомизация (медиа-библиотека загруженных картинок) */}
+      <div className="tele-data-row">
+        <div className="tele-data-icon">
+          <Ico name="palette" width={17} height={17} />
+        </div>
+        <div className="tele-data-info">
+          <span className="tele-data-name">{t('settings.storage.customization')}</span>
+          <span className="tele-data-meta">{metaStr(custom.count, custom.bytes)}</span>
+        </div>
+        <button className="tele-trash" onClick={clearCustom} disabled={custom.count === 0}>
+          <Ico name="trash" width={15} height={15} />
+        </button>
+      </div>
+
+      {/* Строка: Офлайн-кеш треков */}
+      <div className="tele-data-row">
+        <div className="tele-data-icon">
+          <Ico name="download" width={17} height={17} />
+        </div>
+        <div className="tele-data-info">
+          <span className="tele-data-name">{t('settings.storage.offline')}</span>
+          <span className="tele-data-meta">{metaStr(offline.count, offline.bytes)}</span>
+        </div>
+        <button className="tele-trash" onClick={clearOffline} disabled={offline.count === 0}>
           <Ico name="trash" width={15} height={15} />
         </button>
       </div>

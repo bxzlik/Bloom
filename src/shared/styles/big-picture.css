@@ -41,7 +41,7 @@
 #bigPicOverlay .bp-cover.bp-vinyl-mode::after{content:'';position:absolute;top:50%;left:50%;width:22%;height:22%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#111 30%,#222 58%,rgba(255,255,255,.1) 60%,rgba(255,255,255,.03) 62%,#1a1a1a 64%);z-index:3;pointer-events:none}
 #bigPicOverlay .bp-cover.bp-vinyl-spin img{animation:vinyl-spin 10s linear infinite}
 #bigPicOverlay .bp-cover.bp-vinyl-paused img{animation-play-state:paused}
-#bigPicOverlay .bp-ctrl .cc:hover{background:rgba(255,255,255,.06)}
+#bigPicOverlay .bp-ctrl .cc:hover{color:#fff}
 #bigPicOverlay .bp-cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:.12;background:rgba(255,255,255,.05)}
 #bigPicOverlay .bp-info{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
 #bigPicOverlay .bp-title-wrap{overflow:hidden;width:100%;max-width:100%;position:relative;text-align:center}

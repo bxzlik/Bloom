@@ -235,7 +235,7 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 .ps-ctrl{display:flex;align-items:center;justify-content:center;gap:4px;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 1.2);padding:6px 14px;background:transparent}
 .vol-pct{font-size:11px;font-weight:600;color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid rgba(255,255,255,var(--wb2));border-radius:6px;padding:2px 4px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
 .cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
-.cc:hover{color:var(--text);background:var(--hover)}
+.cc:hover{color:var(--text)}
 .cc.on{color:var(--accent)}
 /* «Умная» перемешка — мини-значок в белом кружке сверху справа над shuffle. */
 .cc-badge{position:absolute;top:3px;right:3px;width:13px;height:13px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;line-height:1;color:#000;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.3);animation:cc-badge-pop .18s ease-out}
@@ -255,12 +255,12 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 /* В плоском режиме play ведёт себя как обычная кнопка .cc (тот же размер/радиус/
    ховер) — отличается только более крупной иконкой. */
 body.play-flat .cc-play{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;color:var(--text2);transition:.15s}
-/* Ховер — как у `.cc` после перебивки в overrides-main.css: акцентный тинт
-   подложки, а не нейтральный --hover (иначе play выпадает из ряда кнопок). */
-body.play-flat .cc-play:hover{background:rgba(var(--accent-rgb),.1);color:var(--accent)}
+/* Ховер — как у `.cc`: без подложки, иконка просто светлеет (--text2 → --text),
+   чтобы play не выпадал из ряда кнопок. */
+body.play-flat .cc-play:hover{color:var(--text)}
 body.play-flat .cc-play svg{width:26px;height:26px}
 /* В BigPicture у .cc свой, более тусклый ховер-фон — повторяем его для play. */
-body.play-flat #bigPicOverlay .cc-play:hover{background:rgba(255,255,255,.06)}
+body.play-flat #bigPicOverlay .cc-play:hover{color:#fff}
 .ps-vol{display:flex;align-items:center;gap:8px}
 .vol-sl{-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;width:80px}
 .ps-ctrl .vol-sl{flex:1;width:auto}

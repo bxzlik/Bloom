@@ -75,6 +75,8 @@
 | `offline_download` | id, url, filename, cover_url?, title?, artist?, referer? | `string` (путь копии) |
 | `offline_remove` | `id: string` | `()` |
 | `offline_scan_all` | — | `{ id, path }[]` |
+| `offline_cache_stats` | — | `{ count, bytes }` |
+| `offline_clear_all` | — | `usize` (удалено файлов) |
 
 ### Lyrics → features/lyrics/api
 | Команда | Аргументы | Возврат |

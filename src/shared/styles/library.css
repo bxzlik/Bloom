@@ -113,10 +113,10 @@
 .lib-hero-btns .btn-icon.is-save:hover{background:var(--accent2);border-color:var(--accent2)}
 .lib-hero-btns .btn-icon.is-save:disabled{opacity:.45;cursor:default}
 .lib-hero-btns .btn-icon.is-save:disabled:hover{background:#fff;border-color:#fff}
-.btn-play-all{display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--radius);background:#fff;color:#000;border:none;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
-.btn-play-all:hover{background:var(--accent2)}
-.btn-icon{width:32px;height:32px;border-radius:calc(var(--radius) * 0.7);background:none;border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
-.btn-icon:hover{border-color:var(--text2);color:var(--text)}
+.btn-play-all{display:flex;align-items:center;gap:6px;height:34px;padding:0 18px;border-radius:calc(var(--radius) * 0.72);background:#fff;color:#000;border:none;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
+.btn-play-all:hover{background:#e0e0e0}
+.btn-icon{width:34px;height:34px;border-radius:calc(var(--radius) * 0.72);background:var(--icon-bg);border:1px solid transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
+.btn-icon:hover{background:rgba(255,255,255,.13);color:var(--text)}
 /* Fade на маунт: заметен при возврате из большого редактора (секции его не
    ремоунтят — там анимация не дёргается). */
 .lib-tracklist{flex:1;overflow-y:auto;padding:8px 12px 80px;scrollbar-width:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);animation:bloom-fade-in .22s ease}
@@ -219,7 +219,12 @@
 .ym-tra-link:hover{color:var(--text);text-decoration:underline}
 .tra-sep{color:var(--text2)}
 .tri:hover .trn,.tri:hover .tra{overflow:visible;text-overflow:clip}
-.trd{font-size:11px;color:var(--text2);flex-shrink:0;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600;min-width:46px;box-sizing:border-box;text-align:center}
+.trd{font-size:11px;color:var(--text2);display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600;min-width:46px;box-sizing:border-box;text-align:center;transition:.15s}
+/* Слот справа: длительность трека, а при наведении на строку — кнопка «…». */
+.trtime{position:relative;display:flex;align-items:center;justify-content:center;min-width:46px;flex-shrink:0}
+.trmore{position:absolute;inset:0;margin:auto;opacity:0;pointer-events:none}
+.tr:hover .trd{opacity:0}
+.tr:hover .trmore{opacity:1;pointer-events:auto}
 .tr-offline{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
 .trplays{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);flex-shrink:0;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600}
 .trplays svg{opacity:.7}
@@ -267,7 +272,7 @@ body.win-lib-wide .tr-album,body.win-lib-wide .tr-date{display:block}
 .lib-sidebar.lib-sb-covers .lib-item-play{display:none!important}
 .lib-sidebar.lib-sb-covers .lib-icon{width:56px;height:56px}
 .ib{width:25px;height:25px;border-radius:calc(var(--radius) * 0.55);background:transparent;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-size:12px}
-.ib:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.ib:hover{background:transparent;color:var(--text)}
 .ib.fav{color:#e03030}
 .ib-rmq:hover{color:#e03030!important;background:rgba(224,48,48,.1)!important}
 .bars{display:flex;gap:2px;align-items:center;height:14px}

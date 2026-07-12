@@ -361,7 +361,7 @@ const BpProgress = () => {
 
   return (
     <div className="bp-progress">
-      <div className="bp-bar-wrap" id="bpBarWrap" onWheel={onWheel}>
+      <div className="bp-bar-wrap" id="bpBarWrap" onWheel={onWheel} style={{ ['--sl-pct' as string]: pct } as React.CSSProperties}>
         <canvas id="bpWaveCanvas" ref={waveRef} style={{ pointerEvents: 'none' }} />
         <div className="bp-bar-fill" id="bpFill" style={{ width: `${pct}%`, pointerEvents: 'none' }} />
         <div

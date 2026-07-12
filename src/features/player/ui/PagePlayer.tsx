@@ -1045,7 +1045,7 @@ const PsProgress = () => {
   }
   return (
     <div>
-      <div className="ps-bar-wrap" id="psWrap" onWheel={onProgWheel}>
+      <div className="ps-bar-wrap" id="psWrap" onWheel={onProgWheel} style={{ ['--sl-pct' as string]: pct } as React.CSSProperties}>
         <div className="ps-bar-fill" id="psFill" style={{ width: `${pct}%`, pointerEvents: 'none' }} />
         {/* Волновой слайдер: видимость через body.slider-wave (CSS). */}
         <canvas id="waveCanvas" ref={waveRef} style={{ pointerEvents: 'none' }} />

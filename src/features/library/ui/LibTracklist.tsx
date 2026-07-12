@@ -19,7 +19,7 @@ import { getCurrentView } from '../lib/currentView'
 import { historyLabel, historyTime } from '../lib/formatCount'
 import { createPlaylistInline } from '../lib/createPlaylistInline'
 import { deleteUploadedTrack } from '../lib'
-import { playFromSource, playTrack, useQueueStore, AddPopup } from '@features/player'
+import { playFromSource, playTrack, useQueueStore, AddPopup, addToQueue, playNextInQueue } from '@features/player'
 import { TrackCtxMenu } from './TrackCtxMenu'
 import { TagEditor } from './TagEditor'
 import { Ico } from '@shared/ui/icons/solar'
@@ -230,7 +230,7 @@ export const LibTracklist = () => {
     if (dupsActive && (mode !== 'pl' || plId !== dupsPlId)) dupsExit()
   }, [dupsActive, mode, plId, dupsPlId, dupsExit])
 
-  const onTrackCtx = (e: ReactMouseEvent<HTMLDivElement>, t: Track) => {
+  const onTrackCtx = (e: ReactMouseEvent<HTMLElement>, t: Track) => {
     e.preventDefault()
     e.stopPropagation()
     setCtx({ pos: { x: e.clientX, y: e.clientY }, track: t })
@@ -305,6 +305,7 @@ export const LibTracklist = () => {
               idx={item.idx}
               widx={win.start + i}
               onContextMenu={(e) => onTrackCtx(e, item.track)}
+              onMore={(e) => onTrackCtx(e, item.track)}
               onClick={(e) => onTrackClickWithMods(item.track, item.idx, e)}
               onAddClick={openAddPopup}
               showAlbum={showAlbum}
@@ -327,6 +328,7 @@ export const LibTracklist = () => {
             idx={idx}
             widx={idx}
             onContextMenu={(e) => onTrackCtx(e, t)}
+            onMore={(e) => onTrackCtx(e, t)}
             onClick={(e) => onTrackClickWithMods(t, idx, e)}
             onAddClick={openAddPopup}
             showAlbum={showAlbum}
@@ -617,6 +619,7 @@ const TrackRow = ({
   idx: _idx,
   widx,
   onContextMenu,
+  onMore,
   onClick,
   onAddClick,
   showAlbum,
@@ -630,6 +633,8 @@ const TrackRow = ({
   /** Индекс в оконном списке (data-widx — замер высоты строки в useWindowedList). */
   widx?: number
   onContextMenu?: (e: ReactMouseEvent<HTMLDivElement>) => void
+  /** Открыть контекстное меню кнопкой «…» (в позиции клика). */
+  onMore?: (e: ReactMouseEvent<HTMLButtonElement>) => void
   onClick?: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick?: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
   /** Показывать ячейку «Альбом» (пер-колонка гейт; ширина — через CSS). */
@@ -769,6 +774,28 @@ const TrackRow = ({
         </span>
       )}
       <button
+        className="ib"
+        type="button"
+        aria-label={t('lib.ctx.playNext')}
+        onClick={(e) => {
+          e.stopPropagation()
+          playNextInQueue(track.id)
+        }}
+      >
+        <Ico name="playNext" width={13} height={13} />
+      </button>
+      <button
+        className="ib"
+        type="button"
+        aria-label={t('lib.ctx.toQueue')}
+        onClick={(e) => {
+          e.stopPropagation()
+          addToQueue(track.id)
+        }}
+      >
+        <Ico name="queue" width={15} height={15} />
+      </button>
+      <button
         className={`ib${isFav ? ' fav' : ''}`}
         type="button"
         aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
@@ -795,7 +822,20 @@ const TrackRow = ({
         <Ico name="save" width={13} height={13} />
       </span>
     )}
-    <div className="trd">{track.dur || '—'}</div>
+    <div className="trtime">
+      <span className="trd">{track.dur || '—'}</span>
+      <button
+        className="ib trmore"
+        type="button"
+        aria-label={t('common.more')}
+        onClick={(e) => {
+          e.stopPropagation()
+          onMore?.(e)
+        }}
+      >
+        <Ico name="kebab" width={15} height={15} />
+      </button>
+    </div>
   </div>
   )
 }

@@ -93,12 +93,12 @@ body.paused .eq i{animation-play-state:paused;height:30%}
   cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;
   opacity:.82;transition:background .12s,opacity .12s,transform .08s;
 }
-.cbtn:hover{background:rgba(255,255,255,.14);opacity:1}
+.cbtn:hover{opacity:1}
 .cbtn:active{transform:scale(.92)}
 /* Play без заливки: та же плоская кнопка, что и соседи, только крупнее иконка
    (как `play-flat` в трей-попапе). */
 .cbtn-play{width:34px;height:34px;background:none;color:var(--text);opacity:1}
-.cbtn-play:hover{background:rgba(255,255,255,.14)}
+.cbtn-play:hover{opacity:1}
 
 /* ── Режим оптимизации ───────────────────────────────────
    Убираем эквалайзер, отключаем бегущую строку (заголовок обрезается «…») и
@@ -269,12 +269,12 @@ body.expanded .exp-wrap{display:grid;
 .exp-prog.seekable:hover{height:9px}
 
 .exp-ctrl{display:flex;align-items:center;justify-content:center;gap:8px}
-/* Копия кнопок нижнего бара с учётом перебивок overrides-main.css: в покое
-   приглушённый белый, на наведении — акцентный цвет и акцентный тинт подложки. */
+/* Копия кнопок нижнего бара: в покое приглушённый белый, на наведении БЕЗ
+   подложки — иконка просто светлеет. Активный тогл (.ebtn.on) — акцентный. */
 .ebtn{position:relative;width:40px;height:40px;flex-shrink:0;border:none;background:none;
   color:rgba(255,255,255,.55);cursor:pointer;display:flex;align-items:center;justify-content:center;
   border-radius:calc(var(--radius)*0.7);transition:.15s}
-.ebtn:hover{background:rgba(var(--accent-rgb),.1);color:var(--accent)}
+.ebtn:hover{color:rgba(255,255,255,.95)}
 .ebtn.on{color:var(--accent)}
 /* Play — обычная кнопка ряда: тот же габарит, ховер и тинт, что у соседей;
    отличается крупной иконкой и вжатием scale(.94) при нажатии. */

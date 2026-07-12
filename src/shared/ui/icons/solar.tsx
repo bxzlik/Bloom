@@ -33,7 +33,7 @@ import LibraryLinear from '~icons/solar/library-linear'
 import LibraryBold from '~icons/solar/library-bold'
 import PipLinear from '~icons/solar/pip-linear'
 import PipBold from '~icons/solar/pip-bold'
-import QueueLinear from '~icons/solar/hamburger-menu-linear'
+import PlaylistLinear from '~icons/solar/playlist-minimalistic-2-linear'
 import LyricsLinear from '~icons/solar/text-linear'
 import BigPicLinear from '~icons/solar/full-screen-linear'
 import NoteLinear from '~icons/solar/music-note-linear'
@@ -46,7 +46,6 @@ import TrashLinear from '~icons/solar/trash-bin-trash-linear'
 import WaveLinear from '~icons/solar/soundwave-linear'
 import WaveBold from '~icons/solar/soundwave-bold'
 import EditLinear from '~icons/solar/pen-2-linear'
-import KebabLinear from '~icons/solar/menu-dots-linear'
 import CopyLinear from '~icons/solar/copy-linear'
 import TagLinear from '~icons/solar/tag-linear'
 import StarLinear from '~icons/solar/star-linear'
@@ -75,7 +74,6 @@ import FilterLinear from '~icons/solar/filter-linear'
 import PinLinear from '~icons/solar/pin-linear'
 import PinBold from '~icons/solar/pin-bold'
 import ShareLinear from '~icons/solar/share-linear'
-import PlayNextLinear from '~icons/solar/double-alt-arrow-right-linear'
 import MenuLinear from '~icons/solar/hamburger-menu-linear'
 import UnfollowLinear from '~icons/solar/user-cross-rounded-linear'
 import CalendarLinear from '~icons/solar/calendar-linear'
@@ -150,6 +148,15 @@ const CheckBare: SvgComp = (p) => (
     <path d="M5 13l4 4L19 7" />
   </svg>
 )
+// Три точки (kebab) — рисуем сами: solar-версия не нравится. Плотные
+// вертикальные точки одинакового радиуса, залитые currentColor.
+const KebabBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...p}>
+    <circle cx="12" cy="5" r="1.85" />
+    <circle cx="12" cy="12" r="1.85" />
+    <circle cx="12" cy="19" r="1.85" />
+  </svg>
+)
 
 /** Семантическое имя → начертания. `bold` опционально (фолбэк на `linear`). */
 const ICONS = {
@@ -169,7 +176,7 @@ const ICONS = {
   settings: { linear: SettingsLinear, bold: SettingsBold },
   library: { linear: LibraryLinear, bold: LibraryBold },
   pip: { linear: PipLinear, bold: PipBold },
-  queue: { linear: QueueLinear },
+  queue: { linear: PlaylistLinear },
   lyrics: { linear: LyricsLinear },
   bigpic: { linear: BigPicLinear },
   note: { linear: NoteLinear },
@@ -184,7 +191,7 @@ const ICONS = {
   trash: { linear: TrashLinear },
   wave: { linear: WaveLinear, bold: WaveBold },
   edit: { linear: EditLinear },
-  kebab: { linear: KebabLinear },
+  kebab: { linear: KebabBare },
   copy: { linear: CopyLinear },
   tag: { linear: TagLinear },
   star: { linear: StarLinear, bold: StarBold },
@@ -209,7 +216,7 @@ const ICONS = {
   filter: { linear: FilterLinear },
   pin: { linear: PinLinear, bold: PinBold },
   share: { linear: ShareLinear },
-  playNext: { linear: PlayNextLinear },
+  playNext: { linear: NextLinear },
   menu: { linear: MenuLinear },
   unfollow: { linear: UnfollowLinear },
   calendar: { linear: CalendarLinear },

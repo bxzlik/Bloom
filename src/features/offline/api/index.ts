@@ -33,3 +33,16 @@ export const offlineRemove = (id: string): Promise<void> => invoke('offline_remo
 
 /** Первичная загрузка кеша из offline.json (только существующие файлы). */
 export const offlineScanAll = (): Promise<OfflineEntry[]> => invoke('offline_scan_all')
+
+/** Статистика офлайн-кеша: число существующих файлов + суммарный размер в байтах. */
+export interface OfflineCacheStats {
+  count: number
+  bytes: number
+}
+
+export const offlineCacheStats = (): Promise<OfflineCacheStats> =>
+  invoke<OfflineCacheStats>('offline_cache_stats').catch(() => ({ count: 0, bytes: 0 }))
+
+/** Стереть весь офлайн-кеш (файлы + offline.json). Возвращает число удалённых файлов. */
+export const offlineClearAll = (): Promise<number> =>
+  invoke<number>('offline_clear_all').catch(() => 0)

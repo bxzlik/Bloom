@@ -177,7 +177,9 @@ body.titlebar-autohide #winTitlebar:hover{margin-top:0}
 .win-btns{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
 .win-btn{width:46px;height:32px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
 .win-btn:hover{background:rgba(var(--text2-rgb,140,140,140),.15);color:var(--text)}
-.win-pin:hover{color:var(--text)}
+/* Колокольчик/пин — не оконные кнопки, поэтому зона нажатия уже стандартных 46px. */
+.win-bell,.win-pin{width:34px}
+.win-bell:hover,.win-pin:hover{background:none;color:var(--text)}
 .win-pin.on{color:var(--text)}
 .win-close:hover{background:#c42b1c!important;color:#fff!important}
 

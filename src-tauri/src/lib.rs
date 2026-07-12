@@ -159,6 +159,8 @@ pub fn run() {
             commands::offline_download,
             commands::offline_remove,
             commands::offline_scan_all,
+            commands::offline_cache_stats,
+            commands::offline_clear_all,
             commands::local_download,
             commands::cover_download,
             commands::fetch_image_data_url,

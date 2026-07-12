@@ -433,7 +433,7 @@ export const LibContent = () => {
                 playFromSource(view.tracks.map((t) => t.id), view.source)
               }}
             >
-              <Ico name="play" variant="bold" width={12} height={12} />
+              <Ico name="play" width={16} height={16} />
               {t('lib.playAll')}
             </button>
             <button

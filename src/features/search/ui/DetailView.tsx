@@ -11,7 +11,7 @@ import { ArtistLinks, CoverSourceBadge } from '@entities/track'
 import type { Playlist } from '@entities/playlist'
 import type { ArtistPageData, RepostItem } from '@features/providers'
 import { getProvider } from '@features/providers'
-import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, type PlaySource } from '@features/player'
+import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, addToQueue, playNextInQueue, type PlaySource } from '@features/player'
 import {
   TrackCtxMenu,
   saveTrackToLibrary,
@@ -136,7 +136,7 @@ const TrackRow = ({
 }: {
   track: Track
   onPlay: () => void
-  onCtxMenu: (e: ReactMouseEvent<HTMLDivElement>) => void
+  onCtxMenu: (e: ReactMouseEvent<HTMLElement>) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>) => void
   /** Имя репостнувшего (для вкладки «Репосты»): «⟲ name» рядом с заголовком. */
   reposter?: string
@@ -173,6 +173,28 @@ const TrackRow = ({
         </div>
       </div>
       <div className="trac">
+        <button
+          className="ib"
+          type="button"
+          aria-label={tt('lib.ctx.playNext')}
+          onClick={(e) => {
+            e.stopPropagation()
+            playNextInQueue(track.id)
+          }}
+        >
+          <Ico name="playNext" width={13} height={13} />
+        </button>
+        <button
+          className="ib"
+          type="button"
+          aria-label={tt('lib.ctx.toQueue')}
+          onClick={(e) => {
+            e.stopPropagation()
+            addToQueue(track.id)
+          }}
+        >
+          <Ico name="queue" width={13} height={13} />
+        </button>
         <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label={tt('player.aria.favAdd')}>
           <HeartSvg filled={isFav} />
         </button>
@@ -188,7 +210,20 @@ const TrackRow = ({
           {fmtNum(track.scPlaybackCount)}
         </div>
       )}
-      {track.dur && <div className="trd">{track.dur}</div>}
+      <div className="trtime">
+        {track.dur && <span className="trd">{track.dur}</span>}
+        <button
+          className="ib trmore"
+          type="button"
+          aria-label={tt('common.more')}
+          onClick={(e) => {
+            e.stopPropagation()
+            onCtxMenu(e)
+          }}
+        >
+          <Ico name="kebab" width={15} height={15} />
+        </button>
+      </div>
     </div>
   )
 }
@@ -664,7 +699,7 @@ export const DetailView = () => {
               {loaded && (
                 <div className="sp-am-actions">
                   <button className="sp-am-play-btn" onClick={onPlayAll}>
-                    <Ico name="play" variant="bold" width={14} height={14} />
+                    <Ico name="play" width={18} height={18} />
                     {t('search.playAll')}
                   </button>
                   {/* Группа вторичных действий (слева) + share (справа) в одном

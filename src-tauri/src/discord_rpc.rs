@@ -79,7 +79,11 @@ impl PresenceState {
             && self.small_img_mode == other.small_img_mode
             && self.source == other.source
             && self.btn1_mode == other.btn1_mode
+            && self.btn1_label == other.btn1_label
+            && self.btn1_url == other.btn1_url
             && self.btn2_mode == other.btn2_mode
+            && self.btn2_label == other.btn2_label
+            && self.btn2_url == other.btn2_url
             && (self.position_sec - other.position_sec).abs() < 6.0
     }
 }
@@ -285,27 +289,33 @@ fn send_activity(
         }
     }
 
-    // Buttons (Discord allows max 2)
-    let mut buttons: Vec<Button<'_>> = Vec::new();
+    // Buttons (Discord allows max 2). Собираем (label, url) как owned-строки:
+    // кастомный URL нормализуем (Discord молча выкидывает кнопку с невалидной
+    // ссылкой), а `Button<'_>` держит `&str`, поэтому строки должны пережить его.
+    let mut btn_data: Vec<(String, String)> = Vec::new();
     for (mode, label, url) in [
         (&state.btn1_mode, &state.btn1_label, &state.btn1_url),
         (&state.btn2_mode, &state.btn2_label, &state.btn2_url),
     ] {
         if mode.is_empty() || mode == "off" { continue; }
-        let effective_url = match mode.as_str() {
-            "track" | "artist" | "custom" => url.as_str(),
+        let (eff_label, eff_url) = match mode.as_str() {
+            // track/artist — SC-permalink'и, уже валидные https.
+            "track"  => ("На трек".to_string(), url.to_string()),
+            "artist" => ("На артиста".to_string(), url.to_string()),
+            "custom" => {
+                if label.is_empty() { continue; }
+                match normalize_button_url(url) {
+                    Some(u) => (label.to_string(), u),
+                    None => continue,
+                }
+            }
             _ => continue,
         };
-        let effective_label = match mode.as_str() {
-            "track"  => "На трек",
-            "artist" => "На артиста",
-            "custom" => if label.is_empty() { continue } else { label.as_str() },
-            _ => continue,
-        };
-        if effective_url.is_empty() { continue; }
-        buttons.push(Button::new(effective_label, effective_url));
-        if buttons.len() == 2 { break; }
+        if eff_url.is_empty() { continue; }
+        btn_data.push((eff_label, eff_url));
+        if btn_data.len() == 2 { break; }
     }
+    let buttons: Vec<Button<'_>> = btn_data.iter().map(|(l, u)| Button::new(l, u)).collect();
     if !buttons.is_empty() {
         activity = activity.buttons(buttons);
     }
@@ -350,6 +360,31 @@ fn platform_label(source: &str, mode: &str) -> &'static str {
         "yandex" => "Яндекс Музыка",
         _ => "Bloom",
     }
+}
+
+/// Нормализует URL кастомной кнопки. Discord принимает только валидные
+/// http(s)-ссылки и молча выкидывает кнопку с чем-то другим. Пользователь часто
+/// вводит адрес без схемы (`example.com`, `//example.com`) — дописываем `https://`.
+/// Заведомо непригодные схемы (blob/file/data/javascript) → None (кнопки нет).
+fn normalize_button_url(url: &str) -> Option<String> {
+    let u = url.trim();
+    if u.is_empty() {
+        return None;
+    }
+    let lower = u.to_ascii_lowercase();
+    if lower.starts_with("http://") || lower.starts_with("https://") {
+        return Some(u.to_string());
+    }
+    if lower.starts_with("blob:")
+        || lower.starts_with("file:")
+        || lower.starts_with("data:")
+        || lower.starts_with("javascript:")
+    {
+        return None;
+    }
+    // Протокол-относительный `//host/…` или голый `host/…` → достраиваем https.
+    let rest = u.strip_prefix("//").unwrap_or(u);
+    Some(format!("https://{rest}"))
 }
 
 fn normalize_artwork_url(url: &str) -> Option<String> {

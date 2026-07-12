@@ -170,7 +170,7 @@ const QueueBlockImpl = ({
 
   // Общие обработчики строки очереди — прокидываем в QueueSortList (drag-секции)
   // и в статичную строку играющего трека.
-  const openCtx = (e: ReactMouseEvent<HTMLDivElement>, track: Track | null) => {
+  const openCtx = (e: ReactMouseEvent<HTMLElement>, track: Track | null) => {
     if (!track) return
     e.preventDefault()
     e.stopPropagation()
@@ -249,6 +249,7 @@ const QueueBlockImpl = ({
                   rootProps={{ 'data-sortable-id': nowItem.id, style: {} }}
                   onClick={() => playFromCurrentQueue(nowItem.id)}
                   onContextMenu={(e) => openCtx(e, nowItem.track)}
+                  onMore={(e) => openCtx(e, nowItem.track)}
                   onAddClick={openAddPopup}
                   onRemove={() => removeFromQueue(nowItem.id)}
                 />
@@ -625,7 +626,7 @@ const QueueSectionLabel = ({ children, markNow }: { children: ReactNode; markNow
 interface RowHandlers {
   curId: string | null
   onPlay: (id: string) => void
-  onOpenCtx: (e: ReactMouseEvent<HTMLDivElement>, track: Track | null) => void
+  onOpenCtx: (e: ReactMouseEvent<HTMLElement>, track: Track | null) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
   onRemove: (id: string) => void
 }
@@ -722,6 +723,7 @@ const QueueSortList = ({
             handleProps={handleProps}
             onClick={() => handlers.onPlay(id)}
             onContextMenu={(e) => handlers.onOpenCtx(e, track)}
+            onMore={(e) => handlers.onOpenCtx(e, track)}
             onAddClick={handlers.onAddClick}
             onRemove={() => handlers.onRemove(id)}
           />
@@ -743,6 +745,7 @@ const QueueRow = ({
   handleProps,
   onClick,
   onContextMenu,
+  onMore,
   onAddClick,
   onRemove,
 }: {
@@ -763,6 +766,8 @@ const QueueRow = ({
   }
   onClick: () => void
   onContextMenu: (e: ReactMouseEvent<HTMLDivElement>) => void
+  /** Открыть контекстное меню кнопкой «…» (в позиции клика). */
+  onMore?: (e: ReactMouseEvent<HTMLButtonElement>) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
   onRemove: (e: ReactMouseEvent<HTMLButtonElement>) => void
 }) => {
@@ -852,7 +857,20 @@ const QueueRow = ({
           <Ico name="minus" width={13} height={13} />
         </button>
       </div>
-      <div className="trd">{track?.dur || '—'}</div>
+      <div className="trtime">
+        <span className="trd">{track?.dur || '—'}</span>
+        <button
+          className="ib trmore"
+          type="button"
+          aria-label={t('common.more')}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMore?.(e)
+          }}
+        >
+          <Ico name="kebab" width={15} height={15} />
+        </button>
+      </div>
     </div>
   )
 }

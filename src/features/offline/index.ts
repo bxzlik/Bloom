@@ -1,5 +1,5 @@
-export type { OfflineEntry, OfflineDownloadArgs } from './api'
-export { offlineDownload, offlineRemove, offlineScanAll } from './api'
+export type { OfflineEntry, OfflineDownloadArgs, OfflineCacheStats } from './api'
+export { offlineDownload, offlineRemove, offlineScanAll, offlineCacheStats, offlineClearAll } from './api'
 export { useOfflineStore, offline } from './model/store'
 export {
   downloadTrackOffline,

@@ -236,20 +236,17 @@ body {
   background: #fff !important;
 }
 
-/* Кнопки .cc плеера (страница #playerContent + нижний #miniPlayer) — hover как у
-   дизлайка/текста (.lyrics-btn): акцентная полупрозрачная подсветка + акцентный
-   цвет иконки. Без этого каждая поверхность красила бы hover по-своему (страница
-   — 5% белого, бар — 10% белого), и кнопки выглядели бы по-разному. Дизлайк/
-   текст и так на .lyrics-btn — их не трогаем, они уже эталон.
-   BigPicture (#bigPicOverlay .bp-ctrl .cc) намеренно НЕ трогаем: его кнопки лежат
-   поверх размытой обложки, там оставляем нейтральную белую подсветку. */
+/* Кнопки .cc плеера (страница #playerContent + нижний #miniPlayer) — hover БЕЗ
+   подложки: фон не рисуем, иконка лишь светлеет (--text2 → --text). Едино для
+   страницы и бара, чтобы hover выглядел одинаково на любой поверхности. Активные
+   тоглы (.cc.on) остаются акцентными. BigPicture/PiP правятся у себя. */
 .cc:hover {
-  background: rgba(var(--accent-rgb), 0.1);
-  color: var(--accent);
+  background: none;
+  color: var(--text);
 }
 #miniPlayer .cc:hover {
-  background: rgba(var(--accent-rgb), 0.1) !important;
-  color: var(--accent) !important;
+  background: none !important;
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 /* Активный тогл в баре (очередь/текст/повтор/перемешать) — акцентный цвет как на
    странице плеера ( `.cc.on{color:var(--accent)}`), а не белый. */

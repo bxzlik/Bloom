@@ -136,6 +136,32 @@ export const saveAppImage = async (key: AppImageKey, dataUrl: string | null): Pr
   })
 }
 
+export interface CustomizationStats {
+  count: number
+  bytes: number
+}
+
+/** Оценка размера одной записи: для dataURL — декодированные байты (base64→ ~3/4),
+ *  для http(s)-ссылки — длина строки. Точный размер IDB неизвестен, это оценка. */
+const approxBytes = (data: string): number => {
+  if (!data) return 0
+  if (data.startsWith('data:')) {
+    const comma = data.indexOf(',')
+    const b64 = comma >= 0 ? data.length - comma - 1 : data.length
+    return Math.round(b64 * 0.75)
+  }
+  return data.length
+}
+
+/** Статистика медиа-библиотеки кастомизации: число пользовательских картинок +
+ *  суммарный оценочный размер (без учёта _appimg_* — текущих выборов приложения). */
+export const customizationStats = async (): Promise<CustomizationStats> => {
+  const items = await loadItems()
+  let bytes = 0
+  for (const it of items) bytes += approxBytes(it.data)
+  return { count: items.length, bytes }
+}
+
 /** Загрузить все «текущие» картинки приложения (map key→dataUrl). */
 export const loadAppImages = async (): Promise<Partial<Record<AppImageKey, string>>> => {
   const db = await openDb()

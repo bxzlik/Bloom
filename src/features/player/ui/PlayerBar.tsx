@@ -376,21 +376,15 @@ export const PlayerBar = () => {
             {!mpHide.fav && (
               <button
                 id="mpFav"
+                className="cc"
                 onClick={toggleCurFav}
                 aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
                 style={{
                   width: 28,
                   height: 28,
-                  borderRadius: 'calc(var(--radius) * 0.7)',
-                  background: 'none',
-                  border: 'none',
-                  color: isFav ? '#e03030' : 'var(--text2)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: '.15s',
                   flexShrink: 0,
+                  // Цвет/ховер — от `.cc` (как транспорт бара); красный только «в избранном».
+                  ...(isFav ? { color: '#e03030' } : null),
                 }}
               >
                 <HeartSvg size={14} filled={isFav} />
@@ -399,22 +393,10 @@ export const PlayerBar = () => {
             {!mpHide.add && (
               <button
                 id="mpAdd"
+                className="cc"
                 onClick={openAddPopup}
                 aria-label={t('player.aria.add')}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 'calc(var(--radius) * 0.7)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text2)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: '.15s',
-                  flexShrink: 0,
-                }}
+                style={{ width: 28, height: 28, flexShrink: 0 }}
               >
                 <Ico name="addCircle" width={15} height={15} />
               </button>

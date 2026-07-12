@@ -896,6 +896,48 @@ pub fn offline_scan_all() -> Result<Vec<config::OfflineEntry>, String> {
     Ok(list.into_iter().filter(|e| Path::new(&e.path).is_file()).collect())
 }
 
+#[derive(serde::Serialize)]
+pub struct OfflineCacheStats {
+    pub count: usize,
+    pub bytes: u64,
+}
+
+/// Статистика офлайн-кеша: число существующих файлов + суммарный размер в байтах.
+#[tauri::command]
+pub fn offline_cache_stats() -> Result<OfflineCacheStats, String> {
+    let list = config::load_offline().unwrap_or_default();
+    let mut count = 0usize;
+    let mut bytes = 0u64;
+    for e in &list {
+        let p = Path::new(&e.path);
+        if p.is_file() {
+            count += 1;
+            if let Ok(meta) = std::fs::metadata(p) {
+                bytes += meta.len();
+            }
+        }
+    }
+    Ok(OfflineCacheStats { count, bytes })
+}
+
+/// Очистить весь офлайн-кеш: стереть скачанные файлы и обнулить offline.json.
+/// Возвращает число удалённых файлов.
+#[tauri::command]
+pub fn offline_clear_all() -> Result<usize, String> {
+    let list = config::load_offline().unwrap_or_default();
+    let mut deleted = 0usize;
+    for e in &list {
+        match std::fs::remove_file(&e.path) {
+            Ok(()) => deleted += 1,
+            Err(err) => tracing::warn!("offline_clear_all: delete {} failed: {err}", e.path),
+        }
+    }
+    config::save_offline(&[]).map_err(|e| e.to_string())?;
+    folder_watcher::refresh_allowlist();
+    tracing::info!("offline_clear_all: removed {deleted} files");
+    Ok(deleted)
+}
+
 /// MIME по magic-bytes для `data:`-URL (по умолчанию JPEG).
 fn image_mime(b: &[u8]) -> &'static str {
     if b.len() < 4 {

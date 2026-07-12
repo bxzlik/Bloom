@@ -253,7 +253,7 @@ export const TrackCtxMenu = ({
           }}
         >
           <span className="ci-icon">
-            <Ico name="add" width={11} height={11} />
+            <Ico name="queue" width={13} height={13} />
           </span>{' '}
           {t('lib.ctx.toQueue')}
         </div>

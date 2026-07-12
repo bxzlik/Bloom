@@ -14,7 +14,7 @@ import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, YtmL
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
-import { playSingleTrack, AddPopup, PlayStateOverlay } from '@features/player'
+import { playSingleTrack, AddPopup, PlayStateOverlay, addToQueue, playNextInQueue } from '@features/player'
 import { getAllProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
 import { toast, WindowedRows } from '@shared/ui'
@@ -120,7 +120,7 @@ const TrackListRow = ({
 }: {
   track: Track
   onPlay: () => void
-  onCtxMenu: (e: ReactMouseEvent<HTMLDivElement>) => void
+  onCtxMenu: (e: ReactMouseEvent<HTMLElement>) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>) => void
   /** Индекс в оконном списке (data-widx — замер высоты строки WindowedRows). */
   widx?: number
@@ -149,6 +149,28 @@ const TrackListRow = ({
         </div>
       </div>
       <div className="trac">
+        <button
+          className="ib"
+          type="button"
+          aria-label={tr('lib.ctx.playNext')}
+          onClick={(e) => {
+            e.stopPropagation()
+            playNextInQueue(track.id)
+          }}
+        >
+          <Ico name="playNext" width={13} height={13} />
+        </button>
+        <button
+          className="ib"
+          type="button"
+          aria-label={tr('lib.ctx.toQueue')}
+          onClick={(e) => {
+            e.stopPropagation()
+            addToQueue(track.id)
+          }}
+        >
+          <Ico name="queue" width={15} height={15} />
+        </button>
         <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label={tr('player.aria.favAdd')}>
           <Ico name="heart" variant={isFav ? 'bold' : 'linear'} width={13} height={13} />
         </button>
@@ -156,7 +178,20 @@ const TrackListRow = ({
           <Ico name="add" width={13} height={13} />
         </button>
       </div>
-      {track.dur && <div className="trd">{track.dur}</div>}
+      <div className="trtime">
+        {track.dur && <span className="trd">{track.dur}</span>}
+        <button
+          className="ib trmore"
+          type="button"
+          aria-label={tr('common.more')}
+          onClick={(e) => {
+            e.stopPropagation()
+            onCtxMenu(e)
+          }}
+        >
+          <Ico name="kebab" width={15} height={15} />
+        </button>
+      </div>
     </div>
   )
 }
@@ -505,7 +540,7 @@ const ProfileView = ({
   onApplyToAccount: () => void
   onOpenPlaylist: (p: Playlist) => void
   onPlayTrack: (id: string) => void
-  onCtxMenu: (e: ReactMouseEvent<HTMLDivElement>, track: Track) => void
+  onCtxMenu: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
   onImportPlaylists: () => void
   onImportLikes: () => void
   onLikesAsPlaylist: () => void
@@ -902,7 +937,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
     goNav('lib')
     createPlaylistInline({ track })
   }
-  const onCtxMenu = (e: ReactMouseEvent<HTMLDivElement>, track: Track) => {
+  const onCtxMenu = (e: ReactMouseEvent<HTMLElement>, track: Track) => {
     e.preventDefault()
     setCtx({ pos: { x: e.clientX, y: e.clientY }, track })
   }

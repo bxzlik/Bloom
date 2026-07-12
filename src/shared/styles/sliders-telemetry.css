@@ -2,13 +2,20 @@
 /* — THIN */
 body.slider-thin .ps-bar-wrap{height:1.5px!important;overflow:visible!important}
 body.slider-thin .ps-bar-fill{background:var(--accent)!important}
-/* — iOS */
-body.slider-ios .ps-bar-wrap{overflow:visible!important}
-body.slider-ios .ps-bar-fill{background:var(--accent)!important}
+/* — iOS: капсульный thumb с ПРОЗРАЧНЫМИ отступами вокруг (не блочный halo).
+   Дорожку рисует ::before, из которого маской вырезается прозрачная выемка
+   у ползунка; заливка подрезает свой правый край на ту же величину. Позиция
+   ползунка приходит из inline-переменной --sl-pct (число процентов) на wrap. */
+body.slider-ios{--ios-gap:6px}
+body.slider-ios .ps-bar-wrap{overflow:visible!important;background:transparent!important}
+/* Дорожка = два отдельных сегмента со скруглёнными (pill) концами у зазора:
+   заливка слева + остаток дорожки (::before) справа от ползунка. */
+body.slider-ios .ps-bar-wrap::before{content:'';position:absolute;top:0;bottom:0;left:calc(var(--sl-pct,0)*1% + var(--ios-gap));right:0;border-radius:99px;background:var(--border)}
+body.slider-ios .ps-bar-fill{width:calc(var(--sl-pct,0)*1% - var(--ios-gap))!important;background:var(--accent)!important;border-radius:99px}
 /* — THUMB (thin & iOS) */
 .ps-bar-thumb{position:absolute;left:0;top:50%;transform:translateX(0) translateY(-50%);pointer-events:none;display:none;z-index:2;will-change:transform}
 body.slider-thin .ps-bar-thumb{display:block;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.4)}
-body.slider-ios .ps-bar-thumb{display:block;width:3px;height:14px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
+body.slider-ios .ps-bar-thumb{display:block;width:3px;height:18px;border-radius:2px;background:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.35)}
 /* — WAVE */
 #waveCanvas{display:none;position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 body.slider-wave #waveCanvas{display:block}
@@ -23,7 +30,8 @@ body.slider-cover .ps-bar-fill{background:var(--accent)!important}
 /* — LARGE PLAYER OVERRIDES */
 body.slider-thin #playerContent.style-large .sl-progress .ps-bar-wrap{height:1.5px!important;overflow:visible!important}
 body.slider-thin #playerContent.style-large .sl-progress .ps-bar-thumb{display:block}
-body.slider-ios #playerContent.style-large .sl-progress .ps-bar-wrap{height:3px!important;overflow:visible!important}
+body.slider-ios #playerContent.style-large .sl-progress .ps-bar-wrap{height:3px!important;overflow:visible!important;background:transparent!important}
+body.slider-ios #playerContent.style-large .sl-progress .ps-bar-wrap::before{background:rgba(0,0,0,.28)}
 body.slider-ios #playerContent.style-large .sl-progress .ps-bar-thumb{display:block}
 body.slider-wave #playerContent.style-large .sl-progress .ps-bar-wrap{height:28px!important;overflow:hidden!important;background:transparent!important;border-radius:2px!important}
 body.slider-wave #playerContent.style-large .sl-progress .ps-bar-fill{display:none!important}
@@ -32,7 +40,8 @@ body.slider-wave #playerContent.style-large .sl-progress .ps-bar-inp{inset:0!imp
 /* — CINEMA PLAYER OVERRIDES (прогресс в .cn-progress) */
 body.slider-thin #playerContent.style-cinema .cn-progress .ps-bar-wrap{height:1.5px!important;overflow:visible!important}
 body.slider-thin #playerContent.style-cinema .cn-progress .ps-bar-thumb{display:block}
-body.slider-ios #playerContent.style-cinema .cn-progress .ps-bar-wrap{height:3px!important;overflow:visible!important}
+body.slider-ios #playerContent.style-cinema .cn-progress .ps-bar-wrap{height:3px!important;overflow:visible!important;background:transparent!important}
+body.slider-ios #playerContent.style-cinema .cn-progress .ps-bar-wrap::before{background:rgba(255,255,255,.22)}
 body.slider-ios #playerContent.style-cinema .cn-progress .ps-bar-thumb{display:block}
 body.slider-wave #playerContent.style-cinema .cn-progress .ps-bar-wrap{height:28px!important;overflow:hidden!important;background:transparent!important;border-radius:2px!important}
 body.slider-wave #playerContent.style-cinema .cn-progress .ps-bar-fill{display:none!important}
@@ -43,9 +52,10 @@ body.slider-wave #playerContent.style-cinema .cn-progress .ps-bar-inp{inset:0!im
 body.slider-thin #bigPicOverlay .bp-bar-wrap{height:1.5px!important;overflow:visible!important}
 body.slider-thin #bigPicOverlay .bp-bar-fill{background:var(--accent)!important}
 body.slider-thin #bigPicOverlay .bp-bar-thumb{display:block;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.4)}
-body.slider-ios #bigPicOverlay .bp-bar-wrap{overflow:visible!important}
-body.slider-ios #bigPicOverlay .bp-bar-fill{background:var(--accent)!important}
-body.slider-ios #bigPicOverlay .bp-bar-thumb{display:block;width:3px;height:14px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 3px #090909}
+body.slider-ios #bigPicOverlay .bp-bar-wrap{overflow:visible!important;background:transparent!important}
+body.slider-ios #bigPicOverlay .bp-bar-wrap::before{content:'';position:absolute;top:0;bottom:0;left:calc(var(--sl-pct,0)*1% + var(--ios-gap));right:0;border-radius:99px;background:rgba(255,255,255,.18)}
+body.slider-ios #bigPicOverlay .bp-bar-fill{width:calc(var(--sl-pct,0)*1% - var(--ios-gap))!important;background:var(--accent)!important;border-radius:99px}
+body.slider-ios #bigPicOverlay .bp-bar-thumb{display:block;width:3px;height:18px;border-radius:2px;background:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.4)}
 #bigPicOverlay #bpWaveCanvas{display:none;position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 body.slider-wave #bigPicOverlay #bpWaveCanvas{display:block}
 body.slider-wave #bigPicOverlay .bp-bar-wrap{height:28px!important;border-radius:2px!important;overflow:hidden!important;background:transparent!important}

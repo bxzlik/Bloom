@@ -27,6 +27,10 @@ interface MediaLibState {
   ensureImages: (images: { data: string; name?: string }[]) => { map: Map<string, string>; added: number }
   /** Удалить по id (с каскадной чисткой ссылок в пресетах/применённом). */
   remove: (id: string) => void
+  /** Стереть всю библиотеку загруженных картинок (полностью, как поштучный
+   *  remove): если картинка была применена как фон/обложка/курсор — контекст
+   *  тоже снимается. */
+  clearAll: () => void
   /** Переупорядочить по списку id (drag-reorder). */
   reorder: (ids: string[]) => void
 }
@@ -125,6 +129,25 @@ export const useMediaLibStore = create<MediaLibState>((set, get) => ({
     if (c.vizUrl === item.data) c.setViz(null)
     if (c.cursorUrl === item.data) c.setCursor(null)
     if (c.sliderUrl === item.data) c.setSlider(null)
+  },
+
+  clearAll: () => {
+    const items = get().items
+    if (items.length === 0) return
+    set({ items: [] })
+    void saveItems([])
+    // Полный каскад — как в remove(), но для всех разом: чистим ссылки в
+    // пресетах и снимаем применённые контексты, если они указывали на
+    // удаляемую картинку (это же стирает и копию в _appimg_*).
+    const presets = usePresetsStore.getState()
+    const c = useCustomizationStore.getState()
+    const applied = new Set(items.map((x) => x.data))
+    for (const it of items) presets.purgeImage(it.id, it.data)
+    if (c.bgUrl && applied.has(c.bgUrl)) c.setBg(null)
+    if (c.coverUrl && applied.has(c.coverUrl)) c.setCover(null)
+    if (c.vizUrl && applied.has(c.vizUrl)) c.setViz(null)
+    if (c.cursorUrl && applied.has(c.cursorUrl)) c.setCursor(null)
+    if (c.sliderUrl && applied.has(c.sliderUrl)) c.setSlider(null)
   },
 
   reorder: (ids) => {
