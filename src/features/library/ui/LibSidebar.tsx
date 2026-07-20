@@ -7,7 +7,8 @@ import { useSortable } from '@shared/lib/useSortable'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
 import { artistSourceFromId } from '@entities/artist'
 import { playFromSource } from '@features/player'
-import { Ico } from '@shared/ui/icons/solar'
+import { useUiPrefsStore } from '@features/settings'
+import { Ico, type IconName } from '@shared/ui/icons/solar'
 import {
   useLibStore,
   usePlaylistStore,
@@ -15,6 +16,7 @@ import {
   useFavStore,
   useFollowStore,
   useUnifiedOrderStore,
+  type LibFilter,
   type UnifiedItem,
 } from '../model'
 import {
@@ -90,6 +92,20 @@ const stopAnd = (fn: () => void) => (e: ReactMouseEvent) => {
   fn()
 }
 
+// Иконка циклической кнопки-фильтра по текущему состоянию.
+const FILTER_ICON: Record<LibFilter, IconName> = {
+  all: 'widget',
+  playlists: 'queue',
+  folders: 'folder',
+  artists: 'user',
+}
+// Соответствие значения фильтра типу записи в объединённом списке.
+const FILTER_TYPE: Record<Exclude<LibFilter, 'all'>, 'playlist' | 'folder' | 'artist'> = {
+  playlists: 'playlist',
+  folders: 'folder',
+  artists: 'artist',
+}
+
 /**
  * Левая колонка библиотеки `.lib-sidebar`.
  * SVG-иконки и onclick семантика скопированы без изменений.
@@ -98,13 +114,14 @@ const stopAnd = (fn: () => void) => (e: ReactMouseEvent) => {
  * fav-полю (пока всегда 0 — лайки в фазе D), «История» = длина playHistory
  * из localStorage.
  */
-export const LibSidebar = () => {
+export const LibSidebar = ({ className }: { className?: string } = {}) => {
   const t = useT()
   useLocale()
   const mode = useLibStore((s) => s.mode)
-  const sbView = useLibStore((s) => s.sbView)
+  const sbView = useUiPrefsStore((s) => s.sbView)
   const selectBuiltin = useLibStore((s) => s.selectBuiltin)
-  const cycleSbView = useLibStore((s) => s.cycleSbView)
+  const filter = useLibStore((s) => s.filter)
+  const cycleLibFilter = useLibStore((s) => s.cycleLibFilter)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
   const allTracks = useLibStore((s) => s.tracks)
   const totalTracks = allTracks.length
@@ -193,11 +210,14 @@ export const LibSidebar = () => {
         'lib-sidebar',
         sbView === 'text' && 'lib-sb-compact',
         sbView === 'covers' && 'lib-sb-covers',
+        className,
       )}
     >
       {/* ── Системные ─────────────────────────────────────────── */}
       <div className="lib-block" style={{ paddingBottom: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 4px' }}>
+        {/* padding-bottom 7px: у последнего .lib-item свой margin-bottom 1px,
+            итого низ 8px = верх (симметрия). */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 4px 7px' }}>
           <div
             className={cn(
               'lib-item lib-item-sys',
@@ -269,54 +289,48 @@ export const LibSidebar = () => {
         </div>
       </div>
 
-      {/* ── Объединённый блок папок и плейлистов ──────────────── */}
+      {/* ── Тулбар библиотеки — отдельная карточка-блок с тремя кнопками
+          (фильтр / сортировка / добавить), растянутыми поровну по ширине. ── */}
+      <div className="lib-block lib-toolbar-block">
+        <div className="lib-toolbar">
+          <button
+            id="libFilterBtn"
+            className={cn(filter !== 'all' && 'sort-active')}
+            aria-label={t(`lib.filter.${filter}`)}
+            onClick={cycleLibFilter}
+          >
+            <Ico name={FILTER_ICON[filter]} width={16} height={16} />
+          </button>
+          <button
+            ref={sortBtnRef}
+            id="libSortBtn"
+            className={cn(sortMode !== 'default' && 'sort-active')}
+            onClick={(e) => {
+              e.stopPropagation()
+              setSortMenuOpen((v) => !v)
+            }}
+          >
+            <Ico name="sort" width={16} height={16} />
+          </button>
+          <button
+            ref={addBtnRef}
+            id="libAddBtn"
+            className={cn(addMenuOpen && 'open')}
+            onClick={(e) => {
+              e.stopPropagation()
+              setAddMenuOpen((v) => !v)
+            }}
+          >
+            <Ico name="add" width={16} height={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Список папок/плейлистов/артистов — отдельная карточка ──────── */}
       <div
         className="lib-block lib-block-combined"
         style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
-        <div className="lib-section-title">
-          <span className="lib-section-label">{t('lib.myLibrary')}</span>
-          <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <button id="libSbCompactBtn" onClick={cycleSbView}>
-              <Ico
-                name={sbView === 'full' ? 'list' : sbView === 'text' ? 'menu' : 'gallery'}
-                width={13}
-                height={13}
-              />
-            </button>
-            <button
-              ref={sortBtnRef}
-              id="libSortBtn"
-              className={cn(sortMode !== 'default' && 'sort-active')}
-              onClick={(e) => {
-                e.stopPropagation()
-                setSortMenuOpen((v) => !v)
-              }}
-            >
-              <Ico name="sort" width={13} height={13} />
-            </button>
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                height: 13,
-              }}
-            >
-              <button
-                ref={addBtnRef}
-                id="libAddBtn"
-                className={cn(addMenuOpen && 'open')}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setAddMenuOpen((v) => !v)
-                }}
-              >
-                <Ico name="add" width={13} height={13} />
-              </button>
-            </div>
-          </div>
-        </div>
         <div
           style={{
             flex: 1,
@@ -324,7 +338,7 @@ export const LibSidebar = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
-            padding: '0 4px 10px',
+            padding: '8px 4px 10px',
             scrollbarWidth: 'none',
           }}
         >
@@ -502,7 +516,8 @@ const UnifiedList = ({
   const folderPath = useLibStore((s) => s.folderPath)
   const plId = useLibStore((s) => s.plId)
   const tracks = useLibStore((s) => s.tracks)
-  const sbView = useLibStore((s) => s.sbView)
+  const sbView = useUiPrefsStore((s) => s.sbView)
+  const filter = useLibStore((s) => s.filter)
   const selectFolder = useLibStore((s) => s.selectFolder)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
   const playlists = usePlaylistStore((s) => s.playlists)
@@ -523,13 +538,19 @@ const UnifiedList = ({
     sortMode,
   })
 
-  // Drag-reorder активен ТОЛЬКО в дефолтной сортировке.
+  // Фильтр состава: показываем только выбранный тип (или всё). Полный `entries`
+  // не трогаем — на нём строится порядок; фильтруем только видимую проекцию.
+  const visibleEntries =
+    filter === 'all' ? entries : entries.filter((e) => e.type === FILTER_TYPE[filter])
+
+  // Drag-reorder активен ТОЛЬКО в дефолтной сортировке и без активного фильтра —
+  // иначе onReorder получил бы неполный список ключей и затёр бы скрытые записи.
   // ID для sortable = "type:id", чтобы не конфликтовали playlist/folder.
   const entryKey = (e: Entry): string => `${e.type}:${e.id}`
   const sortable = useSortable<Entry>({
-    items: entries,
+    items: visibleEntries,
     getId: entryKey,
-    enabled: sortMode === 'default',
+    enabled: sortMode === 'default' && filter === 'all',
     // Pinned-партиционирование: закреплённые (ранг 0) реордерятся только среди
     // закреплённых, обычные (ранг 1) — среди обычных. Граница не пересекается.
     getGroupRank: (key) => (pinnedSet.has(key) ? 0 : 1),
@@ -542,10 +563,7 @@ const UnifiedList = ({
     },
   })
 
-  const empty =
-    folders.length === 0 && playlists.length === 0 && followedArtists.length === 0
-
-  if (empty) {
+  if (visibleEntries.length === 0) {
     return (
       <>
         <div
@@ -556,7 +574,7 @@ const UnifiedList = ({
           id="libCombinedEmpty"
           style={{ padding: '4px 10px 6px', fontSize: 11, color: 'var(--muted)' }}
         >
-          {t('lib.sidebar.empty')}
+          {filter === 'all' ? t('lib.sidebar.empty') : t(`lib.filter.empty.${filter}`)}
         </div>
       </>
     )
@@ -603,7 +621,7 @@ const UnifiedList = ({
       id="libUnifiedList"
       style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
     >
-      {entries.map((entry) => {
+      {visibleEntries.map((entry) => {
         // Click-fallback: переключает раздел; вызывается если pointerdown→up
         // без активации drag.
         const clickFallback =

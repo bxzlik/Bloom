@@ -21,7 +21,7 @@ import { Ico } from '@shared/ui/icons/solar'
  * Открытие — флаг `shareOpen` в profileStore.
  */
 
-const SHARE_BASE = 'https://bxzlik.github.io/bloom/share/'
+const SHARE_BASE = 'https://bxzlik.github.io/bloom-link/share/'
 
 const findTrack = (id: string, libTracks: Track[]): Track | undefined =>
   libTracks.find((t) => t.id === id) ?? trackRegistry.get(id)

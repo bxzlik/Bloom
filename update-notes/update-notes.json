@@ -1,4 +1,38 @@
 {
+  "1.8.0": {
+    "title": { "ru": "Что нового в 1.8.0", "en": "What's new in 1.8.0" },
+    "date": "2026-07-20",
+    "pages": [
+      {
+        "title": { "ru": "Миниплеер", "en": "Mini player" },
+        "body": {
+          "ru": "- Обновлён миниплеер\n- Добавлен новый стиль миниплеера",
+          "en": "- Updated the mini player\n- Added a new mini player style"
+        }
+      },
+      {
+        "title": { "ru": "Библиотека", "en": "Library" },
+        "body": {
+          "ru": "- Обновлена библиотека\n- Добавлены новые настройки библиотеки\n- Новый фильтр: все, плейлисты, папки, артисты",
+          "en": "- Updated the library\n- Added new library settings\n- New filter: all, playlists, folders, artists"
+        }
+      },
+      {
+        "title": { "ru": "Сайт", "en": "Website" },
+        "body": {
+          "ru": "- Обновлён сайт — bloom-site-x.vercel.app",
+          "en": "- Updated the website — bloom-site-x.vercel.app"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
   "1.7.2": {
     "title": { "ru": "Что нового в 1.7.2", "en": "What's new in 1.7.2" },
     "date": "2026-07-12",

@@ -70,7 +70,15 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 /* Side queue: vizWrap full width, no extra margin */
 #playerContent.queue-right #vizWrap,
 #playerContent.queue-left #vizWrap{margin:0}
-.lib-sidebar{width:248px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;padding:10px 0 10px 10px;gap:6px;transition:width .18s ease}
+.lib-sidebar{width:248px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;padding:var(--page-pad) 0 var(--page-pad) var(--page-pad);gap:8px;transition:width .18s ease}
+/* Reveal-режим («Показывать при наведении»): сайдбар цельно «выезжает» слева.
+   Анимируем margin-left, а не width — иначе содержимое (особенно кнопки тулбара
+   с flex:1) переформатируется на каждом кадре вместо цельного сдвига. Свёрнутый
+   уезжает за левый край на всю свою ширину (colонка + left page-pad), а
+   overflow:hidden у .page его срезает. Контент отодвигается в потоке. */
+.lib-sidebar.lib-sb-reveal{transition:margin-left .2s ease,width .18s ease}
+.lib-sidebar.lib-sb-reveal.is-collapsed{margin-left:-260px}
+.lib-sidebar.lib-sb-reveal.lib-sb-covers.is-collapsed{margin-left:-86px}
 .lib-block{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
 .lib-block-search{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:6px 8px}
 .lib-block-btns{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:8px;display:flex;flex-direction:column;gap:6px}
@@ -81,6 +89,15 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 .lib-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 14px 6px;display:flex;justify-content:space-between;align-items:center}
 .lib-section-title button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;transition:.15s}
 .lib-section-title button:hover{color:var(--text)}
+
+/* Тулбар библиотеки — отдельная карточка-блок вместо надписи «Моя библиотека».
+   Три кнопки растянуты поровну по ширине карточки. */
+.lib-toolbar-block{padding:0;flex-shrink:0}
+.lib-toolbar{display:flex;align-items:stretch;gap:4px;padding:6px}
+.lib-toolbar button{flex:1;display:flex;align-items:center;justify-content:center;height:30px;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:8px;transition:background .15s,color .15s}
+.lib-toolbar button:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.lib-toolbar #libAddBtn svg{transition:transform .22s cubic-bezier(.34,1.25,.64,1)}
+.lib-toolbar #libAddBtn.open svg{transform:rotate(45deg)}
 #libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;width:248px;box-sizing:border-box;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
 #libAddMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libAddMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
@@ -138,10 +155,21 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 #afsSortBtn.sort-active{color:var(--accent)!important;border-color:rgba(var(--accent-rgb),.3)!important}
 #addFromLibList::-webkit-scrollbar{width:2px}
 #addFromLibList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
-#libSortBtn.sort-active{color:var(--accent)!important}
+#libSortBtn.sort-active,#libFilterBtn.sort-active{color:var(--accent)!important}
 #libAddBtn svg{transition:transform .22s cubic-bezier(.34,1.25,.64,1)}
 #libAddBtn.open svg{transform:rotate(45deg)}
 .lib-item{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;transition:.15s;position:relative;border-radius:calc(var(--radius)*0.55);margin:0 4px 6px}
+/* Плотный отступ между строками сайдбара во всех видах — и список плейлистов/
+   папок/артистов, и системный блок. Специфичность перебивает compact/covers. */
+#libUnifiedList .lib-item{margin-bottom:1px}
+.lib-sidebar .lib-item.lib-item-sys{margin-bottom:1px}
+/* Анимация нажатия: строка слегка продавливается при клике (во всех видах).
+   Драг прячет исходную строку (opacity:0) и тащит клон, так что со scale не
+   конфликтует. will-change держим ПОСТОЯННО (не toggle на hover — иначе слой
+   создаётся в момент наведения и элемент подскакивает); так слой готов заранее и
+   scale идёт на GPU без субпиксельного «съезда». */
+.lib-sidebar .lib-item{will-change:transform}
+.lib-sidebar .lib-item:active{transform:scale(.96)}
 .lib-item:hover{background:var(--hover)}
 .lib-item.active{background:var(--sni-hover)}
 .lib-item.active .lib-item-name{color:var(--text)}

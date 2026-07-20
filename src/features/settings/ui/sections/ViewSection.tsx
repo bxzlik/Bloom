@@ -392,24 +392,73 @@ export const ViewSection = () => {
             </div>
           </div>
 
-          {/* Плавающий / компактный — применимы только к горизонтальному бару. */}
+          {/* Раскладка бара — только для горизонтального (bottom/top). Два сегментных
+              переключателя: положение (обычный/в самом низу/плавающий) и ширина
+              (обычный/компактный). Взаимоисключения внутри каждой группы держит стор. */}
           {(p.playerBarPos === 'bottom' || p.playerBarPos === 'top') && (
-            <div className="sc">
-              <div className="sr">
-                <div>
-                  <div className="sl2">{t('settings.view.mpFloating')}</div>
-                  <div className="ssub">{t('settings.view.mpFloating.sub')}</div>
+            <>
+              <div className="sc">
+                <div className="sc-title">{t('settings.view.mpLayout')}</div>
+                <div className="sc-desc">{t('settings.view.mpLayout.desc')}</div>
+                <div className="s-opt-row" style={{ marginTop: 12 }}>
+                  {/* Обычный — оба флага сняты (стандартный бар в потоке). */}
+                  <OptBtn
+                    active={!p.mpFullWidth && !p.mpFloating}
+                    onClick={() => {
+                      p.set('mpFullWidth', false)
+                      p.set('mpFloating', false)
+                    }}
+                  >
+                    {/* Обычный: сайдбар во всю высоту + бар только в колонке контента. */}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="5" height="18" rx="1.2" /><rect x="10" y="3" width="11" height="12" rx="1.2" /><rect x="10" y="17" width="11" height="4" rx="1.2" /></svg>
+                    {t('settings.view.mpLayout.normal')}
+                  </OptBtn>
+                  {/* В самом низу — mpFullWidth (стор гасит mpFloating). */}
+                  <OptBtn active={p.mpFullWidth} onClick={() => p.set('mpFullWidth', true)}>
+                    {/* Укороченный сайдбар + контент, бар во всю ширину под ними. */}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="5" height="12" rx="1.2" /><rect x="10" y="3" width="11" height="12" rx="1.2" /><rect x="3" y="17" width="18" height="4" rx="1.2" /></svg>
+                    {t('settings.view.mpFullWidth')}
+                  </OptBtn>
+                  {/* Плавающий — mpFloating (стор гасит mpFullWidth+mpFlush). */}
+                  <OptBtn active={p.mpFloating} onClick={() => p.set('mpFloating', true)}>
+                    {/* Контент во всю площадь + плавающая скруглённая плашка поверх низа. */}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="1.2" /><rect x="6" y="15" width="12" height="4" rx="2" fill="currentColor" fillOpacity="0.9" stroke="none" /></svg>
+                    {t('settings.view.mpFloating')}
+                  </OptBtn>
                 </div>
-                <Toggle checked={p.mpFloating} onChange={(v) => p.set('mpFloating', v)} />
               </div>
-              <div className="sr">
-                <div>
-                  <div className="sl2">{t('settings.view.mpCompact')}</div>
-                  <div className="ssub">{t('settings.view.mpCompact.sub')}</div>
+
+              {/* Без отступов — отдельная плитка-тоггл. Одиночный .sr в обычной .sc
+                  глобальное правило (settings.css) рендерит как самостоятельную
+                  плитку. Виден только при «в самом низу» и не в компактном. */}
+              {p.mpFullWidth && !p.mpCompact && (
+                <div className="sc">
+                  <div className="sr">
+                    <div>
+                      <div className="sl2">{t('settings.view.mpFlush')}</div>
+                      <div className="ssub">{t('settings.view.mpFlush.sub')}</div>
+                    </div>
+                    <Toggle checked={p.mpFlush} onChange={(v) => p.set('mpFlush', v)} />
+                  </div>
                 </div>
-                <Toggle checked={p.mpCompact} onChange={(v) => p.set('mpCompact', v)} />
+              )}
+
+              <div className="sc">
+                <div className="sc-title">{t('settings.view.mpWidth')}</div>
+                <div className="sc-desc">{t('settings.view.mpWidth.desc')}</div>
+                <div className="s-opt-row" style={{ marginTop: 12 }}>
+                  <OptBtn active={!p.mpCompact} onClick={() => p.set('mpCompact', false)}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="9" width="18" height="6" rx="1" /></svg>
+                    {t('settings.view.mpWidth.normal')}
+                  </OptBtn>
+                  {/* Компактный — стор гасит mpFlush. */}
+                  <OptBtn active={p.mpCompact} onClick={() => p.set('mpCompact', true)}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="7" y="9" width="10" height="6" rx="1" /></svg>
+                    {t('settings.view.mpCompact')}
+                  </OptBtn>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </>
       )}

@@ -11,7 +11,7 @@ import { useFullscreenHotkey } from './useFullscreenHotkey'
 import { useDeepLinkBridge } from './useDeepLinkBridge'
 import { useOverlayBridge } from './useOverlayBridge'
 import { LibPage, TrackInfoModal, MergeModal, MpNewPlaylistHost, DeepLinkModal, TagEditorHost, useTrackInfoStore, useLibStore, startUsageTracking } from '@features/library'
-import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects } from '@features/player'
+import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects, useMiniBarVisible } from '@features/player'
 import { useQueueStore } from '@features/player/model/queueStore'
 import { trackRegistry } from '@entities/track'
 import { useLyricsBridge } from '@features/lyrics'
@@ -349,8 +349,23 @@ export const App = () => {
   // только для горизонтального бара (bottom/top); для боковых колонок не применимы.
   const mpFloating = usePlayerViewStore((s) => s.mpFloating)
   const mpCompact = usePlayerViewStore((s) => s.mpCompact)
+  // «Во всю ширину» — бар вынимается из .main-wrap в коробку .app (absolute),
+  // а .app получает padding под его высоту, поэтому сайдбар укорачивается и
+  // встаёт НА бар. Взаимоисключим с floating/compact (инвариант держит стор).
+  const mpFullWidth = usePlayerViewStore((s) => s.mpFullWidth)
+  const mpFlush = usePlayerViewStore((s) => s.mpFlush)
   const horizontalBar = playerBarPos === 'bottom' || playerBarPos === 'top'
-  const mpModeClass = [horizontalBar && mpFloating ? 'mp-floating' : '', horizontalBar && mpCompact ? 'mp-compact' : '']
+  // Бар вынут из потока → место под него резервирует раскладка. Пока бар скрыт
+  // (нет трека / страница плеера / выключен) резерв не нужен, иначе внизу висит
+  // пустая полоса и страница «съезжает». Предикат общий с самим баром.
+  const barVisible = useMiniBarVisible()
+  const fullActive = horizontalBar && mpFullWidth && barVisible
+  const mpModeClass = [
+    horizontalBar && mpFloating ? 'mp-floating' : '',
+    horizontalBar && mpCompact ? 'mp-compact' : '',
+    fullActive ? 'mp-full' : '',
+    fullActive && mpFlush ? 'mp-flush' : '',
+  ]
     .filter(Boolean)
     .join(' ')
 
@@ -435,7 +450,7 @@ export const App = () => {
             // top: бар уезжает наверх через reverse (инлайн перебивал бы CSS-класс
             // playerbar-top, поэтому задаём направление здесь по playerBarPos).
             flexDirection: playerBarPos === 'top' ? 'column-reverse' : 'column',
-            gap: 8,
+            gap: 'var(--app-gap)',
             minWidth: 0,
             overflow: 'hidden',
           }}

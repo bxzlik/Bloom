@@ -8,19 +8,20 @@ export type TrackSortMode = 'default' | 'name' | 'artist' | 'dur' | 'date' | 'pl
 export type TrackSortDir = 'asc' | 'desc'
 
 /**
- * Вид строк сайдбара библиотеки (кнопка `libSbCompactBtn`, циклится):
- * - `full`    — обложка + название + подпись + play (по умолчанию)
- * - `text`    — только текст, без обложек (компактный)
- * - `covers`  — только обложки крупным столбиком, без текста
+ * Фильтр состава списка сайдбара (циклическая кнопка `libFilterBtn`):
+ * - `all`       — плейлисты + папки + артисты (по умолчанию)
+ * - `playlists` — только плейлисты
+ * - `folders`   — только папки
+ * - `artists`   — только артисты
  */
-export type SbView = 'full' | 'text' | 'covers'
-const SB_VIEW_CYCLE: SbView[] = ['full', 'text', 'covers']
+export type LibFilter = 'all' | 'playlists' | 'folders' | 'artists'
+const LIB_FILTER_CYCLE: LibFilter[] = ['all', 'playlists', 'folders', 'artists']
 
-// Вид сайдбара персистим в localStorage — переживает перезапуск приложения.
-const SB_VIEW_KEY = 'bloom_lib_sbview'
-const loadSbView = (): SbView => {
-  const v = localStorage.getItem(SB_VIEW_KEY)
-  return v === 'text' || v === 'covers' ? v : 'full'
+// Фильтр персистим в localStorage — переживает перезапуск приложения.
+const LIB_FILTER_KEY = 'bloom_lib_filter'
+const loadLibFilter = (): LibFilter => {
+  const v = localStorage.getItem(LIB_FILTER_KEY)
+  return v === 'playlists' || v === 'folders' || v === 'artists' ? v : 'all'
 }
 
 /**
@@ -36,7 +37,8 @@ export interface LibState {
   mode: LibMode
   plId: string | null
   folderPath: string | null
-  sbView: SbView
+  /** Фильтр состава списка сайдбара (всё / плейлисты / папки / артисты). */
+  filter: LibFilter
   /**
    * Показывать ли grid-обзор библиотеки. Имеет
    * смысл только когда вид библиотеки = «сетка» (uiPrefs.libView==='grid'):
@@ -66,8 +68,8 @@ export interface LibState {
    * gridHome=false (иначе async-эффект возвращал бы обзор поверх выбора).
    */
   onEnterLibrary: () => void
-  /** Циклически переключить вид сайдбара: full → text → covers → full. */
-  cycleSbView: () => void
+  /** Циклически переключить фильтр списка: all → playlists → folders → artists → all. */
+  cycleLibFilter: () => void
   setSearchQuery: (q: string) => void
 
   // — Обновления —
@@ -115,7 +117,7 @@ export const useLibStore = create<LibState>((set, get) => ({
   mode: 'all',
   plId: null,
   folderPath: null,
-  sbView: loadSbView(),
+  filter: loadLibFilter(),
   gridHome: true,
   tracks: [],
   folders: [],
@@ -133,15 +135,16 @@ export const useLibStore = create<LibState>((set, get) => ({
 
   onEnterLibrary: () =>
     set((s) => (s.plId === null && s.folderPath === null ? { gridHome: true } : s)),
-  cycleSbView: () =>
+  cycleLibFilter: () =>
     set((s) => {
-      const next = SB_VIEW_CYCLE[(SB_VIEW_CYCLE.indexOf(s.sbView) + 1) % SB_VIEW_CYCLE.length]
+      const next =
+        LIB_FILTER_CYCLE[(LIB_FILTER_CYCLE.indexOf(s.filter) + 1) % LIB_FILTER_CYCLE.length]
       try {
-        localStorage.setItem(SB_VIEW_KEY, next)
+        localStorage.setItem(LIB_FILTER_KEY, next)
       } catch {
         /* quota → ignore */
       }
-      return { sbView: next }
+      return { filter: next }
     }),
   setSearchQuery: (q) => set({ searchQuery: q.toLowerCase() }),
 

@@ -32,6 +32,12 @@
         height: 96px;
         opacity: 0.9;
         animation: splash-breathe 2.2s ease-in-out infinite;
+        /* Логотип — не выделяемый и не перетаскиваемый: без этого его можно
+           случайно выделить мышью (drag-select), как текст/картинку в браузере. */
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-user-drag: none;
+        pointer-events: none;
       }
       @keyframes splash-breathe {
         0%,

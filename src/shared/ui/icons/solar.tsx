@@ -148,6 +148,52 @@ const CheckBare: SvgComp = (p) => (
     <path d="M5 13l4 4L19 7" />
   </svg>
 )
+// ── Иконки тайтлбара ──
+// Оконный ряд рисуем сами, а не Solar: у Solar эти глифы (maximize-square,
+// pin, bell) заметно жирнее и крупнее по оптике, чем голые «−» и «×» рядом,
+// из-за чего ряд выглядел разнокалиберным. Один stroke-контракт на всех.
+const WinMaxBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" {...p}>
+    <rect x="4" y="4" width="16" height="16" rx="2.5" />
+  </svg>
+)
+// Restore — задний квадрат «выглядывает» из-под переднего.
+const WinRestoreBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <rect x="3" y="8" width="13" height="13" rx="2.5" />
+    <path d="M8 5.5A2.5 2.5 0 0 1 10.5 3h8A2.5 2.5 0 0 1 21 5.5v8a2.5 2.5 0 0 1-2.5 2.5" />
+  </svg>
+)
+// Канцелярская кнопка — «настоящий» thumbtack: широкая шляпка, талия, игла вниз.
+const WinPinBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M12 17v5" />
+    <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+  </svg>
+)
+// Колокол — цельный купол одним контуром (без отдельной «юбки»), язычок дугой.
+const WinBellBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33" />
+    <path d="M10.27 21a2 2 0 0 0 3.46 0" />
+  </svg>
+)
+
+// Bold-начертания пина/колокола (закреплено / панель открыта) — тот же контур,
+// но залитый, чтобы «включённое» состояние читалось не только цветом.
+const WinPinBoldBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M12 17v5" fill="none" />
+    <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+  </svg>
+)
+const WinBellBoldBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33" />
+    <path d="M10.27 21a2 2 0 0 0 3.46 0" fill="none" />
+  </svg>
+)
+
 // Три точки (kebab) — рисуем сами: solar-версия не нравится. Плотные
 // вертикальные точки одинакового радиуса, залитые currentColor.
 const KebabBare: SvgComp = (p) => (
@@ -184,6 +230,12 @@ const ICONS = {
   addCircle: { linear: AddCircleLinear },
   minus: { linear: MinusBare },
   close: { linear: CloseBare },
+  // Отдельные win*-ключи, а не подмена `pin`/`bell`/`square`/`restore`:
+  // те используются и вне тайтлбара, менять их глобально не нужно.
+  winMax: { linear: WinMaxBare },
+  winRestore: { linear: WinRestoreBare },
+  winPin: { linear: WinPinBare, bold: WinPinBoldBare },
+  winBell: { linear: WinBellBare, bold: WinBellBoldBare },
   download: { linear: DownloadLinear },
   eq: { linear: EqLinear },
   clock: { linear: ClockLinear },

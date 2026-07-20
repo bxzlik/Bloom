@@ -118,7 +118,11 @@ export const extractAccentFromCover = async (imgSrc: string): Promise<string | n
 export const extractMpBgColor = async (imgSrc: string): Promise<string | null> => {
   const hsl = await scanDominantHsl(imgSrc)
   if (!hsl) return null
-  const finalS = Math.min(0.65, hsl.s * 0.85)
-  const finalL = Math.max(0.12, Math.min(0.28, hsl.l * 0.6))
+  // Светлота держится в тёмном коридоре, чтобы фон бара в режиме «Цвет обложки»
+  // не выбивался из интерфейса. Исходные 0.12–0.28 были заметно светлее «Темы»,
+  // 0.06–0.13 — наоборот, проваливались в черноту; текущие значения посередине.
+  // Насыщенность слегка подрезана: на тёмном тоне высокая S даёт цветной шум.
+  const finalS = Math.min(0.58, hsl.s * 0.78)
+  const finalL = Math.max(0.09, Math.min(0.18, hsl.l * 0.45))
   return hslToHex(hsl.h, finalS, finalL)
 }

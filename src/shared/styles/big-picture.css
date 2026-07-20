@@ -6,14 +6,15 @@
 #bigPicOverlay .bp-blur.bp-frozen{animation-play-state:paused}
 #bigPicOverlay .bp-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,.02) 0%,rgba(0,0,0,.45) 100%);z-index:2;pointer-events:none}
 #bigPicOverlay .bp-titlebar{position:absolute;top:0;left:0;right:0;height:32px;z-index:4;cursor:default;-webkit-app-region:drag}
-#bigPicOverlay .bp-top-actions{position:absolute;top:18px;right:18px;display:flex;gap:8px;z-index:4;opacity:1;transition:opacity .25s ease,transform .25s ease}
+#bigPicOverlay .bp-top-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:4;opacity:1;transition:opacity .25s ease,transform .25s ease}
 #bigPicOverlay .bp-top-actions.bp-chrome-hidden{opacity:0;transform:translateY(-8px);pointer-events:none}
-#bigPicOverlay .bp-top-btn{width:36px;height:36px;border-radius:50%;background:linear-gradient(160deg,rgba(40,40,44,.45),rgba(16,16,18,.55));border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(34px) saturate(1.7);-webkit-backdrop-filter:blur(34px) saturate(1.7);box-shadow:0 6px 18px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s,box-shadow .15s;outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
-#bigPicOverlay .bp-top-btn:hover{background:linear-gradient(160deg,rgba(58,58,64,.55),rgba(26,26,30,.6));box-shadow:0 6px 18px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12)}
-#bigPicOverlay .bp-top-btn:focus{outline:none;box-shadow:0 6px 18px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08)}
-#bigPicOverlay .bp-top-btn:active{background:linear-gradient(160deg,rgba(66,66,72,.6),rgba(30,30,34,.62))}
+/* Фон/блюр — как у бейджей (.preset-badge): плоская заливка + лёгкий blur(6px). */
+#bigPicOverlay .bp-top-btn{width:33px;height:33px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s,border-color .15s;outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
+#bigPicOverlay .bp-top-btn:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.18)}
+#bigPicOverlay .bp-top-btn:focus{outline:none}
+#bigPicOverlay .bp-top-btn:active{background:rgba(255,255,255,.16)}
 #bigPicOverlay .bp-top-btn.bp-lyr-active{color:var(--accent,#6c5ce7)}
-#bigPicOverlay .bp-font-panel{position:absolute;top:62px;right:18px;z-index:4;background:linear-gradient(160deg,rgba(40,40,44,.45),rgba(16,16,18,.55));border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:8px;backdrop-filter:blur(34px) saturate(1.7);-webkit-backdrop-filter:blur(34px) saturate(1.7);box-shadow:0 18px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);display:flex;flex-direction:column;gap:4px;transform-origin:top right;animation:ctxIn .18s cubic-bezier(.22,1,.36,1)}
+#bigPicOverlay .bp-font-panel{position:absolute;top:53px;right:12px;z-index:4;background:linear-gradient(160deg,rgba(40,40,44,.45),rgba(16,16,18,.55));border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:8px;backdrop-filter:blur(34px) saturate(1.7);-webkit-backdrop-filter:blur(34px) saturate(1.7);box-shadow:0 18px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);display:flex;flex-direction:column;gap:4px;transform-origin:top right;animation:ctxIn .18s cubic-bezier(.22,1,.36,1)}
 .bp-panel-sep{height:1px;background:rgba(255,255,255,.09);margin:4px 6px}
 .bp-view{display:flex;flex-direction:column;gap:2px}
 .bp-view-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:4px 10px 4px}

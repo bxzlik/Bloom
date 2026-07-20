@@ -156,7 +156,7 @@
    уходила под самый верх окна без «висящего» зазора. */
 body{--tb-h:32px}
 body.fullscreen,body.titlebar-autohide{--tb-h:0px}
-#winTitlebar{height:32px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;flex-shrink:0;user-select:none;-webkit-user-select:none;position:relative;z-index:1001}
+#winTitlebar{height:32px;display:flex;align-items:center;gap:8px;padding:0 4px 0 12px;flex-shrink:0;user-select:none;-webkit-user-select:none;position:relative;z-index:1001}
 body.fullscreen #winTitlebar{display:none}
 /* ===== TITLEBAR AUTO-HIDE (в потоке: прячется вверх, выезжает на своё место) =====
    Панель окна остаётся в потоке #root: отрицательный margin-top убирает её за верхний
@@ -175,13 +175,15 @@ body.titlebar-autohide #winTitlebar:hover{margin-top:0}
 #winTitleCenter .wtc-icon{width:13px;height:13px;flex-shrink:0;opacity:.7}
 #winTitleCenter .wtc-label{font-size:12px;font-weight:600;color:var(--text2)}
 .win-btns{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
-.win-btn{width:46px;height:32px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
-.win-btn:hover{background:rgba(var(--text2-rgb,140,140,140),.15);color:var(--text)}
-/* Колокольчик/пин — не оконные кнопки, поэтому зона нажатия уже стандартных 46px. */
-.win-bell,.win-pin{width:34px}
-.win-bell:hover,.win-pin:hover{background:none;color:var(--text)}
+.win-btn{width:32px;height:32px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
+/* Ховер по всему ряду одинаковый: без плашки, только подсветка иконки. */
+.win-btn:hover{background:none;color:var(--text)}
+/* Колокольчик/пин — не оконные, но ширина та же 32px: в Dotify весь блок идёт
+   ровным шагом 32px без «рваных» промежутков. */
+.win-bell,.win-pin{width:32px}
 .win-pin.on{color:var(--text)}
-.win-close:hover{background:#c42b1c!important;color:#fff!important}
+/* Закрытие — тот же «безфоновый» ховер, но краснеет сама иконка. */
+.win-close:hover{background:none!important;color:#e5484d!important}
 
 /* ===== DISCORD RPC SECTION ===== */
 .drpc-main-card{display:flex;align-items:center;gap:14px;background:var(--card-solid,var(--card));border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;cursor:pointer;transition:.2s;user-select:none}

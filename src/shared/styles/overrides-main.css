@@ -226,7 +226,7 @@ body {
   background: rgba(255, 255, 255, 0.06) !important;
 }
 .lib-sidebar .lib-item.active {
-  background: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Play-кнопка в пунктах sidebar (.lib-item-play) — убираем color-change на

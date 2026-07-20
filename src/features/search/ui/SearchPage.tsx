@@ -389,7 +389,9 @@ const SearchHistoryDropdown = ({
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    const calc = () => setMaxH(Math.max(180, window.innerHeight - el.getBoundingClientRect().top - 16))
+    // 130px снизу — запас под плеер-бар, 380px — потолок, чтобы список не растягивался на пол-экрана.
+    const calc = () =>
+      setMaxH(Math.min(380, Math.max(180, window.innerHeight - el.getBoundingClientRect().top - 130)))
     calc()
     window.addEventListener('resize', calc)
     return () => window.removeEventListener('resize', calc)

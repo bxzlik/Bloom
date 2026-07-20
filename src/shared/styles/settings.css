@@ -124,6 +124,10 @@
 .s-nav-item:hover{background:var(--sni-hover);color:var(--text)}
 .s-nav-item.active{background:rgba(var(--accent-rgb),.12);color:var(--accent)}
 .s-nav-item .s-nav-icon{width:22px;height:22px;border-radius:calc(var(--radius)*0.45);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+/* Бренд-лого интеграций (ScLogo/YtmLogo/…) задают размер атрибутами, а не CSS.
+   Без flex-shrink:0 флекс ужимает их бокс на доли пикселя при дробном масштабе
+   вебвью (фуллскрин/зум), и UA-шный svg{overflow:hidden} срезает правый край. */
+.s-nav-item .s-nav-icon svg{flex-shrink:0;overflow:visible}
 .s-nav-item.active .s-nav-icon{}
 .s-nav-item .s-nav-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);position:absolute;right:8px;top:50%;transform:translateY(-50%);opacity:0;transition:.15s}
 .s-nav-item.modified .s-nav-dot{opacity:1}

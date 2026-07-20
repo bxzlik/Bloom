@@ -154,7 +154,7 @@ const BigPicInner = () => {
           onClick={toggleQueue}
           aria-label={t('player.aria.queue')}
         >
-          <Ico name="queue" width={16} height={16} />
+          <Ico name="queue" width={15} height={15} />
         </button>
         <button
           className={`bp-top-btn${panel === 'lyrics' ? ' bp-lyr-active' : ''}`}
@@ -162,13 +162,13 @@ const BigPicInner = () => {
           onClick={toggleLyrics}
           aria-label={t('player.lyrics')}
         >
-          <Ico name="lyrics" width={16} height={16} />
+          <Ico name="lyrics" width={15} height={15} />
         </button>
         <button className="bp-top-btn" id="bpFontBtn" onClick={toggleFontPanel} aria-label={t('player.aria.textSettings')}>
-          <Ico name="settings" width={16} height={16} />
+          <Ico name="settings" width={15} height={15} />
         </button>
         <button className="bp-top-btn" onClick={closeBig} aria-label={t('player.aria.close')}>
-          <Ico name="close" width={16} height={16} />
+          <Ico name="close" width={15} height={15} />
         </button>
       </div>
 

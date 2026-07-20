@@ -91,6 +91,11 @@ export interface PlayerViewPrefs {
   mpFloating: boolean
   /** Компактный бар (узкий, по центру), не во всю ширину. Только для bottom/top. */
   mpCompact: boolean
+  /** «В самом низу»: бар вдоль низа окна под сайдбаром (тот укорачивается). По
+   *  умолчанию во всю ширину; с mpCompact ужимается по центру. Только bottom/top. */
+  mpFullWidth: boolean
+  /** Убрать отступы вокруг бара — прижат к краю окна. Только при mpFullWidth. */
+  mpFlush: boolean
   /** Нижний бар включён (preset 'off' → false, toggleMiniPlayer). */
   mpEnabled: boolean
   mpBgMode: MpBgMode
@@ -139,6 +144,8 @@ const DEFAULTS: PlayerViewPrefs = {
   playerBarPos: 'bottom',
   mpFloating: false,
   mpCompact: false,
+  mpFullWidth: false,
+  mpFlush: false,
   mpEnabled: true,
   mpBgMode: 'theme',
   mpProgress: { line: true, bg: false, circle: false },
@@ -222,6 +229,10 @@ const load = (): PlayerViewPrefs => {
         p.playerBarPos === 'top' || p.playerBarPos === 'left' || p.playerBarPos === 'right' ? p.playerBarPos : 'bottom',
       mpFloating: !!p.mpFloating,
       mpCompact: !!p.mpCompact,
+      mpFullWidth: !!p.mpFullWidth,
+      // Отступы можно убрать только у бара во всю ширину и не в компактном режиме —
+      // иначе флаг ни к чему не применяется и «залипал» бы в persist невидимо.
+      mpFlush: !!p.mpFullWidth && !p.mpCompact && !!p.mpFlush,
       mpEnabled: p.mpEnabled !== false,
       mpBgMode: p.mpBgMode === 'cover' || p.mpBgMode === 'coverColor' ? p.mpBgMode : 'theme',
       mpProgress: {
@@ -278,6 +289,8 @@ const persist = (s: PlayerViewPrefs): void => {
         playerBarPos: s.playerBarPos,
         mpFloating: s.mpFloating,
         mpCompact: s.mpCompact,
+        mpFullWidth: s.mpFullWidth,
+        mpFlush: s.mpFlush,
         mpEnabled: s.mpEnabled,
         mpBgMode: s.mpBgMode,
         mpProgress: s.mpProgress,
@@ -312,6 +325,19 @@ export const usePlayerViewStore = create<PlayerViewState>((set, get) => ({
   ...load(),
   set: (key, value) => {
     set({ [key]: value } as Partial<PlayerViewState>)
+    // «В самом низу» (mpFullWidth — бар вдоль низа окна под сайдбаром) и
+    // «плавающий» (абсолютит внутри .main-wrap) взаимоисключимы: оба перехватывают
+    // позиционирование бара и дерутся. «Компактный» же сочетается с любым из них —
+    // он лишь ужимает бар по центру внутри выбранного режима. Гасим соседей здесь,
+    // а не в UI, чтобы инвариант держался для любого вызова set (пресеты/сброс).
+    if (key === 'mpFullWidth' && value) set({ mpFloating: false })
+    else if (key === 'mpFloating' && value) set({ mpFullWidth: false, mpFlush: false })
+    // «Без отступов» — подрежим «в самом низу»: выключился родитель → гасим и его.
+    if (key === 'mpFullWidth' && !value) set({ mpFlush: false })
+    // «Без отступов» и «компактный» несовместимы: flush снимает скругление/боковые
+    // кромки у бара во всю ширину, а компактный — узкая скруглённая плашка по центру.
+    if (key === 'mpCompact' && value) set({ mpFlush: false })
+    else if (key === 'mpFlush' && value) set({ mpCompact: false })
     persist(get())
   },
   applyMpPreset: (name) => {

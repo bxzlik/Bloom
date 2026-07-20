@@ -68,6 +68,31 @@ export const LibrarySection = () => {
           </OptBtn>
         </div>
       </div>
+      <div className="sc sc-keep" style={{ display: p.libView === 'list' ? undefined : 'none' }}>
+        <div className="sc-title">{t('settings.interface.libSidebar.title')}</div>
+        <div className="sc-desc">{t('settings.interface.libSidebar.desc')}</div>
+        <div className="s-opt-row">
+          <OptBtn active={p.sbView === 'full'} onClick={() => p.set('sbView', 'full')}>
+            <Ico name="list" width={20} height={20} />
+            {t('settings.interface.libSidebar.full')}
+          </OptBtn>
+          <OptBtn active={p.sbView === 'text'} onClick={() => p.set('sbView', 'text')}>
+            <Ico name="menu" width={20} height={20} />
+            {t('settings.interface.libSidebar.text')}
+          </OptBtn>
+          <OptBtn active={p.sbView === 'covers'} onClick={() => p.set('sbView', 'covers')}>
+            <Ico name="gallery" width={20} height={20} />
+            {t('settings.interface.libSidebar.covers')}
+          </OptBtn>
+        </div>
+        <div className="sr" style={{ marginTop: 14 }}>
+          <div>
+            <div className="sl2">{t('settings.interface.libSbHover.title')}</div>
+            <div className="ssub">{t('settings.interface.libSbHover.desc')}</div>
+          </div>
+          <Toggle checked={p.libSbHover} onChange={(v) => p.set('libSbHover', v)} />
+        </div>
+      </div>
       <div className="sc sc-keep">
         <div className="sc-title">{t('settings.interface.libDensity.title')}</div>
         <div className="sc-desc">{t('settings.interface.libDensity.desc')}</div>

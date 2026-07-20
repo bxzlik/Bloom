@@ -492,8 +492,8 @@ const PlayerContent = () => {
   // (рамка-квадрат), как у блока fav/add.
   const ctrlGroupsNode = (
     <>
-      {srcBtnNode && <div className="ps-ctrl" style={{ flexShrink: 0, padding: 6 }}>{srcBtnNode}</div>}
-      <div className="ps-ctrl" style={{ flexShrink: 0, gap: 2, padding: 6 }}>
+      {srcBtnNode && <div className="ps-ctrl" style={{ flexShrink: 0, padding: 4 }}>{srcBtnNode}</div>}
+      <div className="ps-ctrl" style={{ flexShrink: 0, gap: 2, padding: 4 }}>
         {eqBtnNode}
         {speedBtnNode}
       </div>
@@ -512,7 +512,7 @@ const PlayerContent = () => {
   // В большом стиле громкость — компактная кнопка-иконка с вертикальным поп-апом
   // (как в нижнем баре #miniPlayer), а не инлайн-слайдер.
   const volumeNodeLarge = (
-    <div className="ps-ctrl" style={{ flexShrink: 0, padding: 6 }}>
+    <div className="ps-ctrl" style={{ flexShrink: 0, padding: 4 }}>
       <VolumePopupBtn volume={volume} onWheel={onWheelVol} />
     </div>
   )
@@ -595,9 +595,10 @@ const PlayerContent = () => {
   ]
     .filter(Boolean)
     .join(' ')
+  // padding — отступ контента страницы от рамки .main (--page-pad, см. base.css).
   const pcStyle: React.CSSProperties = gridLayout
-    ? { display: 'grid', flex: 1, overflow: 'hidden', gap: 8, padding: 8 }
-    : { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: 8, padding: 8 }
+    ? { display: 'grid', flex: 1, overflow: 'hidden', gap: 10, padding: 'var(--page-pad)' }
+    : { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: 10, padding: 'var(--page-pad)' }
 
   // ── Кино (style-cinema): grid обложка(кр.) + очередь; инфо/прогресс/контролы
   // накладываются оверлеем на низ обложки (нет отдельного нижнего бара). ──────
@@ -746,7 +747,7 @@ const PlayerContent = () => {
               {transportNode}
 
               {/* VOLUME + cov-btns (fav/add) + group-боксы (площадка | eq+скорость) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+              <div className="ps-vol-row" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
                 {volumeNode}
                 <div className="ps-ctrl" id="mainCovBtnsWrap" style={{ flexShrink: 0, gap: 2 }}>
                   {/* `.off` → нейтральный цвет (без него #mainCovFav красный по

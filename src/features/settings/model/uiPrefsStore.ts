@@ -24,6 +24,14 @@ import { invoke } from '@shared/tauri'
 export type SidebarPos = 'left' | 'top' | 'right'
 export type LibView = 'list' | 'grid'
 export type LibDensity = 'comfortable' | 'compact'
+/**
+ * Вид строк сайдбара библиотеки (раньше циклился кнопкой `libSbCompactBtn`,
+ * теперь настраивается в «Настройки → Библиотека»):
+ * - `full`   — обложка + название + подпись + play (по умолчанию)
+ * - `text`   — только текст, без обложек (компактный)
+ * - `covers` — только обложки крупным столбиком, без текста
+ */
+export type SbView = 'full' | 'text' | 'covers'
 
 export interface UiPrefs {
   sidebarPos: SidebarPos
@@ -37,6 +45,10 @@ export interface UiPrefs {
   sbSep: boolean
   /** Вид библиотеки: список (сайдбар) или сетка карточек. */
   libView: LibView
+  /** Вид строк сайдбара библиотеки: полный / только текст / только обложки. */
+  sbView: SbView
+  /** Скрывать сайдбар библиотеки и разворачивать его при наведении на левый край. */
+  libSbHover: boolean
   /** Плотность строк треклиста библиотеки: просторно / компактно. */
   libDensity: LibDensity
   /** Показывать колонку «Альбом» в треклисте (на широком окне). */
@@ -79,6 +91,8 @@ const DEFAULTS: UiPrefs = {
   titlebarAutohide: false,
   sbSep: true,
   libView: 'list',
+  sbView: 'full',
+  libSbHover: false,
   libDensity: 'comfortable',
   libColAlbum: true,
   libColDate: true,
@@ -111,6 +125,15 @@ const load = (): UiPrefs => {
       titlebarAutohide: !!p.titlebarAutohide,
       sbSep: p.sbSep !== false,
       libView: p.libView === 'grid' ? 'grid' : 'list',
+      // Миграция: раньше вид сайдбара жил в отдельном ключе `bloom_lib_sbview`.
+      sbView:
+        p.sbView === 'text' || p.sbView === 'covers'
+          ? p.sbView
+          : ((localStorage.getItem('bloom_lib_sbview') as SbView | null) === 'text' ||
+              localStorage.getItem('bloom_lib_sbview') === 'covers')
+            ? (localStorage.getItem('bloom_lib_sbview') as SbView)
+            : 'full',
+      libSbHover: !!p.libSbHover,
       libDensity: p.libDensity === 'compact' ? 'compact' : 'comfortable',
       libColAlbum: p.libColAlbum !== false,
       libColDate: p.libColDate !== false,
@@ -169,6 +192,8 @@ const persist = (s: UiPrefs): void => {
         titlebarAutohide: s.titlebarAutohide,
         sbSep: s.sbSep,
         libView: s.libView,
+        sbView: s.sbView,
+        libSbHover: s.libSbHover,
         libDensity: s.libDensity,
         libColAlbum: s.libColAlbum,
         libColDate: s.libColDate,

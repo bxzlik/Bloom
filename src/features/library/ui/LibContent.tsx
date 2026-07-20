@@ -23,6 +23,7 @@ import {
 } from '../lib'
 import { playFromSource, playShuffledFromSource } from '@features/player'
 import { LibTracklist } from './LibTracklist'
+import { LibScrollbar } from './LibScrollbar'
 import { LibGridOverview } from './LibGridOverview'
 import { PlSourcesEditor } from './PlSourcesEditor'
 import { PlMenu } from './PlMenu'
@@ -503,6 +504,9 @@ export const LibContent = () => {
             )}
           </div>
         </div>
+        {/* Индикатор прокрутки на нижней границе шапки — отражает/двигает
+            вертикальный скролл трек-листа. Только когда список показан. */}
+        {!editing && !editorClosing && <LibScrollbar />}
       </div>
       {editing || editorClosing ? (
         // Большой редактор: трек-лист скрыт, на его месте — источники обновления.

@@ -22,6 +22,12 @@ export const LibPage = ({ active }: { active: boolean }) => {
   useLibraryBridge()
 
   const libView = useUiPrefsStore((s) => s.libView)
+  const sbView = useUiPrefsStore((s) => s.sbView)
+  const sbHover = useUiPrefsStore((s) => s.libSbHover)
+  // Reveal-режим: сайдбар свёрнут, разворачивается при наведении на левый край.
+  const revealMode = libView === 'list' && sbHover
+  const [sbOpen, setSbOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const [dragOver, setDragOver] = useState(false)
   // Событие приходит на всё окно, поэтому проверяем активность страницы внутри
@@ -45,6 +51,31 @@ export const LibPage = ({ active }: { active: boolean }) => {
   useEffect(() => {
     if (!active) setDragOver(false)
   }, [active])
+
+  // Reveal-режим: свёрнут при x за пределами сайдбара, разворачивается при
+  // наведении на левые ~14px. Гистерезис (открыть ≤14, закрыть >ширины сайдбара)
+  // не даёт дребезга. Ширина сайдбара зависит от вида (covers уже, чем полный).
+  useEffect(() => {
+    if (!active || !revealMode) {
+      setSbOpen(false)
+      return
+    }
+    const sbWidth = sbView === 'covers' ? 86 : 260 // ширина колонки + left page-pad
+    const onMove = (e: MouseEvent) => {
+      const root = rootRef.current
+      if (!root) return
+      const r = root.getBoundingClientRect()
+      const x = e.clientX - r.left
+      const y = e.clientY - r.top
+      if (x < 0 || y < 0 || y > r.height) {
+        setSbOpen(false)
+        return
+      }
+      setSbOpen((open) => (open ? x <= sbWidth + 6 : x <= 14))
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [active, revealMode, sbView])
 
   // Перетаскивание аудиофайлов в окно.
   useEffect(() => {
@@ -104,10 +135,15 @@ export const LibPage = ({ active }: { active: boolean }) => {
 
   return (
     <div
+      ref={rootRef}
       className={cn(`page${active ? ' active' : ''}`, dragOver && 'lib-drag-over')}
       id="page-lib"
     >
-      {libView === 'list' && <LibSidebar />}
+      {libView === 'list' && (
+        <LibSidebar
+          className={cn(revealMode && 'lib-sb-reveal', revealMode && !sbOpen && 'is-collapsed')}
+        />
+      )}
       <LibContent />
     </div>
   )

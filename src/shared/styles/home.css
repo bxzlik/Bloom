@@ -20,7 +20,7 @@
    Края свечения гасятся радиальной маской на .hwb-aura, поэтому прямоугольного
    обреза нет. Цвета орбов — в --wave-1/2/3 (акцент темы либо тон обложки трека,
    см. WaveCard.tsx). */
-.home-wave-bar{position:relative;height:440px;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;--wave-1:#ff3d1a;--wave-2:#ff8a00;--wave-3:#ffd21e}
+.home-wave-bar{position:relative;height:440px;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;--wave-1:#fff;--wave-2:#fff;--wave-3:#fff}
 
 /* Турбулентное пламя (SVG). Градиенты сами затухают в прозрачность к краям —
    отдельная маска не нужна, прямоугольного обреза нет. CSS-масштаб добавляет

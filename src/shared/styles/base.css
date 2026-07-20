@@ -9,7 +9,9 @@ input,textarea{user-select:text;-webkit-user-select:text}
 #bgl::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,var(--bg-dim,0.65));z-index:2;pointer-events:none}
 #bgl.no-bg::after{display:none}
 #bgl.no-bg::before{display:none}
-.app{display:flex;position:relative;z-index:1;background:transparent;padding:8px;gap:8px;width:100%;flex:1;box-sizing:border-box;transition:height .15s;align-items:stretch;overflow:hidden}
+/* Внешний отступ окна и зазор между блоками — единые ручки для всего шелла. */
+:root{--app-pad:8px;--app-gap:8px;--page-pad:12px}
+.app{display:flex;position:relative;z-index:1;background:transparent;padding:var(--app-pad);gap:var(--app-gap);width:100%;flex:1;box-sizing:border-box;transition:height .15s;align-items:stretch;overflow:hidden}
 .sidebar{width:62px;flex-shrink:0;border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:0;backdrop-filter:blur(12px)}
 .sb-logo{width:34px;height:34px;border-radius:calc(var(--radius) * 0.6);background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:var(--accent-text);flex-shrink:0;}
 .sb-sep{width:28px;height:1px;background:rgba(255,255,255,.07);margin:8px 0;flex-shrink:0}.sidebar>.sb-sep{display:none}
@@ -28,7 +30,7 @@ input,textarea{user-select:text;-webkit-user-select:text}
 .app.sidebar-top .sb-nav{flex-direction:row;position:absolute;left:50%;transform:translateX(-50%);justify-content:center;align-items:center;gap:2px;height:100%;width:auto;flex:none}
 .app.sidebar-top .sni{width:40px;height:40px}
 .app.sidebar-top .sb-bot{flex-direction:row;padding-top:0;border-top:none;padding-left:8px;border-left:none;width:auto;margin-top:0;margin-left:auto;height:100%;align-items:center;gap:2px}
-.app.sidebar-top .main-wrap{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;overflow:hidden}
+.app.sidebar-top .main-wrap{flex:1;display:flex;flex-direction:column;gap:var(--app-gap);min-width:0;overflow:hidden}
 
 /* ===== SIDEBAR POSITION: RIGHT ===== */
 .app.sidebar-right{flex-direction:row-reverse}
@@ -49,15 +51,15 @@ input,textarea{user-select:text;-webkit-user-select:text}
 /* Сайдбар вынимается из потока (absolute) → .main-wrap занимает всю ширину; капсула
    висит поверх, как плавающий мини-плеер (см. player.css .app.mp-floating). Внутренняя
    раскладка — content-sized (как compact): sb-nav не растягивается, разделители видны. */
-.app.sidebar-floating .sidebar{position:absolute;z-index:40;left:8px;top:50%;transform:translateY(-50%);width:auto;height:auto;padding:10px 6px;border-radius:999px;background:rgba(255,255,255,.04);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 8px 32px rgba(0,0,0,.45)}
+.app.sidebar-floating .sidebar{position:absolute;z-index:40;left:var(--app-pad);top:50%;transform:translateY(-50%);width:auto;height:auto;padding:10px 6px;border-radius:999px;background:rgba(255,255,255,.04);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 8px 32px rgba(0,0,0,.45)}
 .app.sidebar-floating .sb-nav{flex:none}
 .app.sidebar-floating .sb-bot{margin-top:0;padding-top:0}
 .app.sidebar-floating .sidebar>.sb-sep{display:block}
 .app.sidebar-floating.no-sb-sep .sidebar>.sb-sep{display:none!important}
 /* Справа */
-.app.sidebar-floating.sidebar-right .sidebar{left:auto;right:8px}
+.app.sidebar-floating.sidebar-right .sidebar{left:auto;right:var(--app-pad)}
 /* Сверху — горизонтальная капсула по центру (наследует row-раскладку sidebar-top) */
-.app.sidebar-floating.sidebar-top .sidebar{left:50%;right:auto;top:8px;transform:translateX(-50%);flex-direction:row;width:auto;height:auto;padding:6px 10px}
+.app.sidebar-floating.sidebar-top .sidebar{left:50%;right:auto;top:var(--app-pad);transform:translateX(-50%);flex-direction:row;width:auto;height:auto;padding:6px 10px}
 .app.sidebar-floating.sidebar-top .sb-nav{position:static;transform:none;flex:none;height:auto}
 .app.sidebar-floating.sidebar-top .sb-bot{margin-left:0;padding-left:0;height:auto}
 /* ===== SIDEBAR AUTO-HIDE (прячется за край, выезжает при наведении) =====
@@ -74,14 +76,14 @@ input,textarea{user-select:text;-webkit-user-select:text}
 
 /* — В потоке (обычный/компактный): отрицательный отступ прячет и освобождает место. — */
 .app.sidebar-autohide:not(.sidebar-floating) .sidebar{transition:margin .22s ease}
-/* Отступ гасит РОВНО ширину сайдбара + gap (.app{gap:8px}), чтобы скрытый сайдбар
-   давал нулевой вклад во flex-трек, а контент получал тот же симметричный паддинг
-   8px, что и в плавающем режиме. Бордер и скруглённые углы (тени в этом режиме нет)
-   оказываются за краем (x≤0) и обрезаются `.app{overflow:hidden}` — щель не видна.
-   Лишний запас здесь перетягивал бы контент влево и съедал его левый отступ. */
-.app.sidebar-autohide:not(.sidebar-floating) .sidebar{margin-left:calc(-62px - 8px)}
-.app.sidebar-autohide:not(.sidebar-floating).sidebar-right .sidebar{margin-left:0;margin-right:calc(-62px - 8px)}
-.app.sidebar-autohide:not(.sidebar-floating).sidebar-top .sidebar{margin-left:0;margin-top:calc(-52px - 8px)}
+/* Отступ гасит РОВНО ширину сайдбара + gap (.app{gap:var(--app-gap)}), чтобы скрытый
+   сайдбар давал нулевой вклад во flex-трек, а контент получал тот же симметричный
+   паддинг, что и в плавающем режиме. Бордер и скруглённые углы (тени в этом режиме
+   нет) оказываются за краем (x≤0) и обрезаются `.app{overflow:hidden}` — щель не
+   видна. Лишний запас здесь перетягивал бы контент влево и съедал его левый отступ. */
+.app.sidebar-autohide:not(.sidebar-floating) .sidebar{margin-left:calc(-62px - var(--app-gap))}
+.app.sidebar-autohide:not(.sidebar-floating).sidebar-right .sidebar{margin-left:0;margin-right:calc(-62px - var(--app-gap))}
+.app.sidebar-autohide:not(.sidebar-floating).sidebar-top .sidebar{margin-left:0;margin-top:calc(-52px - var(--app-gap))}
 /* Раскрытие — на штатное место (правила последние по порядку → перебивают скрытые). */
 .app.sidebar-autohide:not(.sidebar-floating) .sb-edge-trigger:hover ~ .sidebar,
 .app.sidebar-autohide:not(.sidebar-floating) .sidebar:hover{margin-left:0;margin-right:0;margin-top:0}
@@ -108,15 +110,15 @@ input,textarea{user-select:text;-webkit-user-select:text}
 #mpBgImgLayer img{width:100%;height:100%;object-fit:cover;display:block}
 #mpVol::-webkit-slider-thumb{background:rgba(255,255,255,0.85)!important}
 #mpVol::-moz-range-thumb{background:rgba(255,255,255,0.85)!important}
-#miniPlayer .cc{color:rgba(255,255,255,0.55)}
-#miniPlayer .cc:hover{color:rgba(255,255,255,0.95)!important}
-#miniPlayer .cc.on{color:rgba(255,255,255,0.95)}
+#miniPlayer .cc{color:rgba(255,255,255,0.68)}
+#miniPlayer .cc:hover{color:#fff!important}
+#miniPlayer .cc.on{color:#fff}
 #miniPlayer .cc-play{background:rgba(255,255,255,0.92);color:#111}
 #miniPlayer .cc-play:hover{background:#fff!important}
 /* Плоская кнопка play в нижнем баре (body.play-flat — по умолчанию). Перебивает
    id-специфичные правила выше. */
-body.play-flat #miniPlayer .cc-play{background:none;color:rgba(255,255,255,0.55)}
-body.play-flat #miniPlayer .cc-play:hover{background:none!important;color:rgba(255,255,255,0.95)!important}
+body.play-flat #miniPlayer .cc-play{background:none;color:rgba(255,255,255,0.68)}
+body.play-flat #miniPlayer .cc-play:hover{background:none!important;color:#fff!important}
 .app.playerbar-left #miniPlayer,.app.playerbar-right #miniPlayer{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* ===== GLOBAL SIDE PANEL (queue/lyrics from mini player) ===== */
 #globalRightPanel{display:flex;flex-shrink:0;overflow:hidden;width:0;flex-direction:column;transition:width .3s cubic-bezier(.32,.72,0,1);}
@@ -125,5 +127,5 @@ body.play-flat #miniPlayer .cc-play:hover{background:none!important;color:rgba(2
    из-под края, а не сжимается по мере анимации. */
 #grpInner{width:320px;height:100%;display:flex;flex-direction:column;}
 #mainContentRow{transition:gap .3s cubic-bezier(.32,.72,0,1)}
-#mainContentRow.has-grp-panel{gap:8px}
+#mainContentRow.has-grp-panel{gap:var(--app-gap)}
 .app.grp-side-left #mainContentRow{flex-direction:row-reverse!important}

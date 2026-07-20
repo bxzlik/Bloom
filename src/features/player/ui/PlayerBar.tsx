@@ -10,7 +10,7 @@ import {
   TagEditor,
 } from '@features/library'
 import type { Track } from '@entities/track'
-import { trackRegistry, CoverSourceBadge, ArtistLinks } from '@entities/track'
+import { trackRegistry, ArtistLinks } from '@entities/track'
 import { useNavStore } from '@app/navigationStore'
 import { useDetailStore } from '@features/search/model/detailStore'
 import { usePlayerStore } from '../model/store'
@@ -39,7 +39,7 @@ import { Ico } from '@shared/ui/icons/solar'
  * Нижний #miniPlayer в main окне — (≈2897-2960).
  *
  * 3 равные колонки:
- *   LEFT  : cover 44×44 + title/artist + fav
+ *   LEFT  : cover MP_COVER×MP_COVER + title/artist + fav
  *   CENTER: repeat | prev | PLAY 48 | next | shuffle
  *   RIGHT : current/duration + volume + queue/lyrics/big-pic
  *
@@ -50,15 +50,54 @@ import { Ico } from '@shared/ui/icons/solar'
  * Отложено: bg-progress mode (#mpBgProgress), volume popup для left/right
  * playerbar mode, big-pic, ring shape для cover.
  */
+
+/** Высота бара. Задана в двух местах (видимый бар и скрытая заглушка) — держим
+ *  одной константой, иначе layout прыгает при появлении первого трека.
+ *  ВАЖНО: дублируется в CSS как `--mp-h` (player.css, режим `.app.mp-full`) —
+ *  там бар вынут из потока, и место под него резервируют маржой дети `.app`.
+ *  Меняешь здесь — меняй и там, иначе под баром щель или нахлёст. */
+const MP_H = 66.5
+/** Размер обложки в баре. Кольцо прогресса (MpCircleRing) считается от него. */
+const MP_COVER = 46
+/** Зазор между обложкой и кольцом с каждой стороны. */
+const RING_GAP = 4
+/** Утопление штриха внутрь svg-бокса, чтобы 2.5px обводка не срезалась краем. */
+const RING_INSET = 2
+const RING_BOX = MP_COVER + RING_GAP * 2
+/**
+ * Ширина бара в компактном режиме. Захардкожена намеренно: раньше считалась по
+ * контенту, из-за чего бар менял ширину от числа видимых кнопок. Ужимается
+ * до ширины окна через max-width в CSS (.app.mp-compact #miniPlayer).
+ */
+const MP_COMPACT_W = 1140
+/** Непрозрачность акцента у элементов прогресса — кольцо вокруг обложки и линия
+ *  сверху. Одно значение на оба, чтобы они не разъезжались по цвету. */
+const MP_PROGRESS_OP = 0.7
+/* Обводка бара живёт в player.css: она зависит от режима (обычный / плавающий),
+   а инлайн-стиль перебил бы CSS-правило для плавающего. */
+
+/**
+ * Показан ли сейчас нижний бар. Скрыт, когда нет трека, открыт page-player или
+ * бар выключен (preset off). Исключение: детальный оверлей поверх плеера
+ * (артист/альбом) — тогда показываем, т.к. полный плеер перекрыт и иначе нечем
+ * управлять воспроизведением.
+ *
+ * Вынесено в хук, потому что предикат нужен ДВУМ местам: самому бару и App.tsx,
+ * который в режиме «во всю ширину» резервирует под бар место в раскладке. Если
+ * их развести, скрытый бар оставит пустую полосу внизу (страница «съезжает»).
+ */
+export const useMiniBarVisible = (): boolean => {
+  const curId = useQueueStore((s) => s.curId)
+  const page = useNavStore((s) => s.page)
+  const detailOpen = useDetailStore((s) => s.stack.length > 0)
+  const mpEnabled = usePlayerViewStore((s) => s.mpEnabled)
+  return !!curId && mpEnabled && (page !== 'player' || detailOpen)
+}
+
 export const PlayerBar = () => {
   const t = useT()
   const curId = useQueueStore((s) => s.curId)
   const page = useNavStore((s) => s.page)
-  // Детальный оверлей (артист/альбом/плейлист) открывается ПОВЕРХ страницы плеера,
-  // но page остаётся 'player'. Тогда бар нужно показать — иначе на странице артиста,
-  // открытой из плеера, нет управления воспроизведением (см. `visible` ниже).
-  const detailOpen = useDetailStore((s) => s.stack.length > 0)
-
   const title = usePlayerStore((s) => s.title)
   const artist = usePlayerStore((s) => s.artist)
   const artworkRaw = usePlayerStore((s) => s.artwork)
@@ -78,8 +117,8 @@ export const PlayerBar = () => {
   const inLib = useLibStore((s) => (curId ? s.tracks.some((t) => t.id === curId) : false))
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
 
-  // Настройки бара (раздел «Плеер» → Мини-плеер): вкл/выкл, фон, форма обложки.
-  const mpEnabled = usePlayerViewStore((s) => s.mpEnabled)
+  // Настройки бара (раздел «Плеер» → Мини-плеер): фон, форма обложки.
+  // Флаг вкл/выкл (mpEnabled) читает useMiniBarVisible выше.
   const mpBgMode = usePlayerViewStore((s) => s.mpBgMode)
   const mpCoverShape = usePlayerViewStore((s) => s.mpCoverShape)
   const mpRounded = usePlayerViewStore((s) => s.mpRounded)
@@ -119,10 +158,10 @@ export const PlayerBar = () => {
     }
   }, [mpBgMode, artwork])
 
-  // Компактный бар: ширину задаём ОПРЕДЕЛЁННОЙ и симметричной —
-  // `2 × max(лево, право) + центр`. Только при определённой ширине боковые
-  // дорожки грида (1fr|auto|1fr) уравниваются, и транспорт (пред/плей/след)
-  // встаёт ровно по центру; при этом бар растёт с числом видимых кнопок.
+  // Компактный бар: ширина фиксированная (MP_COMPACT_W), считаем только ширину
+  // центра (--mp-cw) — симметричную, `2 × max(repeat, shuffle) + трио`. Она нужна,
+  // чтобы грид 1fr|auto|1fr центрировал ИМЕННО трио (пред/плей/след), даже когда
+  // repeat/shuffle скрыты.
   const barRef = useRef<HTMLDivElement>(null)
   const leftRef = useRef<HTMLDivElement>(null)
   const centerRef = useRef<HTMLDivElement>(null)
@@ -143,8 +182,7 @@ export const PlayerBar = () => {
       if (!kids.length) return 0
       return kids.reduce((w, k) => w + k.offsetWidth, 0) + gap * (kids.length - 1)
     }
-    const side = Math.max(rowW(leftRef.current, 10), rowW(rightRef.current, 10))
-    // Центр тоже делаем симметричным: 2×max(repeat,shuffle)+трио. Тогда грид
+    // Центр делаем симметричным: 2×max(repeat,shuffle)+трио. Тогда грид
     // 1fr|auto|1fr внутри .mp-center центрирует ИМЕННО трио (пред/плей/след),
     // даже если repeat/shuffle скрыты. Дети .mp-center: [repeat-ячейка, трио,
     // shuffle-ячейка]; ширину ячеек берём по их содержимому (rowW детей).
@@ -154,8 +192,10 @@ export const PlayerBar = () => {
     // +8: 2 зазора (4×2) между ячейками .mp-center.
     const center = centerSide * 2 + trioW + 8
     centerRef.current?.style.setProperty('--mp-cw', `${Math.ceil(center)}px`)
-    // +48: горизонтальный паддинг .mp-inner (16×2) + 2 межколоночных зазора (8×2).
-    bar.style.setProperty('--mp-fw', `${Math.ceil(side * 2 + center + 48)}px`)
+    // Ширина бара — ФИКСИРОВАННАЯ (MP_COMPACT_W), не по контенту: иначе бар
+    // растёт/скачет от числа видимых кнопок. Центрирование трио это не ломает —
+    // за него отвечает --mp-cw + грид 1fr|auto|1fr внутри .mp-center.
+    bar.style.setProperty('--mp-fw', `${MP_COMPACT_W}px`)
   }, [mpCompact, curId, page, title, artist, playing, volume, mpHide.fav, mpHide.add, mpHide.repeat, mpHide.shuffle, mpHide.time, mpHide.queue, mpHide.lyrics, mpHide.bigpic, t])
 
   const goNav = useNavStore((s) => s.goNav)
@@ -193,21 +233,17 @@ export const PlayerBar = () => {
   const grpMode = useGrpStore((s) => s.mode)
   const openGrp = useGrpStore((s) => s.openPanel)
 
-  // Скрываем bar когда нет трека, открыт page-player, или бар выключен (preset off).
-  // Исключение: детальный оверлей поверх плеера (артист/альбом) — тогда показываем,
-  // т.к. полный плеер перекрыт и иначе нечем управлять воспроизведением.
-  const visible = !!curId && mpEnabled && (page !== 'player' || detailOpen)
+  const visible = useMiniBarVisible()
   if (!visible) {
     return (
       <div
         id="miniPlayer"
         style={{
           display: 'none',
-          height: 72,
+          height: MP_H,
           flexShrink: 0,
           borderRadius: 'var(--radius)',
-          border: '1px solid rgba(255,255,255,var(--wb))',
-          backdropFilter: 'blur(12px)',
+            backdropFilter: 'blur(12px)',
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -247,10 +283,9 @@ export const PlayerBar = () => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: 72,
+        height: MP_H,
         flexShrink: 0,
         borderRadius: 'var(--radius)',
-        border: '1px solid rgba(255,255,255,var(--wb))',
         backdropFilter: 'blur(12px)',
         overflow: 'hidden',
         position: 'relative',
@@ -269,7 +304,7 @@ export const PlayerBar = () => {
       {/* Прогресс-бар (линия 2px / фон-заливка) + drag/click-seek + wheel-seek.
           Изолирован в подкомпонент: тик timeupdate перерисовывает только его,
           а не весь PlayerBar (иначе при игре лагали бы тогглы/интеракции). */}
-      <MpProgress />
+      <MpProgress tint={coverColor} />
 
       <div
         className="mp-inner"
@@ -277,7 +312,7 @@ export const PlayerBar = () => {
           display: 'flex',
           alignItems: 'center',
           height: '100%',
-          padding: '0 16px',
+          padding: '0 12px',
           width: '100%',
           // Контент над фон-слоями (#mpBgProgress / #mpBgImgLayer), mp-bg-cover.
           position: 'relative',
@@ -288,7 +323,7 @@ export const PlayerBar = () => {
         <div
           ref={leftRef}
           className="mp-left"
-          style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}
+          style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}
         >
           <div
             id="mpCoverWrap"
@@ -302,8 +337,8 @@ export const PlayerBar = () => {
               onClick={() => useBigPicStore.getState().openBig()}
               style={{
                 position: 'relative',
-                width: 44,
-                height: 44,
+                width: MP_COVER,
+                height: MP_COVER,
                 borderRadius: 'calc(var(--radius) * 0.55)',
                 background: 'var(--card)',
                 overflow: 'hidden',
@@ -320,10 +355,9 @@ export const PlayerBar = () => {
               ) : (
                 <NoteSvg size={16} />
               )}
-              {curTrack && <CoverSourceBadge track={curTrack} />}
               {/* Иконка «на весь экран» по центру обложки (появляется по наведению) — Solar bigpic. */}
               <span className="mp-cover-bigpic">
-                <Ico name="bigpic" width={18} height={18} />
+                <Ico name="bigpic" width={17} height={17} />
               </span>
             </div>
           </div>
@@ -358,10 +392,14 @@ export const PlayerBar = () => {
                 id="mpArtist"
                 style={{
                   fontSize: 11,
-                  color: 'var(--text2)',
+                  // Ярче обычного --text2 (#999): на тонированном фоне бара он
+                  // проваливался. Через color-mix, а не фикс. цвет — чтобы
+                  // светлые темы не получили белёсый текст на белом.
+                  color: 'color-mix(in srgb, var(--text2) 45%, var(--text))',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  lineHeight: 1.1,
                   marginTop: 2,
                   display: 'flex',
                   alignItems: 'center',
@@ -412,12 +450,12 @@ export const PlayerBar = () => {
         <div
           ref={centerRef}
           className="mp-center"
-          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0 }}
+          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 }}
         >
           <span className="mp-side-ctl mp-side-l">
             {!mpHide.repeat && (
               <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
-                <RepeatSvg size={15} />
+                <RepeatSvg size={16} />
                 {repeat === 2 && <RepeatOneBadge />}
               </button>
             )}
@@ -426,7 +464,9 @@ export const PlayerBar = () => {
             <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
               <PrevSvg size={17} />
             </button>
-            <button className="cc-play" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
+            {/* is-play — только для треугольника: он смещён вправо в своём viewBox
+                (контур 3…23.2 при центре бокса 12), CSS двигает его обратно. */}
+            <button className={`cc-play${playing ? '' : ' is-play'}`} onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
               {playing ? <PauseSvg size={15} /> : <PlaySvg size={15} />}
             </button>
             <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
@@ -436,7 +476,7 @@ export const PlayerBar = () => {
           <span className="mp-side-ctl mp-side-r">
             {!mpHide.shuffle && (
               <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={smartShuffle ? t('player.aria.smartShuffle') : t('player.aria.shuffle')}>
-                <ShuffleSvg size={15} />
+                <ShuffleSvg size={16} />
                 {smartShuffle && <span className="cc-badge"><Ico name="stars" size={9} /></span>}
               </button>
             )}
@@ -452,7 +492,7 @@ export const PlayerBar = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            gap: 10,
+            gap: 2,
             minWidth: 0,
           }}
         >
@@ -477,7 +517,7 @@ export const PlayerBar = () => {
               style={{ flexShrink: 0 }}
               onClick={() => openGrp('lyrics')}
             >
-              <LyricsSvg size={15} />
+              <LyricsSvg size={16} />
             </button>
           )}
           {/* Big picture — полноэкранный режим обложки (#bigPicOverlay). */}
@@ -488,7 +528,7 @@ export const PlayerBar = () => {
               style={{ flexShrink: 0 }}
               onClick={() => useBigPicStore.getState().openBig()}
             >
-              <BigPicSvg size={15} />
+              <BigPicSvg size={16} />
             </button>
           )}
         </div>
@@ -544,7 +584,11 @@ const fmt = (sec: number): string => {
  * Прогресс-полоса (2px) нижнего бара. Подписана на position/duration ВНУТРИ,
  * поэтому тик timeupdate перерисовывает только её, не весь PlayerBar.
  */
-const MpProgress = () => {
+/**
+ * @param tint Фон бара в режиме «Цвет обложки» (доминант обложки) либо null.
+ *   Заливка прогресса строится от него — осветлённый тон того же трека.
+ */
+const MpProgress = ({ tint }: { tint: string | null }) => {
   const position = usePlayerStore((s) => s.position)
   const duration = usePlayerStore((s) => s.duration)
   const showLine = usePlayerViewStore((s) => s.mpProgress.line)
@@ -597,7 +641,11 @@ const MpProgress = () => {
             left: 0,
             height: '100%',
             width: `${pct}%`,
-            background: 'rgba(var(--accent-rgb),0.18)',
+            // В режиме «Цвет обложки» заливка строится от тона самого трека
+            // (осветлённый доминант) — акцент приложения там смотрелся чужеродно:
+            // синяя полоса поверх красного бара. В остальных режимах фон не
+            // тонирован, и акцент по-прежнему уместен.
+            background: tint ? `color-mix(in srgb, ${tint} 90%, #fff)` : 'rgba(var(--accent-rgb),0.18)',
             pointerEvents: 'none',
             zIndex: 0,
             transition: dragFrac != null ? 'none' : 'width .08s linear',
@@ -631,7 +679,11 @@ const MpProgress = () => {
             style={{
               height: '100%',
               width: `${pct}%`,
-              background: 'rgba(255,255,255,0.75)',
+              // Тот же цвет, что у кольца вокруг обложки: акцент, приглушённый
+              // общей MP_PROGRESS_OP. Через opacity, а не rgba — акцент задан
+              // токеном --accent, разложить его на каналы в inline-стиле нельзя.
+              background: 'var(--accent)',
+              opacity: MP_PROGRESS_OP,
               pointerEvents: 'none',
               transition: dragFrac != null ? 'none' : 'width .08s linear',
             }}
@@ -685,12 +737,17 @@ const MpCircleRing = () => {
   const show = usePlayerViewStore((s) => s.mpProgress.circle)
   const round = usePlayerViewStore((s) => s.mpCoverShape === 'round')
   // Форма (path/perimeter) зависит только от round + --radius (не от позиции).
+  // Геометрия считается от MP_COVER: бокс = обложка + RING_GAP с каждой стороны,
+  // штрих утоплен внутрь на RING_INSET, чтобы не срезался краем svg.
   const shape = useMemo(() => {
-    if (round) return { perim: 144.51, d: null as string | null }
+    const c = RING_BOX / 2
+    if (round) return { perim: 2 * Math.PI * (c - RING_INSET - 1), d: null as string | null }
     const cssR = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius')) || 14
-    const r = Math.min(Math.round(cssR * 0.55 + 4), 24)
-    const perim = 4 * (48 - 2 * r) + 2 * Math.PI * r
-    const d = `M 26 2 H ${50 - r} Q 50 2 50 ${2 + r} V ${50 - r} Q 50 50 ${50 - r} 50 H ${2 + r} Q 2 50 2 ${50 - r} V ${2 + r} Q 2 2 ${2 + r} 2 H 26`
+    const side = RING_BOX - 2 * RING_INSET
+    const far = RING_BOX - RING_INSET
+    const r = Math.min(Math.round(cssR * 0.55 + 4), Math.floor(side / 2))
+    const perim = 4 * (side - 2 * r) + 2 * Math.PI * r
+    const d = `M ${c} ${RING_INSET} H ${far - r} Q ${far} ${RING_INSET} ${far} ${RING_INSET + r} V ${far - r} Q ${far} ${far} ${far - r} ${far} H ${RING_INSET + r} Q ${RING_INSET} ${far} ${RING_INSET} ${far - r} V ${RING_INSET + r} Q ${RING_INSET} ${RING_INSET} ${RING_INSET + r} ${RING_INSET} H ${c}`
     return { perim, d }
   }, [round])
   if (!show) return null
@@ -699,10 +756,10 @@ const MpCircleRing = () => {
   return (
     <svg
       id="mpCircleRing"
-      width="52"
-      height="52"
-      viewBox="0 0 52 52"
-      style={{ position: 'absolute', top: -4, left: -4, pointerEvents: 'none' }}
+      width={RING_BOX}
+      height={RING_BOX}
+      viewBox={`0 0 ${RING_BOX} ${RING_BOX}`}
+      style={{ position: 'absolute', top: -RING_GAP, left: -RING_GAP, pointerEvents: 'none' }}
     >
       {shape.d ? (
         <>
@@ -711,6 +768,9 @@ const MpCircleRing = () => {
             d={shape.d}
             fill="none"
             stroke="var(--accent)"
+            /* Приглушено: на автоакценте от обложки кольцо в полную силу
+               полыхает вокруг картинки и перетягивает внимание с самого бара. */
+            strokeOpacity={MP_PROGRESS_OP}
             strokeWidth={2.5}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -721,18 +781,19 @@ const MpCircleRing = () => {
         </>
       ) : (
         <>
-          <circle cx="26" cy="26" r="23" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2.5} />
+          <circle cx={RING_BOX / 2} cy={RING_BOX / 2} r={RING_BOX / 2 - RING_INSET - 1} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2.5} />
           <circle
-            cx="26"
-            cy="26"
-            r="23"
+            cx={RING_BOX / 2}
+            cy={RING_BOX / 2}
+            r={RING_BOX / 2 - RING_INSET - 1}
             fill="none"
             stroke="var(--accent)"
+            strokeOpacity={MP_PROGRESS_OP}
             strokeWidth={2.5}
             strokeLinecap="round"
             strokeDasharray={shape.perim}
             strokeDashoffset={offset}
-            transform="rotate(-90 26 26)"
+            transform={`rotate(-90 ${RING_BOX / 2} ${RING_BOX / 2})`}
             style={{ transition: 'stroke-dashoffset .08s linear' }}
           />
         </>

@@ -214,6 +214,8 @@ const SEARCH_RULES: Record<SectionId, { include: string[]; exclude?: string[] }>
       'settings.interface.nav',
       'settings.interface.cat.library',
       'settings.interface.libView',
+      'settings.interface.libSidebar',
+      'settings.interface.libSbHover',
       'settings.interface.libDensity',
       'settings.interface.libCols',
     ],
@@ -222,6 +224,8 @@ const SEARCH_RULES: Record<SectionId, { include: string[]; exclude?: string[] }>
     include: [
       'settings.library.',
       'settings.interface.libView',
+      'settings.interface.libSidebar',
+      'settings.interface.libSbHover',
       'settings.interface.libDensity',
       'settings.interface.libCols',
     ],

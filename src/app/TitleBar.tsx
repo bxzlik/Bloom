@@ -87,7 +87,7 @@ export const TitleBar = () => {
             aria-pressed={tbPinned}
           >
             {/* Канцелярская кнопка (pin) — bold, когда окно закреплено. */}
-            <Ico name="pin" variant={tbPinned ? 'bold' : 'linear'} width={12} height={12} />
+            <Ico name="winPin" variant={tbPinned ? 'bold' : 'linear'} width={13} height={13} />
           </button>
         )}
         {tbMin && (
@@ -97,7 +97,7 @@ export const TitleBar = () => {
             onClick={onMin}
             aria-label={t('titlebar.min')}
           >
-            <Ico name="minus" width={16} height={16} />
+            <Ico name="minus" width={14} height={14} />
           </button>
         )}
         {tbMax && (
@@ -108,16 +108,15 @@ export const TitleBar = () => {
             aria-label={maximized ? t('titlebar.restore') : t('titlebar.max')}
           >
             {maximized ? (
-              // Restore — Solar minimize-square-minimalistic.
-              <Ico name="restore" width={14} height={14} />
+              <Ico name="winRestore" width={12} height={12} />
             ) : (
-              <Ico name="square" width={14} height={14} />
+              <Ico name="winMax" width={12} height={12} />
             )}
           </button>
         )}
         {tbClose && (
           <button className="win-btn win-close" onClick={onClose} aria-label={t('common.close')}>
-            <Ico name="close" width={16} height={16} />
+            <Ico name="close" width={14} height={14} />
           </button>
         )}
       </div>

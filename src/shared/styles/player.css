@@ -1,3 +1,16 @@
+/* Базовый фон бара — тема. Нужен для режима фона «Тема»: там инлайн фон не
+   задаётся (он только у «Цвета обложки»), а «Обложка» закрывает бар своим слоем
+   с картинкой, поэтому без этого правила бар в «Теме» оставался прозрачным.
+   Не мешает остальным режимам: инлайновый цвет обложки перебивает это правило,
+   стекло (body.glass-mode.mp-bg-theme) — тоже, у него !important. */
+#miniPlayer{background:var(--block-color)}
+/* Обводка. В обычном (встроенном) режиме — историческая белая на --wb, как у
+   .sidebar и .main: бар стоит в общем ряду блоков и должен читаться так же.
+   В плавающем он висит поверх контента отдельной плашкой, и там кромка считается
+   от --bg — чуть светлее фона приложения, чтобы плашка от него отделялась. */
+#miniPlayer{border:1px solid rgba(255,255,255,var(--wb))}
+.app.mp-floating #miniPlayer{border-color:color-mix(in srgb, var(--bg) 97%, #fff)}
+
 /* ===== PLAYERBAR POSITION: TOP ===== */
 .app.playerbar-top .main-wrap{flex-direction:column-reverse}
 .app.playerbar-top #miniPlayer{border-radius:var(--radius)}
@@ -6,17 +19,68 @@
 /* Бар вынут из потока (absolute) и не отодвигает контент — лежит поверх него. */
 .app.mp-floating .main-wrap{position:relative}
 /* position:absolute с !important — инлайн position:relative у #miniPlayer иначе перебивает. */
-.app.mp-floating #miniPlayer{position:absolute!important;left:8px;right:8px;bottom:8px;z-index:40;width:auto;box-shadow:0 8px 32px rgba(0,0,0,.45)}
+.app.mp-floating #miniPlayer{position:absolute!important;left:8px;right:8px;bottom:8px;z-index:40;width:auto}
 .app.mp-floating.playerbar-top #miniPlayer{bottom:auto;top:8px}
 
-/* ===== PLAYERBAR: COMPACT (узкий, по центру, ширина по содержимому) — bottom/top =====
-   Ширина бара — ОПРЕДЕЛЁННАЯ, из JS-переменной --mp-fw (= 2×max(лево,право)+центр,
-   считает PlayerBar): чем больше видимых кнопок (см. mpHide), тем бар длиннее, а
-   симметрия даёт центрирование транспорта (см. грид ниже). Фолбэк — фикс. 620px,
-   пока --mp-fw ещё не выставлена. min-width 620 — бар не уже прежнего фикс. размера. */
-.app.mp-compact:not(.mp-floating) #miniPlayer{align-self:center;width:var(--mp-fw,min(620px,calc(100% - 16px)))!important;min-width:min(620px,calc(100% - 16px));max-width:calc(100% - 16px)}
-/* Компактный + плавающий: то же по ширине, но overlay-позиционирование (центр через left/transform). */
-.app.mp-compact.mp-floating #miniPlayer{left:50%;right:auto;transform:translateX(-50%);width:var(--mp-fw,min(620px,calc(100% - 16px)))!important;min-width:min(620px,calc(100% - 16px));max-width:calc(100% - 16px)}
+/* ===== PLAYERBAR: FULL WIDTH (во всю ширину окна, под сайдбаром) — bottom/top =====
+   Бар лежит в .main-wrap (соседе сайдбара), поэтому в потоке он ограничен шириной
+   контента. Здесь он абсолютится по коробке .app (у неё position:relative) и
+   растягивается на всё окно, а .app получает padding под его высоту — так сайдбар
+   и контент укорачиваются и «стоят» на баре, вместо того чтобы им перекрываться.
+
+   --mp-h должна совпадать с MP_H из PlayerBar.tsx: высота бара инлайновая (JS), а
+   резерв места считает CSS — разъедутся, и под баром появится щель/нахлёст.
+
+   z-index ниже плавающего сайдбара (40) и оверлеев: full-width бар — фон-подложка
+   раскладки, всплывающая капсула сайдбара должна ложиться поверх него. */
+:root{--mp-h:66.5px}
+/* !important — инлайн position:relative у #miniPlayer иначе перебивает (как в mp-floating). */
+.app.mp-full #miniPlayer{position:absolute!important;left:var(--app-pad);right:var(--app-pad);bottom:var(--app-pad);z-index:30;width:auto}
+.app.mp-full.playerbar-top #miniPlayer{bottom:auto;top:var(--app-pad)}
+/* Компактный поверх «в самом низу»: узкий бар по центру нижней (верхней) полосы.
+   align-self из общего mp-compact-правила на absolute-баре игнорируется, поэтому
+   центрируем явно через left/transform (как в mp-compact.mp-floating). Ширину
+   даёт --mp-fw (тот же механизм, что у обычного компактного). Специфичность
+   (1,3,0) перебивает left/right базового mp-full-правила (1,2,0). */
+.app.mp-full.mp-compact #miniPlayer{left:50%;right:auto;transform:translateX(-50%);width:var(--mp-fw,min(1140px,calc(100% - 16px)))!important;max-width:calc(100% - 16px)}
+
+/* Резерв места под вынутый из потока бар — МАРЖОЙ НА ДЕТЯХ .app, не паддингом
+   на самой .app. Причина: у .app `flex:1` (flex-basis:0%), и при box-sizing:
+   border-box паддинг добавляется поверх разрешённой flex-длины — .app становится
+   выше вьюпорта, вся страница уезжает вниз, а бар уходит за нижний край окна.
+   Маржа на stretch-детях укорачивает их, не трогая коробку .app.
+   Дети .app: .sb-edge-trigger (absolute — не в счёт), .sidebar, .main-wrap и
+   боковые колонки бара (display:none в этом режиме). */
+.app.mp-full>.sidebar,.app.mp-full>.main-wrap{margin-bottom:calc(var(--mp-h) + var(--app-gap))}
+.app.mp-full.playerbar-top>.sidebar,.app.mp-full.playerbar-top>.main-wrap{margin-bottom:0;margin-top:calc(var(--mp-h) + var(--app-gap))}
+/* Сайдбар сверху: .app — колонка, дети идут стопкой, поэтому резерв держит только
+   последний по потоку (иначе место под бар отсчитается дважды). */
+.app.mp-full.sidebar-top>.sidebar{margin-bottom:0}
+.app.mp-full.sidebar-top.playerbar-top>.main-wrap{margin-top:0}
+
+/* — Без отступов: бар прижат к краю окна. Резерв на --app-pad меньше — эти 8px у
+     бара теперь свои. — */
+.app.mp-full.mp-flush>.sidebar,.app.mp-full.mp-flush>.main-wrap{margin-bottom:calc(var(--mp-h) + var(--app-gap) - var(--app-pad))}
+.app.mp-full.mp-flush.playerbar-top>.sidebar,.app.mp-full.mp-flush.playerbar-top>.main-wrap{margin-bottom:0;margin-top:calc(var(--mp-h) + var(--app-gap) - var(--app-pad))}
+.app.mp-full.mp-flush.sidebar-top>.sidebar{margin-bottom:0}
+.app.mp-full.mp-flush.sidebar-top.playerbar-top>.main-wrap{margin-top:0}
+/* Бар прижат к краю окна. Скругление и внешние кромки снимаются: на самом краю
+   от них остаётся видимый обрубок рамки. (mp-flush несовместим с mp-compact.) */
+.app.mp-full.mp-flush #miniPlayer{left:0;right:0;bottom:0;border-radius:0!important;border-left:none;border-right:none;border-bottom:none}
+.app.mp-full.mp-flush.playerbar-top #miniPlayer{bottom:auto;top:0;border-top:none;border-bottom:1px solid rgba(255,255,255,var(--wb))}
+
+/* ===== PLAYERBAR: COMPACT (по центру, ФИКСИРОВАННАЯ ширина) — bottom/top =====
+   Ширина бара — константа MP_COMPACT_W из PlayerBar, приезжает в --mp-fw. Раньше
+   считалась по содержимому (2×max(лево,право)+центр) и бар менял ширину от числа
+   видимых кнопок (mpHide) — теперь нет. Фолбэк 1024px должен совпадать с
+   MP_COMPACT_W, иначе бар моргнёт шириной до первого layout-effect'а.
+   Центрирование транспорта обеспечивает --mp-cw (см. грид ниже), не ширина бара. */
+.app.mp-compact:not(.mp-floating) #miniPlayer{align-self:center;width:var(--mp-fw,min(1140px,calc(100% - 16px)))!important;max-width:calc(100% - 16px)}
+/* Компактный + плавающий: то же по ширине, но overlay-позиционирование (центр через
+   left/transform). Отступ от нижнего края больше общего mp-floating (8px) — бар
+   «висит» выше, как в референсе. Для playerbar-top зеркалим в top. */
+.app.mp-compact.mp-floating #miniPlayer{left:50%;right:auto;transform:translateX(-50%);width:var(--mp-fw,min(1140px,calc(100% - 16px)))!important;max-width:calc(100% - 16px);bottom:16px}
+.app.mp-compact.mp-floating.playerbar-top #miniPlayer{bottom:auto;top:16px}
 /* Внутренний контейнер — грид 1fr|auto|1fr вместо инлайн flex. При ОПРЕДЕЛЁННОЙ
    ширине бара (--mp-fw) боковые дорожки 1fr равны, поэтому центральная группа
    (транспорт) всегда по центру бара, как бы ни различались лево/право. */
@@ -28,11 +92,11 @@
    гридом 1fr|auto|1fr с симметричной шириной (--mp-cw), и трио центрируется
    всегда: пустая боковая ячейка всё равно держит свою 1fr-дорожку. */
 .mp-side-ctl,.mp-transport{display:contents}
-.app.mp-compact #miniPlayer .mp-center{flex:initial!important;display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:4px;width:var(--mp-cw,auto)}
+.app.mp-compact #miniPlayer .mp-center{flex:initial!important;display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:2px;width:var(--mp-cw,auto)}
 .app.mp-compact #miniPlayer .mp-side-ctl{display:flex;align-items:center}
 .app.mp-compact #miniPlayer .mp-side-l{justify-content:flex-end}
 .app.mp-compact #miniPlayer .mp-side-r{justify-content:flex-start}
-.app.mp-compact #miniPlayer .mp-transport{display:flex;align-items:center;gap:4px}
+.app.mp-compact #miniPlayer .mp-transport{display:flex;align-items:center;gap:2px}
 /* Заголовок/исполнитель — потолок ширины, иначе длинное название растянуло бы
    бар и «длина от числа кнопок» потерялась бы (текст всё ещё с marquee/ellipsis). */
 .app.mp-compact #miniPlayer .mp-left .mp-title-wrap,.app.mp-compact #miniPlayer #mpArtist{max-width:200px!important}
@@ -45,9 +109,9 @@
 /* In left/right mode: hide horizontal vol slider */
 .app.playerbar-left .ps-vol .vol-sl,.app.playerbar-right .ps-vol .vol-sl{display:none!important}
 /* SIDEBAR-TOP + PLAYERBAR LEFT/RIGHT: col becomes absolute, main-wrap gets margin */
-.app.sidebar-top.playerbar-left #miniPlayerCol,.app.sidebar-top.playerbar-right #miniPlayerColRight{position:absolute;top:68px;bottom:8px;width:72px;height:auto;z-index:2}
-.app.sidebar-top.playerbar-left #miniPlayerCol{left:8px}
-.app.sidebar-top.playerbar-right #miniPlayerColRight{right:8px}
+.app.sidebar-top.playerbar-left #miniPlayerCol,.app.sidebar-top.playerbar-right #miniPlayerColRight{position:absolute;top:68px;bottom:var(--app-pad);width:72px;height:auto;z-index:2}
+.app.sidebar-top.playerbar-left #miniPlayerCol{left:var(--app-pad)}
+.app.sidebar-top.playerbar-right #miniPlayerColRight{right:var(--app-pad)}
 .app.sidebar-top.playerbar-left.mp-col-visible .main-wrap{margin-left:80px}
 .app.sidebar-top.playerbar-right.mp-col-visible .main-wrap{margin-right:80px}
 .page{display:none;flex:1;overflow:hidden;flex-direction:column;min-height:0}
@@ -218,8 +282,13 @@
 #mpTitleWrap.mp-scrolling:hover #mpTitle{animation-play-state:paused}
 /* Class-based вариант marquee бара (bloom PlayerBar использует общий MarqueeTitle
    по классам, а не id). Зеркало ps-title-wrap для контейнера --mp-off/mp-marquee. */
-.mp-title-wrap{overflow:hidden;min-width:0;position:relative}
-.mp-title-wrap .mp-title{display:inline-block;overflow:visible;white-space:nowrap;animation:none;font-size:13px;font-weight:700}
+/* line-height:0 гасит строчный «страт» обёртки: внутри inline-block, под ним
+   иначе остаётся место под выносные элементы, блок выше текста и название
+   визуально уезжает вверх от центра обложки. Высоту задаёт сам .mp-title. */
+.mp-title-wrap{overflow:hidden;min-width:0;position:relative;line-height:0}
+/* line-height явно: по умолчанию `normal` даёт ~1.33 кегля, и лишнее поле строки
+   отталкивает артиста от названия. Тот же 1.15 продублирован у #mpArtist. */
+.mp-title-wrap .mp-title{display:inline-block;overflow:visible;white-space:nowrap;animation:none;font-size:13px;font-weight:700;line-height:1.1}
 .mp-title-wrap.mp-scrolling .mp-title{animation:mp-marquee linear infinite}
 .mp-title-wrap.mp-scrolling:hover .mp-title{animation-play-state:paused}
 #fpNameWrap{overflow:hidden;width:100%;position:relative}
@@ -236,6 +305,29 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 .vol-pct{font-size:11px;font-weight:600;color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid rgba(255,255,255,var(--wb2));border-radius:6px;padding:2px 4px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
 .cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
 .cc:hover{color:var(--text)}
+/* Мини-бар компактнее полного плеера: боксы кнопок ужаты, чтобы иконки шли плотнее. */
+#miniPlayer .cc{width:30px;height:30px}
+/* Плей крупнее соседей — он главный в транспорте (как в референсе). */
+#miniPlayer .cc-play{width:36px;height:36px}
+/* Глиф плей/пауза крупнее соседних (17). Задаём здесь, иначе в режиме play-flat
+   перебивает `body.play-flat .cc-play svg{26px}` ниже. Селектор с id специфичнее. */
+#miniPlayer .cc-play svg{width:20px;height:20px}
+/* Solar Linear: play/pause/prev/next нарисованы обводкой 1.5 в сетке 24 — в баре
+   читается жирнее референса, поэтому тоньшим. ВНИМАНИЕ: shuffle и repeat в этом
+   наборе сделаны заливкой, без stroke — на них правило не действует, их вес
+   регулируется только размером. */
+#miniPlayer .cc svg{stroke-width:1.41}
+/* Оптическая компенсация: у play-linear контур уходит по x до ~23.2 (дуга справа)
+   при центре бокса 12, поэтому треугольник стоит правее центра кнопки. У паузы
+   бокс симметричный (2…22), её не трогаем.
+   Через margin, а НЕ transform: transform растрирует глиф отдельным слоем, и при
+   зуме ≠100% сдвиг попадает на дробный device-px — обводка мылится. */
+#miniPlayer .cc-play.is-play svg{margin-right:2px}
+/* Плей крупнее (20 против 17), а stroke-width задаётся в координатах viewBox и
+   масштабируется вместе с иконкой — при равном значении его обводка вышла бы
+   толще соседних в абсолютных px. 24/20 = 1.2 даёт те же 1.0 CSS-px. */
+#miniPlayer .cc-play svg{stroke-width:1.2}
+#miniPlayer .vol-sl{width:64px}
 .cc.on{color:var(--accent)}
 /* «Умная» перемешка — мини-значок в белом кружке сверху справа над shuffle. */
 .cc-badge{position:absolute;top:3px;right:3px;width:13px;height:13px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;line-height:1;color:#000;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.3);animation:cc-badge-pop .18s ease-out}
@@ -264,3 +356,12 @@ body.play-flat #bigPicOverlay .cc-play:hover{color:#fff}
 .ps-vol{display:flex;align-items:center;gap:8px}
 .vol-sl{-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;width:80px}
 .ps-ctrl .vol-sl{flex:1;width:auto}
+/* Компактной делаем ТОЛЬКО нижнюю строку громкости (слайдер + число + площадка +
+   EQ/скорость) во всех стилях плеера. Транспорт (перемотка/play/шафл) и всё выше
+   не трогаем. Мини-бар (#miniPlayer) и полноэкранный (#bigPicOverlay) — свои селекторы. */
+#playerContent .ps-vol-row .cc,
+#playerContent .cn-vol-row .cc,
+#playerContent .sl-vol-wrap .cc{width:34px;height:34px}
+#playerContent .ps-vol-row .ps-ctrl,
+#playerContent .cn-vol-row .ps-ctrl,
+#playerContent .sl-vol-wrap .ps-ctrl{gap:3px;padding:4px 10px}

@@ -12,18 +12,21 @@ import { Ico } from '@shared/ui/icons/solar'
 import { DislikesModal } from './DislikesModal'
 
 /**
- * Палитра свечения «Моей волны» (3 орба: тёмный внешний → мид → горячее ядро)
- * как CSS-переменные. Строится вокруг одного тона: по умолчанию — акцент темы,
- * при играющем треке — доминантный тон его обложки.
+ * Палитра свечения «Моей волны» как CSS-переменные. Все три орба красятся в
+ * ОДИН цвет: по умолчанию — акцент темы, при играющем треке — тон его обложки.
  */
 type WavePalette = { '--wave-1': string; '--wave-2': string; '--wave-3': string }
 type Hsl = { h: number; s: number; l: number }
 
-/** hex (#rgb/#rrggbb) → HSL (h 0–360, s/l 0–1). Невалидный → тёплый дефолт. */
+/**
+ * Один тон → ОДИН цвет пламени на все три орба. Объём даёт не разница оттенков,
+ * а разная прозрачность стопов в CSS, поэтому шар читается как единый цвет.
+ * Ахроматичный тон (белый/серый) не выдумываем — свечение нейтральное.
+ */
 const hexToHsl = (hex: string): Hsl => {
   let x = (hex || '').trim().replace('#', '')
   if (x.length === 3) x = x.split('').map((c) => c + c).join('')
-  if (x.length !== 6 || /[^0-9a-f]/i.test(x)) return { h: 24, s: 1, l: 0.5 }
+  if (x.length !== 6 || /[^0-9a-f]/i.test(x)) return { h: 0, s: 0, l: 1 }
   const r = parseInt(x.slice(0, 2), 16) / 255
   const g = parseInt(x.slice(2, 4), 16) / 255
   const b = parseInt(x.slice(4, 6), 16) / 255
@@ -43,25 +46,18 @@ const hexToHsl = (hex: string): Hsl => {
   return { h, s, l }
 }
 
-/**
- * Один тон → 3 цвета пламени (внешний флейр → тело → светлое ядро). Тон близко
- * к исходному (акцент/обложка), сатурация не задирается — цвет верный. Если
- * акцент ахроматичный (белый/серый), тон не выдумываем: свечение нейтральное.
- */
 const paletteFromHsl = ({ h, s, l }: Hsl): WavePalette => {
   const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v))
-  const achromatic = s < 0.08
-  const S = achromatic ? 0 : Math.round(clamp(s * 100, 30, 85))
-  const hue = (d: number): number => (achromatic ? 0 : (((h + d) % 360) + 360) % 360)
-  const Lo = Math.round(clamp(l * 100 - 2, 34, 54)) // внешний флейр
-  const Lb = Math.round(clamp(l * 100 + 6, 42, 62)) // тело
-  const Lc = Math.round(clamp(l * 100 + 22, 60, 82)) // ядро — светлое/выбеленное
-  return {
-    '--wave-1': `hsl(${hue(-24)} ${S}% ${Lo}%)`,
-    '--wave-2': `hsl(${hue(0)} ${S}% ${Lb}%)`,
-    '--wave-3': `hsl(${hue(16)} ${achromatic ? 0 : Math.round(S * 0.85)}% ${Lc}%)`,
-  }
+  if (s < 0.08) return WHITE_PALETTE
+  const S = Math.round(clamp(s * 100, 30, 85))
+  const H = (((h % 360) + 360) % 360)
+  const L = Math.round(clamp(l * 100 + 6, 46, 66))
+  const color = `hsl(${H} ${S}% ${L}%)`
+  return { '--wave-1': color, '--wave-2': color, '--wave-3': color }
 }
+
+/** Ахроматичный акцент (белый/серый) → белое свечение, тон не выдумываем. */
+const WHITE_PALETTE: WavePalette = { '--wave-1': '#fff', '--wave-2': '#fff', '--wave-3': '#fff' }
 
 /**
  * Аура-пламя (SVG). Вынесена в мемо-компонент БЕЗ пропсов: цвета приходят через

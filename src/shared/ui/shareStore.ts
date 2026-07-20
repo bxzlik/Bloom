@@ -32,7 +32,7 @@ export interface ShareData {
   shareUrl: string
 }
 
-const SHARE_BASE = 'https://bxzlik.github.io/bloom/share/'
+const SHARE_BASE = 'https://bxzlik.github.io/bloom-link/share/'
 
 /** Построить share-ссылку (cxshare / _spShareCurrentPanel). */
 export const buildShareUrl = (input: ShareInput): string => {
