@@ -1,12 +1,12 @@
 import { useEffect } from 'react'
 import { usePlayerStore } from '@features/player'
 import { useThemeStore } from './themeStore'
-import { extractAccentFromCover } from '../lib/coverAccent'
+import { accentHexFromHsl, extractCoverHsl } from '../lib/coverAccent'
 
 /**
  * Мост авто-акцента: когда включён `autoAccent`, при смене обложки трека
- * извлекаем доминирующий цвет и применяем как акцент. хука в
- * updUI/`extractAccentFromCover(t.cover)`. Монтируется в App.tsx.
+ * извлекаем доминирующий HSL и применяем как акцент с учётом настройки яркости
+ * (`autoAccentL`, см. coverAccent.ts). Монтируется в App.tsx.
  *
  * ВАЖНО (производительность): подписываемся ИМПЕРАТИВНО через `store.subscribe`
  * внутри effect, а НЕ реактивными селекторами в рендере App. Иначе тоггл
@@ -17,6 +17,13 @@ import { extractAccentFromCover } from '../lib/coverAccent'
 export const useAutoAccentBridge = (): void => {
   useEffect(() => {
     let token = 0
+    // HSL последней просканированной обложки: движение ползунка «Яркость акцента»
+    // пересчитывает цвет из него, без повторного скана canvas на каждый ввод.
+    let lastHsl: { h: number; s: number; l: number } | null = null
+    const apply = (hsl: { h: number; s: number; l: number }) => {
+      const { autoAccentL } = useThemeStore.getState()
+      useThemeStore.getState().applyAutoAccent(accentHexFromHsl(hsl, autoAccentL))
+    }
     const run = () => {
       const { autoAccent } = useThemeStore.getState()
       const ps = usePlayerStore.getState()
@@ -25,13 +32,19 @@ export const useAutoAccentBridge = (): void => {
       const cover = ps.coverOverride ?? ps.artwork
       if (!autoAccent || !cover) return
       const my = ++token
-      void extractAccentFromCover(cover).then((hex) => {
-        if (my === token && hex) useThemeStore.getState().applyAutoAccent(hex)
+      void extractCoverHsl(cover).then((hsl) => {
+        if (my !== token || !hsl) return
+        lastHsl = hsl
+        apply(hsl)
       })
     }
-    // Реагируем на смену autoAccent (тоггл), обложки трека и кастом-override.
+    // Реагируем на смену autoAccent (тоггл), яркости, обложки трека и кастом-override.
     const unTheme = useThemeStore.subscribe((s, p) => {
       if (s.autoAccent !== p.autoAccent) run()
+      else if (s.autoAccentL !== p.autoAccentL && s.autoAccent) {
+        if (lastHsl) apply(lastHsl)
+        else run()
+      }
     })
     const unPlayer = usePlayerStore.subscribe((s, p) => {
       if (s.artwork !== p.artwork || s.coverOverride !== p.coverOverride) run()

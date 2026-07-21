@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useThemeStore, THEME_PRESETS, type ThemePreset } from '../../model/themeStore'
+import { AUTO_ACCENT_L_MAX, AUTO_ACCENT_L_MIN } from '../../lib/coverAccent'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useTransparencyStore } from '../../model/transparencyStore'
@@ -68,6 +69,8 @@ export const InterfaceSection = () => {
   const setRadius = useThemeStore((s) => s.setRadius)
   const autoAccent = useThemeStore((s) => s.autoAccent)
   const setAutoAccent = useThemeStore((s) => s.setAutoAccent)
+  const autoAccentL = useThemeStore((s) => s.autoAccentL)
+  const setAutoAccentL = useThemeStore((s) => s.setAutoAccentL)
   const customThemes = useThemeStore((s) => s.customThemes)
   const activeThemeId = useThemeStore((s) => s.activeThemeId)
   const applyTheme = useThemeStore((s) => s.applyTheme)
@@ -151,6 +154,26 @@ export const InterfaceSection = () => {
           <Toggle checked={autoAccent} onChange={setAutoAccent} />
         </div>
       </div>
+      {/* Яркость авто-акцента. Отдельной карточкой, а не внутри карточки тоггла:
+          правило `.sc:has(>.sr)` (settings.css) снимает у той фон, и соседний
+          блок повис бы без подложки. */}
+      {autoAccent && (
+        <div className="sc">
+          <div className="s-zoom-slider-row">
+            <span className="s-zoom-slider-lbl">{t('settings.interface.autoAccent.level')}</span>
+            <span className="s-zoom-slider-val">{Math.round(autoAccentL * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            className="srange-full"
+            min={Math.round(AUTO_ACCENT_L_MIN * 100)}
+            max={Math.round(AUTO_ACCENT_L_MAX * 100)}
+            value={Math.round(autoAccentL * 100)}
+            style={{ marginTop: 10, display: 'block' }}
+            onChange={(e) => setAutoAccentL(Number(e.target.value) / 100)}
+          />
+        </div>
+      )}
 
       <div className="sc">
         <div className="sr">

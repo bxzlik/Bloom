@@ -4,7 +4,7 @@
  * выбираем самый «сочный» пиксель (saturation × близость L к 0.5), нормализуем
  * S/L, переводим HSL→hex.
  *
- *   - extractAccentFromCover — яркий акцент (для авто-акцента)
+ *   - extractAccentFromCover — акцент (для авто-акцента; яркость настраивается)
  *   - extractMpBgColor       — тёмный доминант (для фона мини-плеера, mode coverColor)
  *
  * Возвращает hex или null (CORS-tainted canvas / ошибка загрузки → null).
@@ -105,13 +105,41 @@ export const extractCoverHsl = (
   imgSrc: string,
 ): Promise<{ h: number; s: number; l: number } | null> => scanDominantHsl(imgSrc)
 
-/** Яркий акцент из обложки. */
-export const extractAccentFromCover = async (imgSrc: string): Promise<string | null> => {
+/**
+ * Яркость авто-акцента (центр коридора светлоты). Дефолт 0.375 — заметно темнее
+ * прежних 0.38–0.62, но акцент ещё читается на тёмном фоне; на минимуме шкалы
+ * (0.10) коридор 0.025–0.175 почти совпадает с фоном мини-плеера
+ * (см. extractMpBgColor).
+ */
+export const AUTO_ACCENT_L_MIN = 0.1
+export const AUTO_ACCENT_L_MAX = 0.6
+export const AUTO_ACCENT_L_DEFAULT = 0.375
+/** Полуширина коридора светлоты вокруг заданной яркости. */
+const L_BAND = 0.075
+
+/**
+ * Доминантный HSL → hex акцента при заданной яркости.
+ * Насыщенность едет за яркостью (0.75 + level): на тёмном тоне высокая S даёт
+ * цветной шум, на светлом — наоборот нужна «сочность».
+ */
+export const accentHexFromHsl = (
+  hsl: { h: number; s: number; l: number },
+  level: number = AUTO_ACCENT_L_DEFAULT,
+): string => {
+  const lvl = Math.max(AUTO_ACCENT_L_MIN, Math.min(AUTO_ACCENT_L_MAX, level))
+  const finalS = Math.min(1, hsl.s * (0.75 + lvl))
+  const finalL = Math.max(lvl - L_BAND, Math.min(lvl + L_BAND, hsl.l))
+  return hslToHex(hsl.h, finalS, finalL)
+}
+
+/** Акцент из обложки при заданной яркости (`level` — центр коридора светлоты). */
+export const extractAccentFromCover = async (
+  imgSrc: string,
+  level: number = AUTO_ACCENT_L_DEFAULT,
+): Promise<string | null> => {
   const hsl = await scanDominantHsl(imgSrc)
   if (!hsl) return null
-  const finalS = Math.min(1, hsl.s * 1.3)
-  const finalL = Math.max(0.38, Math.min(0.62, hsl.l))
-  return hslToHex(hsl.h, finalS, finalL)
+  return accentHexFromHsl(hsl, level)
 }
 
 /** Тёмный доминант для фона мини-плеера. */

@@ -126,13 +126,16 @@
    края (и когда ряд переносится под «Воспроизвести всё» — тоже). */
 .sp-am-actions-rest{flex:1;min-width:220px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 /* Иконочные кнопки сгруппированы в капсулы с тонкой рамкой (как в референсе). */
-.sp-am-btn-group{display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;border:1px solid rgba(255,255,255,var(--wb,.1));background:rgba(255,255,255,.03)}
-.sp-am-btn-group .sp-am-icon-btn,.sp-am-btn-group .sp-follow-btn{border-radius:50%}
-.sp-am-play-btn{display:flex;align-items:center;gap:8px;padding:11px 26px;border-radius:var(--radius);background:#fff;color:#111;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:.15s;font-family:var(--font);flex-shrink:0}
-.sp-am-play-btn:hover{background:#e0e0e0}
-/* Иконочные кнопки — минималистичные (без рамок/подложки), заливка на hover. */
+.sp-am-btn-group{display:flex;align-items:center;gap:2px;padding:2px;border-radius:999px;border:1px solid rgba(255,255,255,.07);background:transparent}
+.sp-am-btn-group .sp-am-icon-btn,.sp-am-btn-group .sp-follow-btn{width:30px;height:30px;border-radius:50%}
+.sp-am-play-btn{display:flex;align-items:center;gap:8px;padding:11px 26px;border-radius:var(--radius);background:var(--accent);color:var(--accent-text);font-size:13px;font-weight:700;border:none;cursor:pointer;transition:.15s;font-family:var(--font);flex-shrink:0}
+.sp-am-play-btn:hover{filter:brightness(1.15)}
+/* Иконочные кнопки — минималистичные (без рамок/подложки); на hover не заливка,
+   а только подсветка самой иконки. */
 .sp-am-icon-btn{width:36px;height:36px;border-radius:var(--radius);border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
-.sp-am-icon-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.sp-am-icon-btn:hover{background:transparent;color:#fff}
+.sp-am-btn-group .sp-follow-btn:hover{background:transparent;color:#fff}
+.sp-am-btn-group .sp-follow-btn.followed:hover{color:var(--accent)}
 /* Адаптив шапки под ширину самого оверлея (container query — реагирует на реальную
    ширину контента, а не окна, поэтому учитывает и раскрытый сайдбар). При узком —
    меньше аватар/имя и share не отрывается вправо на отдельную строку. */

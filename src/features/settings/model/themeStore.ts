@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
 import { t } from '@shared/i18n'
+import { AUTO_ACCENT_L_DEFAULT, AUTO_ACCENT_L_MAX, AUTO_ACCENT_L_MIN } from '../lib/coverAccent'
 
 /**
  * Тема UI — настройки внешнего вида, которые применяются через CSS custom
@@ -59,6 +60,8 @@ export interface ThemeState {
   fontFamily: string
   /** Авто-акцент из обложки трека. */
   autoAccent: boolean
+  /** Яркость авто-акцента (центр коридора светлоты, 0.1–0.6). См. coverAccent.ts. */
+  autoAccentL: number
   /** Ручной акцент — точка восстановления при выключении авто-акцента. */
   accentManual: string
   /** Вторичная палитра активного пресета (пустая = дефолты root.css). */
@@ -74,6 +77,8 @@ export interface ThemeState {
   setRadius: (v: number) => void
   setFontFamily: (v: string) => void
   setAutoAccent: (v: boolean) => void
+  /** Яркость авто-акцента (перерасчёт цвета делает autoAccentBridge). */
+  setAutoAccentL: (v: number) => void
   /** Применить извлечённый из обложки акцент (авто-акцент остаётся вкл). */
   applyAutoAccent: (v: string) => void
   /** Применить пресет темы (встроенный или пользовательский). */
@@ -94,10 +99,14 @@ const DEFAULTS = {
   radius: 14,
   fontFamily: 'Inter, system-ui, sans-serif',
   autoAccent: false,
+  autoAccentL: AUTO_ACCENT_L_DEFAULT,
   accentManual: '#3b82f6',
   palette: {} as ThemePalette,
   activeThemeId: '',
 }
+
+const clampAccentL = (v: number): number =>
+  Math.max(AUTO_ACCENT_L_MIN, Math.min(AUTO_ACCENT_L_MAX, v))
 
 export const FONT_PRESETS = [
   { label: 'Inter (по умолчанию)', value: 'Inter, system-ui, sans-serif' },
@@ -179,7 +188,7 @@ const ALL_PALETTE_KEYS = [...SECONDARY_KEYS, '--accent2'] as const
 
 type Snapshot = Pick<
   ThemeState,
-  'bg' | 'blockColor' | 'accent' | 'radius' | 'fontFamily' | 'autoAccent' | 'accentManual' | 'palette' | 'activeThemeId'
+  'bg' | 'blockColor' | 'accent' | 'radius' | 'fontFamily' | 'autoAccent' | 'autoAccentL' | 'accentManual' | 'palette' | 'activeThemeId'
 >
 
 const loadCustomThemes = (): ThemePreset[] => {
@@ -212,6 +221,7 @@ const loadFromLs = (): Snapshot => {
       radius: typeof p.radius === 'number' ? p.radius : DEFAULTS.radius,
       fontFamily: typeof p.fontFamily === 'string' ? p.fontFamily : DEFAULTS.fontFamily,
       autoAccent: !!p.autoAccent,
+      autoAccentL: typeof p.autoAccentL === 'number' ? clampAccentL(p.autoAccentL) : DEFAULTS.autoAccentL,
       accentManual: typeof p.accentManual === 'string' ? p.accentManual : (typeof p.accent === 'string' ? p.accent : DEFAULTS.accentManual),
       palette: p.palette && typeof p.palette === 'object' ? (p.palette as ThemePalette) : {},
       activeThemeId: typeof p.activeThemeId === 'string' ? p.activeThemeId : '',
@@ -329,6 +339,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
           ? persist({ ...s, autoAccent: true, accentManual: s.accent })
           : persist({ ...s, autoAccent: false, accent: s.accentManual })),
       })),
+    setAutoAccentL: (v) => set((s) => ({ ...persist({ ...s, autoAccentL: clampAccentL(v) }) })),
     // Извлечённый из обложки цвет: меняем только эффективный accent, авто остаётся.
     applyAutoAccent: (v) => set((s) => ({ ...persist({ ...s, accent: v }) })),
     applyTheme: (id) =>

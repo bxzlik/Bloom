@@ -389,7 +389,9 @@ const ContinueView = ({
       return
     }
     let cancelled = false
-    void extractAccentFromCover(cover).then((hex) => {
+    // Яркость 0.5 задаём явно: заливке полосы нужен светлый тон, независимо от
+    // настройки «Яркость акцента» (та влияет только на акцент приложения).
+    void extractAccentFromCover(cover, 0.5).then((hex) => {
       if (!cancelled) setBarAccent(hex)
     })
     return () => {

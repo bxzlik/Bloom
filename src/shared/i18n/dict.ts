@@ -53,6 +53,7 @@ export const ru = {
 
   'settings.interface.autoAccent.title': 'Авто акцент',
   'settings.interface.autoAccent.sub': 'Цвет акцента из обложки трека',
+  'settings.interface.autoAccent.level': 'Яркость акцента',
 
   'settings.interface.sidebarPos.title': 'Расположение сайдбара',
   'settings.interface.sidebarPos.desc': 'Где отображается панель навигации',
@@ -1425,6 +1426,7 @@ export const en: Record<TranslationKey, string> = {
 
   'settings.interface.autoAccent.title': 'Auto accent',
   'settings.interface.autoAccent.sub': 'Accent color from the track cover',
+  'settings.interface.autoAccent.level': 'Accent brightness',
 
   'settings.interface.sidebarPos.title': 'Sidebar position',
   'settings.interface.sidebarPos.desc': 'Where the navigation panel is shown',
