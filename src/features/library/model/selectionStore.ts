@@ -18,6 +18,12 @@ export interface SelectionState {
   lastIdx: number | null
   /** Активен ли режим выделения (size>0 ИЛИ только что вошли). */
   selMode: boolean
+  /**
+   * «Залипший» режим — включён кнопкой редактирования в шапке. Пока он true,
+   * selMode держится даже при пустом выделении (иначе шапка мигала бы обратно
+   * на «Играть все» после каждой массовой операции).
+   */
+  sticky: boolean
 
   /** Войти в режим — добавить id, поставить anchor, включить selMode. */
   enter: (id: string, idx: number) => void
@@ -27,7 +33,11 @@ export interface SelectionState {
   range: (toIdx: number, viewIds: string[]) => void
   /** Выделить все из переданного списка id. */
   selectAll: (ids: string[]) => void
-  /** Очистить выделение + selMode. */
+  /** Включить/выключить залипший режим (кнопка «редактировать треки» в шапке). */
+  setSticky: (on: boolean) => void
+  /** Снять выделение, но остаться в режиме если он залипший (после bulk-операции). */
+  deselect: () => void
+  /** Очистить выделение + selMode (полный выход, в т.ч. из залипшего). */
   clear: () => void
 }
 
@@ -35,6 +45,7 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
   selected: new Set(),
   lastIdx: null,
   selMode: false,
+  sticky: false,
 
   enter: (id, idx) => {
     const next = new Set<string>([id])
@@ -45,7 +56,7 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
     const next = new Set(get().selected)
     if (next.has(id)) next.delete(id)
     else next.add(id)
-    set({ selected: next, lastIdx: idx, selMode: next.size > 0 })
+    set({ selected: next, lastIdx: idx, selMode: get().sticky || next.size > 0 })
   },
 
   range: (toIdx, viewIds) => {
@@ -58,14 +69,23 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
       const id = viewIds[i]
       if (id) next.add(id)
     }
-    set({ selected: next, selMode: next.size > 0 })
+    set({ selected: next, selMode: get().sticky || next.size > 0 })
   },
 
   selectAll: (ids) => {
-    set({ selected: new Set(ids), selMode: ids.length > 0 })
+    set({ selected: new Set(ids), selMode: get().sticky || ids.length > 0 })
+  },
+
+  setSticky: (on) => {
+    if (on) set({ sticky: true, selMode: true })
+    else set({ selected: new Set(), lastIdx: null, selMode: false, sticky: false })
+  },
+
+  deselect: () => {
+    set({ selected: new Set(), lastIdx: null, selMode: get().sticky })
   },
 
   clear: () => {
-    set({ selected: new Set(), lastIdx: null, selMode: false })
+    set({ selected: new Set(), lastIdx: null, selMode: false, sticky: false })
   },
 }))

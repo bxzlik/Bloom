@@ -82,11 +82,7 @@ body.dl-toast #toast{top:120px}
 .viz-mode-btn.active{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)}
 /* Multi-select */
 .tr.tr-selected{background:var(--hover);outline:1.5px solid var(--accent);outline-offset:-1px}
-.tr-sel-bar{display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:calc(var(--radius) * 0.7);border:1px solid rgba(255,255,255,var(--wb));min-height:63px;flex-shrink:0;margin-bottom:5px}
-.tr-sel-bar .sb-count{font-size:13px;font-weight:700;color:var(--text);flex:1;white-space:nowrap;padding:0 4px}
-.tr-sel-bar .sb-sep{width:1px;height:18px;background:rgba(255,255,255,.1);flex-shrink:0;margin:0 2px}
-.tr-sel-bar .sb-close{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:calc(var(--radius) * 0.55);border:none;background:transparent;color:var(--text2);cursor:pointer;transition:.15s;flex-shrink:0}
-.tr-sel-bar .sb-close:hover{background:var(--hover);color:var(--text)}
+/* Bulk-операции живут в шапке (.lib-hero-btns → SelActions), см. library.css */
 .tr-handle{display:none}
 .tr-reorder-ghost{position:fixed;pointer-events:none;z-index:9999;top:0;left:0;will-change:transform;transition:none!important}
 .trcov[data-draggable]{cursor:grab;touch-action:none;user-select:none}

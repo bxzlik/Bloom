@@ -74,11 +74,13 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 /* Reveal-режим («Показывать при наведении»): сайдбар цельно «выезжает» слева.
    Анимируем margin-left, а не width — иначе содержимое (особенно кнопки тулбара
    с flex:1) переформатируется на каждом кадре вместо цельного сдвига. Свёрнутый
-   уезжает за левый край на всю свою ширину (colонка + left page-pad), а
-   overflow:hidden у .page его срезает. Контент отодвигается в потоке. */
+   уезжает за левый край РОВНО на свою ширину, а overflow:hidden у .page его
+   срезает. Контент отодвигается в потоке. Важно: box-sizing:border-box, поэтому
+   width уже включает left page-pad — прибавлять его к отступу нельзя, иначе
+   .lib-content утянет за край окна. */
 .lib-sidebar.lib-sb-reveal{transition:margin-left .2s ease,width .18s ease}
-.lib-sidebar.lib-sb-reveal.is-collapsed{margin-left:-260px}
-.lib-sidebar.lib-sb-reveal.lib-sb-covers.is-collapsed{margin-left:-86px}
+.lib-sidebar.lib-sb-reveal.is-collapsed{margin-left:-248px}
+.lib-sidebar.lib-sb-reveal.lib-sb-covers.is-collapsed{margin-left:-74px}
 .lib-block{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
 .lib-block-search{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:6px 8px}
 .lib-block-btns{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:8px;display:flex;flex-direction:column;gap:6px}

@@ -33,7 +33,8 @@ import LibraryLinear from '~icons/solar/library-linear'
 import LibraryBold from '~icons/solar/library-bold'
 import PipLinear from '~icons/solar/pip-linear'
 import PipBold from '~icons/solar/pip-bold'
-import PlaylistLinear from '~icons/solar/playlist-minimalistic-2-linear'
+import PlaylistLinear from '~icons/solar/music-library-2-linear'
+import AddQueueLinear from '~icons/solar/inbox-in-linear'
 import LyricsLinear from '~icons/solar/text-linear'
 import BigPicLinear from '~icons/solar/full-screen-linear'
 import NoteLinear from '~icons/solar/music-note-linear'
@@ -45,7 +46,7 @@ import FolderLinear from '~icons/solar/folder-linear'
 import TrashLinear from '~icons/solar/trash-bin-trash-linear'
 import WaveLinear from '~icons/solar/soundwave-linear'
 import WaveBold from '~icons/solar/soundwave-bold'
-import EditLinear from '~icons/solar/pen-2-linear'
+import EditLinear from '~icons/solar/pen-linear'
 import CopyLinear from '~icons/solar/copy-linear'
 import TagLinear from '~icons/solar/tag-linear'
 import StarLinear from '~icons/solar/star-linear'
@@ -222,7 +223,11 @@ const ICONS = {
   settings: { linear: SettingsLinear, bold: SettingsBold },
   library: { linear: LibraryLinear, bold: LibraryBold },
   pip: { linear: PipLinear, bold: PipBold },
+  // `queue` = иконка фильтра «Плейлисты» в сайдбаре библиотеки
+  // (music-library-2). Кнопка правой панели в мини-плеере — ключ `sidebar`.
   queue: { linear: PlaylistLinear },
+  // `addQueue` = действие «Добавить в очередь» (меню трека + hover-кнопки).
+  addQueue: { linear: AddQueueLinear },
   lyrics: { linear: LyricsLinear },
   bigpic: { linear: BigPicLinear },
   note: { linear: NoteLinear },

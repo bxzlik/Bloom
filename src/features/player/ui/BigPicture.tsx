@@ -18,7 +18,7 @@ import {
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks } from '@entities/track'
 import { useNavStore } from '@app/navigationStore'
-import { LyricsView } from '@features/lyrics'
+import { LyricsView, useLyricsBtnVisible } from '@features/lyrics'
 import { usePlayerViewStore, useOptStore } from '@features/settings'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
@@ -110,6 +110,7 @@ const BigPicInner = () => {
   const artwork = frozenCover ?? coverOverride ?? artworkRaw
 
   const lyrView = useBigPicStore((s) => s.lyrView)
+  const lyricsBtnVisible = useLyricsBtnVisible(panel === 'lyrics')
 
   // Прячем верхние кнопки, пока курсор вне окна приложения (fade-out).
   const [cursorOut, setCursorOut] = useState(false)
@@ -154,16 +155,18 @@ const BigPicInner = () => {
           onClick={toggleQueue}
           aria-label={t('player.aria.queue')}
         >
-          <Ico name="queue" width={15} height={15} />
+          <Ico name="sidebar" width={15} height={15} />
         </button>
-        <button
-          className={`bp-top-btn${panel === 'lyrics' ? ' bp-lyr-active' : ''}`}
-          id="bpLyricsBtn"
-          onClick={toggleLyrics}
-          aria-label={t('player.lyrics')}
-        >
-          <Ico name="lyrics" width={15} height={15} />
-        </button>
+        {lyricsBtnVisible && (
+          <button
+            className={`bp-top-btn${panel === 'lyrics' ? ' bp-lyr-active' : ''}`}
+            id="bpLyricsBtn"
+            onClick={toggleLyrics}
+            aria-label={t('player.lyrics')}
+          >
+            <Ico name="lyrics" width={15} height={15} />
+          </button>
+        )}
         <button className="bp-top-btn" id="bpFontBtn" onClick={toggleFontPanel} aria-label={t('player.aria.textSettings')}>
           <Ico name="settings" width={15} height={15} />
         </button>
@@ -519,11 +522,16 @@ const BpFontPanel = () => {
 
   // Активный вид: «Обложка» = без панели текста, иначе раскладка текста.
   const view = panel === 'lyrics' ? lyrView : 'cover'
-  const views = [
-    { id: 'all', icon: 'eye', label: t('player.view.all') },
-    { id: 'cover', icon: 'gallery', label: t('player.view.cover') },
-    { id: 'text', icon: 'text', label: t('player.view.text') },
-  ] as const
+  // Без текста раскладки с текстом («Всё»/«Текст») выбирать не из чего —
+  // остаётся только «Обложка».
+  const lyricsAvail = useLyricsBtnVisible(panel === 'lyrics')
+  const views = (
+    [
+      { id: 'all', icon: 'eye', label: t('player.view.all') },
+      { id: 'cover', icon: 'gallery', label: t('player.view.cover') },
+      { id: 'text', icon: 'text', label: t('player.view.text') },
+    ] as const
+  ).filter((v) => lyricsAvail || v.id === 'cover')
 
   return (
     <div id="bpFontPanel" className="bp-font-panel">

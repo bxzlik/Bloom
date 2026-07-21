@@ -16,6 +16,7 @@ import { useDetailStore } from '@features/search/model/detailStore'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
 import { useGrpStore } from '../model/grpStore'
+import { useLyricsBtnVisible } from '@features/lyrics'
 import { useBigPicStore } from '../model/bigPicStore'
 import { usePlayerViewStore, extractMpBgColor, useOptStore } from '@features/settings'
 import {
@@ -65,11 +66,18 @@ const RING_GAP = 4
 const RING_INSET = 2
 const RING_BOX = MP_COVER + RING_GAP * 2
 /**
- * Ширина бара в компактном режиме. Захардкожена намеренно: раньше считалась по
- * контенту, из-за чего бар менял ширину от числа видимых кнопок. Ужимается
- * до ширины окна через max-width в CSS (.app.mp-compact #miniPlayer).
- */
-const MP_COMPACT_W = 1140
+ * Ширина бара в компактном режиме — CSS-выражение, не число. По контенту её не
+ * считаем намеренно: так бар менял ширину от числа видимых кнопок.
+ *  • 1140px — потолок на широком окне;
+ *  • 70% — доля окна (поля по 15% с каждой стороны), чтобы на узком окне бар
+ *    ужимался ВМЕСТЕ с ним и сохранял боковые поля (иначе он упирался в
+ *    max-width и растягивался почти во всю ширину, становясь неотличимым от
+ *    обычного бара);
+ *  • 560px — пол, ниже которого содержимое (обложка + транспорт + правый блок)
+ *    начинает толкаться; дальше ужимает уже max-width в CSS.
+ * ДУБЛИРУЕТСЯ в player.css как фолбэк var(--mp-fw, …) — меняешь здесь, меняй там,
+ * иначе бар моргнёт шириной до первого layout-effect'а. */
+const MP_COMPACT_W = 'min(1140px, max(70%, 560px))'
 /** Непрозрачность акцента у элементов прогресса — кольцо вокруг обложки и линия
  *  сверху. Одно значение на оба, чтобы они не разъезжались по цвету. */
 const MP_PROGRESS_OP = 0.7
@@ -192,10 +200,10 @@ export const PlayerBar = () => {
     // +8: 2 зазора (4×2) между ячейками .mp-center.
     const center = centerSide * 2 + trioW + 8
     centerRef.current?.style.setProperty('--mp-cw', `${Math.ceil(center)}px`)
-    // Ширина бара — ФИКСИРОВАННАЯ (MP_COMPACT_W), не по контенту: иначе бар
-    // растёт/скачет от числа видимых кнопок. Центрирование трио это не ломает —
-    // за него отвечает --mp-cw + грид 1fr|auto|1fr внутри .mp-center.
-    bar.style.setProperty('--mp-fw', `${MP_COMPACT_W}px`)
+    // Ширина бара — MP_COMPACT_W (доля окна с потолком и полом), не по контенту:
+    // иначе бар растёт/скачет от числа видимых кнопок. Центрирование трио это не
+    // ломает — за него отвечает --mp-cw + грид 1fr|auto|1fr внутри .mp-center.
+    bar.style.setProperty('--mp-fw', MP_COMPACT_W)
   }, [mpCompact, curId, page, title, artist, playing, volume, mpHide.fav, mpHide.add, mpHide.repeat, mpHide.shuffle, mpHide.time, mpHide.queue, mpHide.lyrics, mpHide.bigpic, t])
 
   const goNav = useNavStore((s) => s.goNav)
@@ -232,6 +240,8 @@ export const PlayerBar = () => {
   const grpOpen = useGrpStore((s) => s.open)
   const grpMode = useGrpStore((s) => s.mode)
   const openGrp = useGrpStore((s) => s.openPanel)
+
+  const showLyricsBtn = useLyricsBtnVisible(grpOpen && grpMode === 'lyrics') && !mpHide.lyrics
 
   const visible = useMiniBarVisible()
   if (!visible) {
@@ -510,7 +520,7 @@ export const PlayerBar = () => {
               <QueueSvg size={18} />
             </button>
           )}
-          {!mpHide.lyrics && (
+          {showLyricsBtn && (
             <button
               className={`cc${grpOpen && grpMode === 'lyrics' ? ' on' : ''}`}
               aria-label={t('player.lyrics')}
@@ -645,7 +655,7 @@ const MpProgress = ({ tint }: { tint: string | null }) => {
             // (осветлённый доминант) — акцент приложения там смотрелся чужеродно:
             // синяя полоса поверх красного бара. В остальных режимах фон не
             // тонирован, и акцент по-прежнему уместен.
-            background: tint ? `color-mix(in srgb, ${tint} 90%, #fff)` : 'rgba(var(--accent-rgb),0.18)',
+            background: tint ? `color-mix(in srgb, ${tint} 95%, #fff)` : 'rgba(var(--accent-rgb),0.18)',
             pointerEvents: 'none',
             zIndex: 0,
             transition: dragFrac != null ? 'none' : 'width .08s linear',
@@ -1021,6 +1031,6 @@ const VolSvg = ({ size, v }: { size: number; v: number }) => {
   if (v < 50) return <Ico name="volumeSmall" size={size} />
   return <Ico name="volumeLoud" size={size} />
 }
-const QueueSvg = ({ size }: { size: number }) => <Ico name="queue" size={size} />
+const QueueSvg = ({ size }: { size: number }) => <Ico name="sidebar" size={size} />
 const LyricsSvg = ({ size }: { size: number }) => <Ico name="lyrics" size={size} />
 const BigPicSvg = ({ size }: { size: number }) => <Ico name="bigpic" size={size} />

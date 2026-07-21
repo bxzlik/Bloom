@@ -347,7 +347,7 @@ export const ViewSection = () => {
                 {t('settings.view.mpEl.lyrics')}
               </OptBtn>
               <OptBtn active={!p.mpHide.queue} onClick={() => toggleHide('queue')}>
-                <Ico name="queue" width={18} height={18} />
+                <Ico name="sidebar" width={18} height={18} />
                 {t('settings.view.mpEl.queue')}
               </OptBtn>
               <OptBtn active={!p.mpHide.bigpic} onClick={() => toggleHide('bigpic')}>

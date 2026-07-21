@@ -760,8 +760,8 @@ const QueueRow = ({
   }
   /** Drag-handle. undefined → строка не перетаскивается (закреплённый играющий трек). */
   handleProps?: {
-    onPointerDown: (e: React.PointerEvent<HTMLElement>) => void
-    onClick: (e: React.MouseEvent<HTMLElement>) => void
+    onPointerDown?: (e: React.PointerEvent<HTMLElement>) => void
+    onClick?: (e: React.MouseEvent<HTMLElement>) => void
     'data-draggable'?: string
   }
   onClick: () => void

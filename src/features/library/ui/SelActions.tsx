@@ -11,32 +11,28 @@ import { deleteUploadedTrack, getCurrentView } from '../lib'
 import { Ico } from '@shared/ui/icons/solar'
 import { BulkTagModal } from './BulkTagModal'
 
-export interface SelBarProps {
-  /** Не используется — viewTracks берутся из getCurrentView() в момент клика. */
-}
-
 /**
- * Bulk-операционная панель над tracklist'ом `.tr-sel-bar`
- *. Появляется когда selMode=true.
+ * Bulk-операции над выделенными треками — живут прямо в шапке `.lib-hero-btns`,
+ * подменяя собой обычный ряд («Играть все» / shuffle / поиск / карандаш / «…»)
+ * пока активен selMode. Отдельной нижней панели больше нет.
  *
- * Кнопки (контекстные к libMode):
- *   - Toggle select-all / deselect-all (чекбокс-иконка слева)
- *   - Count «Выбрано: N»
- *   - Теги (массовый редактор #bulkTagOverlay — BulkTagModal)
- *   - В плейлист — выбрать плейлист из меню
- *   - В любимые / Из любимого (зависит от libMode)
+ * Кнопки в стиле шапки: акцентная капсула-счётчик (она же select-all/deselect-all)
+ * + иконочные `.btn-icon`:
+ *   - Теги (массовый редактор — BulkTagModal)
+ *   - В плейлист (AddPopup)
+ *   - В любимые / Из любимого (toggle: красное сердце = всё выделенное залайкано)
  *   - — Из плейлиста (только в mode='pl')
  *   - Удалить (треки которые загружались через handleFiles)
- *   - ✕ закрыть selection (clear)
+ *   - ✕ выход из режима
  */
-export const SelBar = (_: SelBarProps = {}) => {
+export const SelActions = () => {
   const t = useT()
   const locale = useLocale()
-  const selMode = useSelectionStore((s) => s.selMode)
   const selected = useSelectionStore((s) => s.selected)
   const selectAll = useSelectionStore((s) => s.selectAll)
+  const deselect = useSelectionStore((s) => s.deselect)
   const clear = useSelectionStore((s) => s.clear)
-  // Подписываемся на tracks/playlists чтобы пересчитывать allSelected
+  // Подписываемся на tracks/searchQuery чтобы пересчитывать allSelected
   // (мы используем getCurrentView() для actuals, но нужен trigger при изменении).
   const tracksDep = useLibStore((s) => s.tracks)
   const searchDep = useLibStore((s) => s.searchQuery)
@@ -46,7 +42,10 @@ export const SelBar = (_: SelBarProps = {}) => {
 
   const mode = useLibStore((s) => s.mode)
   const plId = useLibStore((s) => s.plId)
-  const toggleFav = useFavStore((s) => s.toggleFav)
+  // Подписка на favs (а не getState) — сердце должно перекрашиваться сразу,
+  // как только выделение стало целиком залайканным.
+  const favs = useFavStore((s) => s.favs)
+  const setFav = useFavStore((s) => s.setFav)
   // playlists подписка нужна для render-trigger; список идёт через AddPopup
   void usePlaylistStore((s) => s.playlists)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
@@ -56,41 +55,34 @@ export const SelBar = (_: SelBarProps = {}) => {
   const [bulkOpen, setBulkOpen] = useState(false)
   const addBtnRef = useRef<HTMLButtonElement | null>(null)
 
-  if (!selMode) return null
-
+  const empty = selected.size === 0
   const allSelected =
     viewTracks.length > 0 && viewTracks.every((t) => selected.has(t.id))
 
   const onSelAllToggle = () => {
-    if (allSelected) clear()
+    if (allSelected) deselect()
     else selectAll(viewTracks.map((t) => t.id))
   }
 
-  const onAddToFav = () => {
-    const favs = useFavStore.getState().favs
-    selected.forEach((id) => {
-      if (!favs.has(id)) toggleFav(id)
-    })
-    clear()
-  }
-  const onRemoveFromFav = () => {
-    const favs = useFavStore.getState().favs
-    selected.forEach((id) => {
-      if (favs.has(id)) toggleFav(id)
-    })
-    clear()
+  // Сердце — toggle, а не «добавить»: если всё выделенное уже в любимых,
+  // кнопка красная и снимает лайк (в любом разделе, не только в «Любимых»).
+  const selIds = [...selected]
+  const allFav = selIds.length > 0 && selIds.every((id) => favs.has(id))
+  const onFavToggle = () => {
+    selIds.forEach((id) => setFav(id, !allFav))
+    deselect()
   }
   const onAddToPlaylist = (targetPlId: string) => {
     // addTrackToPl prepend'ит по одному — реверсим, чтобы батч лёг наверх
     // плейлиста в исходном порядке выделения.
     ;[...selected].reverse().forEach((id) => addTrackToPl(targetPlId, id))
     setAddOpen(false)
-    clear()
+    deselect()
   }
   const onRemoveFromPl = () => {
     if (!plId) return
     selected.forEach((id) => removeTrackFromPl(plId, id))
-    clear()
+    deselect()
   }
   const onDelete = () => {
     const n = selected.size
@@ -101,103 +93,105 @@ export const SelBar = (_: SelBarProps = {}) => {
     selected.forEach((id) => {
       void deleteUploadedTrack(id)
     })
-    clear()
+    deselect()
   }
 
-  const inFav = mode === 'fav'
   const inPl = mode === 'pl' && !!plId
 
   return (
-    <div className="tr-sel-bar" id="trSelBar">
+    <>
+      {/* Капсула на месте «Играть все»: счётчик + select-all/deselect-all */}
       <button
+        key="sel-count"
+        className="btn-play-all btn-sel-count"
         onClick={onSelAllToggle}
-        style={{
-          background: 'none',
-          border: 'none',
-          padding: '0 3px 0 6px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          color: 'var(--text)',
-          flexShrink: 0,
-        }}
+        disabled={viewTracks.length === 0}
       >
-        <Ico name={allSelected ? 'checkSquare' : 'square'} variant={allSelected ? 'bold' : 'linear'} width={16} height={16} />
+        <Ico
+          name={allSelected ? 'checkSquare' : 'square'}
+          variant={allSelected ? 'bold' : 'linear'}
+          width={15}
+          height={15}
+        />
+        {t('lib.sel.selectedCount', { n: selected.size })}
       </button>
-      <span className="sb-count">{t('lib.sel.selectedCount', { n: selected.size })}</span>
-      <div className="sb-sep" />
 
       {/* Теги — массовый редактор (#bulkTagOverlay) */}
       <button
-        className="btn bta"
+        key="sel-tags"
+        className="btn-icon"
+        aria-label={t('lib.sel.tags')}
         onClick={() => setBulkOpen(true)}
-        disabled={selected.size === 0}
+        disabled={empty}
       >
-        <Ico name="edit" width={11} height={11} />
-        {t('lib.sel.tags')}
+        {/* Карандаш — тот же, что «Редактировать плейлист» и «Редактировать теги» в ctx-меню */}
+        <Ico name="edit" width={14} height={14} />
       </button>
       <BulkTagModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
 
-      {/* В плейлист — использует общий AddPopup (открывается вверх) */}
+      {/* В плейлист — общий AddPopup (сам переворачивается вниз от шапки) */}
       <button
+        key="sel-to-pl"
         ref={addBtnRef}
-        className="btn bta"
+        className="btn-icon"
+        aria-label={t('lib.ctx.toPlaylist')}
+        disabled={empty}
         onClick={(e) => {
           e.stopPropagation()
           setAddOpen((v) => !v)
         }}
       >
-        <Ico name="note" width={11} height={11} />
-        {t('lib.ctx.toPlaylist')}
+        <Ico name="add" width={14} height={14} />
       </button>
       <AddPopup
         open={addOpen}
         onClose={() => setAddOpen(false)}
         anchorRef={addBtnRef}
-        hasTrack={selected.size > 0}
+        hasTrack={!empty}
         canAddToLib={false}
         onPickPlaylist={onAddToPlaylist}
       />
 
-      {inFav ? (
-        <button
-          className="btn btg"
-          style={{ color: '#e03030', borderColor: '#e03030' }}
-          onClick={onRemoveFromFav}
-        >
-          <Ico name="heart" variant="bold" width={11} height={11} style={{ color: '#e03030' }} />{' '}
-          {t('lib.sel.unfav')}
-        </button>
-      ) : (
-        <button className="btn bta" onClick={onAddToFav}>
-          <Ico name="heart" variant="bold" width={11} height={11} />{' '}
-          {t('lib.sel.fav')}
-        </button>
-      )}
+      <button
+        key="sel-fav"
+        className={allFav ? 'btn-icon is-danger' : 'btn-icon'}
+        aria-label={allFav ? t('lib.sel.unfav') : t('lib.sel.fav')}
+        disabled={empty}
+        onClick={onFavToggle}
+      >
+        <Ico name="heart" width={14} height={14} />
+      </button>
 
-      {/* sb-sep перед группой red-кнопок — всегда */}
-      <div className="sb-sep" />
       {inPl && (
         <button
-          className="btn btg"
-          style={{ color: '#e03030', borderColor: '#e03030' }}
+          key="sel-rm-pl"
+          className="btn-icon is-danger"
+          aria-label={t('lib.sel.removeFromPl')}
+          disabled={empty}
           onClick={onRemoveFromPl}
         >
-          {t('lib.sel.removeFromPl')}
+          <Ico name="minus" width={14} height={14} />
         </button>
       )}
       <button
-        className="btn btg"
-        style={{ color: '#e03030', borderColor: '#e03030' }}
+        key="sel-del"
+        className="btn-icon is-danger"
+        aria-label={t('common.delete')}
+        disabled={empty}
         onClick={onDelete}
       >
-        {t('common.delete')}
+        <Ico name="trash" width={14} height={14} />
       </button>
 
-      <button className="sb-close" onClick={clear}>
-        <Ico name="close" width={13} height={13} />
+      <button
+        key="sel-exit"
+        className="btn-icon"
+        aria-label={t('lib.sel.exit')}
+        onClick={clear}
+      >
+        <Ico name="close" width={14} height={14} />
       </button>
-    </div>
+    </>
   )
 }
 
@@ -210,4 +204,3 @@ const ru = (n: number, forms: [string, string, string]): string => {
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1]
   return forms[2]
 }
-

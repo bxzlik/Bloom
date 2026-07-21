@@ -70,8 +70,10 @@
 /* Inline-редактирование плейлиста прямо в шапке (вместо модалки). */
 /* Смена веток шапки (просмотр ↔ редактор) ремоунтит эти узлы — мягкий fade.
    Обычная смена раздела элементы не пересоздаёт, так что там не мигает.
-   Кнопки справа (✕/✓ ↔ обычный набор) тоже пересоздаются — фейдим детей. */
-.lib-hero-icon,#libHeroNameWrap,.lib-hero-btns>*{animation:bloom-fade-in .2s ease}
+   Кнопки справа фейдим только на своп редактора плейлиста (класс is-anim, его
+   вешает LibContent на время editing/editorClosing). Своп в режим редактирования
+   треков (SelActions) тоже ремоунтит ряд — там fade не нужен, иначе моргает. */
+.lib-hero-icon,#libHeroNameWrap,.lib-hero-btns.is-anim>*{animation:bloom-fade-in .2s ease}
 .lib-hero-cov-edit{position:relative;background:transparent;overflow:visible;cursor:default}
 .lib-hero-cov-edit .pl-cov-zone{border-radius:inherit;border-width:1.5px}
 .lib-hero-edit{display:flex;flex-direction:column;justify-content:center;gap:7px;flex:0 1 420px;min-width:0}
@@ -117,6 +119,15 @@
 .btn-play-all:hover{filter:brightness(1.15)}
 .btn-icon{width:34px;height:34px;border-radius:calc(var(--radius) * 0.72);background:var(--icon-bg);border:1px solid transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
 .btn-icon:hover{background:rgba(255,255,255,.13);color:var(--text)}
+.btn-icon:disabled{opacity:.4;cursor:default}
+.btn-icon:disabled:hover{background:var(--icon-bg);color:var(--text2)}
+/* Деструктивные bulk-действия в шапке (удалить / из плейлиста / из любимых) */
+.btn-icon.is-danger{color:#e03030}
+.btn-icon.is-danger:hover{background:rgba(224,48,48,.15);color:#e03030}
+.btn-icon.is-danger:disabled:hover{background:var(--icon-bg)}
+/* Капсула-счётчик на месте «Играть все»: она же select-all / deselect-all */
+.btn-sel-count{gap:8px}
+.btn-sel-count:disabled{opacity:.5;cursor:default;filter:none}
 /* Fade на маунт: заметен при возврате из большого редактора (секции его не
    ремоунтят — там анимация не дёргается). */
 .lib-tracklist{flex:1;overflow-y:auto;padding:8px 12px 80px;scrollbar-width:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);animation:bloom-fade-in .22s ease}

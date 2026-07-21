@@ -646,8 +646,8 @@ const TrackRow = ({
     style: React.CSSProperties
   }
   handleProps?: {
-    onPointerDown: (e: React.PointerEvent<HTMLElement>) => void
-    onClick: (e: React.MouseEvent<HTMLElement>) => void
+    onPointerDown?: (e: React.PointerEvent<HTMLElement>) => void
+    onClick?: (e: React.MouseEvent<HTMLElement>) => void
     'data-draggable'?: string
   }
   /** Для history-режима: время + кол-во прослушиваний. */
@@ -793,7 +793,7 @@ const TrackRow = ({
           addToQueue(track.id)
         }}
       >
-        <Ico name="queue" width={15} height={15} />
+        <Ico name="addQueue" width={14} height={14} />
       </button>
       <button
         className={`ib${isFav ? ' fav' : ''}`}

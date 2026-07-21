@@ -89,10 +89,15 @@ export interface SortableItemBindings {
     'data-sortable-id': string
     style: CSSProperties
   }
-  /** На элемент-handle (cover/icon/строка). */
+  /**
+   * На элемент-handle (cover/icon/строка). При `enabled:false` — пустой объект:
+   * иначе его `onClick` (stopPropagation) перебивал бы собственный onClick
+   * строки, если handle = вся строка (компактный сайдбар), и клик не делал бы
+   * ничего — ни drag (выключен), ни click-fallback (не запускается).
+   */
   handleProps: {
-    onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void
-    onClick: (e: ReactMouseEvent<HTMLElement>) => void
+    onPointerDown?: (e: ReactPointerEvent<HTMLElement>) => void
+    onClick?: (e: ReactMouseEvent<HTMLElement>) => void
     /**
      * Маркер для CSS: `.trcov[data-draggable]{cursor:grab;touch-action:none}`
      * (/src/styles/main.css:1468). Только когда drag реально включён.
@@ -656,31 +661,34 @@ export const useSortable = <T,>({
         // re-render во время drag'а.
         style: {},
       },
-      handleProps: {
-        ...(enabled ? { 'data-draggable': '1' } : {}),
-        onPointerDown: (e: ReactPointerEvent<HTMLElement>) => {
-          if (!enabled) return
-          if (e.button !== 0) return
-          const s = stateRef.current
-          if (s.active || s.pending) return
-          // Гасим нативный click.
-          e.preventDefault()
-          e.stopPropagation()
-          s.pending = true
-          s.id = id
-          s.clickAction = clickAction ?? null
-          s.startX = e.clientX
-          s.startY = e.clientY
-          document.addEventListener('pointermove', onMove, { passive: false })
-          document.addEventListener('pointerup', onEnd)
-          document.addEventListener('pointercancel', onEnd)
-        },
-        onClick: (e) => {
-          // Не даём click пробулькать к row.onClick — fallback уже отработает
-          // через pointerdown→pointerup путь (см. onEnd).
-          e.stopPropagation()
-        },
-      },
+      // Drag выключен → биндингов нет вообще: строка остаётся на своих
+      // собственных обработчиках (см. коммент к SortableItemBindings).
+      handleProps: !enabled
+        ? {}
+        : {
+            'data-draggable': '1',
+            onPointerDown: (e: ReactPointerEvent<HTMLElement>) => {
+              if (e.button !== 0) return
+              const s = stateRef.current
+              if (s.active || s.pending) return
+              // Гасим нативный click.
+              e.preventDefault()
+              e.stopPropagation()
+              s.pending = true
+              s.id = id
+              s.clickAction = clickAction ?? null
+              s.startX = e.clientX
+              s.startY = e.clientY
+              document.addEventListener('pointermove', onMove, { passive: false })
+              document.addEventListener('pointerup', onEnd)
+              document.addEventListener('pointercancel', onEnd)
+            },
+            onClick: (e) => {
+              // Не даём click пробулькать к row.onClick — fallback уже отработает
+              // через pointerdown→pointerup путь (см. onEnd).
+              e.stopPropagation()
+            },
+          },
     }),
     [enabled, onMove, onEnd],
   )

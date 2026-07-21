@@ -103,6 +103,9 @@ export const PlMenu = ({
   // реальную высоту и клампим. До замера держим меню hidden, чтобы не было
   // прыжка с overflow за экран (fallback-высота не годилась для длинных меню).
   const [cursorMeasured, setCursorMeasured] = useState(false)
+  // Ограничение высоты, когда меню не влезает в окно целиком (длинный набор
+  // пунктов у плейлиста + низкое окно) → включаем внутренний скролл.
+  const [maxH, setMaxH] = useState<number | null>(null)
   // Sub-страница сортировки.
   const [sortPage, setSortPage] = useState(false)
   // Боковой флайаут «Скачать» (экспорт файлов / офлайн) — как у контекст-меню трека.
@@ -162,6 +165,7 @@ export const PlMenu = ({
     if (!open) {
       setPos(null)
       setCursorMeasured(false)
+      setMaxH(null)
       return
     }
     if (cursorX != null && cursorY != null) {
@@ -198,7 +202,9 @@ export const PlMenu = ({
     const m = menuRef.current
     if (!m) return
     const mw = m.offsetWidth
-    const mh = m.offsetHeight
+    // scrollHeight (+рамки), а не offsetHeight — иначе уже применённый maxHeight
+    // «заморозил» бы меню в урезанном виде при следующем пересчёте.
+    const mh = m.scrollHeight + 2
     const vw = window.innerWidth
     const vh = window.innerHeight
     let left = cursorX ?? pos.left
@@ -208,8 +214,24 @@ export const PlMenu = ({
     if (left < 8) left = 8
     if (top < 8) top = 8
     setPos({ kind: 'cursor', top, left })
+    setMaxH(top + mh > vh - 8 ? vh - 8 - top : null)
     setCursorMeasured(true)
   }, [pos, cursorMeasured, cursorX, cursorY])
+
+  // Anchor-mode: под кнопкой «…» места по вертикали может не хватить (у
+  // плейлиста самый длинный набор пунктов). Сдвигаем меню вверх, а если оно
+  // выше окна целиком — ограничиваем высоту и включаем скролл.
+  useLayoutEffect(() => {
+    if (!pos || pos.kind !== 'anchor') return
+    const m = menuRef.current
+    if (!m) return
+    const bottomLimit = window.innerHeight - 8
+    const h = m.scrollHeight + 2
+    let top = pos.top
+    if (top + h > bottomLimit) top = Math.max(8, bottomLimit - h)
+    setMaxH(top + h > bottomLimit ? bottomLimit - top : null)
+    if (top !== pos.top) setPos({ kind: 'anchor', top, right: pos.right })
+  }, [pos, sortPage])
 
   useEffect(() => {
     if (!open) return
@@ -640,18 +662,19 @@ export const PlMenu = ({
       ref={menuRef}
       id="plMenu"
       className="open"
-      style={
-        pos.kind === 'anchor'
-          ? { top: pos.top, right: pos.right, left: 'auto', position: 'fixed' }
+      style={{
+        position: 'fixed',
+        ...(pos.kind === 'anchor'
+          ? { top: pos.top, right: pos.right, left: 'auto' }
           : {
               top: pos.top,
               left: pos.left,
               right: 'auto',
-              position: 'fixed',
               // Прячем меню, пока не измерили высоту и не клампнули позицию.
               visibility: cursorMeasured ? 'visible' : 'hidden',
-            }
-      }
+            }),
+        ...(maxH != null ? { maxHeight: maxH, overflowY: 'auto' as const } : null),
+      }}
     >
       <div
         id="plMenuHeader"

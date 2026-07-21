@@ -9,7 +9,13 @@ import {
 import { useUiPrefsStore } from '@features/settings'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
 import { PathLine, PlaylistCover } from '@shared/ui'
-import { useLibStore, usePlaylistStore, useFavStore, usePlEditStore } from '../model'
+import {
+  useLibStore,
+  usePlaylistStore,
+  useFavStore,
+  usePlEditStore,
+  useSelectionStore,
+} from '../model'
 import type { LibMode, Playlist, PlSourceRef } from '../model'
 import type { Track } from '@entities/track'
 import {
@@ -29,7 +35,7 @@ import { PlSourcesEditor } from './PlSourcesEditor'
 import { PlMenu } from './PlMenu'
 import { PlaylistOfflineTag } from './PlaylistOfflineTag'
 import { AddFromLibModal } from './AddFromLibModal'
-import { SelBar } from './SelBar'
+import { SelActions } from './SelActions'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -90,6 +96,11 @@ export const LibContent = () => {
 
   const [searchOpen, setSearchOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Режим редактирования треков: ряд действий шапки подменяется bulk-кнопками
+  // (SelActions). Включается кнопкой-квадратом, выключается ✕ / Esc.
+  const selMode = useSelectionStore((s) => s.selMode)
+  const setSticky = useSelectionStore((s) => s.setSticky)
 
   // plMenu state (только для mode='pl')
   const plMenuBtnRef = useRef<HTMLButtonElement>(null)
@@ -389,7 +400,7 @@ export const LibContent = () => {
               </div>
             </div>
           )}
-          <div className="lib-hero-btns">
+          <div className={`lib-hero-btns${editing || editorClosing ? ' is-anim' : ''}`}>
             {editing ? (
               <>
                 <button
@@ -412,6 +423,8 @@ export const LibContent = () => {
                   <Ico name="check" variant="bold" width={15} height={15} />
                 </button>
               </>
+            ) : selMode ? (
+              <SelActions />
             ) : (
             <>
             {/* «Назад к сетке» — только в grid-виде, когда провалились в раздел. */}
@@ -476,6 +489,16 @@ export const LibContent = () => {
                 <Ico name="search" width={14} height={14} />
               )}
             </button>
+            {/* Редактирование треков: включает selMode — ряд подменяется SelActions. */}
+            <button
+              key="sel-mode"
+              className="btn-icon"
+              id="libSelModeBtn"
+              aria-label={t('lib.sel.edit')}
+              onClick={() => setSticky(true)}
+            >
+              <Ico name="square" width={14} height={14} />
+            </button>
             {mode === 'pl' && activePlaylist && (
               <button
                 key="edit-pl"
@@ -512,11 +535,7 @@ export const LibContent = () => {
         // Большой редактор: трек-лист скрыт, на его месте — источники обновления.
         <PlSourcesEditor sources={editSources} onChange={setEditSources} closing={!editing} />
       ) : (
-        <>
-          <LibTracklist />
-          {/* SelBar — снизу `insertBefore(bar, list.nextSibling)`. */}
-          <SelBar />
-        </>
+        <LibTracklist />
       )}
       </>
       )}

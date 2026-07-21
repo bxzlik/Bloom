@@ -60,7 +60,7 @@ export const LibPage = ({ active }: { active: boolean }) => {
       setSbOpen(false)
       return
     }
-    const sbWidth = sbView === 'covers' ? 86 : 260 // ширина колонки + left page-pad
+    const sbWidth = sbView === 'covers' ? 74 : 248 // ширина сайдбара (border-box, с page-pad)
     const onMove = (e: MouseEvent) => {
       const root = rootRef.current
       if (!root) return

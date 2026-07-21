@@ -12,6 +12,7 @@ export {
   type LyricsCacheStats,
 } from './api/lyrics'
 export { useLyricsBridge } from './lib/useLyricsBridge'
+export { useLyricsBtnVisible } from './lib/useLyricsBtnVisible'
 export { LyricsPanel } from './ui/LyricsPanel'
 export { LyricsView } from './ui/LyricsView'
 export { LyricsToggleButton } from './ui/LyricsToggleButton'

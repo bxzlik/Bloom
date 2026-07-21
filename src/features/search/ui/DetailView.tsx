@@ -193,7 +193,7 @@ const TrackRow = ({
             addToQueue(track.id)
           }}
         >
-          <Ico name="queue" width={13} height={13} />
+          <Ico name="addQueue" width={14} height={14} />
         </button>
         <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label={tt('player.aria.favAdd')}>
           <HeartSvg filled={isFav} />

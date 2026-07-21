@@ -476,7 +476,7 @@ const PlayerContent = () => {
         </button>
         <button className={`cc${shuffle ? ' on' : ''}`} onClick={toggleShuffleMain} aria-label={smartShuffle ? t('player.aria.smartShuffle') : t('player.aria.shuffle')}>
           <ShuffleSvg size={18} />
-          {smartShuffle && <span className="cc-badge"><Ico name="stars" size={9} /></span>}
+          {smartShuffle && <span className="cc-badge" style={{ top: 4, right: 4 }}><Ico name="stars" size={9} /></span>}
         </button>
       </div>
       {/* Правый слот транспорта: дизлайк (волна) + переключатель текста. */}
@@ -1306,7 +1306,7 @@ const PauseSvg = ({ size }: { size: number }) => <Ico name="pause" size={size} /
 const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={size} />
 const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (
-  <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 700 }}>1</span>
+  <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 700, top: 4, right: 4 }}>1</span>
 )
 const VolSvg = ({ size, v }: { size: number; v: number }) => {
   if (v === 0) return <Ico name="muted" size={size} />
