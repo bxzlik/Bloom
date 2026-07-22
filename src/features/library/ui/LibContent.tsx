@@ -27,7 +27,7 @@ import {
   getCurrentView,
   compressCover,
 } from '../lib'
-import { playFromSource, playShuffledFromSource } from '@features/player'
+import { playFromSource, playShuffledFromSource, addTracksToQueue, playTracksNext } from '@features/player'
 import { LibTracklist } from './LibTracklist'
 import { LibScrollbar } from './LibScrollbar'
 import { LibGridOverview } from './LibGridOverview'
@@ -402,9 +402,8 @@ export const LibContent = () => {
           )}
           <div className={`lib-hero-btns${editing || editorClosing ? ' is-anim' : ''}`}>
             {editing ? (
-              <>
+              <div key="edit-actions" className="lib-btn-group">
                 <button
-                  key="edit-cancel"
                   type="button"
                   className="btn-icon"
                   aria-label={t('common.cancel')}
@@ -413,7 +412,6 @@ export const LibContent = () => {
                   <Ico name="close" width={14} height={14} />
                 </button>
                 <button
-                  key="edit-save"
                   type="button"
                   className="btn-icon is-save"
                   aria-label={t('common.save')}
@@ -422,21 +420,22 @@ export const LibContent = () => {
                 >
                   <Ico name="check" variant="bold" width={15} height={15} />
                 </button>
-              </>
+              </div>
             ) : selMode ? (
               <SelActions />
             ) : (
             <>
             {/* «Назад к сетке» — только в grid-виде, когда провалились в раздел. */}
             {libView === 'grid' && (
-              <button
-                key="back"
-                className="btn-icon"
-                id="libBackToGrid"
-                onClick={backToGrid}
-              >
-                <Ico name="arrowLeft" width={14} height={14} />
-              </button>
+              <div key="back" className="lib-btn-group">
+                <button
+                  className="btn-icon"
+                  id="libBackToGrid"
+                  onClick={backToGrid}
+                >
+                  <Ico name="arrowLeft" width={14} height={14} />
+                </button>
+              </div>
             )}
             <button
               key="play-all"
@@ -450,79 +449,103 @@ export const LibContent = () => {
               <Ico name="play" width={16} height={16} />
               {t('lib.playAll')}
             </button>
-            <button
-              key="shuffle"
-              className="btn-icon"
-              onClick={() => {
-                const view = getCurrentView()
-                if (!view.tracks.length) return
-                playShuffledFromSource(view.tracks.map((t) => t.id), view.source)
-              }}
-            >
-              <Ico name="shuffle" width={13} height={13} />
-            </button>
-            {/* Системный диалог Tauri, а не <input type=file>: нужен путь к
-                файлу, а браузерный File его не отдаёт. */}
-            <button
-              key="upload"
-              id="libUploadBtn"
-              className="btn-icon"
-              style={{ display: mode === 'all' ? 'flex' : 'none' }}
-              onClick={() => void importTracks().catch((e) => console.warn('importTracks failed', e))}
-            >
-              <Ico name="add" width={14} height={14} />
-            </button>
-            <button
-              key="search"
-              className="btn-icon"
-              id="libInlineSearchBtn"
-              onClick={toggleSearch}
-              style={
-                searchOpen
-                  ? { color: 'var(--accent)', borderColor: 'var(--accent)' }
-                  : undefined
-              }
-            >
-              {searchOpen ? (
-                <Ico name="close" width={14} height={14} />
-              ) : (
-                <Ico name="search" width={14} height={14} />
-              )}
-            </button>
-            {/* Редактирование треков: включает selMode — ряд подменяется SelActions. */}
-            <button
-              key="sel-mode"
-              className="btn-icon"
-              id="libSelModeBtn"
-              aria-label={t('lib.sel.edit')}
-              onClick={() => setSticky(true)}
-            >
-              <Ico name="square" width={14} height={14} />
-            </button>
-            {mode === 'pl' && activePlaylist && (
+            {/* Иконки собраны в капсулы — как в шапке артиста/плейлиста в поиске
+                (.sp-am-btn-group): работа со списком слева, воспроизведение/меню справа. */}
+            <div key="grp-list" className="lib-btn-group">
               <button
-                key="edit-pl"
                 className="btn-icon"
-                id="plEditBtn"
-                aria-label={t('lib.plmenu.editPlaylist')}
-                onClick={() => startEdit(activePlaylist.id)}
+                id="libInlineSearchBtn"
+                onClick={toggleSearch}
+                style={searchOpen ? { color: 'var(--accent)' } : undefined}
               >
-                <Ico name="edit" width={14} height={14} />
+                {searchOpen ? (
+                  <Ico name="close" width={14} height={14} />
+                ) : (
+                  <Ico name="search" width={14} height={14} />
+                )}
               </button>
-            )}
-            <button
-              key="menu"
-              ref={plMenuBtnRef}
-              className="btn-icon"
-              id="plMenuBtn"
-              onClick={(e) => {
-                e.stopPropagation()
-                setPlMenuCursor(null)
-                setPlMenuOpen((v) => !v)
-              }}
-            >
-              <Ico name="kebab" width={14} height={14} />
-            </button>
+              {mode === 'pl' && activePlaylist && (
+                <button
+                  className="btn-icon"
+                  id="plEditBtn"
+                  aria-label={t('lib.plmenu.editPlaylist')}
+                  onClick={() => startEdit(activePlaylist.id)}
+                >
+                  <Ico name="edit" width={14} height={14} />
+                </button>
+              )}
+              {/* Редактирование треков: включает selMode — ряд подменяется SelActions. */}
+              <button
+                className="btn-icon"
+                id="libSelModeBtn"
+                aria-label={t('lib.sel.edit')}
+                onClick={() => setSticky(true)}
+              >
+                <Ico name="square" width={14} height={14} />
+              </button>
+            </div>
+            <div key="grp-play" className="lib-btn-group">
+              {/* Весь текущий вид (плейлист/папка/любимое) — в конец очереди.
+                  Источник передаём для случая пустой очереди: там добавление
+                  превращается в запуск и ярлык источника должен быть верным. */}
+              <button
+                className="btn-icon"
+                id="libToQueueBtn"
+                aria-label={t('lib.plmenu.toQueue')}
+                onClick={() => {
+                  const view = getCurrentView()
+                  if (!view.tracks.length) return
+                  addTracksToQueue(view.tracks.map((t) => t.id), view.source)
+                }}
+              >
+                <Ico name="addQueue" width={14} height={14} />
+              </button>
+              <button
+                className="btn-icon"
+                id="libPlayNextBtn"
+                aria-label={t('lib.plmenu.playNext')}
+                onClick={() => {
+                  const view = getCurrentView()
+                  if (!view.tracks.length) return
+                  playTracksNext(view.tracks.map((t) => t.id), view.source)
+                }}
+              >
+                <Ico name="playNext" width={13} height={13} />
+              </button>
+              <button
+                className="btn-icon"
+                onClick={() => {
+                  const view = getCurrentView()
+                  if (!view.tracks.length) return
+                  playShuffledFromSource(view.tracks.map((t) => t.id), view.source)
+                }}
+              >
+                <Ico name="shuffle" width={13} height={13} />
+              </button>
+              {/* Системный диалог Tauri, а не <input type=file>: нужен путь к
+                  файлу, а браузерный File его не отдаёт. */}
+              {mode === 'all' && (
+                <button
+                  id="libUploadBtn"
+                  className="btn-icon"
+                  onClick={() => void importTracks().catch((e) => console.warn('importTracks failed', e))}
+                >
+                  <Ico name="add" width={14} height={14} />
+                </button>
+              )}
+              <button
+                ref={plMenuBtnRef}
+                className="btn-icon"
+                id="plMenuBtn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setPlMenuCursor(null)
+                  setPlMenuOpen((v) => !v)
+                }}
+              >
+                <Ico name="kebab" width={14} height={14} />
+              </button>
+            </div>
             </>
             )}
           </div>

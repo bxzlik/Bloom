@@ -1,4 +1,4 @@
-import { coverCache } from '@entities/track'
+import { coverCache, trackCache } from '@entities/track'
 import { usePlaylistStore, useFavStore, useHistoryStore } from '../model'
 
 /**
@@ -18,6 +18,8 @@ export const cascadePurgeTrackRefs = (ids: string[]): void => {
   useFavStore.getState().purge(ids)
   const hist = useHistoryStore.getState()
   for (const id of ids) hist.remove(id)
-  // Кеш обложек (id → URL) тоже персистентный — иначе бы копил мусор.
+  // Кеш обложек (id → URL) и снимков треков тоже персистентные — иначе бы
+  // копили мусор (а снимок ещё и воскрешал бы трек в истории после удаления).
   coverCache.remove(ids)
+  trackCache.remove(ids)
 }

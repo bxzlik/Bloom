@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAudioStore, type NormStatus } from '../../model/audioStore'
-import { useT, useLocale, type TranslationKey } from '@shared/i18n'
+import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -22,9 +22,26 @@ interface DeviceOpt {
   named: boolean
 }
 
+/**
+ * Chromium/WebView2 дописывает к имени USB-устройства его `vid:pid`
+ * («Наушники гарнитуры (G435 Wireless) (046d:0acb)»). В карточке разносим:
+ * имя — заголовком, аппаратный id — подписью.
+ */
+const splitHwId = (label: string): { name: string; hw: string | null } => {
+  const m = /^(.*?)\s*\(([0-9a-f]{4}:[0-9a-f]{4})\)\s*$/i.exec(label)
+  return m ? { name: m[1], hw: m[2] } : { name: label, hw: null }
+}
+
+/** Иконка карточки по имени устройства (наушники / bluetooth / колонки). */
+const deviceIcon = (label: string): 'speaker' | 'headphones' | 'bluetooth' => {
+  const s = label.toLowerCase()
+  if (/headphone|headset|earbud|наушник|гарнитур/.test(s)) return 'headphones'
+  if (/bluetooth|блютуз/.test(s)) return 'bluetooth'
+  return 'speaker'
+}
+
 export const AudioSection = () => {
   const t = useT()
-  const locale = useLocale()
   const xfadeEnabled = useAudioStore((s) => s.xfadeEnabled)
   const xfadeDur = useAudioStore((s) => s.xfadeDur)
   const normEnabled = useAudioStore((s) => s.normEnabled)
@@ -144,38 +161,47 @@ export const AudioSection = () => {
         )}
       </div>
 
-      {/* Устройство вывода */}
+      {/* Устройство вывода — сетка карточек вместо <select> */}
       <div className="sc">
         <h3>{t('settings.audio.output')}</h3>
-        <div className="sr" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-          <div>
-            <div className="sl2">{t('settings.audio.device')}</div>
-            <div className="ssub">
-              {!devSupported
-                ? t('settings.audio.device.unsupported')
-                : needUnlock
-                  ? t('settings.audio.device.needUnlock')
-                  : devices == null
-                    ? t('settings.audio.device.pick')
-                    : deviceCountLabel(devices.length, locale)}
-            </div>
+        <div className="sr sr-block">
+          <div className="sc-title">{t('settings.audio.output.title')}</div>
+          <div className="sc-desc">
+            {!devSupported
+              ? t('settings.audio.device.unsupported')
+              : needUnlock
+                ? t('settings.audio.device.needUnlock')
+                : t('settings.audio.output.sub')}
           </div>
-          {devSupported && needUnlock ? (
-            <button className="btn btg" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => void unlockDevices()}>
-              {t('settings.audio.device.show')}
-            </button>
-          ) : (
-            <select
-              className="ssel"
-              value={deviceId}
-              disabled={!devSupported}
-              onChange={(e) => setDeviceId(e.target.value)}
-            >
-              <option value="">{t('settings.audio.device.default')}</option>
-              {(devices ?? []).map((d) => (
-                <option key={d.id} value={d.id}>{d.named ? d.label : t('settings.audio.device.fallback', { id: d.label })}</option>
-              ))}
-            </select>
+          {devSupported && (
+            <div className="s-dev-grid">
+              <DeviceCard
+                icon="speaker"
+                name={t('settings.audio.device.default')}
+                sub={t('settings.audio.device.system')}
+                active={deviceId === ''}
+                onClick={() => setDeviceId('')}
+              />
+              {(devices ?? []).map((d) => {
+                const { name, hw } = splitHwId(d.label)
+                return (
+                  <DeviceCard
+                    key={d.id}
+                    icon={deviceIcon(d.label)}
+                    name={d.named ? name : t('settings.audio.device.fallback', { id: d.label })}
+                    sub={hw}
+                    active={deviceId === d.id}
+                    onClick={() => setDeviceId(d.id)}
+                  />
+                )
+              })}
+              {needUnlock && (
+                <button className="s-dev-card s-dev-unlock" onClick={() => void unlockDevices()}>
+                  <Ico name="refresh" width={17} height={17} />
+                  <div className="s-dev-name">{t('settings.audio.device.show')}</div>
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -183,20 +209,20 @@ export const AudioSection = () => {
   )
 }
 
-const plural = (n: number, forms: [string, string, string]): string => {
-  const a = Math.abs(n) % 100
-  const b = a % 10
-  if (a > 10 && a < 20) return forms[2]
-  if (b > 1 && b < 5) return forms[1]
-  if (b === 1) return forms[0]
-  return forms[2]
-}
-
-/** Счётчик устройств с учётом плюрализации языка. */
-const deviceCountLabel = (n: number, locale: string): string =>
-  locale === 'ru'
-    ? `${n} ${plural(n, ['устройство', 'устройства', 'устройств'])}`
-    : `${n} ${n === 1 ? 'device' : 'devices'}`
+/** Карточка аудиовыхода: иконка сверху, имя и аппаратный id снизу. */
+const DeviceCard = ({ icon, name, sub, active, onClick }: {
+  icon: 'speaker' | 'headphones' | 'bluetooth'
+  name: string
+  sub: string | null
+  active: boolean
+  onClick: () => void
+}) => (
+  <button className={`s-dev-card${active ? ' active' : ''}`} onClick={onClick}>
+    <Ico name={icon} width={17} height={17} />
+    <div className="s-dev-name">{name}</div>
+    {sub && <div className="s-dev-sub">{sub}</div>}
+  </button>
+)
 
 const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
   <label className="tele-sw">

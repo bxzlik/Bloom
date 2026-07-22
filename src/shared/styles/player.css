@@ -322,8 +322,11 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
    а не фиксированные 6px. margin-left уравнивает зазор «ползунок→бейдж» с
    визуальным зазором «иконка→ползунок» (у .cc есть свой внутренний воздух). */
 .vol-pct{font-size:11px;font-weight:600;color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.7);padding:2px 4px;margin-left:6px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
-.cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--icon-fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
+.cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--icon-fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative;will-change:transform}
 .cc:hover{color:var(--text)}
+/* Вжатие при нажатии — ровно тот же жест, что у .cc-play: .94 за .15s (тайминг
+   берётся из общего `transition:.15s` выше, как и у play в плоском режиме). */
+.cc:active{transform:scale(.94)}
 /* Мини-бар компактнее полного плеера: боксы кнопок ужаты, чтобы иконки шли плотнее. */
 #miniPlayer .cc{width:30px;height:30px}
 /* Плей крупнее соседей — он главный в транспорте (как в референсе). */
@@ -332,7 +335,7 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
    перебивает `body.play-flat .cc-play svg{26px}` ниже. Селектор с id специфичнее. */
 #miniPlayer .cc-play svg{width:20px;height:20px}
 /* Solar Linear: play/pause/prev/next нарисованы обводкой 1.5 в сетке 24 — в баре
-   читается жирнее референса, поэтому тоньшим. ВНИМАНИЕ: shuffle и repeat в этом
+   читается жирнее, поэтому тоньшим. ВНИМАНИЕ: shuffle и repeat в этом
    наборе сделаны заливкой, без stroke — на них правило не действует, их вес
    регулируется только размером. */
 #miniPlayer .cc svg{stroke-width:1.41}
@@ -365,15 +368,32 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
    Применяется к плееру, нижнему бару и #bigPicOverlay. */
 /* В плоском режиме play ведёт себя как обычная кнопка .cc (тот же размер/радиус/
    ховер) — отличается только более крупной иконкой. */
-body.play-flat .cc-play{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;color:var(--text2);transition:.15s}
-/* Ховер — как у `.cc`: без подложки, иконка просто светлеет (--text2 → --text),
+/* `transition:.15s` намеренно перекрывает и `transform .08s` базового .cc-play:
+   в плоском режиме вжатие мягче (.15s), под него подогнаны и соседние .cc. */
+/* Цвет — `--icon-fg`, ровно как у `.cc`. Раньше здесь стоял `--text2`: он был
+   общим «тусклым» цветом ещё до того, как иконки выделили в отдельный токен, и
+   при вводе `--icon-fg` play просто не перевели. Из-за этого главная кнопка
+   транспорта была на ступень темнее соседних (999 против d0d0d0). */
+body.play-flat .cc-play{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;color:var(--icon-fg);transition:.15s}
+/* Ховер — как у `.cc`: без подложки, иконка просто светлеет (--icon-fg → --text),
    чтобы play не выпадал из ряда кнопок. */
 body.play-flat .cc-play:hover{color:var(--text)}
 body.play-flat .cc-play svg{width:26px;height:26px}
+/* Загрузка трека: вместо глифа play/pause крутится кольцо (см. PlayPauseButton).
+   Цвет — currentColor кнопки, поэтому одинаково работает и на залитой accent-
+   кнопке, и в плоском режиме. pointer-events снимаем на кнопке целиком: у
+   `.cc-play:hover` есть варианты с id-селекторами (#bigPicOverlay), перебить их
+   классом не выйдет, а без ховера они просто не срабатывают. */
+.cc-play.is-loading{cursor:default;pointer-events:none}
+.cc-play .cc-play-spin{width:22px;height:22px;border-radius:50%;border:2.5px solid color-mix(in srgb, currentColor 22%, transparent);border-top-color:currentColor;animation:bloom-spin .7s linear infinite}
+#miniPlayer .cc-play .cc-play-spin{width:17px;height:17px;border-width:2px}
+@media (prefers-reduced-motion:reduce){.cc-play .cc-play-spin{animation-duration:1.6s}}
 /* В BigPicture у .cc свой, более тусклый ховер-фон — повторяем его для play. */
 body.play-flat #bigPicOverlay .cc-play:hover{color:#fff}
 .ps-vol{display:flex;align-items:center;gap:8px}
-.vol-sl{-webkit-appearance:none;height:4px;border-radius:99px;background:var(--track);outline:none;cursor:pointer;width:80px}
+/* overflow:hidden — заливку рисует box-shadow бегунка (см. lyrics.css), и она
+   обрезается по скруглению дорожки. */
+.vol-sl{-webkit-appearance:none;height:4px;border-radius:99px;background:var(--track);outline:none;cursor:pointer;width:80px;overflow:hidden}
 .ps-ctrl .vol-sl{flex:1;width:auto}
 /* Компактной делаем ТОЛЬКО нижнюю строку громкости (слайдер + число + площадка +
    EQ/скорость) во всех стилях плеера. Транспорт (перемотка/play/шафл) и всё выше

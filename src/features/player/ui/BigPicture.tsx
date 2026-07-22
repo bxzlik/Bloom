@@ -24,7 +24,6 @@ import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
 import { useBigPicStore, BP_FONT_SIZES } from '../model/bigPicStore'
 import {
-  togglePlay,
   prevTr,
   nextTr,
   seek,
@@ -36,6 +35,7 @@ import {
 import { audioEngine } from '../lib/audioEngine'
 import { regenWave, hasWaveData, drawWaveTo } from '../lib/waveSlider'
 import { MarqueeTitle } from './MarqueeTitle'
+import { PlayPauseButton } from './PlayPauseButton'
 import { QueueBlock } from './QueueBlock'
 import { AddPopup } from './AddPopup'
 import { useT } from '@shared/i18n'
@@ -411,7 +411,6 @@ const BpProgress = () => {
 
 const BpControls = () => {
   const t = useT()
-  const playing = usePlayerStore((s) => s.playing)
   const shuffle = usePlayerStore((s) => s.shuffle)
   const smartShuffle = usePlayerStore((s) => s.smartShuffle)
   const repeat = usePlayerStore((s) => s.repeat)
@@ -447,9 +446,7 @@ const BpControls = () => {
       <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
         <Ico name="prev" width={20} height={20} />
       </button>
-      <button className="cc-play" id="bpPlayBtn" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
-        {playing ? <Ico name="pause" width={20} height={20} /> : <Ico name="play" width={20} height={20} />}
-      </button>
+      <PlayPauseButton size={20} id="bpPlayBtn" />
       <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
         <Ico name="next" width={20} height={20} />
       </button>

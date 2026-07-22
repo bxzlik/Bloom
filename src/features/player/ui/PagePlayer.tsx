@@ -20,7 +20,6 @@ import { useEqStore } from '../model/eqStore'
 import { useFxStore } from '../model/fxStore'
 import { useBigPicStore } from '../model/bigPicStore'
 import {
-  togglePlay,
   prevTr,
   nextTr,
   seek,
@@ -36,6 +35,7 @@ import {
 import { audioEngine } from '../lib/audioEngine'
 import { regenWave, hasWaveData, drawWaveTo } from '../lib/waveSlider'
 import { vizSetCanvas, vizStart, vizStop } from '../lib/visualizer'
+import { PlayPauseButton } from './PlayPauseButton'
 import { QueueBlock } from './QueueBlock'
 import { LyricsQueueBlock } from './LyricsQueueBlock'
 import { MarqueeTitle } from './MarqueeTitle'
@@ -468,9 +468,7 @@ const PlayerContent = () => {
         <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
           <PrevSvg size={20} />
         </button>
-        <button className="cc-play" onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
-          {playing ? <PauseSvg size={18} /> : <PlaySvg size={18} />}
-        </button>
+        <PlayPauseButton size={18} />
         <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
           <NextSvg size={20} />
         </button>
@@ -1119,17 +1117,12 @@ const TitleCopyOnClick = ({ title, artist }: { title: string; artist: string }) 
 
 // ── sub ──────────────────────────────────────────────────────────────────
 
+// Заливка — целиком на CSS (box-shadow бегунка, .vol-sl в lyrics.css). Раньше
+// здесь был linear-gradient по value: он давал прямой срез и не сходился с
+// бегунком пиксель-в-пиксель.
 const VolumeSlider = ({ volume }: { volume: number }) => {
-  const ref = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    const sl = ref.current
-    if (!sl) return
-    const pct = volume
-    sl.style.background = `linear-gradient(to right,var(--accent) 0%,var(--accent) ${pct}%,var(--track) ${pct}%,var(--track) 100%)`
-  }, [volume])
   return (
     <input
-      ref={ref}
       type="range"
       className="vol-sl"
       min={0}
@@ -1277,10 +1270,9 @@ const VertVolPopup = ({
         onPointerDown={onTrackDown}
         onPointerMove={onTrackMove}
         onWheel={onTrackWheel}
-        style={{ width: 4, height: 120, background: 'rgba(255,255,255,.15)', borderRadius: 2, position: 'relative', cursor: 'pointer', touchAction: 'none' }}
+        style={{ width: 4, height: 120, background: 'var(--track)', borderRadius: 2, position: 'relative', cursor: 'pointer', touchAction: 'none' }}
       >
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--accent)', borderRadius: 2, height: `${Math.round(volume)}%`, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 12, height: 12, background: 'var(--accent)', borderRadius: '50%', bottom: `calc(${Math.round(volume)}% - 6px)`, pointerEvents: 'none' }} />
       </div>
     </div>,
     document.body,
@@ -1301,8 +1293,6 @@ const HeartSvg = ({ size, filled }: { size: number; filled: boolean }) => (
 )
 const PrevSvg = ({ size }: { size: number }) => <Ico name="prev" size={size} />
 const NextSvg = ({ size }: { size: number }) => <Ico name="next" size={size} />
-const PlaySvg = ({ size }: { size: number }) => <Ico name="play" size={size} />
-const PauseSvg = ({ size }: { size: number }) => <Ico name="pause" size={size} />
 const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={size} />
 const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (

@@ -110,15 +110,23 @@ input,textarea{user-select:text;-webkit-user-select:text}
 #mpBgImgLayer img{width:100%;height:100%;object-fit:cover;display:block}
 #mpVol::-webkit-slider-thumb{background:rgba(255,255,255,0.85)!important}
 #mpVol::-moz-range-thumb{background:rgba(255,255,255,0.85)!important}
-#miniPlayer .cc{color:rgba(255,255,255,0.68)}
-#miniPlayer .cc:hover{color:#fff!important}
+/* Иконки бара — те же токены, что на странице плеера (--icon-fg → --text на
+   ховере). Раньше здесь была своя шкала белого с альфой (.68 → #fff), из-за
+   которой бар был заметно тусклее страницы (≈b2b2b2 против d0d0d0). Альфа была
+   нужна, если бы под баром мог оказаться светлый фон, но его не бывает: режим
+   «Обложка» кладёт картинку через brightness(0.38) (PlayerBar), «Цвет обложки»
+   зажимает светлоту в 0.09–0.18 (extractMpBgColor), «Тема» — обычный --block-color.
+   Фон всегда тёмный, поэтому непрозрачный токен читается не хуже и держит
+   единый цвет со страницей. */
+#miniPlayer .cc{color:var(--icon-fg)}
+#miniPlayer .cc:hover{color:var(--text)!important}
 #miniPlayer .cc.on{color:#fff}
 #miniPlayer .cc-play{background:rgba(255,255,255,0.92);color:#111}
 #miniPlayer .cc-play:hover{background:#fff!important}
 /* Плоская кнопка play в нижнем баре (body.play-flat — по умолчанию). Перебивает
    id-специфичные правила выше. */
-body.play-flat #miniPlayer .cc-play{background:none;color:rgba(255,255,255,0.68)}
-body.play-flat #miniPlayer .cc-play:hover{background:none!important;color:#fff!important}
+body.play-flat #miniPlayer .cc-play{background:none;color:var(--icon-fg)}
+body.play-flat #miniPlayer .cc-play:hover{background:none!important;color:var(--text)!important}
 .app.playerbar-left #miniPlayer,.app.playerbar-right #miniPlayer{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* ===== GLOBAL SIDE PANEL (queue/lyrics from mini player) ===== */
 #globalRightPanel{display:flex;flex-shrink:0;overflow:hidden;width:0;flex-direction:column;transition:width .3s cubic-bezier(.32,.72,0,1);}

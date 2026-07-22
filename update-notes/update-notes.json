@@ -1,4 +1,17 @@
 {
+  "1.8.4": {
+    "title": { "ru": "Что нового в 1.8.4", "en": "What's new in 1.8.4" },
+    "date": "2026-07-22",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
   "1.8.3": {
     "title": { "ru": "Что нового в 1.8.3", "en": "What's new in 1.8.3" },
     "date": "2026-07-22",

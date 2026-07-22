@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { AddPopup } from '@features/player'
+import { AddPopup, addTracksToQueue, playTracksNext, playFromSource } from '@features/player'
 import { useT, useLocale } from '@shared/i18n'
 import {
   useSelectionStore,
@@ -79,6 +79,31 @@ export const SelActions = () => {
     setAddOpen(false)
     deselect()
   }
+  // Выделенное — в очередь (в конец / сразу после текущего). Порядок берём по
+  // текущему виду, а не по порядку кликов (Set хранит порядок вставки), чтобы
+  // треки легли как в списке.
+  const selIdsInViewOrder = (): string[] =>
+    getCurrentView().tracks.filter((tr) => selected.has(tr.id)).map((tr) => tr.id)
+  // Играть только выделенное: очередь = выделенные треки, ярлык источника
+  // оставляем от текущего вида (плейлист/папка), чтобы пилюля не сбрасывалась.
+  const onPlaySel = () => {
+    const ids = selIdsInViewOrder()
+    if (!ids.length) return
+    playFromSource(ids, getCurrentView().source)
+    deselect()
+  }
+  const onToQueue = () => {
+    const ids = selIdsInViewOrder()
+    if (!ids.length) return
+    addTracksToQueue(ids, getCurrentView().source)
+    deselect()
+  }
+  const onPlayNext = () => {
+    const ids = selIdsInViewOrder()
+    if (!ids.length) return
+    playTracksNext(ids, getCurrentView().source)
+    deselect()
+  }
   const onRemoveFromPl = () => {
     if (!plId) return
     selected.forEach((id) => removeTrackFromPl(plId, id))
@@ -116,33 +141,105 @@ export const SelActions = () => {
         {t('lib.sel.selectedCount', { n: selected.size })}
       </button>
 
-      {/* Теги — массовый редактор (#bulkTagOverlay) */}
-      <button
-        key="sel-tags"
-        className="btn-icon"
-        aria-label={t('lib.sel.tags')}
-        onClick={() => setBulkOpen(true)}
-        disabled={empty}
-      >
-        {/* Карандаш — тот же, что «Редактировать плейлист» и «Редактировать теги» в ctx-меню */}
-        <Ico name="edit" width={14} height={14} />
-      </button>
-      <BulkTagModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
+      {/* Воспроизведение выделенного — отдельной капсулой, сразу за счётчиком
+          (в обычном ряду шапки на этом месте тоже «играть»). */}
+      <div key="sel-play" className="lib-btn-group">
+        <button
+          className="btn-icon"
+          aria-label={t('player.aria.play')}
+          disabled={empty}
+          onClick={onPlaySel}
+        >
+          <Ico name="play" width={13} height={13} />
+        </button>
 
-      {/* В плейлист — общий AddPopup (сам переворачивается вниз от шапки) */}
-      <button
-        key="sel-to-pl"
-        ref={addBtnRef}
-        className="btn-icon"
-        aria-label={t('lib.ctx.toPlaylist')}
-        disabled={empty}
-        onClick={(e) => {
-          e.stopPropagation()
-          setAddOpen((v) => !v)
-        }}
-      >
-        <Ico name="add" width={14} height={14} />
-      </button>
+        <button
+          className="btn-icon"
+          aria-label={t('lib.ctx.toQueue')}
+          disabled={empty}
+          onClick={onToQueue}
+        >
+          <Ico name="addQueue" width={14} height={14} />
+        </button>
+
+        <button
+          className="btn-icon"
+          aria-label={t('lib.plmenu.playNext')}
+          disabled={empty}
+          onClick={onPlayNext}
+        >
+          <Ico name="playNext" width={13} height={13} />
+        </button>
+      </div>
+
+      {/* Операции над выделением — одной капсулой, выход — отдельной (как в
+          обычном ряду шапки и на странице артиста). */}
+      <div key="sel-ops" className="lib-btn-group">
+        {/* Теги — массовый редактор (#bulkTagOverlay) */}
+        <button
+          className="btn-icon"
+          aria-label={t('lib.sel.tags')}
+          onClick={() => setBulkOpen(true)}
+          disabled={empty}
+        >
+          {/* Карандаш — тот же, что «Редактировать плейлист» и «Редактировать теги» в ctx-меню */}
+          <Ico name="edit" width={14} height={14} />
+        </button>
+
+        {/* В плейлист — общий AddPopup (сам переворачивается вниз от шапки) */}
+        <button
+          ref={addBtnRef}
+          className="btn-icon"
+          aria-label={t('lib.ctx.toPlaylist')}
+          disabled={empty}
+          onClick={(e) => {
+            e.stopPropagation()
+            setAddOpen((v) => !v)
+          }}
+        >
+          <Ico name="add" width={14} height={14} />
+        </button>
+
+        <button
+          className={allFav ? 'btn-icon is-danger' : 'btn-icon'}
+          aria-label={allFav ? t('lib.sel.unfav') : t('lib.sel.fav')}
+          disabled={empty}
+          onClick={onFavToggle}
+        >
+          <Ico name="heart" width={14} height={14} />
+        </button>
+
+        {inPl && (
+          <button
+            className="btn-icon is-danger"
+            aria-label={t('lib.sel.removeFromPl')}
+            disabled={empty}
+            onClick={onRemoveFromPl}
+          >
+            <Ico name="minus" width={14} height={14} />
+          </button>
+        )}
+        <button
+          className="btn-icon is-danger"
+          aria-label={t('common.delete')}
+          disabled={empty}
+          onClick={onDelete}
+        >
+          <Ico name="trash" width={14} height={14} />
+        </button>
+      </div>
+
+      <div key="sel-exit" className="lib-btn-group">
+        <button
+          className="btn-icon"
+          aria-label={t('lib.sel.exit')}
+          onClick={clear}
+        >
+          <Ico name="close" width={14} height={14} />
+        </button>
+      </div>
+
+      <BulkTagModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
       <AddPopup
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -151,46 +248,6 @@ export const SelActions = () => {
         canAddToLib={false}
         onPickPlaylist={onAddToPlaylist}
       />
-
-      <button
-        key="sel-fav"
-        className={allFav ? 'btn-icon is-danger' : 'btn-icon'}
-        aria-label={allFav ? t('lib.sel.unfav') : t('lib.sel.fav')}
-        disabled={empty}
-        onClick={onFavToggle}
-      >
-        <Ico name="heart" width={14} height={14} />
-      </button>
-
-      {inPl && (
-        <button
-          key="sel-rm-pl"
-          className="btn-icon is-danger"
-          aria-label={t('lib.sel.removeFromPl')}
-          disabled={empty}
-          onClick={onRemoveFromPl}
-        >
-          <Ico name="minus" width={14} height={14} />
-        </button>
-      )}
-      <button
-        key="sel-del"
-        className="btn-icon is-danger"
-        aria-label={t('common.delete')}
-        disabled={empty}
-        onClick={onDelete}
-      >
-        <Ico name="trash" width={14} height={14} />
-      </button>
-
-      <button
-        key="sel-exit"
-        className="btn-icon"
-        aria-label={t('lib.sel.exit')}
-        onClick={clear}
-      >
-        <Ico name="close" width={14} height={14} />
-      </button>
     </>
   )
 }

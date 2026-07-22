@@ -37,6 +37,13 @@ export interface QueueState {
    * `_showCoverLoading`/`_hideCoverLoading`.
    */
   loadingId: string | null
+  /**
+   * Очередь доиграла до конца: последний трек закончился при выключенном повторе,
+   * переходить некуда. Главная кнопка транспорта в этом состоянии показывает
+   * «начать заново» вместо play (см. PlayPauseButton). Снимается любым новым
+   * запуском трека (`loadPlay`) / перемоткой / сменой очереди.
+   */
+  queueEnded: boolean
   /** Массив track id'ов (в порядке воспроизведения). */
   queue: string[]
   /** Индекс в queue. -1 если очередь пуста. */
@@ -63,6 +70,8 @@ export interface QueueState {
   setCurId: (id: string | null) => void
   /** Пометить/снять трек как «загружается» (спиннер на обложке). */
   setLoadingId: (id: string | null) => void
+  /** Выставить/снять «очередь доиграла до конца». */
+  setQueueEnded: (v: boolean) => void
 
   /**
    * Прокрутить режим перемешки: off → обычный → умный → off, реорганизуя очередь.
@@ -106,6 +115,7 @@ type ShuffleMode = 'off' | 'normal' | 'smart'
 export const useQueueStore = create<QueueState>((set, get) => ({
   curId: null,
   loadingId: null,
+  queueEnded: false,
   queue: [],
   qIdx: -1,
   source: null,
@@ -115,10 +125,11 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   _origQueue: null,
 
   setQueue: (queue, qIdx, source) =>
-    set({ queue, qIdx, source, _origQueue: null }),
+    set({ queue, qIdx, source, _origQueue: null, queueEnded: false }),
   setQIdx: (qIdx) => set({ qIdx }),
   setCurId: (id) => set({ curId: id }),
   setLoadingId: (id) => set({ loadingId: id }),
+  setQueueEnded: (v) => set({ queueEnded: v }),
 
   cycleShuffle: (weightFn) => {
     const { shuffle, smartShuffle, queue, qIdx, _origQueue, curId } = get()

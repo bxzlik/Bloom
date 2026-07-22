@@ -19,6 +19,7 @@ import NextLinear from '~icons/solar/skip-next-linear'
 import ShuffleLinear from '~icons/solar/shuffle-linear'
 import ShuffleBold from '~icons/solar/shuffle-bold'
 import RepeatLinear from '~icons/solar/repeat-linear'
+import RestartLinear from '~icons/solar/restart-linear'
 import RepeatOneLinear from '~icons/solar/repeat-one-linear'
 import HeartLinear from '~icons/solar/heart-linear'
 import HeartBold from '~icons/solar/heart-bold'
@@ -121,6 +122,9 @@ import AwardLinear from '~icons/solar/medal-ribbons-star-linear'
 import CursorLinear from '~icons/solar/cursor-linear'
 import SliderHLinear from '~icons/solar/slider-horizontal-linear'
 import BellOffLinear from '~icons/solar/bell-off-linear'
+import SpeakerLinear from '~icons/solar/speaker-linear'
+import HeadphonesLinear from '~icons/solar/headphones-round-linear'
+import BluetoothLinear from '~icons/solar/bluetooth-linear'
 
 type SvgComp = ComponentType<SVGProps<SVGSVGElement>>
 
@@ -216,6 +220,12 @@ const ICONS = {
   shuffle: { linear: ShuffleLinear, bold: ShuffleBold },
   repeat: { linear: RepeatLinear },
   repeatOne: { linear: RepeatOneLinear },
+  // «Начать заново» (кнопка транспорта, когда очередь доиграла). Берём именно
+  // restart, а не refresh: restart нарисован обводкой 1.5 — тот же контракт, что
+  // у play/pause/prev/next, поэтому его вес нормализуют те же правила
+  // `stroke-width` в player.css. refresh-linear сделан заливкой и выпадал бы из
+  // ряда (как shuffle/repeat, см. комментарий там же).
+  restart: { linear: RestartLinear },
   heart: { linear: HeartLinear, bold: HeartBold },
   volumeLoud: { linear: VolumeLoudLinear },
   volumeSmall: { linear: VolumeSmallLinear },
@@ -318,6 +328,10 @@ const ICONS = {
   cursor: { linear: CursorLinear },
   slider: { linear: SliderHLinear },
   bellOff: { linear: BellOffLinear },
+  // Аудиовыходы (карточки выбора устройства в настройках «Аудио»)
+  speaker: { linear: SpeakerLinear },
+  headphones: { linear: HeadphonesLinear },
+  bluetooth: { linear: BluetoothLinear },
 } satisfies Record<string, { linear: SvgComp; bold?: SvgComp }>
 
 export type IconName = keyof typeof ICONS

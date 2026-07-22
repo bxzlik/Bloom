@@ -116,6 +116,12 @@ export const useMainPlayerBridge = () => {
       if (repeat === 2 && qIdx >= 0 && queue[qIdx]) {
         audioEngine.seekTo(0)
         void audioEngine.play()
+      } else if (repeat === 0 && qIdx >= queue.length - 1) {
+        // Последний трек очереди при выключенном повторе — переходить некуда.
+        // Помечаем очередь доигравшей: главная кнопка транспорта превращается в
+        // «начать заново» (nextTr здесь всё равно был бы no-op).
+        useQueueStore.getState().setQueueEnded(true)
+        _pushNowPlaying()
       } else {
         nextTr()
       }

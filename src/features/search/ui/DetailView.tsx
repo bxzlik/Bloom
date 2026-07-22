@@ -11,7 +11,7 @@ import { ArtistLinks, CoverSourceBadge } from '@entities/track'
 import type { Playlist } from '@entities/playlist'
 import type { ArtistPageData, RepostItem } from '@features/providers'
 import { getProvider } from '@features/providers'
-import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, addToQueue, playNextInQueue, type PlaySource } from '@features/player'
+import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, addToQueue, playNextInQueue, addTracksToQueue, playTracksNext, type PlaySource } from '@features/player'
 import {
   TrackCtxMenu,
   saveTrackToLibrary,
@@ -540,6 +540,15 @@ export const DetailView = () => {
     if (!mainTracks.length) return
     playShuffledFromSource(mainTracks.map((t) => t.id), scSource(heroName, heroCover, isArtist))
   }
+  // Вся подборка (плейлист/альбом/треки артиста) — в конец очереди / сразу после текущего.
+  const onToQueue = () => {
+    if (!mainTracks.length) return
+    addTracksToQueue(mainTracks.map((t) => t.id), scSource(heroName, heroCover, isArtist))
+  }
+  const onPlayNext = () => {
+    if (!mainTracks.length) return
+    playTracksNext(mainTracks.map((t) => t.id), scSource(heroName, heroCover, isArtist))
+  }
   const runImport = (target: ImportTarget) => {
     if (!mainTracks.length) {
       toast(t('search.toast.noImport'))
@@ -715,6 +724,12 @@ export const DetailView = () => {
                           permalink={loadedArtist.permalink ?? null}
                         />
                       )}
+                      <button className="sp-am-icon-btn" onClick={onToQueue} aria-label={t('lib.plmenu.toQueue')}>
+                        <Ico name="addQueue" width={15} height={15} />
+                      </button>
+                      <button className="sp-am-icon-btn" onClick={onPlayNext} aria-label={t('lib.plmenu.playNext')}>
+                        <Ico name="playNext" width={14} height={14} />
+                      </button>
                       <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
                         <Ico name="shuffle" width={15} height={15} />
                       </button>

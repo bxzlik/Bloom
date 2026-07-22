@@ -20,7 +20,6 @@ import { useLyricsBtnVisible } from '@features/lyrics'
 import { useBigPicStore } from '../model/bigPicStore'
 import { usePlayerViewStore, extractMpBgColor, useOptStore } from '@features/settings'
 import {
-  togglePlay,
   prevTr,
   nextTr,
   seek,
@@ -32,6 +31,7 @@ import {
 } from '../api/play'
 import { audioEngine } from '../lib/audioEngine'
 import { MarqueeTitle } from './MarqueeTitle'
+import { PlayPauseButton } from './PlayPauseButton'
 import { AddPopup } from './AddPopup'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
@@ -474,11 +474,7 @@ export const PlayerBar = () => {
             <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
               <PrevSvg size={17} />
             </button>
-            {/* is-play — только для треугольника: он смещён вправо в своём viewBox
-                (контур 3…23.2 при центре бокса 12), CSS двигает его обратно. */}
-            <button className={`cc-play${playing ? '' : ' is-play'}`} onClick={togglePlay} aria-label={playing ? t('player.aria.pause') : t('player.aria.play')}>
-              {playing ? <PauseSvg size={15} /> : <PlaySvg size={15} />}
-            </button>
+            <PlayPauseButton size={15} />
             <button className="cc" onClick={nextTr} aria-label={t('player.aria.next')}>
               <NextSvg size={17} />
             </button>
@@ -1004,10 +1000,9 @@ const VertVolPopup = ({
         onPointerDown={onTrackDown}
         onPointerMove={onTrackMove}
         onWheel={onTrackWheel}
-        style={{ width: 4, height: 120, background: 'rgba(255,255,255,.15)', borderRadius: 2, position: 'relative', cursor: 'pointer', touchAction: 'none' }}
+        style={{ width: 4, height: 120, background: 'var(--track)', borderRadius: 2, position: 'relative', cursor: 'pointer', touchAction: 'none' }}
       >
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--accent)', borderRadius: 2, height: `${Math.round(volume)}%`, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: 12, height: 12, background: 'var(--accent)', borderRadius: '50%', bottom: `calc(${Math.round(volume)}% - 6px)`, pointerEvents: 'none' }} />
       </div>
     </div>,
     document.body,
@@ -1024,8 +1019,6 @@ const HeartSvg = ({ size, filled }: { size: number; filled: boolean }) => (
 )
 const PrevSvg = ({ size }: { size: number }) => <Ico name="prev" size={size} />
 const NextSvg = ({ size }: { size: number }) => <Ico name="next" size={size} />
-const PlaySvg = ({ size }: { size: number }) => <Ico name="play" size={size} />
-const PauseSvg = ({ size }: { size: number }) => <Ico name="pause" size={size} />
 const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={size} />
 const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (

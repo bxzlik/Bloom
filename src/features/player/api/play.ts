@@ -1,5 +1,5 @@
 import type { Track } from '@entities/track'
-import { trackRegistry, coverCache } from '@entities/track'
+import { trackRegistry, coverCache, trackCache } from '@entities/track'
 import { invoke } from '@shared/tauri'
 import { useLibStore, useFavStore, useHistoryStore, useActivityStore, saveTrackToLibrary, replaceLibTrack, usePlaylistStore, useNewPlModalStore } from '@features/library'
 import { toast, notify } from '@shared/ui'
@@ -146,6 +146,14 @@ export const creditPlay = (id: string): void => {
   // перезапуска не из чего собрать.
   coverCache.put(id, findTrack(id)?.cover)
   coverCache.save()
+  // Трек площадки (в библиотеке его нет — значит живёт только в trackRegistry,
+  // в памяти): кладём снимок в переживающий рестарт кеш, иначе запись истории
+  // после перезапуска не резолвится и список «История» её пропускает.
+  const ext = trackRegistry.get(id)
+  if (ext) {
+    trackCache.put(ext)
+    trackCache.save()
+  }
   // Волна: уведомить о старте трека (записать played, дозагрузить пачку, prefetch).
   // В onTrackStart жил тоже здесь, в _creditPlay.
   waveApi.onTrackStart(id)
@@ -229,6 +237,8 @@ export const loadPlay = async (id: string): Promise<void> => {
   // Спиннер на обложке строки/плеера показываем сразу — обратная связь, что трек
   // грузится. Снимается в bridge на loadedmetadata/error.
   useQueueStore.getState().setLoadingId(id)
+  // Играем что-то новое → состояние «очередь доиграла» больше не актуально.
+  if (useQueueStore.getState().queueEnded) useQueueStore.getState().setQueueEnded(false)
   // Трек площадки закрепляем, чтобы clearTemp не выкинул его во время резолва.
   trackRegistry.promote(id)
 
@@ -315,8 +325,28 @@ export const playShuffledFromSource = (
 }
 
 export const togglePlay = (): void => {
-  if (!useQueueStore.getState().curId) return
+  const { curId, queueEnded } = useQueueStore.getState()
+  if (!curId) return
+  // Очередь доиграла до конца — «плей» означает «начать заново» (то же, что
+  // делает кнопка транспорта в этом состоянии). Иначе play на закончившемся
+  // <audio> ничего бы не сыграл.
+  if (queueEnded) {
+    restartQueue()
+    return
+  }
   void audioEngine.toggle()
+}
+
+/**
+ * Перезапустить очередь с первого трека. Вызывается кнопкой «начать заново»,
+ * которая заменяет play, когда очередь доиграла (`queueStore.queueEnded`).
+ */
+export const restartQueue = (): void => {
+  const { queue } = useQueueStore.getState()
+  if (!queue.length) return
+  useQueueStore.getState().setQueueEnded(false)
+  useQueueStore.getState().setQIdx(0)
+  void loadPlay(queue[0]!)
 }
 
 /**
@@ -328,12 +358,22 @@ export const togglePlay = (): void => {
 export const seekLive = (sec: number): void => {
   audioEngine.seekTo(sec)
   usePlayerStore.getState().setPosition(audioEngine.currentTime)
+  clearQueueEnded()
 }
 
 export const seek = (sec: number): void => {
   audioEngine.seekTo(sec)
   usePlayerStore.getState().setPosition(audioEngine.currentTime)
+  clearQueueEnded()
   pushNowPlaying()
+}
+
+/**
+ * Перемотали доигравший трек назад — очередь снова «играбельна», возвращаем
+ * обычный play вместо «начать заново».
+ */
+const clearQueueEnded = (): void => {
+  if (useQueueStore.getState().queueEnded) useQueueStore.getState().setQueueEnded(false)
 }
 
 /**
@@ -621,7 +661,7 @@ export const removeFromQueue = (id: string): void => {
   if (idx < 0) return
   if (queue.length <= 1) {
     // Последний трек — очищаем очередь полностью, плеер сбрасываем.
-    useQueueStore.setState({ queue: [], qIdx: -1, curId: null })
+    useQueueStore.setState({ queue: [], qIdx: -1, curId: null, queueEnded: false })
     audioEngine.stop()
     usePlayerStore.setState({
       title: '',
@@ -694,27 +734,98 @@ export const playSingleTrack = (id: string): void => {
   playFromSource([id], source, id)
 }
 
+/**
+ * Общее добавление пачки id в очередь: в конец (`end`) или сразу после текущего
+ * трека (`next`). Возвращает число реально добавленных.
+ *
+ * Правила:
+ *  • пачка дедуплицируется, для `end` уже стоящие в очереди id пропускаются,
+ *    для `next` — переносятся на новое место (как раньше делал одиночный
+ *    `playNextInQueue`);
+ *  • очередь пуста → добавлять некуда: запускаем воспроизведение с `source`;
+ *  • при активном shuffle пополняем и `_origQueue`-снимок, иначе выключение
+ *    перемешки откатило бы очередь к состоянию без добавленных треков.
+ */
+const enqueue = (
+  ids: string[],
+  where: 'end' | 'next',
+  source?: PlaySource,
+): number => {
+  const fresh = [...new Set(ids)].filter((id) => !!findTrack(id))
+  if (!fresh.length) return 0
+
+  const { queue, curId, _origQueue } = useQueueStore.getState()
+  // Пустая очередь: «добавить» нечего дополнять — просто играем набор.
+  if (!queue.length) {
+    playFromSource(fresh, source ?? null)
+    return fresh.length
+  }
+
+  fresh.forEach((id) => trackRegistry.promote(id))
+
+  if (where === 'end') {
+    const add = fresh.filter((id) => !queue.includes(id))
+    if (!add.length) return 0
+    useQueueStore.setState({
+      queue: [...queue, ...add],
+      _origQueue: _origQueue ? [..._origQueue, ...add] : null,
+    })
+    // Очередь уже доиграла до конца (ничего не играет, кнопка транспорта =
+    // «начать заново») — дописанные треки логично сразу и запустить, иначе
+    // добавление выглядело бы как «ничего не произошло».
+    if (useQueueStore.getState().queueEnded) {
+      useQueueStore.getState().setQIdx(queue.length)
+      void loadPlay(add[0]!)
+    }
+    return add.length
+  }
+
+  // `next`: выдёргиваем добавляемые id из очереди и вставляем сразу за текущим.
+  const set = new Set(fresh)
+  const rest = queue.filter((x) => !set.has(x))
+  const curPos = curId ? rest.indexOf(curId) : -1
+  const insertAt = curPos >= 0 ? curPos + 1 : 0
+  const next = [...rest.slice(0, insertAt), ...fresh, ...rest.slice(insertAt)]
+  const origRest = _origQueue?.filter((x) => !set.has(x))
+  const origCur = origRest && curId ? origRest.indexOf(curId) : -1
+  useQueueStore.setState({
+    queue: next,
+    // curId остался на своей позиции — вставка идёт ПОСЛЕ него.
+    qIdx: curPos >= 0 ? curPos : 0,
+    _origQueue: origRest
+      ? [...origRest.slice(0, origCur + 1), ...fresh, ...origRest.slice(origCur + 1)]
+      : null,
+  })
+  return fresh.length
+}
+
 /** Добавить в конец очереди. */
 export const addToQueue = (id: string): void => {
-  const { queue } = useQueueStore.getState()
-  if (queue.includes(id)) return
-  trackRegistry.promote(id)
-  useQueueStore.setState({ queue: [...queue, id] })
+  enqueue([id], 'end')
 }
 
 /**
  * Вставить трек сразу после текущего.
- * Если уже в очереди — переносим. qIdx корректируем если он сдвинется.
+ * Если уже в очереди — переносим.
  */
 export const playNextInQueue = (id: string): void => {
-  const { queue, qIdx, curId } = useQueueStore.getState()
-  trackRegistry.promote(id)
-  const next = queue.filter((x) => x !== id)
-  const insertAt = next.length ? qIdx + 1 : 0
-  next.splice(insertAt, 0, id)
-  let newQIdx = qIdx
-  if (qIdx >= insertAt && curId && next[qIdx] !== curId) newQIdx = qIdx + 1
-  useQueueStore.setState({ queue: next, qIdx: newQIdx })
+  enqueue([id], 'next')
+}
+
+/**
+ * Добавить набор треков (плейлист/папку/выделение) в конец очереди.
+ * `source` используется только когда очередь пуста — тогда набор просто
+ * запускается с этим ярлыком источника. Показывает toast с результатом.
+ */
+export const addTracksToQueue = (ids: string[], source?: PlaySource): void => {
+  const n = enqueue(ids, 'end', source)
+  toast(n ? i18nT('toast.addedToQueue', { n }) : i18nT('toast.alreadyInQueue'))
+}
+
+/** Поставить набор треков сразу после текущего. Показывает toast с результатом. */
+export const playTracksNext = (ids: string[], source?: PlaySource): void => {
+  const n = enqueue(ids, 'next', source)
+  if (n) toast(i18nT('toast.queuedNext', { n }))
 }
 
 // ── Действия «+» из miniplayer/tray (события bloom-mp-add-to-lib/add-to-pl/new-pl) ──

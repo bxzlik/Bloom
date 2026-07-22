@@ -211,7 +211,6 @@
 .lib-item-search:hover,.lib-item-search.active{color:var(--fg)}
 .lib-item-search.active{color:var(--accent,#fff);background:rgba(var(--accent-rgb),.12)}
 /* Inline playlist search bar */
-.lib-isp-wrap{display:flex;align-items:center;gap:8px;background:var(--input,rgba(255,255,255,.06));border:1px solid var(--border);border-radius:var(--radius);padding:0 14px;height:38px;flex:1;max-width:420px;transition:.15s}
-.lib-isp-wrap:focus-within{border-color:var(--accent,rgba(255,255,255,.35));background:var(--card)}
+.lib-isp-wrap{display:flex;align-items:center;gap:8px;background:transparent;border:1px solid rgba(255,255,255,.07);border-radius:999px;padding:0 16px;height:38px;flex:1;max-width:420px;transition:.15s}
 .lib-isp-inp{flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:13px;font-family:var(--font)}
 .lib-isp-inp::placeholder{color:var(--muted)}

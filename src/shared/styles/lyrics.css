@@ -1,6 +1,9 @@
 /* ===== LYRICS PANEL ===== */
-.lyrics-btn{background:none;border:none;color:var(--icon-fg);cursor:pointer;width:40px;height:40px;border-radius:calc(var(--radius)*.7);display:flex;align-items:center;justify-content:center;transition:.15s;position:relative;flex-shrink:0}
+/* Кнопка живёт в одном ряду с транспортом (.cc) — размеры, тайминги и вжатие
+   при нажатии повторяют .cc в player.css, иначе выпадает из ряда. */
+.lyrics-btn{background:none;border:none;color:var(--icon-fg);cursor:pointer;width:40px;height:40px;border-radius:calc(var(--radius)*.7);display:flex;align-items:center;justify-content:center;transition:.15s;position:relative;flex-shrink:0;will-change:transform}
 .lyrics-btn:hover{color:var(--text)}
+.lyrics-btn:active{transform:scale(.94)}
 .lyrics-btn.lyr-active{color:var(--accent)}
 .lyrics-panel{position:absolute;inset:0;background:rgba(15,15,15,.96);display:flex;flex-direction:column;z-index:10;transition:opacity .25s ease,transform .25s ease;border-radius:inherit}
 .lyrics-panel.lyr-hidden{opacity:0;pointer-events:none;transform:scale(.97)}
@@ -34,7 +37,13 @@
 #playerContent:not(.queue-right):not(.queue-left) #lyricsQueueBlock{flex:1 1 0;min-height:0}
 #playerContent.queue-right #lyricsQueueBlock,
 #playerContent.queue-left #lyricsQueueBlock{width:320px;flex-shrink:0;flex:none}
-.vol-sl::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer}
+/* Ползунок громкости — без кругляшка. Бегунок остаётся (за него тянут), но он же
+   и рисует всю заливку: круг 4×4 в размер дорожки + box-shadow влево «на весь
+   экран», обрезанный overflow:hidden дорожки. Одна закраска вместо «градиент +
+   бегунок сверху» — стыка и выступающего носика на срезе быть не может.
+   Сдвиг -2px (радиус бегунка) ставит правый край тени в центр круга, поэтому
+   конец заливки — ровный полукруг, а не квадрат. */
+.vol-sl::-webkit-slider-thumb{-webkit-appearance:none;width:4px;height:4px;border-radius:99px;background:var(--accent);box-shadow:calc(-100vw - 2px) 0 0 100vw var(--accent);cursor:pointer}
 #bloom-dl-popup,#bloom-src-popup{position:absolute;z-index:100000;width:fit-content;transform-origin:top left}
 #bloom-dl-popup.open,#bloom-src-popup.open{animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #bloom-dl-popup.closing,#bloom-src-popup.closing{animation:libMenuOut .14s ease-in forwards}

@@ -14,7 +14,7 @@ import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { toast } from '@shared/ui'
 import { PlCover } from './PlCover'
-import { playFromSource, playShuffledFromSource, downloadPlaylistTracks, isDownloadable, type PlaySource } from '@features/player'
+import { playFromSource, playShuffledFromSource, addTracksToQueue, playTracksNext, downloadPlaylistTracks, isDownloadable, type PlaySource } from '@features/player'
 import { downloadPlaylistOffline, removePlaylistOffline, useOfflineStore } from '@features/offline'
 import { Ico } from '@shared/ui/icons/solar'
 import { PlaylistOfflineTag } from './PlaylistOfflineTag'
@@ -421,6 +421,15 @@ export const PlMenu = ({
     if (!ids.length) return
     playShuffledFromSource(ids, source)
   }
+  // «В очередь» / «Играть следующими» — весь плейлист (папку/подборку) целиком.
+  // source нужен только для пустой очереди: там добавление превращается в запуск.
+  const queueCtx = (where: 'end' | 'next') => {
+    const { ids, source } = getCtxTracks()
+    onClose()
+    if (!ids.length) return
+    if (where === 'end') addTracksToQueue(ids, source)
+    else playTracksNext(ids, source)
+  }
   // ── Header иконка ────────────────────────────────────────────────
   const headerIcon = (() => {
     if (mode === 'pl' && playlist?.cover) {
@@ -453,9 +462,27 @@ export const PlMenu = ({
 
   // 1. Воспроизведение: ПКМ из sidebar — «Воспроизвести», иначе —
   //    «Перемешать и запустить» (для всех режимов с треками, кроме history).
+  // Пункты очереди («В очередь» / «Играть следующими») — общие для обоих
+  // вариантов первой группы.
+  const queueItems: ReactNode[] = [
+    <Item
+      key="to-queue"
+      icon={<AddQueueIcon />}
+      label={t('lib.plmenu.toQueue')}
+      onClick={() => queueCtx('end')}
+    />,
+    <Item
+      key="play-next"
+      icon={<PlayNextIcon />}
+      label={t('lib.plmenu.playNext')}
+      onClick={() => queueCtx('next')}
+    />,
+  ]
+
   if (compact && (mode === 'pl' || mode === 'folder')) {
     groups.push([
       <Item key="play" icon={<PlayIcon />} label={t('player.aria.play')} onClick={playCtx} />,
+      ...queueItems,
     ])
   } else if (!compact && mode !== 'history') {
     groups.push([
@@ -465,6 +492,7 @@ export const PlMenu = ({
         label={t('lib.plmenu.shuffleStart')}
         onClick={shufflePlayCtx}
       />,
+      ...queueItems,
     ])
   }
 
@@ -858,4 +886,6 @@ const DupsIcon = () => <Ico name="copy" width={11} height={11} />
 const RefreshIcon = () => <Ico name="refresh" width={11} height={11} />
 const PlusIcon = () => <Ico name="add" width={11} height={11} />
 const ShuffleIcon = () => <Ico name="shuffle" width={11} height={11} />
+const AddQueueIcon = () => <Ico name="addQueue" width={11} height={11} />
+const PlayNextIcon = () => <Ico name="playNext" width={11} height={11} />
 const PinIcon = () => <Ico name="pin" width={11} height={11} />
