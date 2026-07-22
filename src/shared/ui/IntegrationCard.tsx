@@ -93,7 +93,7 @@ export const HelpPopup = ({ children }: { children: ReactNode }) => {
                 width: 320,
                 maxWidth: 'calc(100vw - 24px)',
                 padding: 14,
-                background: 'color-mix(in srgb,var(--block-color),var(--text) 1%)',
+                background: 'color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift))',
                 border: '1px solid rgba(255,255,255,.08)',
                 borderRadius: 'calc(var(--radius)*.7)',
                 boxShadow: '0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04)',

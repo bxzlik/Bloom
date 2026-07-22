@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { WaveCard } from '@features/wave'
@@ -31,7 +31,7 @@ import {
 } from '@features/player'
 import { seek, seekLive } from '@features/player/api/play'
 import { extractAccentFromCover } from '@features/settings'
-import { trackRegistry, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
+import { trackRegistry, coverCache, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
 import { PlaylistCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '../navigationStore'
@@ -592,34 +592,117 @@ const ContinueView = ({
 
 // ── Любимые / История ──────────────────────────────────────────────────────
 
+/**
+ * Обложки первых 4 треков по списку id (порядок списка сохраняется).
+ * Резолв: библиотека → реестр площадок → персистентный `coverCache`. Последний
+ * нужен потому, что реестр живёт только в памяти: после перезапуска треки
+ * площадок из истории/лайков не резолвятся и коллаж собирался из 1–2 картинок.
+ * Всё, что удалось резолвить «по-настоящему», кладём обратно в кеш.
+ *
+ * Дубли НЕ отсеиваем: нужны именно «последние 4 трека», а у них часто один
+ * альбом — с дедупом в коллаже оставалось 2 плитки вместо 4.
+ */
+const pickCovers = (ids: string[], libById: Map<string, Track>): string[] => {
+  const out: string[] = []
+  for (const id of ids) {
+    const live = (libById.get(id) ?? trackRegistry.get(id))?.cover
+    if (live) coverCache.put(id, live)
+    const cover = live ?? coverCache.get(id)
+    if (!cover) continue
+    out.push(cover)
+    if (out.length === 4) break
+  }
+  coverCache.save()
+  return out
+}
+
+/**
+ * Карточка «Любимые»/«История». Фон — коллаж 2×2 из обложек 4 последних треков
+ * под затемняющим скримом. Плиток всегда 4: если обложек меньше (короткая
+ * история), список зацикливается.
+ *
+ * `empty` считается ПО СОДЕРЖИМОМУ (нет лайков / пустая история), а не по
+ * обложкам: треки площадок из истории после рестарта могут не зарезолвиться
+ * (реестр живёт в памяти), и карточка с полной историей ложно уходила бы в
+ * серую и некликабельную. Нет обложек, но история есть → просто без коллажа.
+ */
+const QuickCard = ({
+  kind,
+  empty,
+  covers,
+  icon,
+  title,
+  sub,
+  onOpen,
+}: {
+  kind: 'fav' | 'hist'
+  empty: boolean
+  covers: string[]
+  icon: ReactNode
+  title: string
+  sub: string
+  onOpen: () => void
+}) => {
+  return (
+    <div
+      className={`home-quick-card home-quick-card-${kind}${empty ? ' is-empty' : ''}`}
+      onClick={empty ? undefined : onOpen}
+    >
+      {covers.length > 0 && (
+        <div className="hqc-bg" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => (
+            <img key={i} src={covers[i % covers.length]} alt="" loading="lazy" decoding="async" />
+          ))}
+        </div>
+      )}
+      <div className="hqc-icon">{icon}</div>
+      <div className="hqc-info">
+        <div className="hqc-title">{title}</div>
+        <div className="hqc-sub">{sub}</div>
+      </div>
+    </div>
+  )
+}
+
 const QuickGrid = () => {
   const t = useT()
   const goNav = useNavStore((s) => s.goNav)
   const selectBuiltin = useLibStore((s) => s.selectBuiltin)
+  const libTracks = useLibStore((s) => s.tracks)
+  const entries = useHistoryStore((s) => s.entries)
+  const favs = useFavStore((s) => s.favs)
+  const libById = useMemo(() => new Map(libTracks.map((tr) => [tr.id, tr])), [libTracks])
+  // История уже отсортирована desc по ts (см. historyStore.add), лайки — Map,
+  // порядок вставки не гарантирует свежесть, поэтому сортируем по favAt desc.
+  const histCovers = useMemo(() => pickCovers(entries.map((e) => e.id), libById), [entries, libById])
+  const favCovers = useMemo(
+    () => pickCovers(Array.from(favs).sort((a, b) => b[1] - a[1]).map(([id]) => id), libById),
+    [favs, libById],
+  )
   const open = (m: 'fav' | 'history') => {
     goNav('lib')
     selectBuiltin(m)
   }
   return (
     <div className="home-quick-grid">
-      <div className="home-quick-card home-quick-card-fav" onClick={() => open('fav')}>
-        <div className="hqc-icon">
-          <Ico name="heart" variant="bold" width={18} height={18} />
-        </div>
-        <div className="hqc-info">
-          <div className="hqc-title">{t('home.favTracks')}</div>
-          <div className="hqc-sub">{t('home.favSub')}</div>
-        </div>
-      </div>
-      <div className="home-quick-card home-quick-card-hist" onClick={() => open('history')}>
-        <div className="hqc-icon">
-          <Ico name="clock" width={18} height={18} />
-        </div>
-        <div className="hqc-info">
-          <div className="hqc-title">{t('lib.history')}</div>
-          <div className="hqc-sub">{t('home.historySub')}</div>
-        </div>
-      </div>
+      <QuickCard
+        kind="fav"
+        empty={favs.size === 0}
+        covers={favCovers}
+        icon={<Ico name="heart" variant="bold" width={22} height={22} />}
+        title={t('home.favTracks')}
+        sub={t('home.favSub')}
+        onOpen={() => open('fav')}
+      />
+      <QuickCard
+        kind="hist"
+        empty={entries.length === 0}
+        covers={histCovers}
+        icon={<Ico name="clock" variant="bold" width={22} height={22} />}
+        title={t('lib.history')}
+        sub={t('home.historySub')}
+        onOpen={() => open('history')}
+      />
     </div>
   )
 }

@@ -318,12 +318,12 @@ const PlayerContent = () => {
   )
   const favOverlayBtn = (
     <button onClick={toggleCurFav} className={`cov-fav${isFav ? '' : ' off'}`} aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}>
-      <HeartSvg size={22} filled={isFav} />
+      <HeartSvg size={20} filled={isFav} />
     </button>
   )
   const addOverlayBtn = (
     <button className="cov-add" aria-label={t('player.aria.add')} onClick={openAddPopup}>
-      <Ico name="addCircle" width={24} height={24} />
+      <Ico name="addCircle" width={22} height={22} />
     </button>
   )
   // Кнопка «на весь экран» по центру обложки (появляется по наведению) — как в
@@ -492,8 +492,8 @@ const PlayerContent = () => {
   // (рамка-квадрат), как у блока fav/add.
   const ctrlGroupsNode = (
     <>
-      {srcBtnNode && <div className="ps-ctrl" style={{ flexShrink: 0, padding: 4 }}>{srcBtnNode}</div>}
-      <div className="ps-ctrl" style={{ flexShrink: 0, gap: 2, padding: 4 }}>
+      {srcBtnNode && <div className="ps-ctrl" style={{ flexShrink: 0, padding: '3px 4px' }}>{srcBtnNode}</div>}
+      <div className="ps-ctrl" style={{ flexShrink: 0, gap: 2, padding: '3px 4px' }}>
         {eqBtnNode}
         {speedBtnNode}
       </div>
@@ -512,7 +512,7 @@ const PlayerContent = () => {
   // В большом стиле громкость — компактная кнопка-иконка с вертикальным поп-апом
   // (как в нижнем баре #miniPlayer), а не инлайн-слайдер.
   const volumeNodeLarge = (
-    <div className="ps-ctrl" style={{ flexShrink: 0, padding: 4 }}>
+    <div className="ps-ctrl" style={{ flexShrink: 0, padding: '3px 4px' }}>
       <VolumePopupBtn volume={volume} onWheel={onWheelVol} />
     </div>
   )
@@ -747,7 +747,7 @@ const PlayerContent = () => {
               {transportNode}
 
               {/* VOLUME + cov-btns (fav/add) + group-боксы (площадка | eq+скорость) */}
-              <div className="ps-vol-row" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+              <div className="ps-vol-row" style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
                 {volumeNode}
                 <div className="ps-ctrl" id="mainCovBtnsWrap" style={{ flexShrink: 0, gap: 2 }}>
                   {/* `.off` → нейтральный цвет (без него #mainCovFav красный по
@@ -1045,7 +1045,7 @@ const PsProgress = () => {
     seek(t)
   }
   return (
-    <div>
+    <div className="ps-progress">
       <div className="ps-bar-wrap" id="psWrap" onWheel={onProgWheel} style={{ ['--sl-pct' as string]: pct } as React.CSSProperties}>
         <div className="ps-bar-fill" id="psFill" style={{ width: `${pct}%`, pointerEvents: 'none' }} />
         {/* Волновой слайдер: видимость через body.slider-wave (CSS). */}
@@ -1125,7 +1125,7 @@ const VolumeSlider = ({ volume }: { volume: number }) => {
     const sl = ref.current
     if (!sl) return
     const pct = volume
-    sl.style.background = `linear-gradient(to right,var(--accent) 0%,var(--accent) ${pct}%,var(--border) ${pct}%,var(--border) 100%)`
+    sl.style.background = `linear-gradient(to right,var(--accent) 0%,var(--accent) ${pct}%,var(--track) ${pct}%,var(--track) 100%)`
   }, [volume])
   return (
     <input

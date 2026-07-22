@@ -533,7 +533,7 @@ const QueueHeader = ({
             borderRadius: 'calc(var(--radius) * 0.6)',
             background: 'transparent',
             border: '1px solid rgba(255,255,255,var(--wb))',
-            color: 'var(--text2)',
+            color: 'var(--icon-fg)',
             cursor: 'pointer',
             transition: '.15s',
             flexShrink: 0,
@@ -546,7 +546,7 @@ const QueueHeader = ({
           onMouseOut={(e) => {
             e.currentTarget.style.background = 'transparent'
             e.currentTarget.style.borderColor = 'rgba(255,255,255,var(--wb))'
-            e.currentTarget.style.color = 'var(--text2)'
+            e.currentTarget.style.color = 'var(--icon-fg)'
           }}
         >
           <Ico name="trash" width={13} height={13} />
@@ -570,7 +570,7 @@ const SimilarButton = ({ icon }: { icon?: boolean }) => {
     borderRadius: 'calc(var(--radius) * 0.6)',
     background: 'transparent',
     border: '1px solid rgba(255,255,255,var(--wb))',
-    color: 'var(--text2)',
+    color: 'var(--icon-fg)',
     cursor: 'pointer',
     transition: '.15s',
     flexShrink: 0,
@@ -589,7 +589,7 @@ const SimilarButton = ({ icon }: { icon?: boolean }) => {
         e.currentTarget.style.borderColor = 'rgba(255,255,255,.3)'
       }}
       onMouseOut={(e) => {
-        e.currentTarget.style.color = 'var(--text2)'
+        e.currentTarget.style.color = 'var(--icon-fg)'
         e.currentTarget.style.borderColor = 'rgba(255,255,255,var(--wb))'
       }}
     >

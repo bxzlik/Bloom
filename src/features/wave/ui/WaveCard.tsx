@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement } from 'react'
 import { createPortal } from 'react-dom'
 import waveApi, { getWaveSource, setWaveSource } from '@/wave'
 import { useYmAuthStore } from '@features/yandex'
@@ -6,7 +6,6 @@ import { usePlayerStore } from '@features/player/model/store'
 import { extractCoverHsl, useThemeStore } from '@features/settings'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { ScLogo, YmLogo, providerBrandColor } from '@entities/track'
-import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { DislikesModal } from './DislikesModal'
@@ -58,6 +57,20 @@ const paletteFromHsl = ({ h, s, l }: Hsl): WavePalette => {
 
 /** Ахроматичный акцент (белый/серый) → белое свечение, тон не выдумываем. */
 const WHITE_PALETTE: WavePalette = { '--wave-1': '#fff', '--wave-2': '#fff', '--wave-3': '#fff' }
+
+/**
+ * Площадки-источники «Моей волны» для попапа настройки. `provider` — ключ для
+ * бренд-цвета: выбранная площадка красит САМО лого, подложки/заливки нет.
+ */
+const WAVE_SOURCES = [
+  { id: 'sc', provider: 'soundcloud', size: 21, Logo: ScLogo },
+  { id: 'ym', provider: 'yandex', size: 20, Logo: YmLogo },
+] as const satisfies ReadonlyArray<{
+  id: 'sc' | 'ym'
+  provider: string
+  size: number
+  Logo: (p: { size: number }) => ReactElement
+}>
 
 /**
  * Аура-пламя (SVG). Вынесена в мемо-компонент БЕЗ пропсов: цвета приходят через
@@ -149,8 +162,6 @@ export const WaveCard = () => {
       cancelled = true
     }
   }, [artwork, accent])
-  // Бренд-режим иконок (настройка «акцентные бейджи» выключена).
-  const brand = !useBadgePrefs((s) => s.accentBadges)
 
   usePopupOpenAnimation(menuRef, menuPos)
 
@@ -242,98 +253,40 @@ export const WaveCard = () => {
                 transform: 'translateX(-50%)',
               }}
             >
-            <div
-              ref={menuRef}
-              role="menu"
-              style={{
-                transformOrigin: 'top center',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-                minWidth: 220,
-                padding: 10,
-                background: 'color-mix(in srgb,var(--block-color),var(--text) 1%)',
-                border: '1px solid rgba(255,255,255,.07)',
-                borderRadius: 'calc(var(--radius)*.7)',
-                boxShadow: '0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04)',
-              }}
-            >
+            <div ref={menuRef} role="menu" className="wave-menu">
               {ymAuthed && (
-                <div
-                  role="radiogroup"
-                  aria-label={t('wave.pickSource')}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 4,
-                    padding: 3,
-                    background: 'rgba(255,255,255,.05)',
-                    borderRadius: 'calc(var(--radius)*.6)',
-                  }}
-                >
-                  {(['sc', 'ym'] as const).map((s) => (
+                <div role="radiogroup" aria-label={t('wave.pickSource')} className="wave-src-row">
+                  {WAVE_SOURCES.map((s) => (
                     <button
-                      key={s}
+                      key={s.id}
                       role="radio"
-                      aria-checked={effSource === s}
-                      aria-label={s === 'sc' ? 'SoundCloud' : t('settings.nav.yandex')}
+                      aria-checked={effSource === s.id}
+                      aria-label={s.id === 'sc' ? 'SoundCloud' : t('settings.nav.yandex')}
+                      className={`wave-src${effSource === s.id ? ' is-on' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation()
-                        pickSource(s)
+                        pickSource(s.id)
                       }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: 'none',
-                        // Лёгкое серое выделение вместо акцентного цвета.
-                        background: effSource === s ? 'rgba(255,255,255,.12)' : 'none',
-                        color: 'var(--text)',
-                        padding: '9px 8px',
-                        borderRadius: 'calc(var(--radius)*.45)',
-                        cursor: 'pointer',
-                        transition: '.15s',
-                      }}
+                      // Лого выбранной площадки — всегда её брендовый цвет
+                      // (не акцент темы: у белого акцента лого стало бы белым).
+                      style={{ '--src-fg': providerBrandColor(s.provider) } as CSSProperties}
                     >
                       {/* Бейдж — только лого, без подписи. */}
-                      <span
-                        style={{
-                          display: 'flex',
-                          color: brand ? providerBrandColor(s === 'sc' ? 'soundcloud' : 'yandex') : undefined,
-                        }}
-                      >
-                        {s === 'sc' ? <ScLogo size={17} /> : <YmLogo size={16} />}
-                      </span>
+                      <s.Logo size={s.size} />
                     </button>
                   ))}
                 </div>
               )}
               <button
                 role="menuitem"
+                className="wave-dislikes"
                 onClick={(e) => {
                   e.stopPropagation()
                   setMenuPos(null)
                   setDislikesOpen(true)
                 }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 9,
-                  width: '100%',
-                  border: 'none',
-                  background: 'rgba(255,255,255,.05)',
-                  color: 'var(--text)',
-                  padding: '10px 12px',
-                  borderRadius: 'calc(var(--radius)*.5)',
-                  cursor: 'pointer',
-                  transition: '.15s',
-                  fontFamily: 'var(--font)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  textAlign: 'left',
-                }}
               >
-                <Ico name="dislike" width={17} height={17} />
+                <Ico name="dislike" width={16} height={16} />
                 <span>{t('wave.dislikes')}</span>
               </button>
             </div>

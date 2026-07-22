@@ -820,17 +820,22 @@ const MpTime = () => {
     <div
       style={{
         display: 'flex',
+        alignItems: 'center',
         gap: 3,
         fontSize: 11,
         color: 'var(--text2)',
         flexShrink: 0,
         fontVariantNumeric: 'tabular-nums',
         whiteSpace: 'nowrap',
+        padding: '5px 10px',
+        border: '1px solid var(--border)',
+        borderRadius: 999,
+        margin: '0 10px',
       }}
     >
       <span style={{ color: 'var(--text)' }}>{fmt(position)}</span>
-      <span style={{ opacity: 0.4 }}>/</span>
-      <span>{fmt(duration)}</span>
+      <span style={{ color: 'rgba(255,255,255,.5)' }}>/</span>
+      <span style={{ color: 'rgba(255,255,255,.72)' }}>{fmt(duration)}</span>
     </div>
   )
 }

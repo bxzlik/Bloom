@@ -84,7 +84,7 @@
 /* fixed + портал в body; позицию (top/left) проставляет JS от кнопки-якоря.
    Раньше был position:absolute внутри скролла настроек → добавлял скроллбар
    и сдвигал соседние элементы при открытии. */
-.tp-pop{position:fixed;z-index:8000;width:300px;max-height:340px;overflow-y:auto;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:10px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04)}
+.tp-pop{position:fixed;z-index:8000;width:300px;max-height:340px;overflow-y:auto;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:10px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04)}
 .tp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
 .tp-card{position:relative;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:calc(var(--radius)*0.5);padding:9px 11px;cursor:pointer;color:var(--text);font-family:var(--font);transition:background .1s,box-shadow .1s,border-color .1s;text-align:left}
 .tp-card:hover{background:var(--hover);border-color:rgba(255,255,255,.22)}

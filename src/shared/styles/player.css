@@ -136,10 +136,10 @@
 .ps-cover{width:auto;height:100%;aspect-ratio:1/1;min-width:120px;max-width:min(45vh,380px);border-radius:var(--radius);background:var(--card);overflow:hidden;flex-shrink:0;position:relative;box-shadow:none;transition:box-shadow .6s ease,transform .08s ease}
 .ps-cover img{width:100%;height:100%;object-fit:cover}
 .ps-cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;opacity:.12}
-.cov-fav{position:absolute;bottom:10px;left:10px;width:46px;height:46px;border-radius:calc(var(--radius) * 0.7);background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);color:#e03030;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(10px);z-index:4}
+.cov-fav{position:absolute;bottom:10px;left:10px;width:43px;height:43px;border-radius:50%;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);color:#e03030;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(10px);z-index:4}
 .cov-fav:hover{background:rgba(255,255,255,.12)}
-.cov-fav.off{color:var(--text2)}
-.cov-add{position:absolute;bottom:10px;right:10px;width:46px;height:46px;border-radius:calc(var(--radius) * 0.7);background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(10px);z-index:4}
+.cov-fav.off{color:var(--icon-fg)}
+.cov-add{position:absolute;bottom:10px;right:10px;width:43px;height:43px;border-radius:calc(var(--radius) * 0.7);background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);color:var(--icon-fg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(10px);z-index:4}
 .cov-add:hover{color:var(--text);background:rgba(255,255,255,.12)}
 /* Затемнение обложки при наведении */
 .ps-cover::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.38);opacity:0;transition:opacity .2s ease;pointer-events:none;z-index:2}
@@ -154,7 +154,7 @@
 .app.cov-btns-in-bar .cov-fav,.app.cov-btns-in-bar .cov-add{display:none!important}
 #mainCovBtnsWrap{display:none}
 .app.cov-btns-in-bar #mainCovBtnsWrap{display:flex}
-#mainCovFav{color:#e03030}#mainCovFav.off{color:var(--text2)}
+#mainCovFav{color:#e03030}#mainCovFav.off{color:var(--icon-fg)}
 #bpFavBtn{color:#e03030}#bpFavBtn.off{color:var(--text2)}
 .ps-cover-loading{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:5;backdrop-filter:blur(4px);border-radius:var(--radius);pointer-events:none;animation:coverLoadFadeIn .2s ease}
 .ps-cover-loading .sc-spinner{width:32px;height:32px;border-width:3px}
@@ -181,8 +181,8 @@
 #playerContent.style-large>.sl-cover-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(transparent,rgba(0,0,0,.52));border-radius:0;pointer-events:none;z-index:1}
 #playerContent.style-large .sl-progress{position:absolute;bottom:0;left:0;right:0;padding:0 20px 12px;z-index:2;background:none;border-radius:0 0 var(--radius) var(--radius)}
 #playerContent.style-large .sl-progress .ps-times{font-size:12px;font-weight:400;color:rgba(255,255,255,.65);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.6px}
-#playerContent.style-large .sl-progress .ps-bar-wrap{height:4px!important;background:rgba(0,0,0,.28)!important;border-radius:2px!important}
-#playerContent.style-large .sl-progress .ps-bar-fill{border-radius:3px!important;background:var(--accent)!important}
+#playerContent.style-large .sl-progress .ps-bar-wrap{height:5px!important;background:rgba(0,0,0,.28)!important;border-radius:99px!important}
+#playerContent.style-large .sl-progress .ps-bar-fill{border-radius:99px!important;background:var(--accent)!important}
 #playerContent.style-large .sl-progress .ps-bar-wrap:hover .ps-bar-fill{filter:brightness(1.15)}
 #playerContent.style-large .sl-progress .ps-bar-inp{inset:-9px 0!important}
 #playerContent.style-large>.sl-bottom{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:6px 12px;min-height:48px;border-radius:var(--radius);border:1px solid rgba(255,255,255,var(--wb));background:rgba(255,255,255,.02);backdrop-filter:blur(12px)}
@@ -245,15 +245,15 @@
 /* Оверлей: прогресс + контролы внизу обложки (фон даёт ::after-градиент) */
 #playerContent.style-cinema .cn-overlay{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:12px;padding:18px 22px 18px}
 /* Прогресс */
-#playerContent.style-cinema .cn-progress .ps-bar-wrap{height:4px!important;background:rgba(255,255,255,.22)!important;border-radius:2px!important}
-#playerContent.style-cinema .cn-progress .ps-bar-fill{border-radius:3px!important;background:var(--accent)!important}
+#playerContent.style-cinema .cn-progress .ps-bar-wrap{height:5px!important;background:rgba(255,255,255,.22)!important;border-radius:99px!important}
+#playerContent.style-cinema .cn-progress .ps-bar-fill{border-radius:99px!important;background:var(--accent)!important}
 #playerContent.style-cinema .cn-progress .ps-bar-wrap:hover .ps-bar-fill{filter:brightness(1.15)}
 #playerContent.style-cinema .cn-progress .ps-bar-inp{inset:-9px 0!important}
 #playerContent.style-cinema .cn-progress .ps-times{font-size:12px;color:rgba(255,255,255,.7);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.6px}
 /* Транспорт — отдельной строкой в боксе с фоном (download | плеер | дизлайк) */
 #playerContent.style-cinema .cn-overlay>.ps-ctrl{width:100%;background:rgba(0,0,0,.32);backdrop-filter:blur(8px)}
 /* Громкость — полным слайдером в своей строке + source/eq/скорость (боксы с рамкой) */
-#playerContent.style-cinema .cn-vol-row{display:flex;align-items:center;gap:8px;width:100%}
+#playerContent.style-cinema .cn-vol-row{display:flex;align-items:center;gap:6px;width:100%}
 #playerContent.style-cinema .cn-vol-row .ps-ctrl{background:rgba(0,0,0,.28);backdrop-filter:blur(8px)}
 #playerContent.style-cinema .cn-vol-row .vol-pct{color:rgba(255,255,255,.85)}
 /* Визуализатор в «Кино»/«Большом» — блок с рамкой под прогрессом, но фон чуть
@@ -301,13 +301,28 @@
 #fpNameWrap.fp-scrolling:hover #fpName{animation-play-state:paused}
 body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps-title-wrap .ps-title,body.opt-marquee-paused #mpTitle,body.opt-marquee-paused .mp-title-wrap .mp-title,body.opt-marquee-paused #fpName,body.opt-marquee-paused .bp-title{animation-play-state:paused!important}
 .ps-artist{font-size:13px;color:var(--text2);cursor:pointer;text-align:center;display:block;width:fit-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 auto}
-.ps-bar-wrap{position:relative;height:3px;background:var(--border);border-radius:2px;cursor:pointer}
-.ps-bar-fill{position:absolute;left:0;top:0;width:0%;height:100%;background:var(--accent);border-radius:2px;pointer-events:none}
+/* Базовая толщина дорожки — она же у типов «Стандарт», «iOS» и «Обложка».
+   «Тонкий» и «Волна» задают свою высоту в sliders-telemetry.css. Радиус pill,
+   иначе на такой высоте концы читаются как обрубленный прямоугольник. */
+.ps-bar-wrap{position:relative;height:5px;background:var(--track);border-radius:99px;cursor:pointer}
+.ps-bar-fill{position:absolute;left:0;top:0;width:0%;height:100%;background:var(--accent);border-radius:99px;pointer-events:none}
 .ps-bar-inp{position:absolute;inset:-7px 0;opacity:0;cursor:pointer;width:100%;-webkit-appearance:none}
-.ps-times{display:flex;justify-content:space-between;font-size:11px;color:var(--text2)}
-.ps-ctrl{display:flex;align-items:center;justify-content:center;gap:4px;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 1.2);padding:6px 14px;background:transparent}
-.vol-pct{font-size:11px;font-weight:600;color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid rgba(255,255,255,var(--wb2));border-radius:6px;padding:2px 4px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
-.cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
+/* Воздух между блоком прогресса и транспортом. Колонка вокруг него имеет общий
+   gap:8px (инлайн в PagePlayer), поэтому добавка идёт маржой на самом блоке —
+   раздвигается только эта пара, виз./громкость сохраняют свой шаг.
+   Только дефолтный стиль: у large/cinema прогресс живёт на обложке. */
+#playerContent:not(.style-large):not(.style-cinema) .ps-progress{margin-bottom:3px}
+/* Тайминги под баром: кегль/вес крупнее, отступ вниз заметный, края — ровно
+   по началу и концу полосы (line-height:1 убирает поле строки, tabular-nums
+   держит ширину цифр стабильной, чтобы правая метка не «дышала»). */
+.ps-times{display:flex;justify-content:space-between;font-size:11.8px;font-weight:500;line-height:1;margin-top:6px;color:var(--text2);font-variant-numeric:tabular-nums}
+/* Транспорт (play/prev/next/…): бокс чуть выше — .cc 40 + вертикальный паддинг. */
+.ps-ctrl{display:flex;align-items:center;justify-content:center;gap:4px;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 1.2);padding:11px 14px;background:transparent}
+/* Бейдж громкости: радиус/бордер — как у остальных боксов (var(--radius), --wb),
+   а не фиксированные 6px. margin-left уравнивает зазор «ползунок→бейдж» с
+   визуальным зазором «иконка→ползунок» (у .cc есть свой внутренний воздух). */
+.vol-pct{font-size:11px;font-weight:600;color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.7);padding:2px 4px;margin-left:6px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
+.cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--icon-fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
 .cc:hover{color:var(--text)}
 /* Мини-бар компактнее полного плеера: боксы кнопок ужаты, чтобы иконки шли плотнее. */
 #miniPlayer .cc{width:30px;height:30px}
@@ -358,14 +373,14 @@ body.play-flat .cc-play svg{width:26px;height:26px}
 /* В BigPicture у .cc свой, более тусклый ховер-фон — повторяем его для play. */
 body.play-flat #bigPicOverlay .cc-play:hover{color:#fff}
 .ps-vol{display:flex;align-items:center;gap:8px}
-.vol-sl{-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;width:80px}
+.vol-sl{-webkit-appearance:none;height:4px;border-radius:99px;background:var(--track);outline:none;cursor:pointer;width:80px}
 .ps-ctrl .vol-sl{flex:1;width:auto}
 /* Компактной делаем ТОЛЬКО нижнюю строку громкости (слайдер + число + площадка +
    EQ/скорость) во всех стилях плеера. Транспорт (перемотка/play/шафл) и всё выше
    не трогаем. Мини-бар (#miniPlayer) и полноэкранный (#bigPicOverlay) — свои селекторы. */
 #playerContent .ps-vol-row .cc,
 #playerContent .cn-vol-row .cc,
-#playerContent .sl-vol-wrap .cc{width:34px;height:34px}
+#playerContent .sl-vol-wrap .cc{width:30px;height:30px}
 #playerContent .ps-vol-row .ps-ctrl,
 #playerContent .cn-vol-row .ps-ctrl,
-#playerContent .sl-vol-wrap .ps-ctrl{gap:3px;padding:4px 10px}
+#playerContent .sl-vol-wrap .ps-ctrl{gap:3px;padding:3px 10px;border-radius:calc(var(--radius) * 1)}

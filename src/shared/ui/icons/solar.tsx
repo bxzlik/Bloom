@@ -42,6 +42,7 @@ import AddCircleLinear from '~icons/solar/add-circle-linear'
 import DownloadLinear from '~icons/solar/download-minimalistic-linear'
 import EqLinear from '~icons/solar/tuning-4-linear'
 import ClockLinear from '~icons/solar/clock-circle-linear'
+import ClockBold from '~icons/solar/clock-circle-bold'
 import FolderLinear from '~icons/solar/folder-linear'
 import TrashLinear from '~icons/solar/trash-bin-trash-linear'
 import WaveLinear from '~icons/solar/soundwave-linear'
@@ -243,7 +244,7 @@ const ICONS = {
   winBell: { linear: WinBellBare, bold: WinBellBoldBare },
   download: { linear: DownloadLinear },
   eq: { linear: EqLinear },
-  clock: { linear: ClockLinear },
+  clock: { linear: ClockLinear, bold: ClockBold },
   folder: { linear: FolderLinear },
   trash: { linear: TrashLinear },
   wave: { linear: WaveLinear, bold: WaveBold },

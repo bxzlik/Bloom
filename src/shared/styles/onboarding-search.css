@@ -31,7 +31,7 @@
 .sp-dd-btn.active .sp-dd-chev{opacity:.7}
 .sp-dd-chev{transition:transform .18s;flex-shrink:0}
 .sp-dd.open .sp-dd-chev{transform:rotate(180deg)}
-.sp-dd-menu{display:none;position:absolute;top:calc(100% + 5px);left:0;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border);border-radius:10px;padding:4px;min-width:140px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.35);flex-direction:column;gap:1px}
+.sp-dd-menu{display:none;position:absolute;top:calc(100% + 5px);left:0;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border);border-radius:10px;padding:4px;min-width:140px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.35);flex-direction:column;gap:1px}
 .sp-dd.open .sp-dd-menu{display:flex}
 .sp-dd-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;border:none;background:transparent;color:var(--fg);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);text-align:left;transition:.12s;white-space:nowrap}
 .sp-dd-opt:hover{background:rgba(255,255,255,.07)}
@@ -50,7 +50,7 @@
 #spClear:hover{color:var(--fg)}
 /* Выпадающая история поиска под строкой (overlay). Высоту докручивает JS под
    нижний край окна; max-height тут — фолбэк до первого замера. Скроллбар скрыт. */
-.sp-hist{position:absolute;top:calc(100% + 10px);left:0;right:0;z-index:80;display:flex;flex-direction:column;gap:1px;padding:10px;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:24px;box-shadow:0 16px 44px rgba(0,0,0,.5);max-height:min(60vh,380px);overflow-y:auto;scrollbar-width:none}
+.sp-hist{position:absolute;top:calc(100% + 10px);left:0;right:0;z-index:80;display:flex;flex-direction:column;gap:1px;padding:10px;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:24px;box-shadow:0 16px 44px rgba(0,0,0,.5);max-height:min(60vh,380px);overflow-y:auto;scrollbar-width:none}
 .sp-hist::-webkit-scrollbar{display:none}
 .sp-hist-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;cursor:pointer;transition:background .12s}
 .sp-hist-row:hover{background:var(--hover)}

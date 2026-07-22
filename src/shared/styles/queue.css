@@ -100,7 +100,7 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 .lib-toolbar button:hover{color:var(--text);background:rgba(255,255,255,.06)}
 .lib-toolbar #libAddBtn svg{transition:transform .22s cubic-bezier(.34,1.25,.64,1)}
 .lib-toolbar #libAddBtn.open svg{transform:rotate(45deg)}
-#libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;width:248px;box-sizing:border-box;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
+#libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;width:248px;box-sizing:border-box;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
 #libAddMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libAddMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #libAddMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
@@ -129,13 +129,16 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 #libAddMenu .lam-all-thumb{width:22px;height:22px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--sys-all-tint)}
 #libAddMenu .lam-pl-thumb{width:22px;height:22px;border-radius:5px;overflow:hidden;flex-shrink:0;display:block;background:var(--card)}
 #libAddMenu .lam-pl-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-#libAddMenu .lam-target-menu{position:absolute;top:calc(100% + 2px);left:0;right:0;background:color-mix(in srgb,var(--block-color),var(--text) 3%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:10px;padding:4px;z-index:1;box-shadow:0 10px 28px rgba(0,0,0,.5);max-height:240px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;animation:libMenuIn .15s cubic-bezier(.22,1,.36,1) forwards;transform-origin:top}
+/* Вложенное подменю — на ярус выше родительского #libAddMenu (тот на --ov-lift),
+   поэтому свой процент, а не переменная. Ослаблено с 3% вместе с базовым ярусом,
+   чтобы отрыв от родителя остался прежним на глаз. */
+#libAddMenu .lam-target-menu{position:absolute;top:calc(100% + 2px);left:0;right:0;background:color-mix(in srgb,var(--block-color),var(--text) 2%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:10px;padding:4px;z-index:1;box-shadow:0 10px 28px rgba(0,0,0,.5);max-height:240px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;animation:libMenuIn .15s cubic-bezier(.22,1,.36,1) forwards;transform-origin:top}
 #libAddMenu .lam-target-menu::-webkit-scrollbar{width:0;height:0;display:none}
 #libAddMenu .lam-target-menu button.active{color:var(--accent);background:rgba(var(--accent-rgb),.1)}
 #libAddMenu .lam-active-check{flex-shrink:0;color:var(--accent)}
 #libAddMenu .lam-target-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 6px}
 #libAddMenu .lam-back{color:var(--muted)}
-#speedPicker{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:10px 12px;gap:10px;z-index:9100;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top left;display:none;align-items:center}
+#speedPicker{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:10px 12px;gap:10px;z-index:9100;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top left;display:none;align-items:center}
 #speedPicker.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #speedPicker.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #speedPicker .sp-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:none;border:none;padding:0;font-family:var(--font)}
@@ -146,13 +149,13 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 #speedPicker .sp-label{font-size:10px;font-weight:700;color:var(--text2,#999)}
 #speedPicker .sp-item.active .sp-label{color:var(--text)}
 #speedPicker .sp-num{font-size:9.5px;font-weight:800;letter-spacing:-.3px}
-#libSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
+#libSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
 #libSortMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libSortMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #libSortMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
 #libSortMenu button:hover{background:var(--hover,rgba(255,255,255,.07))}
 #libSortMenu button.active{color:var(--accent)}
-#afsSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:9999;min-width:210px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none}
+#afsSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:9999;min-width:210px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none}
 #afsSortMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 #afsSortBtn.sort-active{color:var(--accent)!important;border-color:rgba(var(--accent-rgb),.3)!important}
 #addFromLibList::-webkit-scrollbar{width:2px}

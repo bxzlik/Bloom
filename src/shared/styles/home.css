@@ -59,8 +59,24 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .home-wave-bar .hwb-play .hwb-spinner{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;opacity:0;transition:opacity .22s ease;pointer-events:none}
 .home-wave-bar .hwb-play.is-loading .hwb-spinner{opacity:1;animation:hwbSpin .8s linear infinite}
 .home-wave-bar .hwb-title{font-size:40px;font-weight:900;color:#fff;letter-spacing:-1.5px;white-space:nowrap;line-height:1;text-shadow:0 2px 28px rgba(0,0,0,.5)}
-.home-wave-bar .hwb-tune{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 15px;border-radius:min(16px,calc(var(--radius)*.9));background:rgba(255,255,255,.12);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:none;color:#fff;cursor:pointer;transition:.15s;font-family:var(--font);font-size:12.5px;font-weight:600}
-.home-wave-bar .hwb-tune:hover{background:rgba(255,255,255,.2)}
+/* Тёмная подложка, а не светлая: на светлом огне (белый/ахроматичный акцент)
+   полупрозрачно-белая капсула сливалась с ауру и кнопка пропадала. */
+.home-wave-bar .hwb-tune{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 15px;border-radius:min(16px,calc(var(--radius)*.9));background:rgba(0,0,0,.32);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);color:#fff;cursor:pointer;transition:.15s;font-family:var(--font);font-size:12.5px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.55);box-shadow:0 2px 14px rgba(0,0,0,.28)}
+.home-wave-bar .hwb-tune:hover{background:rgba(0,0,0,.46);border-color:rgba(255,255,255,.24)}
+
+/* ===== WAVE TUNE POPUP =====
+   Попап кнопки «Настроить» (портал в body, см. WaveCard). Площадки — ряд
+   чипов без подложки: у выбранной прозрачно-серый кружок, а лого красится
+   БРЕНДОВЫМ цветом площадки (приходит инлайном через --src-fg); невыбранные —
+   приглушённо-серые. Анимации нажатия нет — только смена цвета/фона. */
+.wave-menu{display:flex;flex-direction:column;gap:9px;min-width:214px;padding:10px;box-sizing:border-box;transform-origin:top center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*.7);box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.04)}
+.wave-src-row{display:flex;align-items:center;justify-content:center;gap:4px;background:none}
+.wave-src{width:38px;height:38px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:50%;background:none;color:var(--text2);opacity:.55;cursor:pointer;transition:background .18s ease,color .18s ease,opacity .18s ease}
+.wave-src:hover{opacity:.9;background:rgba(255,255,255,.05)}
+/* Выбранная: прозрачно-серый кружок, лого внутри — бренд-цветом площадки. */
+.wave-src.is-on,.wave-src.is-on:hover{background:rgba(255,255,255,.1);color:var(--src-fg,var(--accent));opacity:1}
+.wave-dislikes{display:flex;align-items:center;gap:9px;width:100%;box-sizing:border-box;padding:10px 12px;border-radius:calc(var(--radius)*.6);background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);color:var(--text2);cursor:pointer;transition:.15s;font-family:var(--font);font-size:12.5px;font-weight:600;text-align:left}
+.wave-dislikes:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.13);color:var(--text)}
 
 /* ===== DISLIKED IN QUEUE ===== */
 .tr.is-disliked .trn,.tr.is-disliked .tra,.tr.is-disliked .trd{text-decoration:line-through;color:var(--text2);opacity:.55}
@@ -113,7 +129,7 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .hcc-like.active,.hcc-like.active:hover{color:var(--accent)}
 
 /* Попап кнопки «!» — источник + активность (стек), портал в body, открыт вверх */
-.hcc-info-pop{display:flex;flex-direction:column;gap:4px;padding:6px;min-width:196px;transform-origin:bottom center;background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*.7);box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.04)}
+.hcc-info-pop{display:flex;flex-direction:column;gap:4px;padding:6px;min-width:196px;transform-origin:bottom center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*.7);box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.04)}
 .hcc-info-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(var(--radius)*.55);background:rgba(255,255,255,.035);min-width:0}
 .hcc-info-ico{width:30px;height:30px;flex-shrink:0;border-radius:calc(var(--radius)*.5);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:var(--text2)}
 .hcc-info-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -177,22 +193,74 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 #libItemFav .lib-icon svg{color:var(--sys-fav-ico)!important}
 #libItemHistory .lib-icon{background:var(--sys-hist-tint)!important}
 #libItemHistory .lib-icon svg{color:var(--sys-hist-ico)}
-/* ===== HOME QUICK CARDS (История / Любимые) ===== */
+/* ===== HOME QUICK CARDS (История / Любимые) =====
+   Раскладка: крупная иконка слева + текст справа. Фон — коллаж 2×2 из 4
+   последних обложек (история / лайки) под затемняющим скримом. Пока обложки
+   есть, цветного тинта НЕТ (--hqc-tint-a:0) — фон делают сами обложки; тинт
+   включается только у пустой карточки `.is-empty`, чтобы она читалась
+   нейтральной и неактивной.
+
+   Ручки тюнинга (переопределяются на .home-quick-card):
+     --hqc-tint        rgb-триплет цвета карточки
+     --hqc-tint-a      сила тинта («потусклее» = меньше)
+     --hqc-tint-size   размер эллипса градиента
+     --hqc-tint-pos    точка градиента (угол/направление — обсуждаем отдельно)
+     --hqc-scrim-a     равномерное затемнение всех 4 обложек
+     --hqc-scrim-left  доп. тень слева, чтобы читался текст (гаснет к центру)
+     --hqc-hover-scale наезд коллажа при наведении */
 .home-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.home-quick-card{display:flex;flex-direction:column;justify-content:space-between;border-radius:var(--radius);overflow:hidden;border:1px solid rgba(255,255,255,var(--wb));cursor:pointer;transition:.15s;position:relative;height:80px;padding:11px 14px;isolation:isolate}
+.home-quick-card{
+  --hqc-tint-a:0;--hqc-tint-size:65% 65%;--hqc-tint-pos:0% 0%;
+  --hqc-scrim-a:.42;--hqc-scrim-left:.5;
+  --hqc-hover-scale:1.08;
+  display:flex;flex-direction:row;align-items:center;gap:13px;border-radius:var(--radius);overflow:hidden;
+  border:1px solid rgba(255,255,255,var(--wb));cursor:pointer;transition:.15s;position:relative;
+  height:92px;padding:0 18px;isolation:isolate;background:var(--block-bg,#2a2a2a)
+}
 .home-quick-card:hover{filter:brightness(1.15)}
-.home-quick-card-fav{background:var(--block-bg,#2a2a2a)}
-.home-quick-card-fav::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%, #c0144e 0%, transparent 100%);pointer-events:none;z-index:0}
-.home-quick-card-hist{background:var(--block-bg,#2a2a2a)}
-.home-quick-card-hist::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%, #b8860b 0%, transparent 100%);pointer-events:none;z-index:0}
-.home-quick-card .hqc-icon,.home-quick-card .hqc-info{position:relative;z-index:1}
+.home-quick-card-fav{--hqc-tint:150,26,66}
+.home-quick-card-hist{--hqc-tint:140,104,26}
+/* Цветной тинт поверх обложек. */
+.home-quick-card::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse var(--hqc-tint-size) at var(--hqc-tint-pos), rgba(var(--hqc-tint),var(--hqc-tint-a)) 0%, transparent 100%);pointer-events:none;z-index:1}
+/* Обложки: жёсткий коллаж 2×2 во всю карточку, встык без швов. Именно 2×2
+   фиксировано, а не «сколько набралось» — иначе при одинаковых обложках у
+   последних треков плиток становилось 2.
+
+   Скрим — ДВА слоя, а не один градиент слева направо: раньше левый край гасился
+   на .82 и обе левые плитки просто тонули в чёрном («видно только две»).
+   Теперь равномерный dim по всей карточке + отдельная мягкая тень под текстом,
+   гаснущая к центру.
+
+   ВАЖНО: треки грида именно minmax(0,1fr), а не 1fr. У 1fr auto-минимум равен
+   min-content элемента, то есть СОБСТВЕННОМУ размеру обложки (500+px) — ряды и
+   колонки раздувались под картинку, и карточка с overflow:hidden показывала
+   только левый верхний угол коллажа (нижние две плитки не помещались). */
+.hqc-bg{position:absolute;inset:0;z-index:0;pointer-events:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);scale:1;transition:scale .5s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.hqc-bg img{width:100%;height:100%;min-width:0;min-height:0;object-fit:cover;display:block}
+.hqc-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg, rgba(0,0,0,var(--hqc-scrim-left)) 0%, rgba(0,0,0,0) 58%), rgba(0,0,0,var(--hqc-scrim-a));z-index:1}
+/* Наведение: коллаж разово наезжает и так же возвращается, когда курсор ушёл.
+   Только transition на scale, никаких @keyframes — движение симметрично в обе
+   стороны и не может «дёрнуться» на выходе. Сдвигов по вертикали нет: масштаб
+   идёт от центра, поэтому края карточки остаются закрыты обложками.
+
+   will-change:transform висит постоянно (а не по :hover) намеренно: слой нужен
+   и на возврате после увода курсора, иначе он сносится ровно в момент обратной
+   анимации и та дёргается. Карточек на главной две — постоянный композитный
+   слой тут дешевле, чем его пересоздание на каждый ховер. transform покрывает и
+   scale, и translate: они складываются в ту же матрицу на композиторе. */
+.home-quick-card:hover .hqc-bg{scale:var(--hqc-hover-scale)}
+.home-quick-card .hqc-icon,.home-quick-card .hqc-info{position:relative;z-index:2}
 .hqc-img-wrap{display:none}
-.hqc-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.home-quick-card-hist .hqc-icon{color:rgba(255,255,255,0.9)}
-.home-quick-card-fav .hqc-icon{color:rgba(255,255,255,0.9)}
-.hqc-info{display:flex;flex-direction:column;gap:1px;min-width:0}
-.hqc-title{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-.hqc-sub{font-size:10.5px;color:rgba(255,255,255,0.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hqc-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.hqc-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hqc-title{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+.hqc-sub{font-size:11.5px;color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Пустая (нет обложек — нет истории / лайков): неактивная и нейтральная. */
+.home-quick-card.is-empty{--hqc-tint-a:.14;cursor:default}
+.home-quick-card.is-empty:hover{filter:none}
+.home-quick-card.is-empty .hqc-icon{color:rgba(255,255,255,.5)}
+.home-quick-card.is-empty .hqc-title{color:rgba(255,255,255,.6)}
+.home-quick-card.is-empty .hqc-sub{color:rgba(255,255,255,0.3)}
 
 /* ===== HOME EXTRAS ===== */
 .home-time{font-size:11px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.02em;background:rgba(var(--accent-rgb),.1);padding:2px 8px;border-radius:min(20px,calc(var(--radius) * 0.95));margin-left:auto;flex-shrink:0}
@@ -223,7 +291,7 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .dlk-row:hover .dlk-rm{opacity:1}
 .dlk-rm:hover{color:#e03030;background:rgba(224,48,48,.1)}
 .dlk-rm:active{transform:scale(.93)}
-.stats-modal{background:color-mix(in srgb,var(--block-color),var(--text) 1%);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);width:440px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
+.stats-modal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);width:440px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
 #dislikesModalOverlay.open .stats-modal{transform:translateY(0)}
 .stats-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0}
 .stats-modal-title{font-size:13.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}

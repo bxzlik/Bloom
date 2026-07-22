@@ -1,5 +1,5 @@
 import type { Track } from '@entities/track'
-import { trackRegistry } from '@entities/track'
+import { trackRegistry, coverCache } from '@entities/track'
 import { invoke } from '@shared/tauri'
 import { useLibStore, useFavStore, useHistoryStore, useActivityStore, saveTrackToLibrary, replaceLibTrack, usePlaylistStore, useNewPlModalStore } from '@features/library'
 import { toast, notify } from '@shared/ui'
@@ -141,6 +141,11 @@ export const creditPlay = (id: string): void => {
   _playCredited = true
   useHistoryStore.getState().add(id) // _histAdd
   useActivityStore.getState().add() // _activityAdd
+  // Обложку кладём в переживающий рестарт кеш: история хранит только id, а
+  // trackRegistry живёт в памяти — иначе коллаж «История» на главной после
+  // перезапуска не из чего собрать.
+  coverCache.put(id, findTrack(id)?.cover)
+  coverCache.save()
   // Волна: уведомить о старте трека (записать played, дозагрузить пачку, prefetch).
   // В onTrackStart жил тоже здесь, в _creditPlay.
   waveApi.onTrackStart(id)

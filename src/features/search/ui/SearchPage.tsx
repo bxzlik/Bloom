@@ -310,7 +310,7 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
           style={{
             position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 60,
             display: 'flex', flexDirection: 'column', gap: 2, padding: 6,
-            background: 'color-mix(in srgb,var(--block-color),var(--text) 1%)', border: '1px solid var(--border)',
+            background: 'color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift))', border: '1px solid var(--border)',
             borderRadius: 'calc(var(--radius)*.85)', boxShadow: '0 10px 34px rgba(0,0,0,.45)', minWidth: 160,
             transformOrigin: 'top right',
           }}

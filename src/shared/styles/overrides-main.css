@@ -14,6 +14,22 @@
 :root {
   --bg: #0a0a0a;
   --block-color: #0a0a0a;
+
+  /* ── Насколько всплывающие поверхности светлее блоков ──────────────────────
+     Все попапы / ctx-меню / модалки / дропдауны красятся
+     `color-mix(in srgb, var(--block-color), var(--text) var(--ov-lift))`, то есть
+     подмешивают долю ЦВЕТА ТЕКСТА (в тёмных темах #fff → светлее, в Light —
+     тёмный → темнее; поэтому через --text, а не через #fff — формула работает
+     в обе стороны). Единственные knob'ы всей иерархии — крутить здесь:
+       --ov-lift        базовый ярус: попапы, меню, модалки, сайдбар, контент;
+       --ov-card        карточки .sc/.sr внутри модалки настроек;
+       --ov-card-hover  их наведение;
+       --ov-opt-hover   наведение на кнопку-опцию .s-opt-btn.
+     Подсветка ослаблена по запросу: было 1 / 4 / 6 / 11. */
+  --ov-lift: 0.5%;
+  --ov-card: 3%;
+  --ov-card-hover: 4.5%;
+  --ov-opt-hover: 8%;
   /* main.css использует var(--hover) для hover-фона .lib-item, .ci
      и других. Дефолт — subtle подсветка 5% белым. */
   --hover: rgba(255, 255, 255, 0.05);
@@ -121,9 +137,9 @@ body {
    (на дефолте #0a0a0a). Чтобы сайдбар не рассинхронился, ВЕСЬ каркас (модалка
    + сайдбар + контент) выводим из block-color с ОДНИМ базовым процентом —
    тогда они совпадают независимо от темы:
-     - модалка + сайдбар + контент (фон) = block-color +1% (≈#0c0c0c);
-     - БЛОКИ-карточки .sc / .sr = block-color +4% (≈#141414);
-     - наведение на БЛОК (.sc / .sr:hover) = block-color +6% (≈#181818).
+     - модалка + сайдбар + контент (фон) = block-color + --ov-lift (≈#0b0b0b);
+     - БЛОКИ-карточки .sc / .sr = block-color + --ov-card (≈#111111);
+     - наведение на БЛОК (.sc / .sr:hover) = block-color + --ov-card-hover (≈#151515).
    Блок-опции (.s-opt-btn — кнопки Слева/Центр/…) — штатная подсветка поверх
    карточки + наведение ниже. Осветляем адаптивно через color-mix с var(--text)
    (белый для тёмных тем → светлее, тёмный для Light → темнее).
@@ -132,9 +148,9 @@ body {
    тянут var(--bg2) из палитры темы. У кастомных тем палитра пустая → --bg2
    сбрасывается к root.css #141414 (= цвет карточек при block #0a0a0a). Чтобы
    совпасть с «правильным» видом и при этом читаться от блоков — приравниваем
-   --bg2 к цвету карточек var(--card-solid) (block +4%). */
+   --bg2 к цвету карточек var(--card-solid) (block + --ov-card). */
 #settingsOverlay .settings-modal {
-  background: color-mix(in srgb, var(--block-color), var(--text) 1%);
+  background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-lift));
   /* Анимация открытия БЕЗ scale. Масштабирование растеризует контент как битмап
      и тянет его → либо «доводка» текста/иконок в конце (с will-change), либо
      мыло при зуме окна ≠100% (без него) — это взаимоисключаемо. Заменяем scale
@@ -147,14 +163,14 @@ body {
   transform: translateY(0);
 }
 #settingsOverlay {
-  --card-solid: color-mix(in srgb, var(--block-color), var(--text) 4%);
+  --card-solid: color-mix(in srgb, var(--block-color), var(--text) var(--ov-card));
   --card: var(--card-solid);
   --bg2: var(--card-solid);
 }
 #settingsOverlay #smContent {
-  background: color-mix(in srgb, var(--block-color), var(--text) 1%);
+  background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-lift));
 }
-/* Наведение на БЛОК — карточка слегка светлеет (≈#181818). Покрываем сплошные
+/* Наведение на БЛОК — карточка слегка светлеет (≈#151515). Покрываем сплошные
    карточки (.sc-keep и обычные без вложенного .sr) и панели-строки .sr внутри
    тогл-карточек (там видимая плашка — именно .sr, сам .sc прозрачный). */
 #settingsOverlay .sc,
@@ -176,7 +192,7 @@ body {
      - .sc-url-wrap (Яндекс/Last.fm) — целиком (инлайн-фон → нужен !important).
      Сырые .sr внутри .sc-keep НЕ трогаем (нет своей плашки → кривой прямоугольник);
      там подсвечивается вся карточка. */
-  background: color-mix(in srgb, var(--block-color), var(--text) 6%) !important;
+  background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-card-hover)) !important;
 }
 /* Карточка интеграции (.intg-card — SoundCloud/Genius/Last.fm/Яндекс) —
    тот же hover, что у обычных панелей (.sc): фон слегка светлеет. */
@@ -184,14 +200,14 @@ body {
   transition: background .15s;
 }
 #settingsOverlay .intg-card:hover {
-  background: color-mix(in srgb, var(--block-color), var(--text) 6%) !important;
+  background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-card-hover)) !important;
 }
-/* Наведение на кнопку-опцию (.s-opt-btn) — заметная подсветка (≈#252525) +
+/* Наведение на кнопку-опцию (.s-opt-btn) — заметная подсветка (≈#1e1e1e) +
    яркий текст, чтобы было видно, на какой опции курсор. Штатный
    `.s-opt-btn:hover` подавляется `.s-opt-btn.btg{…!important}` из settings.css,
    поэтому перебиваем через #id + !important. Неактивные кнопки (.btg). */
 #settingsOverlay .s-opt-btn.btg:hover {
-  background: color-mix(in srgb, var(--block-color), var(--text) 11%) !important;
+  background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-opt-hover)) !important;
   color: var(--text) !important;
 }
 

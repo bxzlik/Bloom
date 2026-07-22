@@ -1,6 +1,6 @@
 [package]
 name = "bloom"
-version = "1.8.2"
+version = "1.8.3"
 description = "Bloom Music Player"
 authors = ["Bloom"]
 edition = "2021"

@@ -107,7 +107,7 @@ body.glass-mode .player-section #vizWrap {
    Включается классом `glass-overlays` на <body>. Накладывает то же стекло
    (--glass-block-bg + --glass-filter), что и режим блоков, но на ВСПЛЫВАЮЩИЕ
    поверхности: контекстные меню, модалки, боковые drawer'ы, попапы, дропдауны.
-   Все эти поверхности штатно красятся `color-mix(var(--block-color), var(--text) 1%)`
+   Все эти поверхности штатно красятся `color-mix(var(--block-color), var(--text) var(--ov-lift))`
    — перебиваем на полупрозрачный фон + backdrop-filter.
 
    Работает независимо от `glass-mode`: можно затуманить только оверлеи, оставив
