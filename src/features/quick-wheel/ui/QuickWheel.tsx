@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlayerStore, sendPlayerCommand } from '@features/player'
 import { useNavStore } from '@app/navigationStore'
+import { usePopupOpenAnimation } from '@shared/hooks'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
 
 /**
@@ -79,6 +80,9 @@ export const QuickWheel = () => {
   const playing = usePlayerStore((s) => s.playing)
 
   const wrapRef = useRef<HTMLDivElement>(null)
+  // Появление — как у всплывающего поиска (SearchOverlay): подложка коротким
+  // fade из CSS, само колесо — scale(.94)→1 + opacity через WAAPI.
+  usePopupOpenAnimation(wrapRef, open)
   const tabDownRef = useRef(false)
   const activeRef = useRef<string | null>(null)
   activeRef.current = activeId

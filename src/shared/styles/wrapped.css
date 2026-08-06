@@ -1,0 +1,241 @@
+/* ===== ИТОГИ (недели / месяца / года) =====
+   Точка входа — пункт «Итоги» в сайдбаре (.sni-wrapped),
+   сама история — полноэкранный оверлей .wr-root.
+
+   Цвет берётся от акцента темы: базовый градиент крутится по hue на
+   --wr-hue (React ставит его по индексу слайда, шаг HUE_STEP в
+   WrappedStories.tsx), поэтому слайды разноцветные, но родные теме. */
+
+/* ── Пункт «Итоги» в сайдбаре ────────────────────────────────────────── */
+/* Обычная вкладка `.sni` (стили в base.css), плюс акцентная точка «не смотрел»
+   и лёгкое свечение иконки, чтобы пункт читался как событие, а не как раздел. */
+
+/* Иконка — обычного цвета вкладок (не акцент): пункт не должен выглядеть
+   «всегда активным». Единственная акцентная деталь — точка «не просмотрено». */
+.sni-wrapped{position:relative}
+
+/* Точка-индикатор: в режиме «Иконки» — на углу иконки, в «С подписями» — в
+   конце строки (сайдбар в этом режиме получает класс на .app, см. base.css). */
+.sni-dot{
+  position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 0 2px var(--bg);pointer-events:none;
+}
+.app.sidebar-full .sni-dot{top:50%;right:12px;transform:translateY(-50%)}
+
+/* ── Полноэкранная история ───────────────────────────────────────────── */
+
+/* Оверлей кроет всё окно, но тайтлбар поднимается НАД ним (body.wrapped-open
+   ниже) — окно остаётся перетаскиваемым, кнопки окна на месте, а метка страницы
+   на время показа становится «Итоги» (см. TitleBar). */
+.wr-root{
+  position:fixed;inset:0;z-index:99998;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;
+  animation:wrIn .26s cubic-bezier(.22,.61,.36,1);
+  --wr-hue:0deg;
+}
+.wr-root.closing{animation:wrOut .2s ease forwards}
+@keyframes wrIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+/* Пока история открыта — тайтлбар выше оверлея (его обычный z-index 1001). */
+body.wrapped-open #winTitlebar{z-index:99999}
+@keyframes wrOut{to{opacity:0;transform:scale(.98)}}
+
+/* Фон: акцентный градиент, уезжающий по hue от слайда к слайду. */
+.wr-bg{
+  position:absolute;inset:0;z-index:0;
+  background:
+    radial-gradient(120% 80% at 15% 0%, rgba(var(--accent-rgb),.55) 0%, transparent 60%),
+    radial-gradient(100% 70% at 100% 100%, rgba(var(--accent-rgb),.35) 0%, transparent 55%),
+    linear-gradient(160deg,#141414 0%,#080808 100%);
+  filter:hue-rotate(var(--wr-hue)) saturate(1.15);
+  transition:filter .6s ease;
+}
+/* Коллаж обложек топ-треков — размытый, поверх градиента. */
+.wr-backdrop{position:absolute;inset:0;z-index:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;opacity:.22;filter:blur(60px) saturate(1.5);transform:scale(1.2);pointer-events:none}
+.wr-backdrop img{width:100%;height:100%;object-fit:cover;min-width:0;min-height:0}
+
+.wr-top{position:relative;z-index:4;width:100%;max-width:760px;padding:calc(var(--tb-h,32px) + 10px) 16px 0}
+.wr-bars{display:flex;gap:4px;height:3px}
+.wr-bar{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.22);overflow:hidden}
+.wr-bar.done{background:rgba(255,255,255,.75)}
+.wr-bar-fill{display:block;height:100%;width:0;border-radius:2px;background:#fff;animation:wrBar linear forwards}
+@keyframes wrBar{from{width:0}to{width:100%}}
+
+/* Выход — в самом углу окна, сразу под панелью (стиль .bp-top-btn). */
+.wr-close{
+  position:absolute;top:calc(var(--tb-h,32px) + 12px);right:14px;z-index:6;
+  width:33px;height:33px;border-radius:50%;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  color:#9b9b9b;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s,border-color .15s;outline:none;-webkit-appearance:none;
+}
+.wr-close:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.18);color:#e8e8e8}
+.wr-close:active{background:rgba(255,255,255,.16)}
+.wr-close:focus{outline:none}
+
+/* Зоны листания (как в сторис: левая треть — назад, правая — вперёд). */
+.wr-zone{position:absolute;top:0;bottom:0;z-index:3;border:none;background:transparent;cursor:pointer;padding:0}
+.wr-zone-l{left:0;width:28%}
+.wr-zone-r{right:0;width:38%}
+/* На постере зоны узкие — иначе они перекрывают кнопку сохранения. */
+.wr-root[data-slide='share'] .wr-zone{width:12%}
+
+.wr-stage{position:relative;z-index:2;flex:1;width:100%;max-width:760px;min-height:0;display:flex;align-items:center;padding:0 clamp(20px,6vw,64px) 6vh}
+
+.wr-slide{width:100%;display:flex;flex-direction:column;gap:10px;min-height:0}
+.wr-slide-center{align-items:flex-start;justify-content:center}
+.wr-slide-intro{justify-content:center}
+
+/* Появление элементов слайда (стаггер задаётся инлайновым animation-delay). */
+.wr-in{animation:wrUp .5s cubic-bezier(.22,.61,.36,1) backwards}
+@keyframes wrUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.wr-kicker{font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.wr-title{font-size:clamp(24px,4.2vw,38px);font-weight:900;line-height:1.08;color:#fff;letter-spacing:-.5px}
+.wr-title-xl{font-size:clamp(30px,6vw,56px)}
+.wr-huge{font-size:clamp(34px,7vw,64px);font-weight:900;line-height:1.02;color:#fff;letter-spacing:-1px}
+.wr-sub{font-size:14px;color:rgba(255,255,255,.65)}
+.wr-note{font-size:13px;color:rgba(255,255,255,.5)}
+.wr-joke{
+  margin-top:6px;font-size:13px;color:rgba(255,255,255,.75);
+  background:rgba(255,255,255,.08);border-radius:12px;padding:9px 13px;align-self:flex-start;max-width:min(100%,460px)
+}
+
+/* Плитки чисел */
+.wr-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:6px}
+.wr-tile{background:rgba(255,255,255,.09);border-radius:16px;padding:14px 14px 12px;min-width:0}
+.wr-tile-n{font-size:clamp(20px,3.4vw,30px);font-weight:900;color:#fff;line-height:1.1}
+.wr-tile-l{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Списки топов */
+.wr-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;overflow:hidden}
+.wr-row{display:flex;align-items:center;gap:12px;min-width:0}
+.wr-row-n{width:18px;font-size:15px;font-weight:900;color:rgba(255,255,255,.45);flex-shrink:0;text-align:center}
+.wr-row-cov{width:46px;height:46px;border-radius:10px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4)}
+.wr-row-cov-round{border-radius:50%}
+.wr-row-cov img{width:100%;height:100%;object-fit:cover}
+.wr-row-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.wr-row-name{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-row-sub{font-size:12px;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-row-val{font-size:12px;color:rgba(255,255,255,.55);flex-shrink:0;white-space:nowrap}
+/* Первая строка топа — крупнее, это «номер один». */
+.wr-row:first-child .wr-row-cov{width:64px;height:64px}
+.wr-row:first-child .wr-row-name{font-size:18px}
+
+/* Площадки */
+.wr-src-list{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.wr-src-head{display:flex;align-items:center;gap:8px}
+.wr-src-logo{display:flex;flex-shrink:0}
+.wr-src-name{font-size:14px;font-weight:700;color:#fff}
+.wr-src-pct{margin-left:auto;font-size:13px;font-weight:800;color:#fff}
+.wr-src-bar{height:7px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;margin-top:6px}
+.wr-src-bar i{display:block;height:100%;border-radius:4px;animation:wrBarGrow .7s cubic-bezier(.22,.61,.36,1) backwards}
+@keyframes wrBarGrow{from{width:0!important}}
+.wr-src-meta{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px}
+
+/* Открытия */
+.wr-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.wr-chip{display:flex;align-items:center;gap:8px;padding:7px 14px 7px 7px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;font-size:14px;font-weight:600}
+.wr-chip-ava{width:26px;height:26px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wr-chip-ava img{width:100%;height:100%;object-fit:cover}
+
+/* Привычки */
+.wr-hours{display:flex;align-items:flex-end;gap:3px;height:92px;margin-top:14px}
+.wr-hours i{flex:1;background:rgba(255,255,255,.28);border-radius:3px 3px 2px 2px;transition:height .3s}
+.wr-hours i.peak{background:#fff}
+.wr-hours-axis{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.4);margin-top:6px}
+.wr-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.wr-fact{background:rgba(255,255,255,.09);border-radius:14px;padding:11px 13px;min-width:0}
+.wr-fact-l{font-size:11px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px}
+.wr-fact-v{font-size:15px;font-weight:800;color:#fff;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Выбор периода — колонки-постеры во всю высоту окна.
+   Колонка = мозаика обложек периода на весь фон + плёнка + название, даты и
+   чипы-цифры внизу. Заголовка над ними нет: название экрана в тайтлбаре.
+
+   Ширина колонки ФИКСИРОВАННАЯ (--wr-pc-w) — когда доступен один период,
+   колонка не растягивается, а просто стоит по центру.
+
+   Ручки: --wr-pc-w (ширина колонки), --wr-pc-gap (зазор), --wr-pc-r (скругление),
+   --wr-pc-top (отступ сверху, под тайтлбаром), --wr-pc-pad (внутренний отступ
+   текста). */
+.wr-root[data-stage='pick'] .wr-stage{
+  max-width:none;align-items:stretch;
+  padding:var(--wr-pc-top,26px) clamp(16px,3vw,44px) clamp(16px,2.4vh,26px);
+}
+.wr-slide-pick{height:100%;gap:0}
+.wr-pick-list{
+  --wr-pc-w:clamp(200px,25vw,480px);
+  --wr-pc-gap:clamp(12px,1.4vw,24px);
+  display:flex;flex-direction:row;align-items:stretch;justify-content:center;
+  gap:var(--wr-pc-gap);width:100%;height:100%;margin:0;min-height:0;
+}
+.wr-pick-card{
+  position:relative;display:block;
+  flex:0 0 var(--wr-pc-w);width:var(--wr-pc-w);max-width:100%;height:100%;
+  padding:0;overflow:hidden;
+  /* Заливка — цвет фона приложения, а не серая плашка. */
+  background:#0d0d0d;border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--wr-pc-r,24px);cursor:pointer;color:#fff;text-align:left;
+  transition:border-color .18s;
+}
+.wr-pick-card:hover{border-color:rgba(255,255,255,.16)}
+
+.wr-pick-art{
+  position:absolute;inset:0;z-index:0;
+  display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+  background:rgba(255,255,255,.06);color:rgba(255,255,255,.35);
+  place-items:center;overflow:hidden;
+}
+.wr-pick-art.one{grid-template-columns:1fr;grid-template-rows:1fr}
+.wr-pick-art img{width:100%;height:100%;min-width:0;min-height:0;object-fit:cover;display:block;transition:scale .5s cubic-bezier(.22,.61,.36,1)}
+.wr-pick-card:hover .wr-pick-art img{scale:1.05}
+
+/* Плёнка: снизу почти чёрное (текст читается на любой обложке), сверху лёгкий
+   акцентный тинт — колонка родная теме. */
+.wr-pick-veil{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.50) 0%,rgba(0,0,0,.10) 24%,rgba(0,0,0,.62) 64%,rgba(0,0,0,.93) 100%),
+    linear-gradient(180deg,rgba(var(--accent-rgb),.30) 0%,rgba(var(--accent-rgb),0) 52%);
+  transition:opacity .18s;
+}
+.wr-pick-card:hover .wr-pick-veil{opacity:.84}
+
+.wr-pick-body{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;
+  display:flex;flex-direction:column;min-width:0;padding:var(--wr-pc-pad,clamp(16px,1.6vw,26px));
+}
+.wr-pick-name{font-size:clamp(20px,1.7vw,30px);font-weight:900;line-height:1.12;letter-spacing:-.4px}
+.wr-pick-dates{font-size:13px;color:rgba(255,255,255,.68);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-pick-stats{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.wr-pick-stats b{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;font-weight:600;color:rgba(255,255,255,.82);
+  background:rgba(255,255,255,.12);border-radius:999px;padding:4px 9px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.wr-pick-stats b svg{opacity:.75}
+
+
+/* Постер */
+.wr-slide-share{align-items:center;justify-content:center;gap:14px}
+.wr-share-card{width:min(300px,46vh);aspect-ratio:3/4;border-radius:18px;overflow:hidden;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.wr-share-card img{width:100%;height:100%;object-fit:contain;display:block}
+.wr-share-spin{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:wrSpin .8s linear infinite}
+@keyframes wrSpin{to{transform:rotate(360deg)}}
+.wr-share-actions{display:flex;gap:10px}
+.wr-btn{display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:999px;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.wr-btn:hover{background:rgba(255,255,255,.24)}
+.wr-btn-primary{background:#fff;color:#111}
+.wr-btn-primary:hover{background:rgba(255,255,255,.86)}
+.wr-btn:disabled{opacity:.5;cursor:default}
+
+/* Узкое окно: меньше отступы, плитки в две колонки. */
+@media (max-width:620px){
+  .wr-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .wr-stage{padding:0 18px 4vh}
+  /* Три фиксированные колонки в узкое окно не влезают — листаем вбок. */
+  .wr-pick-list{--wr-pc-w:min(62vw,240px);justify-content:flex-start;overflow-x:auto;scrollbar-width:none}
+  .wr-pick-list::-webkit-scrollbar{display:none}
+}

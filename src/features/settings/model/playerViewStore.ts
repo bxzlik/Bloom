@@ -51,6 +51,66 @@ export type OverlayMode = 'off' | 'island' | 'compact' | 'bar' | 'expanded'
 /** Якорь оверлея на экране: верт. (t/b) + гориз. (l/c/r); `custom` — свободная
  *  позиция, заданная вручную перетаскиванием (доли overlayX/overlayY). */
 export type OverlayPos = 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br' | 'custom'
+/** Тип анимации смены трека: нет / слайд по направлению перехода / затухание. */
+export type TrackAnimKind = 'none' | 'slide' | 'fade'
+/**
+ * Заливка текста песни — ЧЕМ меряется прогресс по активной строке:
+ *   line   — строка целиком, без дробления;
+ *   word   — по словам: слово переключается в свой момент (старое караоке);
+ *   letter — по буквам: то же, но единица — символ;
+ *   wipe   — градиент бежит ВНУТРИ слова за его длительность (Apple Music).
+ * Тайминги единиц синтетические: LRC даёт время только строки, слова/буквы
+ * делятся пропорционально длине (`LyricsUnits`).
+ */
+export type LyricsFill = 'line' | 'word' | 'letter' | 'wipe'
+/**
+ * Эффект поверх заливки — КАК выглядит переход единицы, ось отдельная от
+ * заливки и комбинируется с любой:
+ *   none   — сразу, сменой цвета;
+ *   fade   — единица втекает (непрозрачность + лёгкая расфокусировка);
+ *   glow   — текущая единица подсвечивается свечением в акцент;
+ *   spring — текущая единица вспухает и с отдачей садится назад.
+ * Движение допустимо только здесь: заливка обязана оставаться заливкой.
+ */
+export type LyricsFx = 'none' | 'fade' | 'glow' | 'spring'
+/** Оформление текста на одной поверхности: заливка + эффект. */
+export interface LyricsStyleCfg {
+  fill: LyricsFill
+  fx: LyricsFx
+}
+/**
+ * Оформление текста — своё для каждой поверхности: у них разный кегль и размер
+ * коробки (в узкой боковой панели уместен спокойный режим, в фуллскрине —
+ * заметная заливка), и одна настройка на всех заставляла бы выбирать между ними.
+ */
+export interface LyricsStyle {
+  /** Страница плеера: панель поверх обложки + блок «текст вместо очереди». */
+  player: LyricsStyleCfg
+  /** Глобальная боковая панель (#grpLyricsContent). */
+  panel: LyricsStyleCfg
+  /** Полноэкранный режим (#bigPicOverlay). */
+  big: LyricsStyleCfg
+}
+/**
+ * Настройка анимации смены трека для одной поверхности. Обложка и подпись
+ * настраиваются НЕЗАВИСИМО: у них разный размер и вес в кадре, и осмысленно
+ * хотеть слайд обложки при спокойном затухании текста (и наоборот).
+ */
+export interface TrackAnimCfg {
+  /** Обложка (в фуллскрине вместе с ней — размытая подложка). */
+  cover: TrackAnimKind
+  /** Подпись: название + артист. */
+  text: TrackAnimKind
+}
+/** Анимация смены трека — своя для каждой поверхности. */
+export interface TrackAnim {
+  /** Страница плеера (#playerContent, все стили — включая большой/кино). */
+  player: TrackAnimCfg
+  /** Нижний бар (#miniPlayer). */
+  bar: TrackAnimCfg
+  /** Полноэкранный режим (#bigPicOverlay). */
+  big: TrackAnimCfg
+}
 /** Скрытые элементы бара (true = скрыт). */
 export interface MpHide {
   lyrics: boolean
@@ -71,6 +131,8 @@ export interface PlayerViewPrefs {
   covBtnsInBar: boolean
   ambientGlow: boolean
   parallax: boolean
+  /** Анимация смены трека (отдельно для плеера / бара / фуллскрина). */
+  trackAnim: TrackAnim
   sliderType: SliderType
   queuePos: QueuePos
   /** Вид списка очереди (обычный / расширенный). */
@@ -79,6 +141,8 @@ export interface PlayerViewPrefs {
   hideQueue: boolean
   /** Текст песни вместо списка очереди. */
   lyricsInQueue: boolean
+  /** Оформление текста (отдельно для плеера / боковой панели / фуллскрина). */
+  lyricsStyle: LyricsStyle
   /** Показать след. трек под контролами (только при hideQueue, toggleShowNextTrack). */
   showNextTrack: boolean
   /** Визуализатор (анимация волн под музыку, toggleViz). */
@@ -133,11 +197,21 @@ const DEFAULTS: PlayerViewPrefs = {
   covBtnsInBar: false,
   ambientGlow: false,
   parallax: false,
+  trackAnim: {
+    player: { cover: 'slide', text: 'slide' },
+    bar: { cover: 'slide', text: 'slide' },
+    big: { cover: 'slide', text: 'slide' },
+  },
   sliderType: 'default',
   queuePos: 'bottom',
   queueView: 'normal',
   hideQueue: false,
   lyricsInQueue: false,
+  lyricsStyle: {
+    player: { fill: 'word', fx: 'none' },
+    panel: { fill: 'word', fx: 'none' },
+    big: { fill: 'wipe', fx: 'none' },
+  },
   showNextTrack: false,
   vizEnabled: false,
   vizType: 'bars',
@@ -162,6 +236,71 @@ const DEFAULTS: PlayerViewPrefs = {
   overlayOnTrackChange: true,
   overlaySeek: false,
   overlayPerf: false,
+}
+
+const animKind = (v: unknown, def: TrackAnimKind): TrackAnimKind =>
+  v === 'none' || v === 'fade' || v === 'slide' ? v : def
+
+/**
+ * Разбор одной секции trackAnim из localStorage (ключа могло не быть).
+ *
+ * Понимает и первую форму записи — `{ kind, cover: boolean, text: boolean }`
+ * (один тип анимации на обе цели): выключенная цель становится 'none'. Иначе у
+ * тех, кто успел настроить, всё молча сбросилось бы в дефолт.
+ */
+const parseTrackAnim = (raw: unknown, def: TrackAnimCfg): TrackAnimCfg => {
+  const p = (raw ?? {}) as { kind?: unknown; cover?: unknown; text?: unknown }
+  if (typeof p.cover === 'boolean' || typeof p.text === 'boolean') {
+    const kind = animKind(p.kind, 'slide')
+    return {
+      cover: p.cover === false ? 'none' : kind,
+      text: p.text === false ? 'none' : kind,
+    }
+  }
+  return { cover: animKind(p.cover, def.cover), text: animKind(p.text, def.text) }
+}
+
+const LYRICS_FILLS: LyricsFill[] = ['line', 'word', 'letter', 'wipe']
+const LYRICS_FXS: LyricsFx[] = ['none', 'fade', 'glow', 'spring']
+
+/**
+ * Разбор оформления текста одной поверхности. Понимает и первую форму записи —
+ * строку-заливку в `lyricsFill`, где эффекты были её режимами
+ * ('fade'/'glow' → пословная заливка + эффект, 'linewipe' → по буквам).
+ */
+const parseLyricsStyle = (raw: unknown, legacyRaw: unknown, def: LyricsStyleCfg): LyricsStyleCfg => {
+  if (typeof legacyRaw === 'string') {
+    if (legacyRaw === 'fade' || legacyRaw === 'glow') return { fill: 'word', fx: legacyRaw }
+    if (legacyRaw === 'linewipe') return { fill: 'letter', fx: 'none' }
+    if (LYRICS_FILLS.includes(legacyRaw as LyricsFill)) return { fill: legacyRaw as LyricsFill, fx: 'none' }
+  }
+  const p = (raw ?? {}) as { fill?: unknown; fx?: unknown }
+  return {
+    fill: LYRICS_FILLS.includes(p.fill as LyricsFill) ? (p.fill as LyricsFill) : def.fill,
+    fx: LYRICS_FXS.includes(p.fx as LyricsFx) ? (p.fx as LyricsFx) : def.fx,
+  }
+}
+
+/**
+ * Оформление текста для всех поверхностей. Ключа могло не быть вовсе — тогда
+ * наследуем старый бинарный тумблер караоке (`bloom_lyrics_karaoke`): он был
+ * один на все поверхности, и молча сбрасывать его в дефолт нельзя.
+ */
+const parseLyricsStyleAll = (raw: unknown, legacy: unknown): LyricsStyle => {
+  const p = (raw ?? {}) as Partial<Record<keyof LyricsStyle, unknown>>
+  const l = (legacy ?? {}) as Partial<Record<keyof LyricsStyle, unknown>>
+  const karaoke: LyricsFill | null = (() => {
+    if (p.player || p.panel || p.big || l.player || l.panel || l.big) return null
+    try {
+      const v = localStorage.getItem('bloom_lyrics_karaoke')
+      return v == null ? null : v === '0' ? 'line' : 'word'
+    } catch {
+      return null
+    }
+  })()
+  const one = (k: keyof LyricsStyle): LyricsStyleCfg =>
+    karaoke ? { fill: karaoke, fx: 'none' } : parseLyricsStyle(p[k], l[k], DEFAULTS.lyricsStyle[k])
+  return { player: one('player'), panel: one('panel'), big: one('big') }
 }
 
 const OVERLAY_POSITIONS: OverlayPos[] = ['tl', 'tc', 'tr', 'bl', 'bc', 'br']
@@ -214,6 +353,11 @@ const load = (): PlayerViewPrefs => {
       covBtnsInBar: !!p.covBtnsInBar,
       ambientGlow: !!p.ambientGlow,
       parallax: !!p.parallax,
+      trackAnim: {
+        player: parseTrackAnim(p.trackAnim?.player, DEFAULTS.trackAnim.player),
+        bar: parseTrackAnim(p.trackAnim?.bar, DEFAULTS.trackAnim.bar),
+        big: parseTrackAnim(p.trackAnim?.big, DEFAULTS.trackAnim.big),
+      },
       sliderType:
         p.sliderType === 'thin' || p.sliderType === 'ios' || p.sliderType === 'wave' || p.sliderType === 'cover'
           ? p.sliderType
@@ -222,6 +366,7 @@ const load = (): PlayerViewPrefs => {
       queueView: p.queueView === 'extended' ? 'extended' : 'normal',
       hideQueue: !!p.hideQueue,
       lyricsInQueue: !!p.lyricsInQueue,
+      lyricsStyle: parseLyricsStyleAll(p.lyricsStyle, p.lyricsFill),
       showNextTrack: !!p.showNextTrack,
       vizEnabled: !!p.vizEnabled,
       vizType: p.vizType === 'wave' ? 'wave' : 'bars',
@@ -278,11 +423,13 @@ const persist = (s: PlayerViewPrefs): void => {
         covBtnsInBar: s.covBtnsInBar,
         ambientGlow: s.ambientGlow,
         parallax: s.parallax,
+        trackAnim: s.trackAnim,
         sliderType: s.sliderType,
         queuePos: s.queuePos,
         queueView: s.queueView,
         hideQueue: s.hideQueue,
         lyricsInQueue: s.lyricsInQueue,
+        lyricsStyle: s.lyricsStyle,
         showNextTrack: s.showNextTrack,
         vizEnabled: s.vizEnabled,
         vizType: s.vizType,

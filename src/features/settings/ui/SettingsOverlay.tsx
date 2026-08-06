@@ -1,10 +1,17 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { useNavStore } from '@app/navigationStore'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { SettingsNav, type SectionId } from './SettingsNav'
 import { InterfaceSection } from './sections/InterfaceSection'
-import { LibrarySection } from './sections/LibrarySection'
+import { PagesSection } from './sections/PagesSection'
 import { TabsSection } from './sections/TabsSection'
 import { ViewSection } from './sections/ViewSection'
 import { OverlaySection } from './sections/OverlaySection'
@@ -14,13 +21,57 @@ import { DiscordSection } from './sections/DiscordSection'
 import { OptimizationSection } from './sections/OptimizationSection'
 import { TelemetrySection } from './sections/TelemetrySection'
 import { AudioSection } from './sections/AudioSection'
-import { CustomizationSection, BackgroundSection } from '@features/customization'
+import { CustomizationSection } from '@features/customization'
 import { ScClientIdCard } from '@features/soundcloud'
 import { GeniusTokenCard } from '@features/lyrics'
 import { LastfmSection } from '@features/lastfm'
 import { YandexSection } from '@features/yandex'
-import { SpotifySection } from '@features/spotify'
 import { YtmSection } from '@features/ytmusic'
+import { useUiPrefsStore, SM_NAV_W_MIN, SM_NAV_W_MAX, SM_NAV_W_DEFAULT } from '../model'
+
+/**
+ * Разделитель между сайдбаром настроек и контентом: тянется мышью, меняя
+ * `--sm-nav-w` на `.sm-cat-view`; Shift+ЛКМ — сброс к дефолту (185px).
+ *
+ * Во время перетаскивания пишем переменную напрямую в DOM (без стора), чтобы не
+ * ре-рендерить весь список вкладок на каждом кадре; в стор коммитим один раз на
+ * pointerup — там же persist в localStorage.
+ */
+const SmNavResizer = () => {
+  const width = useUiPrefsStore((s) => s.smNavW)
+  const setPref = useUiPrefsStore((s) => s.set)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    if (e.shiftKey) {
+      setPref('smNavW', SM_NAV_W_DEFAULT)
+      return
+    }
+    const el = ref.current
+    const view = el?.parentElement
+    if (!el || !view) return
+    const startX = e.clientX
+    let last = width
+    const clamp = (v: number) => Math.min(SM_NAV_W_MAX, Math.max(SM_NAV_W_MIN, Math.round(v)))
+    const onMove = (ev: PointerEvent) => {
+      last = clamp(width + ev.clientX - startX)
+      view.style.setProperty('--sm-nav-w', `${last}px`)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.classList.remove('sm-nav-resizing')
+      setPref('smNavW', last)
+    }
+    document.body.classList.add('sm-nav-resizing')
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  return <div ref={ref} className="sm-nav-resizer" onPointerDown={onPointerDown} />
+}
 
 /**
  * Модалка настроек `#settingsOverlay`.
@@ -31,7 +82,8 @@ import { YtmSection } from '@features/ytmusic'
  *       .settings-modal-close-abs (✕ в правом верхнем углу, абсолютно)
  *       .settings-modal-body
  *         .sm-cat-view (sidebar + content)
- *           .settings-modal-nav#smNav (185px, .s-nav-search + .s-nav-group + .s-nav-item)
+ *           .settings-modal-nav#smNav (--sm-nav-w, .s-nav-search + .s-nav-group + .s-nav-item)
+ *           .sm-nav-resizer (перетаскивание ширины сайдбара)
  *           .settings-modal-content#smContent (.s-section.active с .sc-карточками)
  *
  * Поведение:
@@ -51,6 +103,8 @@ export const SettingsOverlay = () => {
   // прокрутить к найденной настройке внутри. null → обычная навигация.
   const [highlight, setHighlight] = useState<string | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  // Ширина сайдбара (тянется за .sm-nav-resizer) — CSS-переменная на .sm-cat-view.
+  const navW = useUiPrefsStore((s) => s.smNavW)
 
   // Enter-анимация `.open` без «дёрганья» появления (см. runEnterAnimation).
   useEffect(() => {
@@ -162,9 +216,8 @@ export const SettingsOverlay = () => {
     // Оформление
     view: <ViewSection />,
     interface: <InterfaceSection />,
-    library: <LibrarySection />,
+    pages: <PagesSection />,
     tabs: <TabsSection />,
-    background: <BackgroundSection />,
     medialib: <CustomizationSection />,
     // Интеграции
     soundcloud: <ScClientIdCard />,
@@ -173,7 +226,6 @@ export const SettingsOverlay = () => {
     lastfm: <LastfmSection />,
     discord: <DiscordSection />,
     yandex: <YandexSection />,
-    spotify: <SpotifySection />,
     // Телеметрия
     'tele-storage': <TelemetrySection />,
   }
@@ -191,7 +243,10 @@ export const SettingsOverlay = () => {
     >
       <div className="settings-modal">
         <div className="settings-modal-body">
-          <div className="sm-cat-view">
+          <div
+            className="sm-cat-view"
+            style={{ '--sm-nav-w': `${navW}px` } as CSSProperties}
+          >
             <SettingsNav
               active={section}
               onSelect={(id, query) => {
@@ -199,7 +254,14 @@ export const SettingsOverlay = () => {
                 setHighlight(query ?? null)
               }}
             />
-            <div className="settings-modal-content" id="smContent" ref={contentRef}>
+            <SmNavResizer />
+            <div
+              className="settings-modal-content"
+              id="smContent"
+              ref={contentRef}
+              onMouseEnter={(e) => e.currentTarget.classList.add('sb-active')}
+              onMouseLeave={(e) => e.currentTarget.classList.remove('sb-active')}
+            >
               {sectionMap[section]}
             </div>
           </div>

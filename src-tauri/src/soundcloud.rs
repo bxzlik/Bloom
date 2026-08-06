@@ -336,8 +336,12 @@ pub struct ScRawPlaylist {
     pub title: String,
     pub artist: String,
     pub artwork: Option<String>,
+    /// Аватар владельца (`user.avatar_url`) — для строки владельца в hero.
+    pub artist_avatar: Option<String>,
     pub track_count: u64,
     pub duration: u64,
+    /// Год выпуска: `release_date`, иначе `created_at` (как у трека).
+    pub year: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub permalink: Option<String>,
 }
@@ -412,7 +416,11 @@ pub struct ScPlaylistFull {
     pub title: String,
     pub cover: Option<String>,
     pub owner_name: String,
+    /// Аватар владельца (для строки владельца в hero).
+    pub owner_avatar: Option<String>,
     pub track_count: u64,
+    /// Год выпуска (release_date / created_at).
+    pub year: String,
 }
 
 /// Результат резолва SC-ссылки (TS-union `ScResolved` — поля по `kind`).
@@ -495,10 +503,21 @@ fn map_raw_playlist(p: &Value) -> ScRawPlaylist {
             None => "Unknown".to_string(),
         },
         artwork: t300(vstr(p, "artwork_url").or_else(|| vstr(p, "calculated_artwork_url"))),
+        artist_avatar: user.and_then(|u| t300(vstr(u, "avatar_url"))),
         track_count: vu64(p, "track_count").unwrap_or(0),
         duration: vu64(p, "duration").unwrap_or(0),
+        year: playlist_year(p),
         permalink: vstr(p, "permalink_url").map(String::from),
     }
+}
+
+/// Год плейлиста/альбома: `release_date` (у альбомов), иначе `created_at`.
+fn playlist_year(p: &Value) -> String {
+    vstr(p, "release_date")
+        .filter(|s| !s.is_empty())
+        .or_else(|| vstr(p, "created_at"))
+        .map(|d| d.chars().take(4).collect())
+        .unwrap_or_default()
 }
 
 fn has_id(v: &Value) -> bool {
@@ -887,6 +906,24 @@ pub async fn artist_data(id_or_url: &str, artist_name: Option<&str>) -> ScArtist
     ScArtistData { tracks, tracks_next, albums, user_id }
 }
 
+/// Похожие исполнители (`/users/{id}/relatedartists`) — секция «Похожие» на
+/// странице артиста. У малоизвестных профилей SC отдаёт пустую коллекцию;
+/// ошибки тоже гасим в пустой список (секция просто не рисуется).
+pub async fn related_artists(id_or_url: &str) -> Vec<ScRawArtist> {
+    let inner = async {
+        let id = resolve_user_id(id_or_url).await?;
+        let d = api_fetch(
+            &format!("https://api-v2.soundcloud.com/users/{id}/relatedartists?limit=18"),
+            false,
+        )
+        .await?;
+        Ok::<_, anyhow::Error>(
+            varr(&d, "collection").iter().filter(|u| has_id(u)).map(map_raw_artist).collect(),
+        )
+    };
+    inner.await.unwrap_or_default()
+}
+
 /// Следующая страница треков артиста по курсору (`next_href`).
 pub async fn artist_tracks_page(cursor: &str) -> ScTracksCursorPage {
     match api_fetch(cursor, false).await {
@@ -958,7 +995,9 @@ pub async fn playlist_by_id(id: u64) -> Result<ScPlaylistFull> {
         title: vstr(&data, "title").unwrap_or("").to_string(),
         cover,
         owner_name: data.get("user").and_then(|u| vstr(u, "username")).unwrap_or("").to_string(),
+        owner_avatar: t300(data.get("user").and_then(|u| vstr(u, "avatar_url"))),
         track_count: vu64(&data, "track_count").unwrap_or(tracks.len() as u64),
+        year: playlist_year(&data),
         tracks,
     })
 }

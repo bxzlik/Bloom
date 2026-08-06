@@ -51,6 +51,9 @@ export const toArtist = (a: ScRawArtist): Artist => ({
   avatar: a.artwork,
   permalink: a.permalink ?? null,
   source: 'soundcloud',
+  // Счётчик приходит уже в выдаче поиска (followers_count) — карточка показывает
+  // его как подзаголовок, не дожидаясь getArtist.
+  followers: a.followers,
 })
 
 export const toPlaylist = (p: ScRawPlaylist): Playlist => ({
@@ -59,5 +62,7 @@ export const toPlaylist = (p: ScRawPlaylist): Playlist => ({
   cover: p.artwork,
   trackCount: p.trackCount,
   ownerName: p.artist,
+  ownerAvatar: p.artistAvatar ?? null,
+  year: p.year || undefined,
   source: 'soundcloud',
 })

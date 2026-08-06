@@ -1,0 +1,155 @@
+/* Анимация смены трека (компонент TrackSwap) — обложка и подпись в плеере,
+   нижнем баре и фуллскрине.
+
+   Ручки (задаются на обёртке .tsw, наследуются слоями):
+     --tsw-dur       длительность слайда;
+     --tsw-fade-dur  длительность затухания (ДОЛЬШЕ слайда: там внимание держит
+                     движение, а тут — только прозрачность);
+     --tsw-dist      амплитуда слайда, % от ширины слоя;
+     --tsw-ease      кривая движения;
+     --tsw-fade-ease кривая прозрачности (почти линейная, см. ниже).
+   ВАЖНО: длительности не должны превышать TSW_MS в TrackSwap.tsx — иначе слой
+   снимут посреди анимации. */
+
+.tsw {
+  --tsw-dur: 420ms;
+  --tsw-fade-dur: 460ms;
+  --tsw-dist: 12%;
+  --tsw-ease: cubic-bezier(.22, 1, .36, 1);
+  --tsw-fade-ease: cubic-bezier(.35, 0, .5, 1);
+  position: relative;
+  /* Обёртка встаёт на место исходного блока подписи — она флекс-ребёнок узких
+     колонок, и без min-width:0 её распирал бы длинный заголовок. */
+  min-width: 0;
+  max-width: 100%;
+  /* Свой стекинг-контекст: z-index уезжающего слоя не должен конкурировать с
+     кнопками поверх обложки (♥/+/на весь экран, z-index 3–4). */
+  isolation: isolate;
+}
+
+/* Подпись: слайд не должен вылезать за колонку (у обложки клипует сама коробка). */
+.tsw:not(.tsw-fill) {
+  overflow: hidden;
+}
+
+/* Обложка: обёртка растянута по коробке (.ps-cover/.bp-cover/#mpCover), оба слоя
+   лежат друг на друге. Текст (без .tsw-fill) держит высоту текущим слоем, а
+   прошлый уходит в absolute — иначе на время анимации подпись раздваивалась бы
+   по высоте и толкала контролы. */
+.tsw-fill,
+.tsw-fill > .tsw-l {
+  position: absolute;
+  inset: 0;
+}
+/* Пустая обложка (иконка-нота) без своей раскладки — центрируем слоем. */
+.tsw-fill > .tsw-l {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tsw-l {
+  min-width: 0;
+}
+
+.tsw-prev {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Уезжающий слой поверх приезжающего: он гаснет, и «просвет» под ним читается
+     как проявление нового, а не как мигание фоном. */
+  z-index: 2;
+}
+
+/* Затухание. Читается ИМЕННО уезжающий слой: он лежит сверху и гаснет всю
+   длительность. Приезжающий добираем до полной непрозрачности быстрее (55%
+   времени) — иначе в середине сквозь оба полупрозрачных слоя просвечивал бы фон
+   и кадр заметно темнел.
+   Кривая — отдельная, почти линейная: на --tsw-ease (.22,1,.36,1) 90% фейда
+   проходило за первые ~15% времени, и затухание выглядело как мгновенная
+   подмена («как будто не работает»). */
+.tsw-cur.tsw-fade {
+  animation: tswFadeIn calc(var(--tsw-fade-dur) * .55) var(--tsw-fade-ease) both;
+}
+.tsw-prev.tsw-fade {
+  animation: tswFadeOut var(--tsw-fade-dur) var(--tsw-fade-ease) both;
+}
+
+/* Слайд. Направление «назад» (кнопка «предыдущий») — зеркально. */
+.tsw-cur.tsw-slide {
+  animation: tswSlideIn var(--tsw-dur) var(--tsw-ease) both;
+}
+.tsw-prev.tsw-slide {
+  animation: tswSlideOut var(--tsw-dur) var(--tsw-ease) both;
+}
+.tsw-cur.tsw-slide.tsw-back {
+  animation-name: tswSlideInBack;
+}
+.tsw-prev.tsw-slide.tsw-back {
+  animation-name: tswSlideOutBack;
+}
+
+/* Пластинка: обложка круглая и с overflow:visible — слайд выехал бы за пределы
+   круга «голым» квадратом. Там всегда затухание — целиком, вместе с его
+   длительностью и кривой (одного animation-name мало: с motion-ease фейд
+   схлопывался бы в мгновенную подмену). */
+.ps-cover.vinyl-mode .tsw-cur.tsw-slide,
+#bigPicOverlay .bp-cover.bp-vinyl-mode .tsw-cur.tsw-slide {
+  animation: tswFadeIn calc(var(--tsw-fade-dur) * .55) var(--tsw-fade-ease) both;
+}
+.ps-cover.vinyl-mode .tsw-prev.tsw-slide,
+#bigPicOverlay .bp-cover.bp-vinyl-mode .tsw-prev.tsw-slide {
+  animation: tswFadeOut var(--tsw-fade-dur) var(--tsw-fade-ease) both;
+}
+
+/* Нижний бар — коробка маленькая, длинный слайд в ней читается как рывок. */
+#miniPlayer .tsw {
+  --tsw-dur: 300ms;
+  --tsw-fade-dur: 340ms;
+  --tsw-dist: 22%;
+}
+
+/* Подпись бара: колонка «название над артистом» жила инлайн-стилями на этом
+   блоке — переносим её на слои (класс раскладки уезжает на оба). */
+#miniPlayer .tsw-mp-text .tsw-l {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Подпись плеера в стиле «Кино»: раскладку (absolute + translateY(-50%)) держит
+   обёртка, слои внутри — в потоке. Иначе translateX анимации затирал бы
+   translateY базового правила, и заголовок прыгал бы по вертикали. */
+#playerContent.style-cinema .tsw-cn {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 42%;
+  transform: translateY(-50%);
+  z-index: 3;
+  pointer-events: none;
+}
+#playerContent.style-cinema .tsw-cn > .tsw-cur {
+  position: static;
+  transform: none;
+  top: auto;
+}
+#playerContent.style-cinema .tsw-cn > .tsw-prev {
+  top: 0;
+  bottom: auto;
+  transform: none;
+}
+
+/* Фуллскрин: обёртка размытой подложки занимает место самой .bp-blur (та внутри
+   слоёв и остаётся absolute inset:0 по своему правилу). */
+#bigPicOverlay .bp-blur-swap {
+  z-index: 1;
+  pointer-events: none;
+}
+/* Подпись фуллскрина — обёртка во всю ширину колонки, иначе центрирование
+   заголовка считалось бы от ширины текста. */
+#bigPicOverlay .bp-below > .tsw {
+  width: 100%;
+}

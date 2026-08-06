@@ -58,6 +58,12 @@ export interface YmRawEntity {
   /** Только у артиста: «Популярные» (brief-info). У альбома/плейлиста пусто. */
   popularTracks: YmRawTrack[]
   albums: YmRawAlbum[]
+  /** Год выпуска (альбом). */
+  year: string
+  /** Аватар артиста/владельца (альбом → artists[0].cover). */
+  ownerAvatar: string
+  /** Только у артиста: похожие исполнители (brief-info). */
+  similarArtists: YmRawArtist[]
 }
 
 export interface YmRawSearch {

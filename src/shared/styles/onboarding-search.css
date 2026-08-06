@@ -3,38 +3,44 @@
 .search-page{display:flex;flex-direction:column;height:100%;overflow:hidden}
 .sp-header{padding:24px 28px 16px;flex-shrink:0}
 .sp-filter-tabs{display:flex;justify-content:center;gap:8px;padding:0 28px 12px;flex-shrink:0;flex-wrap:wrap}
-/* Зона табов+мета-фильтров: в покое схлопнута до тонкой полоски-ловушки (padding),
-   при наведении раскрывается (grid-rows 0fr→1fr) и проявляется. Остаётся раскрытой
-   при фокусе с клавиатуры и пока открыт дропдаун (тогда же снимается клип, чтобы
-   меню не резалось); в центрированном (пустом) режиме видна всегда. */
+/* Зона табов+мета-фильтров: в покое схлопнута (grid-rows 0fr) и прозрачна.
+   Раскрывается классом .open — его ставит SearchPage при наведении на строку
+   поиска (сама зона наведением НЕ открывается), а снимает при выходе курсора из
+   общей .sp-top-zone, чтобы можно было спуститься мышью к табам. Остаётся
+   раскрытой при фокусе с клавиатуры и пока открыт дропдаун (тогда же снимается
+   клип, чтобы меню не резалось); в центрированном режиме видна всегда. */
+.sp-top-zone{flex-shrink:0}
 .sp-filter-zone{flex-shrink:0;display:grid;grid-template-rows:0fr;opacity:0;padding:4px 0 8px;transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1),opacity .2s}
 .sp-filter-zone-in{min-height:0;overflow:hidden}
-.sp-filter-zone:hover,.sp-filter-zone:focus-within,.sp-filter-zone:has(.sp-dd.open){grid-template-rows:1fr;opacity:1}
+.sp-filter-zone.open,.sp-filter-zone:focus-within,.sp-filter-zone:has(.sp-dd.open){grid-template-rows:1fr;opacity:1}
 .sp-filter-zone:has(.sp-dd.open) .sp-filter-zone-in{overflow:visible}
 .search-page.sp-centered .sp-filter-zone{grid-template-rows:1fr;opacity:1}
 .search-page.sp-centered .sp-filter-zone-in{overflow:visible}
 /* Спейсер: 0 в обычном режиме; в центрированном растёт и плавно опускает строку
-   поиска к середине экрана (анимация «уезжает наверх», когда появляется запрос). */
+   поиска к середине экрана (анимация «уезжает наверх», когда появляется запрос).
+   50% — половина .search-page (не vh: страница ниже титлбара и над плеер-баром),
+   минус половина высоты .sp-top-zone (--sp-center-off ≈ инпут 48 + зона табов 57),
+   чтобы по центру оказался весь блок «строка + табы», а не его верхний край. */
 .sp-spacer{height:0;flex-shrink:0;transition:height .38s cubic-bezier(.4,0,.2,1)}
-.search-page.sp-centered .sp-spacer{height:calc(34vh - 40px)}
+.search-page.sp-centered .sp-spacer{height:calc(50% - var(--sp-center-off,53px))}
 .search-page.sp-centered #spScScroll{display:none}
 .search-page.sp-centered .sp-header{display:flex;justify-content:center;padding-top:0;padding-bottom:0}
 .search-page.sp-centered .sp-inp-wrap{width:100%;max-width:540px}
 .search-page.sp-centered .sp-filter-tabs{justify-content:center;padding-top:14px;padding-bottom:0}
-.sp-filter-btn{display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid transparent;border-radius:11px;color:var(--muted);font-size:12.5px;font-weight:600;padding:7px 15px;cursor:pointer;transition:.15s;font-family:var(--font);white-space:nowrap}
+.sp-filter-btn{display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid transparent;border-radius:11px;color:var(--muted);font-size:13px;font-weight:600;padding:7px 15px;cursor:pointer;transition:.15s;font-family:var(--font);white-space:nowrap}
 .sp-filter-btn:hover{color:var(--fg)}
-.sp-filter-btn.active{background:#fff;border-color:#fff;color:#111}
+.sp-filter-btn.active{background:var(--text);border-color:var(--text);color:var(--bg)}
 .sp-dd{position:relative;display:inline-flex}
-.sp-dd-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:9px;border:1px solid transparent;background:none;color:var(--muted);font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap;line-height:1}
+.sp-dd-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:9px;border:1px solid transparent;background:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap;line-height:1}
 .sp-dd-btn:hover{color:var(--fg)}
-.sp-dd-btn.active{background:#fff;color:#111;border-color:#fff}
+.sp-dd-btn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
 .sp-dd-btn.active .sp-dd-chev{opacity:.7}
 .sp-dd-chev{transition:transform .18s;flex-shrink:0}
 .sp-dd.open .sp-dd-chev{transform:rotate(180deg)}
-.sp-dd-menu{display:none;position:absolute;top:calc(100% + 5px);left:0;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border);border-radius:10px;padding:4px;min-width:140px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.35);flex-direction:column;gap:1px}
+.sp-dd-menu{display:none;position:absolute;top:calc(100% + 5px);left:0;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border);border-radius:10px;padding:4px;min-width:140px;z-index:200;box-shadow:none;flex-direction:column;gap:1px}
 .sp-dd.open .sp-dd-menu{display:flex}
 .sp-dd-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;border:none;background:transparent;color:var(--fg);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);text-align:left;transition:.12s;white-space:nowrap}
-.sp-dd-opt:hover{background:rgba(255,255,255,.07)}
+.sp-dd-opt:hover{background:rgba(var(--ovl-rgb),.07)}
 .sp-dd-opt.active{font-weight:700}
 .sp-dd-opt.active::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent,#fff);flex-shrink:0}
 .sp-dd-opt:not(.active)::before{content:'';display:inline-block;width:6px;height:6px;flex-shrink:0}
@@ -43,14 +49,27 @@
 .sp-filter-list .sc-load-more-card{width:100%;flex-direction:row;height:44px;padding:0 16px}
 /* Artists/Playlists/Albums wrap mode */
 .sp-filter-wrap .sp-artist-grid,.sp-filter-wrap .sp-pl-grid{flex-wrap:wrap;overflow-x:unset;padding-bottom:0}
+/* Табы «Плейлисты»/«Альбомы» — крупная сетка во всю ширину (~4 колонки на
+   фуллскрине, 3 на узком окне). Ширина колонки текучая (vw + clamp), а не порог
+   в CSS-px, поэтому раскладка переживает page-zoom вебвью. */
+.sp-pl-grid.sp-pl-grid-lg{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,clamp(220px,19vw,400px)),1fr));
+  gap:26px 22px;
+  overflow:visible;
+}
+.sp-pl-grid-lg .sp-track-card{width:auto;flex-shrink:1}
+/* Подпись выравниваем по левому краю обложки (в ряду она была с отступом 10px). */
+.sp-pl-grid-lg .sp-tc-info{padding:12px 2px 0}
 .sp-inp-wrap{position:relative;display:flex;align-items:center;gap:11px;background:var(--input,var(--card));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:999px;padding:0 7px 0 18px;height:48px;transition:.15s}
-.sp-inp-wrap:focus-within{border-color:rgba(var(--accent-rgb),.5);background:var(--card)}
+/* Активная строка поиска: не подсвечиваем акцентом, просто делаем рамку чуть ярче. */
+.sp-inp-wrap:focus-within{border-color:color-mix(in srgb,var(--border),transparent 25%);background:var(--card)}
 .sp-inp-wrap input{flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:15px;font-family:var(--font)}
 #spClear{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;display:flex;align-items:center;flex-shrink:0;transition:.15s}
 #spClear:hover{color:var(--fg)}
 /* Выпадающая история поиска под строкой (overlay). Высоту докручивает JS под
    нижний край окна; max-height тут — фолбэк до первого замера. Скроллбар скрыт. */
-.sp-hist{position:absolute;top:calc(100% + 10px);left:0;right:0;z-index:80;display:flex;flex-direction:column;gap:1px;padding:10px;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:24px;box-shadow:0 16px 44px rgba(0,0,0,.5);max-height:min(60vh,380px);overflow-y:auto;scrollbar-width:none}
+.sp-hist{position:absolute;top:calc(100% + 10px);left:0;right:0;z-index:80;display:flex;flex-direction:column;gap:1px;padding:10px;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:24px;box-shadow:none;max-height:min(60vh,380px);overflow-y:auto;scrollbar-width:none}
 .sp-hist::-webkit-scrollbar{display:none}
 .sp-hist-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;cursor:pointer;transition:background .12s}
 .sp-hist-row:hover{background:var(--hover)}
@@ -68,7 +87,7 @@
 @keyframes spDvOut{from{opacity:1}to{opacity:0}}
 @keyframes spDvBodyIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes skeletonShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.sk-block{border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:skeletonShimmer 1.6s ease-in-out infinite}
+.sk-block{border-radius:8px;background:linear-gradient(90deg,rgba(var(--ovl-rgb),.04) 25%,rgba(var(--ovl-rgb),.09) 50%,rgba(var(--ovl-rgb),.04) 75%);background-size:200% 100%;animation:skeletonShimmer 1.6s ease-in-out infinite}
 .sk-row{display:flex;gap:12px;margin-bottom:6px}
 .sk-grid{display:flex;gap:12px;margin-bottom:20px}
 /* Скелет-строка списка треков (совпадает по метрике с .tr). */
@@ -83,13 +102,17 @@
 .sp-top-cover img{width:100%;height:100%;object-fit:cover}
 .sp-top-text{margin-top:auto;padding-top:26px;min-width:0}
 .sp-top-name{font-size:30px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:7px}
-.sp-top-sub{font-size:13.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-top-sub{font-size:14px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-top-kind{position:absolute;top:20px;right:20px;font-size:11px;font-weight:700;background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--text2);padding:4px 12px;border-radius:999px}
 .sp-top-list{flex:1 1 340px;min-width:min(340px,100%);display:flex;flex-direction:column}
 #spDetailView{background:var(--bg2,#141414);will-change:opacity}
 #spDetailView.dv-opening{animation:spDvIn .2s ease both}
 #spDetailView.dv-closing{animation:spDvOut .15s ease both}
 .sp-dv-body-in{animation:spDvBodyIn .22s ease-out both}
+/* Возврат на вкладку с уже открытым детальным видом: он перекрывает страницу,
+   поэтому её page-in играет сам оверлей — иначе смена вкладок под ним не видна. */
+.sp-dv-page-in{animation:page-in .2s ease-out}
+@media (prefers-reduced-motion:reduce){.sp-dv-page-in{animation:none}}
 /* Шапка не floating: full-bleed (гасим паддинг оверлея −12px), скруглены только
    верхние углы под контейнер, без рамки/фото. Фон — нейтральный цвет из
    аватарки/обложки (--hero-tint), растворяющийся в фон страницы. */
@@ -99,42 +122,50 @@
 /* Сплошная заливка цветом + маска альфы с мягким «хвостом»: затухание идёт
    плавно до нуля (нет излома/видимой кромки, как у линейного →transparent), и
    работает поверх фона страницы И стекла. */
-.sp-am-bg{position:absolute;inset:0;background:var(--hero-tint,rgba(255,255,255,.05));-webkit-mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.94) 12%,rgba(0,0,0,.8) 26%,rgba(0,0,0,.6) 40%,rgba(0,0,0,.4) 54%,rgba(0,0,0,.24) 66%,rgba(0,0,0,.12) 78%,rgba(0,0,0,.04) 88%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.94) 12%,rgba(0,0,0,.8) 26%,rgba(0,0,0,.6) 40%,rgba(0,0,0,.4) 54%,rgba(0,0,0,.24) 66%,rgba(0,0,0,.12) 78%,rgba(0,0,0,.04) 88%,transparent 100%)}
-.sp-am-close{position:absolute;top:14px;right:14px;z-index:3;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.sp-am-bg{position:absolute;inset:0;background:var(--hero-tint,rgba(var(--ovl-rgb),.05));-webkit-mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.94) 12%,rgba(0,0,0,.8) 26%,rgba(0,0,0,.6) 40%,rgba(0,0,0,.4) 54%,rgba(0,0,0,.24) 66%,rgba(0,0,0,.12) 78%,rgba(0,0,0,.04) 88%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.94) 12%,rgba(0,0,0,.8) 26%,rgba(0,0,0,.6) 40%,rgba(0,0,0,.4) 54%,rgba(0,0,0,.24) 66%,rgba(0,0,0,.12) 78%,rgba(0,0,0,.04) 88%,transparent 100%)}
+.sp-am-close{position:absolute;top:14px;right:14px;z-index:3;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:rgba(var(--ovl-rgb),.9);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .sp-am-close:hover{background:rgba(0,0,0,.8);color:#fff}
 .sp-am-hero-content{position:relative;z-index:2;padding:26px 32px 30px;display:flex;flex-direction:column;gap:16px}
 /* «Назад»: стрелка + название страницы. Отступы сверху/слева выровнены, чтобы
    кнопка стояла ровно от верхне-левого угла. */
-.sp-am-back{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;max-width:100%;padding:6px 12px 6px 6px;margin:-12px 0 2px -14px;background:transparent;border:none;border-radius:calc(var(--radius)*.7);color:rgba(255,255,255,.76);font-family:var(--font);font-size:15.5px;font-weight:700;cursor:pointer;transition:color .15s,background .15s}
-.sp-am-back:hover{color:rgba(255,255,255,.95);background:rgba(255,255,255,.06)}
+.sp-am-back{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;max-width:100%;padding:6px 12px 6px 6px;margin:-12px 0 2px -14px;background:transparent;border:none;border-radius:calc(var(--radius)*.7);color:rgba(var(--ovl-rgb),.76);font-family:var(--font);font-size:16px;font-weight:700;cursor:pointer;transition:color .15s,background .15s}
+.sp-am-back:hover{color:rgba(var(--ovl-rgb),.95);background:rgba(var(--ovl-rgb),.06)}
 .sp-am-back span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sp-am-hero-info{display:flex;align-items:center;gap:26px}
-.sp-am-avatar{width:220px;height:220px;border-radius:50%;background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 34px rgba(0,0,0,.45)}
+.sp-am-avatar{width:220px;height:220px;border-radius:50%;background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .sp-am-avatar.square{border-radius:calc(var(--radius)*1.4)}
 .sp-am-avatar img{width:100%;height:100%;object-fit:cover}
 .sp-am-meta{flex:1;min-width:0}
 .sp-am-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--text2);margin-bottom:8px}
 .sp-am-name{font-size:34px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:12px;color:var(--text)}
-/* Владелец плейлиста/альбома — отдельной строкой под именем. */
-.sp-am-owner{font-size:15px;font-weight:600;color:rgba(255,255,255,.6);margin:-4px 0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sp-am-sub{display:flex;align-items:center;gap:16px;font-size:13px;font-weight:600;color:rgba(255,255,255,.6);flex-wrap:wrap;margin-bottom:8px}
+/* Владелец плейлиста/альбома — отдельной строкой под именем: аватарка + имя. */
+.sp-am-owner{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:rgba(var(--ovl-rgb),.6);margin:-4px 0 10px;min-width:0}
+.sp-am-owner>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-am-owner-av{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--hover)}
+.sp-am-sub{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:rgba(var(--ovl-rgb),.6);flex-wrap:wrap;margin-bottom:8px}
 .sp-am-stat{display:flex;align-items:center;gap:5px}
-.sp-am-hero-desc{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.7);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:500px}
+/* Статы разделяем точкой: «2026 · 8 треков · 17 мин». Точка — флекс-ребёнок
+   стата, поэтому слева её отделяет gap:5px + margin:4px = 9px, как gap ряда
+   справа (симметрично). */
+.sp-am-stat:not(:last-child)::after{content:'·';margin-left:4px}
+/* Обрезано двумя строками; полный текст — попапом по клику
+   (shared/ui/ExpandDesc), отсюда cursor:pointer. */
+.sp-am-hero-desc{font-size:13px;font-weight:500;color:rgba(var(--ovl-rgb),.7);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:500px;cursor:pointer}
 /* Ряд кнопок — в правой колонке под именем/статами. */
 .sp-am-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px}
 /* Группа+share занимают остаток строки; space-between держит share у правого
    края (и когда ряд переносится под «Воспроизвести всё» — тоже). */
 .sp-am-actions-rest{flex:1;min-width:220px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 /* Иконочные кнопки сгруппированы в капсулы с тонкой рамкой (как в референсе). */
-.sp-am-btn-group{display:flex;align-items:center;gap:2px;padding:2px;border-radius:999px;border:1px solid rgba(255,255,255,.07);background:transparent}
+.sp-am-btn-group{display:flex;align-items:center;gap:2px;padding:2px;border-radius:999px;border:1px solid rgba(var(--ovl-rgb),.07);background:transparent}
 .sp-am-btn-group .sp-am-icon-btn,.sp-am-btn-group .sp-follow-btn{width:30px;height:30px;border-radius:50%}
 .sp-am-play-btn{display:flex;align-items:center;gap:8px;padding:11px 26px;border-radius:var(--radius);background:var(--accent);color:var(--accent-text);font-size:13px;font-weight:700;border:none;cursor:pointer;transition:.15s;font-family:var(--font);flex-shrink:0}
-.sp-am-play-btn:hover{filter:brightness(1.15)}
+.sp-am-play-btn:hover{background:var(--accent-hover)}
 /* Иконочные кнопки — минималистичные (без рамок/подложки); на hover не заливка,
    а только подсветка самой иконки. */
 .sp-am-icon-btn{width:36px;height:36px;border-radius:var(--radius);border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
-.sp-am-icon-btn:hover{background:transparent;color:#fff}
-.sp-am-btn-group .sp-follow-btn:hover{background:transparent;color:#fff}
+.sp-am-icon-btn:hover{background:transparent;color:var(--text)}
+.sp-am-btn-group .sp-follow-btn:hover{background:transparent;color:var(--text)}
 .sp-am-btn-group .sp-follow-btn.followed:hover{color:var(--accent)}
 /* Адаптив шапки под ширину самого оверлея (container query — реагирует на реальную
    ширину контента, а не окна, поэтому учитывает и раскрытый сайдбар). При узком —
@@ -154,39 +185,39 @@
 }
 .sp-am-body{padding:16px 0 24px;scrollbar-width:none}
 .sp-am-body::-webkit-scrollbar{display:none}
-.sp-am-body .sc-track{border:1px solid rgba(255,255,255,var(--wb));margin-bottom:3px}
-.sp-am-body .sc-track:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.13)}
+.sp-am-body .sc-track{border:1px solid var(--ovl-line);margin-bottom:3px}
+.sp-am-body .sc-track:hover{background:rgba(var(--ovl-rgb),.06);border-color:rgba(var(--ovl-rgb),.13)}
 .sp-am-body .sc-track-cov{width:38px;height:38px}
 .sp-am-body .sc-track .trac{opacity:0;transition:.15s}
 .sp-am-body .sc-track:hover .trac{opacity:1}
 .sp-am-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.sp-am-tag{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.1)}
+.sp-am-tag{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:rgba(var(--ovl-rgb),.08);color:rgba(var(--ovl-rgb),.6);border:1px solid rgba(var(--ovl-rgb),.1)}
 .sp-am-socials{display:flex;gap:8px;margin-bottom:14px}
-.sp-am-social-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;text-decoration:none}
-.sp-am-social-btn:hover{background:rgba(255,255,255,.14);color:#fff}
-.sp-am-desc{font-size:12px;color:rgba(255,255,255,.4);line-height:1.7;margin-bottom:16px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
-.sp-am-tabs{display:flex;gap:6px;padding:4px;margin-bottom:20px;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);flex-shrink:0}
+.sp-am-social-btn{width:32px;height:32px;border-radius:50%;background:rgba(var(--ovl-rgb),.07);border:1px solid rgba(var(--ovl-rgb),.1);color:rgba(var(--ovl-rgb),.6);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;text-decoration:none}
+.sp-am-social-btn:hover{background:rgba(var(--ovl-rgb),.14);color:var(--text)}
+.sp-am-desc{font-size:12px;color:rgba(var(--ovl-rgb),.4);line-height:1.7;margin-bottom:16px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.sp-am-tabs{display:flex;gap:6px;padding:4px;margin-bottom:20px;background:transparent;border:1px solid var(--ovl-line);border-radius:var(--radius);flex-shrink:0}
 .sp-am-tab{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 14px;background:transparent;border:none;border-radius:calc(var(--radius)*.7);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
 .sp-am-tab:hover{color:var(--text)}
 .sp-am-tab.active{background:var(--accent);color:var(--accent-text)}
 .sp-am-tab.active svg{color:var(--accent-text)}
-.sp-am-album{border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);margin-bottom:16px;overflow:hidden;background:var(--card)}
+.sp-am-album{border:1px solid var(--ovl-line);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;background:var(--card)}
 .sp-am-album-hdr{display:flex;align-items:center;gap:16px;padding:16px}
-.sp-am-album-hdr:hover{background:rgba(255,255,255,.03)}
-.sp-am-album-cov{width:96px;height:96px;border-radius:calc(var(--radius)*.7);overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.sp-am-album-hdr:hover{background:var(--ovl-bg)}
+.sp-am-album-cov{width:96px;height:96px;border-radius:calc(var(--radius)*.7);overflow:hidden;flex-shrink:0;background:rgba(var(--ovl-rgb),.05);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3)}
 .sp-am-album-cov img{width:100%;height:100%;object-fit:cover}
 .sp-am-album-meta{flex:1;min-width:0;cursor:pointer}
 .sp-am-album-label{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;margin-bottom:4px}
 .sp-am-album-name{font-size:22px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
 .sp-am-album-sub{font-size:13px;color:var(--text2);margin-top:5px}
 .sp-am-album-toggle{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex-shrink:0;background:transparent;border:none;color:var(--text2);cursor:pointer;border-radius:50%;transition:.15s}
-.sp-am-album-toggle:hover{color:var(--text);background:rgba(255,255,255,.08)}
+.sp-am-album-toggle:hover{color:var(--text);background:rgba(var(--ovl-rgb),.08)}
 .sp-am-album-body{padding:0 10px 8px}
 .sp-am-album-extra{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s cubic-bezier(.4,0,.2,1)}
 .sp-am-album-extra.open{grid-template-rows:1fr}
 .sp-am-album-extra>div{overflow:hidden;min-height:0}
-.sp-am-album-more{display:block;width:100%;margin-top:6px;padding:8px;border-radius:calc(var(--radius)*.6);background:transparent;border:1px solid rgba(255,255,255,var(--wb));color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.15s}
-.sp-am-album-more:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sp-am-album-more{display:block;width:100%;margin-top:6px;padding:8px;border-radius:calc(var(--radius)*.6);background:transparent;border:1px solid var(--ovl-line);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.15s}
+.sp-am-album-more:hover{color:var(--text);background:rgba(var(--ovl-rgb),.05)}
 .sp-am-section{margin-bottom:20px}
 .sp-am-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .sp-am-section-title{font-size:27px;font-weight:700}
@@ -195,8 +226,8 @@
 .sp-am-track-card{width:148px;flex-shrink:0;border-radius:var(--radius);cursor:pointer;transition:.15s;background:transparent}
 .sp-am-track-card:hover .sp-tc-play{opacity:1}
 .sp-am-track-card:hover .sc-track-addpl{opacity:1!important}
-.sp-am-btn{flex:1;padding:9px 14px;border-radius:calc(var(--radius)*.7);font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--fg);transition:.15s;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px}
-.sp-am-btn:hover{background:rgba(255,255,255,.12)}
+.sp-am-btn{flex:1;padding:9px 14px;border-radius:calc(var(--radius)*.7);font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:rgba(var(--ovl-rgb),.06);color:var(--fg);transition:.15s;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px}
+.sp-am-btn:hover{background:rgba(var(--ovl-rgb),.12)}
 .sp-am-btn.primary{background:var(--accent,#fff);color:var(--accent-text,#000);border-color:transparent}
 .sp-am-btn.primary:hover{opacity:.88}
 .sp-sc-row{display:flex;gap:8px;margin-bottom:10px;flex-shrink:0}
@@ -211,6 +242,44 @@
 .lib-item-search:hover,.lib-item-search.active{color:var(--fg)}
 .lib-item-search.active{color:var(--accent,#fff);background:rgba(var(--accent-rgb),.12)}
 /* Inline playlist search bar */
-.lib-isp-wrap{display:flex;align-items:center;gap:8px;background:transparent;border:1px solid rgba(255,255,255,.07);border-radius:999px;padding:0 16px;height:38px;flex:1;max-width:420px;transition:.15s}
+.lib-isp-wrap{display:flex;align-items:center;gap:8px;background:transparent;border:1px solid rgba(var(--ovl-rgb),.07);border-radius:999px;padding:0 16px;height:38px;flex:1;max-width:420px;transition:.15s}
+/* Активный поиск по плейлисту — только чуть более яркая рамка, без акцента. */
+.lib-isp-wrap:focus-within{border-color:rgba(var(--ovl-rgb),.16)}
 .lib-isp-inp{flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:13px;font-family:var(--font)}
 .lib-isp-inp::placeholder{color:var(--muted)}
+
+/* ===== ВСПЛЫВАЮЩИЙ ПОИСК (SearchOverlay, вид «Всплывающий») ===== */
+/* Подложка — портал в body; клик мимо панели закрывает. Как у остальных модалок
+   (#settingsOverlay, #peditBackdrop, .spanel-backdrop): растянута на всё окно,
+   но z-index ниже #winTitlebar (1001) — панель окна рисуется ПОВЕРХ неё и
+   остаётся видимой и кликабельной; от тайтлбара отступаем паддингом --tb-h
+   (в авто-скрытии и фуллскрине он равен 0). */
+.sov-back{position:fixed;inset:0;z-index:995;display:flex;justify-content:center;align-items:flex-start;padding:calc(var(--tb-h,32px) + 11vh) 24px 24px;background:rgba(0,0,0,.42);backdrop-filter:blur(3px);animation:sovBackIn .16s ease}
+@keyframes sovBackIn{from{opacity:0}to{opacity:1}}
+.sov-panel{width:100%;max-width:560px;display:flex;flex-direction:column;gap:10px;transform-origin:top center}
+/* Строка ввода — та же капсула, что на странице поиска (.sp-inp-wrap). */
+.sov-inp{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));flex-shrink:0}
+.sov-clear{background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;display:flex;align-items:center;flex-shrink:0;transition:.15s}
+.sov-clear:hover{color:var(--fg)}
+/* Список подсказок / истории. */
+/* scroll-padding — чтобы scrollIntoView при ходьбе клавишами не прижимал первую
+   и последнюю строку вплотную к краю списка (padding контейнера скроллом не
+   учитывается). */
+.sov-list{display:flex;flex-direction:column;gap:1px;padding:8px;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:22px;max-height:min(52vh,420px);overflow-y:auto;scroll-padding:8px;scrollbar-width:none}
+.sov-list::-webkit-scrollbar{display:none}
+.sov-row{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:14px;cursor:pointer;transition:background .12s}
+/* Подсветка идёт от курсора клавиатуры (он же ставится при наведении мышью). */
+.sov-row.active{background:var(--hover)}
+.sov-ico{width:34px;height:34px;border-radius:calc(var(--radius)*.55);background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);overflow:hidden}
+.sov-ico img{width:100%;height:100%;object-fit:cover}
+.sov-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.sov-title{font-size:14px;font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sov-sub{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sov-del{width:22px;height:22px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:.12s}
+.sov-row:hover .sov-del{opacity:1}
+.sov-del:hover{background:var(--hover);color:var(--fg)}
+.sov-note{padding:10px 12px;font-size:12px;color:var(--text2)}
+/* Подсказки по клавишам под панелью. */
+.sov-foot{display:flex;justify-content:center;gap:16px;font-size:11px;color:var(--text2);opacity:.75}
+.sov-foot span{display:flex;align-items:center;gap:5px}
+.sov-foot kbd{font-family:var(--font);font-size:10px;line-height:1;padding:3px 5px;border-radius:5px;background:rgba(var(--ovl-rgb),.09);color:var(--text2)}

@@ -1,4 +1,5 @@
 import { LyricsView } from '@features/lyrics'
+import { usePlayerViewStore } from '@features/settings'
 
 /**
  * Блок «Текст вместо очереди» (#lyricsQueueBlock) — занимает место
@@ -6,9 +7,11 @@ import { LyricsView } from '@features/lyrics'
  * (`lyricsInQueue`) и панель текста открыта. Тело — общий `LyricsView`
  * в контейнере `.lq-content`.
  *
- * @param active  рендерить эффекты (скролл/караоке) — панель видима.
+ * @param active  рендерить эффекты (скролл/заливку) — панель видима.
  */
 export const LyricsQueueBlock = ({ active }: { active: boolean }) => {
+  // Блок живёт на странице плеера — оформление у него общее с панелью над обложкой.
+  const st = usePlayerViewStore((s) => s.lyricsStyle.player)
   return (
     <div
       id="lyricsQueueBlock"
@@ -19,8 +22,8 @@ export const LyricsQueueBlock = ({ active }: { active: boolean }) => {
         flex: '1 1 0',
         minHeight: 0,
         borderRadius: 'var(--radius)',
-        border: '1px solid rgba(255,255,255,var(--wb))',
-        background: 'rgba(255,255,255,.02)',
+        border: '1px solid var(--ovl-line)',
+        background: 'rgba(var(--ovl-rgb),.02)',
         backdropFilter: 'blur(12px)',
       }}
     >
@@ -28,6 +31,8 @@ export const LyricsQueueBlock = ({ active }: { active: boolean }) => {
         className="lq-content"
         id="lqContent"
         active={active}
+        fill={st.fill}
+        fx={st.fx}
         style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px', scrollBehavior: 'smooth' }}
       />
     </div>

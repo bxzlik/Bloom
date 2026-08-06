@@ -40,8 +40,8 @@ import LyricsLinear from '~icons/solar/text-linear'
 import BigPicLinear from '~icons/solar/full-screen-linear'
 import NoteLinear from '~icons/solar/music-note-linear'
 import AddCircleLinear from '~icons/solar/add-circle-linear'
+import AddCircleBold from '~icons/solar/add-circle-bold'
 import DownloadLinear from '~icons/solar/download-minimalistic-linear'
-import EqLinear from '~icons/solar/tuning-4-linear'
 import ClockLinear from '~icons/solar/clock-circle-linear'
 import ClockBold from '~icons/solar/clock-circle-bold'
 import FolderLinear from '~icons/solar/folder-linear'
@@ -63,6 +63,7 @@ import PowerBold from '~icons/solar/power-bold'
 import ArrowLeftLinear from '~icons/solar/alt-arrow-left-linear'
 import ArrowLeftStraightLinear from '~icons/solar/arrow-left-linear'
 import ArrowRightLinear from '~icons/solar/alt-arrow-right-linear'
+import ArrowRightStraightLinear from '~icons/solar/arrow-right-linear'
 import ArrowDownLinear from '~icons/solar/alt-arrow-down-linear'
 import ArrowUpLinear from '~icons/solar/alt-arrow-up-linear'
 import InfoLinear from '~icons/solar/info-circle-linear'
@@ -200,6 +201,31 @@ const WinBellBoldBare: SvgComp = (p) => (
   </svg>
 )
 
+// Микшер (кнопка эквалайзера справа от громкости). Рисуем сами: у Solar
+// `tuning-4` — горизонтальные слайдеры, `tuning-3` — вертикальные, но с
+// круглыми ручками, а нужна перекладина. Контракт solar-linear:
+// viewBox 24, stroke 1.5, round — чтобы вес совпал с соседним спидометром.
+//
+// Три вертикальных дорожки с ручкой-перекладиной на разной высоте.
+// Дорожка разорвана под ручкой — так перекладина читается как бегунок,
+// сидящий НА дорожке, а не как линия, перечёркивающая её.
+const EqSlidersBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" {...p}>
+    <path d="M6 3v6.25M6 12.75V21M12 3v3.25M12 9.75V21M18 3v10.25M18 16.75V21" />
+    <path d="M3.5 11h5M9.5 8h5M15.5 15h5" />
+  </svg>
+)
+// Спидометр (кнопка скорости). Solar-варианты (`spedometer-*`, через одну «e»)
+// не подошли: у них насечки по ободу и каплевидная стрелка. Нужна геометрия
+// tabler:brand-speedtest (MIT) — дуга r=9 с разрывом снизу 90° и стрелка от
+// центра на 1–2 часа. Отдельный набор ради одного глифа не тянем, повторяем
+// путь здесь; stroke 1.5 вместо tabler'овских 2 — под вес соседей по ряду.
+const SpeedGaugeBare: SvgComp = (p) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" {...p}>
+    <path d="M5.636 19.364a9 9 0 1 1 12.728 0" />
+    <path d="M16 9l-4 4" />
+  </svg>
+)
 // Три точки (kebab) — рисуем сами: solar-версия не нравится. Плотные
 // вертикальные точки одинакового радиуса, залитые currentColor.
 const KebabBare: SvgComp = (p) => (
@@ -243,7 +269,9 @@ const ICONS = {
   bigpic: { linear: BigPicLinear },
   note: { linear: NoteLinear },
   add: { linear: PlusBare },
-  addCircle: { linear: AddCircleLinear },
+  // bold — состояние «трек уже добавлен» (залитый кружок с плюсом): ряд
+  // действий трека в открытом плейлисте, по аналогии со Spotify.
+  addCircle: { linear: AddCircleLinear, bold: AddCircleBold },
   minus: { linear: MinusBare },
   close: { linear: CloseBare },
   // Отдельные win*-ключи, а не подмена `pin`/`bell`/`square`/`restore`:
@@ -253,7 +281,9 @@ const ICONS = {
   winPin: { linear: WinPinBare, bold: WinPinBoldBare },
   winBell: { linear: WinBellBare, bold: WinBellBoldBare },
   download: { linear: DownloadLinear },
-  eq: { linear: EqLinear },
+  eq: { linear: EqSlidersBare },
+  // Скорость воспроизведения (кнопка рядом с EQ).
+  speed: { linear: SpeedGaugeBare },
   clock: { linear: ClockLinear, bold: ClockBold },
   folder: { linear: FolderLinear },
   trash: { linear: TrashLinear },
@@ -272,6 +302,7 @@ const ICONS = {
   arrowLeft: { linear: ArrowLeftLinear },
   arrowLeftStraight: { linear: ArrowLeftStraightLinear },
   arrowRight: { linear: ArrowRightLinear },
+  arrowRightStraight: { linear: ArrowRightStraightLinear },
   arrowDown: { linear: ArrowDownLinear },
   arrowUp: { linear: ArrowUpLinear },
   info: { linear: InfoLinear },

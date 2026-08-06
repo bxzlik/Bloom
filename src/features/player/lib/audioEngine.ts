@@ -87,6 +87,9 @@ class AudioEngine {
   private setSource(src: string, hls: boolean): void {
     this.teardownHls()
     this.curSrc = src
+    // preservesPitch — свойство элемента, но подстрахуемся: часть движков
+    // сбрасывает его при смене источника.
+    this.audio.preservesPitch = this._preservePitch
     if (hls && Hls.isSupported()) {
       // HLS-сегменты с CDN требуют CORS — anonymous включает корректный режим.
       this.audio.crossOrigin = 'anonymous'
@@ -155,6 +158,18 @@ class AudioEngine {
     this.audio.playbackRate = rate
   }
   private _rate = 1
+  /**
+   * Сохранять ли тон при изменении скорости. `false` — классический
+   * slowed/nightcore (питч едет вместе с темпом). Дефолт браузера — `true`.
+   */
+  setPreservePitch(on: boolean): void {
+    this._preservePitch = on
+    this.audio.preservesPitch = on
+  }
+  get preservePitch(): boolean {
+    return this._preservePitch
+  }
+  private _preservePitch = true
 
   // ── Getters ──
   get paused(): boolean {

@@ -3,6 +3,7 @@ import { useThemeSettings, useTrackRowMarquee, useTauriEvent } from '@shared/hoo
 import { initLocaleAttr, t as tFn } from '@shared/i18n'
 import { TitleBar } from './TitleBar'
 import { Sidebar } from './Sidebar'
+import { SbResizer } from './SbResizer'
 import { HomePage } from './pages/HomePage'
 import { GlobalToast, ShareCardModal, toast } from '@shared/ui'
 import { useNavStore } from './navigationStore'
@@ -10,19 +11,18 @@ import { useGlobalHotkeys } from './useGlobalHotkeys'
 import { useFullscreenHotkey } from './useFullscreenHotkey'
 import { useDeepLinkBridge } from './useDeepLinkBridge'
 import { useOverlayBridge } from './useOverlayBridge'
-import { LibPage, TrackInfoModal, MergeModal, MpNewPlaylistHost, DeepLinkModal, TagEditorHost, useTrackInfoStore, useLibStore, startUsageTracking } from '@features/library'
+import { LibPage, TrackInfoModal, MergeModal, ConvertModal, MpNewPlaylistHost, DeepLinkModal, TagEditorHost, PlAutoDrawer, useTrackInfoStore, useLibStore, startUsageTracking, startPlAutoScheduler } from '@features/library'
 import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects, useMiniBarVisible } from '@features/player'
 import { useQueueStore } from '@features/player/model/queueStore'
 import { trackRegistry } from '@entities/track'
 import { useLyricsBridge } from '@features/lyrics'
 import { useLastfmBridge } from '@features/lastfm'
-import { SearchPage, DetailView, useDetailStore } from '@features/search'
+import { SearchPage, SearchOverlay, DetailView, useDetailStore, useDetailOpen } from '@features/search'
 import { bootstrapProviders, getProvider } from '@features/providers'
 import { bootstrapOffline } from '@features/offline'
 import { bootstrapSoundcloud } from '@features/soundcloud'
 import { bootstrapYandex } from '@features/yandex'
 import { bootstrapYtmusic } from '@features/ytmusic'
-import { bootstrapSpotify } from '@features/spotify'
 import { AccountPage, useAchievementsWatcher } from '@features/profile'
 import { useMediaLibBootstrap, useCustomizationBootstrap } from '@features/customization'
 import { QuickWheel } from '@features/quick-wheel'
@@ -70,6 +70,7 @@ import {
 const APP_PREF_CLASSES = [
   'sidebar-top',
   'sidebar-right',
+  'sidebar-full',
   'sidebar-compact',
   'sidebar-floating',
   'sidebar-autohide',
@@ -81,6 +82,8 @@ export const App = () => {
   useThemeSettings()
   useEffect(initLocaleAttr, [])
   useEffect(startUsageTracking, [])
+  // Расписание авто-обновления плейлистов (идемпотентно, только главное окно).
+  useEffect(startPlAutoScheduler, [])
   useMainPlayerBridge()
   useLyricsBridge()
   useThemeBootstrap()
@@ -172,7 +175,6 @@ export const App = () => {
     bootstrapSoundcloud()
     bootstrapYandex()
     bootstrapYtmusic()
-    bootstrapSpotify()
   }, [])
 
   // Глобальный клик по имени артиста (.tra-link) → страница артиста. Работает из любого места (поиск, очередь,
@@ -301,6 +303,8 @@ export const App = () => {
           id: best.id,
           title: best.title,
           cover: best.cover ?? null,
+          ownerAvatar: best.ownerAvatar ?? null,
+          year: best.year,
           round: false,
         })
       })
@@ -309,11 +313,8 @@ export const App = () => {
     return () => document.removeEventListener('click', onClick, true)
   }, [])
 
-  // Смена страницы закрывает детальный оверлей.
-  const pageForDetail = useNavStore((s) => s.page)
-  useEffect(() => {
-    useDetailStore.getState().close()
-  }, [pageForDetail])
+  // Смена страницы НЕ закрывает детальный оверлей: стек хранится по страницам
+  // (detailStore.stacks), поэтому уход прячет вид, а возврат показывает его снова.
   const page = useNavStore((s) => s.page)
   const infoTrack = useTrackInfoStore((s) => s.track)
   const closeTrackInfo = useTrackInfoStore((s) => s.closeTrackInfo)
@@ -328,7 +329,7 @@ export const App = () => {
   // На странице плеера панель скрыта (там свой инлайн-queue) — КРОМЕ случая, когда
   // поверх плеера открыт детальный оверлей (артист/альбом): тогда инлайн-очередь
   // перекрыта, и кнопки очередь/текст мини-плера должны открывать глобальную панель.
-  const detailOpenForGrp = useDetailStore((s) => s.stack.length > 0)
+  const detailOpenForGrp = useDetailOpen()
   const grpVisible = grpOpen && (page !== 'player' || detailOpenForGrp) && !!grpCurId
 
   // Позиция нижнего бара. Меняется редко (настройка), поэтому
@@ -402,6 +403,13 @@ export const App = () => {
       document.body.classList.add('play-flat')
       // Авто-скрытие тайтлбара — body-класс (#winTitlebar рендерится вне .app).
       document.body.classList.toggle('titlebar-autohide', useUiPrefsStore.getState().titlebarAutohide)
+      // Фон панели окна — тоже body-класс (тайтлбар вне .app).
+      document.body.classList.toggle('titlebar-bg', useUiPrefsStore.getState().titlebarBg)
+      // Сторона выезда боковых панелей-drawer: они портуются в body (вне .app).
+      document.body.classList.toggle(
+        'drawer-left',
+        useUiPrefsStore.getState().drawerSide === 'left',
+      )
     }
     apply()
     const un1 = useUiPrefsStore.subscribe(apply)
@@ -434,6 +442,10 @@ export const App = () => {
         <div className="sb-edge-trigger" aria-hidden="true" />
 
         <Sidebar />
+
+        {/* Невидимая ручка на зазоре сайдбар↔контент: тянет ширину, Shift+ЛКМ —
+            сброс. Сама решает, показываться ли (позиция/режим/блокировка). */}
+        <SbResizer />
 
         {/* Вертикальный бар слева (playerbar-left) либо скрытый слот-заглушка. */}
         {playerBarPos === 'left' ? (
@@ -494,6 +506,9 @@ export const App = () => {
         )}
       </div>
 
+      {/* Всплывающий поиск (вид «Всплывающий») — портал поверх всего */}
+      <SearchOverlay />
+
       {/* Settings modal — рендерится поверх через portal */}
       <SettingsOverlay />
 
@@ -508,6 +523,13 @@ export const App = () => {
 
       {/* «Объединение плейлистов» — единая модалка, открывается из PlMenu */}
       <MergeModal />
+
+      {/* «Перенос плейлиста на площадку» — конвертер, тоже из PlMenu */}
+      <ConvertModal />
+
+      {/* «Авто-обновление плейлистов» — боковая панель, открывается из тулбара
+          библиотеки и ПКМ-меню плейлиста */}
+      <PlAutoDrawer />
 
       {/* Редактор тегов — единый хост (drawer), переживает закрытие BigPicture */}
       <TagEditorHost />

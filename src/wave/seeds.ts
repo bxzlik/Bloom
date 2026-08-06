@@ -132,6 +132,51 @@ export function pickPersonalSeeds(): string[] {
   return Array.from(seeds).slice(0, 5);
 }
 
+// Витрина «Моей волны» (вид «Кольцо» на главной): кандидаты в обложки вокруг кнопки.
+// Чистый близнец pickPersonalSeeds — те же источники в том же порядке (топ по
+// прослушиваниям → свежие лайки → жанровые → добивка), но БЕЗ bumpRotation:
+// рендер главной не должен прокручивать карусель сидов реальной волны. Текущий
+// rot читаем, чтобы кольцо примерно совпадало с тем, на чём построится волна.
+// Отдаём с запасом: у части треков не резолвится обложка, финальный отбор — в UI.
+export function pickDisplaySeeds(limit = 24): string[] {
+  const lib = host.tracks.filter(t => !t._scTemp && !t.disliked);
+  if (!lib.length) return [];
+
+  const rot = getRotation();
+  const rotate = <T>(arr: T[], by: number): T[] => {
+    if (arr.length < 2) return arr;
+    const k = ((by % arr.length) + arr.length) % arr.length;
+    return arr.slice(k).concat(arr.slice(0, k));
+  };
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (id: string | undefined): void => {
+    if (!id || seen.has(id) || out.length >= limit) return;
+    seen.add(id);
+    out.push(id);
+  };
+
+  // 1) Топ по агрегату прослушиваний (со сдвигом ротации — как у сидов).
+  const byPlays = lib
+    .map(t => ({ t, plays: (t.playCount ?? 0) + playCountAll(t.id) }))
+    .filter(x => x.plays > 0)
+    .sort((a, b) => b.plays - a.plays);
+  for (const x of rotate(byPlays, rot * 2).slice(0, 4)) push(x.t.id);
+
+  // 2) Свежие лайки.
+  const favs = lib.filter(t => t.fav).sort((a, b) => (b.favAt ?? 0) - (a.favAt ?? 0));
+  for (const t of rotate(favs, rot * 2).slice(0, 4)) push(t.id);
+
+  // 3) Добивка: остаток топа → остаток лайков → недавно слушанное → свежее в библиотеке.
+  for (const x of byPlays) push(x.t.id);
+  for (const t of favs) push(t.id);
+  for (const h of host.playHistory) push(h.id);
+  for (const t of [...lib].sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0))) push(t.id);
+
+  return out;
+}
+
 // Для подмешивания «знакомых» (вся библиотека, см. ответ юзера).
 export function pickFamiliarPool(excludeIds: Set<string>, limit = 20): Track[] {
   const lib = host.tracks.filter(t =>

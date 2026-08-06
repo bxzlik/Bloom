@@ -39,12 +39,13 @@ import { PlayPauseButton } from './PlayPauseButton'
 import { QueueBlock } from './QueueBlock'
 import { LyricsQueueBlock } from './LyricsQueueBlock'
 import { MarqueeTitle } from './MarqueeTitle'
+import { TrackSwap } from './TrackSwap'
 import { AddPopup } from './AddPopup'
 import { SpeedPicker } from './SpeedPicker'
 import { SourcePicker, providerLogo } from './SourcePicker'
 import { DlMenu } from './DlMenu'
 import { EqPanel } from './EqPanel'
-import { SPEEDS, useSpeedStore } from '../model/speedStore'
+import { speedLabel, useSpeedStore } from '../model/speedStore'
 import { LyricsPanel, LyricsToggleButton, useLyricsStore } from '@features/lyrics'
 import { DislikeButton } from '@features/wave'
 import { usePlayerViewStore, useThemeStore, useOptStore } from '@features/settings'
@@ -165,14 +166,13 @@ const PlayerContent = () => {
   const smartShuffle = usePlayerStore((s) => s.smartShuffle)
   const repeat = usePlayerStore((s) => s.repeat)
   const curId = useQueueStore((s) => s.curId)
-  const isLoading = useQueueStore((s) => s.loadingId !== null && s.loadingId === s.curId)
   const isFav = useFavStore((s) => (curId ? s.favs.has(curId) : false))
   const inLib = useLibStore((s) => (curId ? s.tracks.some((t) => t.id === curId) : false))
   const curTrack =
     useLibStore((s) => (curId ? s.tracks.find((t) => t.id === curId) ?? null : null)) ??
     (curId ? trackRegistry.get(curId) ?? null : null)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
-  const speedIdx = useSpeedStore((s) => s.idx)
+  const speedRate = useSpeedStore((s) => s.rate)
 
   // Раздел «Плеер»: выравнивание заголовка + эффекты обложки (ambient/parallax).
   // NB: accent/ambientGlow подписываем ИМПЕРАТИВНО в effect ниже (не реактивно),
@@ -184,7 +184,12 @@ const PlayerContent = () => {
   const hideQueue = usePlayerViewStore((s) => s.hideQueue)
   const playerStyle = usePlayerViewStore((s) => s.playerStyle)
   const lyricsInQueue = usePlayerViewStore((s) => s.lyricsInQueue)
+  const lyricsStyle = usePlayerViewStore((s) => s.lyricsStyle.player)
   const showNextTrack = usePlayerViewStore((s) => s.showNextTrack)
+  // Анимация смены трека для страницы плеера («Плеер» → Анимация смены трека).
+  // Обложка и подпись настраиваются независимо.
+  const coverAnim = usePlayerViewStore((s) => s.trackAnim.player.cover)
+  const textAnim = usePlayerViewStore((s) => s.trackAnim.player.text)
   const lyricsOpen = useLyricsStore((s) => s.open)
   const coverRef = useRef<HTMLDivElement>(null)
 
@@ -341,6 +346,28 @@ const PlayerContent = () => {
       <Ico name="bigpic" width={26} height={26} />
     </button>
   )
+  // ♥/+ в строке контролов — «переезд» кнопок с обложки по настройке
+  // covBtnsInBar. Видимостью рулит CSS (`#mainCovBtnsWrap` скрыт по умолчанию,
+  // `.app.cov-btns-in-bar` показывает), поэтому рендерим безусловно.
+  // Рендерится ровно в одной раскладке за раз (стандарт ИЛИ кино) → id уникален;
+  // в large своей копии нет — там ♥/+ и так живут в нижнем баре.
+  const covBtnsBarNode = (
+    <div className="ps-ctrl" id="mainCovBtnsWrap" style={{ flexShrink: 0, gap: 2 }}>
+      {/* `.off` → нейтральный цвет (без него #mainCovFav красный по
+          умолчанию, CSS line 104). toggle .off. */}
+      <button
+        className={`cc${isFav ? '' : ' off'}`}
+        id="mainCovFav"
+        onClick={toggleCurFav}
+        aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
+      >
+        <HeartSvg size={14} filled={isFav} />
+      </button>
+      <button className="cc" id="mainCovAdd" onClick={openAddPopup} aria-label={t('player.aria.add')}>
+        <Ico name="addCircle" width={14} height={14} />
+      </button>
+    </div>
+  )
   // Клик по обложке открывает полноэкранный режим: кроме кликов по fav/add и когда открыта панель текста.
   const onCoverClick = (e: ReactMouseEvent<HTMLDivElement>) => {
     const t = e.target as HTMLElement
@@ -364,20 +391,17 @@ const PlayerContent = () => {
         setCoverCtx({ x: e.clientX, y: e.clientY })
       }}
     >
-      {coverImg}
-      {/* Спиннер пока резолвится/буферизуется стрим. */}
-      {isLoading && (
-        <div className="ps-cover-loading">
-          <div className="sc-spinner" />
-        </div>
-      )}
+      {/* Обложка — слоями: старая уезжает, новая приезжает (см. TrackSwap). */}
+      <TrackSwap id={curId} kind={coverAnim} fill>
+        {coverImg}
+      </TrackSwap>
       {withBtns && favOverlayBtn}
       {withBtns && addOverlayBtn}
       {/* Кнопка «на весь экран» (в кино — отдельно, в cn-hover-actions). */}
       {!cinema && bigPicOverlayBtn}
       {/* Панель текста — overlay поверх обложки (#lyricsPanel). При «тексте
           вместо очереди» overlay не нужен — текст уходит в область очереди. */}
-      {!lyricsInQueue && <LyricsPanel />}
+      {!lyricsInQueue && <LyricsPanel fill={lyricsStyle.fill} fx={lyricsStyle.fx} />}
     </div>
   )
   const titleRowNode = (
@@ -411,18 +435,19 @@ const PlayerContent = () => {
   const speedBtnNode = (
     <button
       ref={speedBtnRef}
-      className="cc"
+      className={`cc${speedRate === 1 ? '' : ' on'}`}
       id="speedBtn"
-      aria-label={t('player.aria.speed')}
+      aria-label={`${t('player.aria.speed')} — ${speedLabel(speedRate)}`}
       onClick={(e) => {
         e.stopPropagation()
         setSpeedOpen((v) => !v)
       }}
-      style={{ fontSize: 10, fontWeight: 800, minWidth: 34 }}
     >
-      <span id="speedLabel" style={{ color: SPEEDS[speedIdx] === 1 ? undefined : 'var(--accent)' }}>
-        {SPEEDS[speedIdx] === 1 ? '1×' : SPEEDS[speedIdx] + '×'}
-      </span>
+      {speedRate === 1 ? (
+        <Ico name="speed" width={18} height={18} />
+      ) : (
+        <span className="cc-cap">{speedLabel(speedRate)}</span>
+      )}
     </button>
   )
   // Бейдж-кнопка площадки: открывает выбор площадки для переключения текущего
@@ -463,6 +488,7 @@ const PlayerContent = () => {
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
           <RepeatSvg size={18} />
+          {repeat === 1 && <RepeatAllBadge />}
           {repeat === 2 && <RepeatOneBadge />}
         </button>
         <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
@@ -606,11 +632,13 @@ const PlayerContent = () => {
         <div className="sl-cover-wrap" key="sl-cover-wrap">
           {/* renderCover(false): свои оверлеи ниже (тайтл + ♥/bigpic/+). */}
           {renderCover(false)}
-          {/* Тайтл/артист по центру обложки — прячется при наведении. */}
-          <div className="cn-center-title">
+          {/* Тайтл/артист по центру обложки — прячется при наведении.
+              Позиционирование (absolute + translateY) уехало на обёртку .tsw-cn:
+              на слоях оно конфликтовало бы с translateX анимации. */}
+          <TrackSwap id={curId} kind={textAnim} className="tsw-cn" layerClass="cn-center-title">
             {titleRowNode}
             {artistNode}
-          </div>
+          </TrackSwap>
           {/* ♥ · на весь экран · + — на месте тайтла, появляются по наведению. */}
           <div className="cn-hover-actions">
             {favOverlayBtn}
@@ -637,6 +665,7 @@ const PlayerContent = () => {
             {/* Громкость — полным слайдером в своей строке + source/eq/скорость. */}
             <div className="cn-vol-row">
               {volumeNode}
+              {covBtnsBarNode}
               {ctrlGroupsNode}
             </div>
           </div>
@@ -666,10 +695,10 @@ const PlayerContent = () => {
         <div className="sl-bottom" key="sl-bottom">
           <div className="sl-bottom-info">
             <div>
-              <div className="sl-text-wrap">
+              <TrackSwap id={curId} kind={textAnim} layerClass="sl-text-wrap">
                 {titleRowNode}
                 {artistNode}
-              </div>
+              </TrackSwap>
             </div>
             {favOverlayBtn}
             {addOverlayBtn}
@@ -710,7 +739,7 @@ const PlayerContent = () => {
           className="player-section"
           style={{
             borderRadius: 'var(--radius)',
-            border: '1px solid rgba(255,255,255,var(--wb))',
+            border: '1px solid var(--ovl-line)',
             margin: 0,
           }}
         >
@@ -718,28 +747,31 @@ const PlayerContent = () => {
           {renderCover(true)}
 
           <div className="ps-right">
-            <div>
+            <TrackSwap id={curId} kind={textAnim}>
               {titleRowNode}
               {artistNode}
-            </div>
+            </TrackSwap>
 
+            {/* Колонка контролов тянется во всю ширину .ps-right (без потолка):
+                раньше здесь стоял maxWidth:750 + margin:auto, и на широком окне
+                прогресс/визуализатор/транспорт стояли узкой колонкой по центру с
+                пустыми полями по бокам. */}
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 8,
                 width: '100%',
-                maxWidth: 750,
-                margin: '0 auto',
               }}
             >
-              {/* VISUALIZER — анимация частот (скрыт когда выключен/в large). */}
-              <VizBlock />
-
               {/* PROGRESS — изолирован в подкомпонент: тик timeupdate
                   перерисовывает только его, а не весь PlayerContent (с очередью)
                   → во время игры тогглы/интеракции не лагают. */}
               <PsProgress />
+
+              {/* VISUALIZER — анимация частот (скрыт когда выключен/в large).
+                  Стоит ПОД прогрессом (как в large/cinema), а не над ним. */}
+              <VizBlock />
 
               {/* TRANSPORT */}
               {transportNode}
@@ -747,26 +779,7 @@ const PlayerContent = () => {
               {/* VOLUME + cov-btns (fav/add) + group-боксы (площадка | eq+скорость) */}
               <div className="ps-vol-row" style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
                 {volumeNode}
-                <div className="ps-ctrl" id="mainCovBtnsWrap" style={{ flexShrink: 0, gap: 2 }}>
-                  {/* `.off` → нейтральный цвет (без него #mainCovFav красный по
-                      умолчанию, CSS line 104). toggle .off. */}
-                  <button
-                    className={`cc${isFav ? '' : ' off'}`}
-                    id="mainCovFav"
-                    onClick={toggleCurFav}
-                    aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
-                  >
-                    <HeartSvg size={14} filled={isFav} />
-                  </button>
-                  <button
-                    className="cc"
-                    id="mainCovAdd"
-                    onClick={openAddPopup}
-                    aria-label={t('player.aria.add')}
-                  >
-                    <Ico name="addCircle" width={14} height={14} />
-                  </button>
-                </div>
+                {covBtnsBarNode}
                 {ctrlGroupsNode}
               </div>
 
@@ -834,7 +847,7 @@ const NextTrackBlock = ({
       style={{
         flexShrink: 0,
         borderRadius: 'calc(var(--radius)*1.2)',
-        border: '1px solid rgba(255,255,255,var(--wb))',
+        border: '1px solid var(--ovl-line)',
         background: 'var(--block-bg)',
         padding: '10px 14px 12px',
         overflow: 'hidden',
@@ -939,11 +952,13 @@ const VizBlock = () => {
       id="vizWrap"
       style={{
         position: 'relative',
-        height: 54,
+        // Высота — от размера окна с зажимом min/max (--viz-h в player.css).
+        height: 'var(--viz-h)',
         margin: '2px 0',
         display: visible ? undefined : 'none',
-        border: '1px solid rgba(255,255,255,var(--wb))',
-        borderRadius: 'calc(var(--radius) * 0.55)',
+        border: '1px solid var(--ovl-line)',
+        // Скругление — как у транспорта (.ps-ctrl, player.css).
+        borderRadius: 'calc(var(--radius) * 1.2)',
         background: 'var(--block-bg)',
         overflow: 'hidden',
       }}
@@ -953,13 +968,13 @@ const VizBlock = () => {
           id="vizPhotoEl"
           src={frozenViz ?? vizPhoto}
           alt=""
-          style={{ width: '100%', height: 54, borderRadius: 'calc(var(--radius) * 0.55)', objectFit: 'cover', display: 'block' }}
+          style={{ width: '100%', height: '100%', borderRadius: 'calc(var(--radius) * 1.2)', objectFit: 'cover', display: 'block' }}
         />
       ) : (
         <canvas
           id="vizCanvas"
           ref={canvasRef}
-          style={{ width: '100%', height: 54, borderRadius: 'calc(var(--radius) * 0.55)', opacity: 0.85, display: 'block' }}
+          style={{ width: '100%', height: '100%', borderRadius: 'calc(var(--radius) * 1.2)', opacity: 0.85, display: 'block' }}
         />
       )}
     </div>
@@ -1253,14 +1268,14 @@ const VertVolPopup = ({
         position: 'fixed',
         left: pos?.left ?? -9999,
         top: pos?.top ?? -9999,
-        border: '1px solid rgba(255,255,255,.12)',
+        border: '1px solid rgba(var(--ovl-rgb),.12)',
         borderRadius: 10,
         padding: '10px 8px',
         zIndex: 9500,
         alignItems: 'center',
         flexDirection: 'column',
         gap: 6,
-        boxShadow: '0 8px 32px rgba(0,0,0,.8)',
+        boxShadow: 'none',
         background: 'var(--block-color, #141414)',
         isolation: 'isolate',
       }}
@@ -1297,6 +1312,10 @@ const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={siz
 const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (
   <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 700, top: 4, right: 4 }}>1</span>
+)
+/* «Повтор плейлиста» — та же иконка списка, что у вкладки «Плейлисты» в поиске. */
+const RepeatAllBadge = () => (
+  <span className="cc-badge" style={{ top: 4, right: 4 }}><Ico name="list" size={9} /></span>
 )
 const VolSvg = ({ size, v }: { size: number; v: number }) => {
   if (v === 0) return <Ico name="muted" size={size} />

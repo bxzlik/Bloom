@@ -6,8 +6,8 @@
 
 **Music from every source in one player.**
 
-A desktop player: local library, Yandex Music, SoundCloud,
-YouTube Music, and Spotify in a single window
+A desktop player: local library, Yandex Music, SoundCloud
+and YouTube Music in a single window
 
 [**🌐 Website**](https://bloom-site-x.vercel.app/) · [**📦 Releases**](https://github.com/bxzlik/Bloom/releases)
 
@@ -22,7 +22,6 @@ YouTube Music, and Spotify in a single window
 | 🟠 **SoundCloud** | Native streaming |
 | 🟡 **Yandex Music** | Native streaming |
 | 🔴 **YouTube Music** | Search & metadata, playback bridged to SoundCloud |
-| 🟢 **Spotify** | Search & metadata, playback bridged to SoundCloud |
 
 ## 🚀 Development
 

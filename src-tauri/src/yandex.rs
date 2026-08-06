@@ -313,6 +313,15 @@ pub struct YmEntity {
     pub popular_tracks: Vec<YmTrack>,
     #[serde(default)]
     pub albums: Vec<YmAlbum>,
+    /// Год выпуска (альбом). У артиста/плейлиста пусто.
+    #[serde(default)]
+    pub year: String,
+    /// Аватар владельца/артиста для строки владельца в hero (альбом → artists[0]).
+    #[serde(rename = "ownerAvatar", default)]
+    pub owner_avatar: String,
+    /// Только для артиста: похожие исполнители из brief-info (секция «Похожие»).
+    #[serde(rename = "similarArtists", default)]
+    pub similar_artists: Vec<YmArtist>,
 }
 
 /// Результат поиска по всем категориям.
@@ -471,6 +480,14 @@ pub async fn album(token: &str, id: &str) -> Result<YmEntity> {
         tracks,
         popular_tracks: Vec::new(),
         albums: Vec::new(),
+        year: r["year"].as_i64().map(|y| y.to_string()).unwrap_or_default(),
+        // Аватар первого артиста альбома (у объектов artists есть свой cover).
+        owner_avatar: r["artists"]
+            .as_array()
+            .and_then(|a| a.first())
+            .map(cover_from)
+            .unwrap_or_default(),
+        similar_artists: Vec::new(),
     })
 }
 
@@ -518,6 +535,11 @@ pub async fn artist(token: &str, id: &str) -> Result<YmEntity> {
         .as_array()
         .map(|arr| arr.iter().filter_map(parse_album).take(18).collect())
         .unwrap_or_default();
+    // Похожие исполнители — brief-info отдаёт готовые объекты артистов.
+    let similar_artists = r["similarArtists"]
+        .as_array()
+        .map(|arr| arr.iter().filter_map(parse_artist).take(18).collect())
+        .unwrap_or_default();
     Ok(YmEntity {
         title: a["name"].as_str().unwrap_or("Артист").to_string(),
         subtitle: "Артист".into(),
@@ -525,6 +547,9 @@ pub async fn artist(token: &str, id: &str) -> Result<YmEntity> {
         tracks,
         popular_tracks,
         albums,
+        year: String::new(),
+        owner_avatar: String::new(),
+        similar_artists,
     })
 }
 
@@ -557,6 +582,10 @@ fn playlist_entity(r: &serde_json::Value) -> YmEntity {
         tracks,
         popular_tracks: Vec::new(),
         albums: Vec::new(),
+        year: String::new(),
+        // У плейлиста аватар владельца бывает только в новом формате (owner.avatar*).
+        owner_avatar: cover_from(&r["owner"]),
+        similar_artists: Vec::new(),
     }
 }
 

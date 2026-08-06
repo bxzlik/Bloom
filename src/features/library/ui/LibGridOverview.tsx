@@ -26,7 +26,7 @@ import { LibAddMenu } from './LibAddMenu'
 import { LibSortMenu } from './LibSortMenu'
 import { PlMenu } from './PlMenu'
 import { AddFromLibModal } from './AddFromLibModal'
-import { ArtistCtxMenu } from './LibSidebar'
+import { ArtistCtxMenu, FILTER_ICON, FILTER_TYPE } from './LibSidebar'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -45,10 +45,12 @@ import { Ico } from '@shared/ui/icons/solar'
 const cardSub = (count: number, sec: number): string =>
   `${tFn('lib.grid.tracks', { n: count })}${sec > 0 ? ' · ' + fmtTotalDur(sec) : ''}`
 
-const PlayOverlay = () => (
+/* Карточки сетки открывают сущность (плейлист/папку/артиста), а не играют →
+   на ховере стрелка, а не play. */
+const OpenOverlay = () => (
   <div className="hpc-play-overlay">
     <div className="hpc-play-btn">
-      <Ico name="play" width="100%" height="100%" style={{ marginLeft: 2, color: 'var(--accent)' }} />
+      <Ico name="arrowRightStraight" width="100%" height="100%" style={{ color: 'var(--accent)' }} />
     </div>
   </div>
 )
@@ -64,6 +66,8 @@ export const LibGridOverview = () => {
   const favs = useFavStore((s) => s.favs)
   const playlists = usePlaylistStore((s) => s.playlists)
   const followedArtists = useFollowStore((s) => s.artists)
+  const filter = useLibStore((s) => s.filter)
+  const cycleLibFilter = useLibStore((s) => s.cycleLibFilter)
   const order = useUnifiedOrderStore((s) => s.order)
   const applyOrder = useUnifiedOrderStore((s) => s.applyOrder)
   const setOrder = useUnifiedOrderStore((s) => s.setOrder)
@@ -102,12 +106,18 @@ export const LibGridOverview = () => {
     sortMode,
   })
 
-  // Drag-reorder карточек (2D-сетка) — только при сортировке «по умолчанию»,
-  // пишет общий порядок (как и список-сайдбар). Пин-партиционирование: пины
-  // реордерятся среди пинов.
-  const dragEnabled = sortMode === 'default'
+  // Фильтр состава (тот же стор, что у списка-сайдбара): полный `entries` не
+  // трогаем — на нём держится порядок; фильтруем только видимую проекцию.
+  const visibleEntries =
+    filter === 'all' ? entries : entries.filter((e) => e.type === FILTER_TYPE[filter])
+
+  // Drag-reorder карточек (2D-сетка) — только при сортировке «по умолчанию» и
+  // без активного фильтра (иначе onReorder затёр бы скрытые записи), пишет общий
+  // порядок (как и список-сайдбар). Пин-партиционирование: пины реордерятся
+  // среди пинов.
+  const dragEnabled = sortMode === 'default' && filter === 'all'
   const sortable = useSortable<{ type: string; id: string }>({
-    items: entries,
+    items: visibleEntries,
     getId: (e) => `${e.type}:${e.id}`,
     enabled: dragEnabled,
     mode: 'grid',
@@ -187,7 +197,7 @@ export const LibGridOverview = () => {
       <div className="lib-grid-sys-row">
         <div className="lib-grid-sys-card lib-grid-sys-card-all" onClick={() => selectBuiltin('all')}>
           <div className="lib-grid-sys-card-icon">
-            <Ico name="note" width={20} height={20} style={{ color: 'rgba(255,255,255,0.9)' }} />
+            <Ico name="note" width={20} height={20} style={{ color: 'rgba(var(--ovl-rgb),0.9)' }} />
           </div>
           <div className="lib-grid-sys-card-info">
             <div className="lib-grid-sys-card-name">{t('lib.allTracks')}</div>
@@ -196,7 +206,7 @@ export const LibGridOverview = () => {
         </div>
         <div className="lib-grid-sys-card lib-grid-sys-card-fav" onClick={() => selectBuiltin('fav')}>
           <div className="lib-grid-sys-card-icon">
-            <Ico name="heart" variant="bold" width={20} height={20} style={{ color: 'rgba(255,255,255,0.9)' }} />
+            <Ico name="heart" variant="bold" width={20} height={20} style={{ color: 'rgba(var(--ovl-rgb),0.9)' }} />
           </div>
           <div className="lib-grid-sys-card-info">
             <div className="lib-grid-sys-card-name">{t('lib.liked')}</div>
@@ -205,7 +215,7 @@ export const LibGridOverview = () => {
         </div>
         <div className="lib-grid-sys-card lib-grid-sys-card-hist" onClick={() => selectBuiltin('history')}>
           <div className="lib-grid-sys-card-icon">
-            <Ico name="clock" width={20} height={20} style={{ color: 'rgba(255,255,255,0.9)' }} />
+            <Ico name="clock" width={20} height={20} style={{ color: 'rgba(var(--ovl-rgb),0.9)' }} />
           </div>
           <div className="lib-grid-sys-card-info">
             <div className="lib-grid-sys-card-name">{t('lib.history')}</div>
@@ -219,6 +229,14 @@ export const LibGridOverview = () => {
         <div className="lib-grid-section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {t('lib.myLibrary')}
           <div style={{ display: 'flex', gap: 2 }}>
+            <button
+              className="ib"
+              aria-label={t(`lib.filter.${filter}`)}
+              style={filter !== 'all' ? { color: 'var(--accent)' } : undefined}
+              onClick={(e) => { e.stopPropagation(); cycleLibFilter() }}
+            >
+              <Ico name={FILTER_ICON[filter]} width={13} height={13} />
+            </button>
             <button ref={sortBtnRef} className="ib" onClick={(e) => { e.stopPropagation(); setSortMenuOpen((v) => !v) }}>
               <Ico name="sort" width={13} height={13} />
             </button>
@@ -230,12 +248,12 @@ export const LibGridOverview = () => {
       )}
 
       {/* Карточки */}
-      {entries.length === 0 ? (
+      {visibleEntries.length === 0 ? (
         <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px 0', color: 'var(--text2)', fontSize: 13 }}>
-          {t('lib.libraryEmpty')}
+          {filter === 'all' ? t('lib.libraryEmpty') : t(`lib.filter.empty.${filter}`)}
         </div>
       ) : (
-        entries.map((entry) => {
+        visibleEntries.map((entry) => {
           const key = `${entry.type}:${entry.id}`
           const pinned = pinnedSet.has(key)
           const select =
@@ -259,9 +277,9 @@ export const LibGridOverview = () => {
                 <div style={{ position: 'relative' }}>
                   <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
                     {pl.cover ? <img src={pl.cover} loading="lazy" alt="" /> : <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} seed={pl.id} />}
-                    <PlayOverlay />
+                    <OpenOverlay />
                     {/* Бейдж площадки поверх обложки (прячется при наведении —
-                        PlayOverlay перекрывает). hasSc/hasYm взаимоисключающи. */}
+                        OpenOverlay перекрывает). hasSc/hasYm взаимоисключающи. */}
                     {(hasSc || hasYm) && (
                       <span className="cov-badge">
                         {hasSc ? <ScBadge size={24} cover /> : <YmBadge size={24} cover />}
@@ -285,7 +303,7 @@ export const LibGridOverview = () => {
                 <div style={{ position: 'relative' }}>
                   <div className="hpc-cover" style={{ background: 'var(--folder-tint)' }}>
                     <Ico name="folder" width={32} height={32} style={{ color: 'var(--accent)' }} />
-                    <PlayOverlay />
+                    <OpenOverlay />
                   </div>
                   {pinned && <span className="lib-pin-dot" />}
                 </div>
@@ -309,7 +327,7 @@ export const LibGridOverview = () => {
                   ) : (
                     <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--text2)' }}>{(a.name || '?').charAt(0).toUpperCase()}</span>
                   )}
-                  <PlayOverlay />
+                  <OpenOverlay />
                 </div>
                 {pinned && <span className="lib-pin-dot" />}
               </div>

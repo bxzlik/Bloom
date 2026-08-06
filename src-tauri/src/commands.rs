@@ -1781,6 +1781,14 @@ pub async fn ytm_search(query: String) -> Result<ytm::YtmSearch, String> {
     ytm::search(&query).await.map_err(|e| e.to_string())
 }
 
+/// Следующая страница треков поиска YTM (по 20). Токен продолжения живёт в
+/// Rust, поэтому фронту достаточно повторить запрос.
+#[tauri::command]
+pub async fn ytm_search_more(query: String) -> Result<ytm::YtmSearchMore, String> {
+    let (tracks, has_more) = ytm::search_more(&query).await.map_err(|e| e.to_string())?;
+    Ok(ytm::YtmSearchMore { tracks, has_more })
+}
+
 /// Прямой аудио-URL для трека YTM по videoId. Заворачивать в `ym_proxy_url`
 /// на фронте (googlevideo — range/CORS, как у Яндекса).
 #[tauri::command]
@@ -1812,79 +1820,16 @@ pub async fn ytm_track(video_id: String) -> Result<ytm::YtmTrack, String> {
     ytm::track(&video_id).await.map_err(|e| e.to_string())
 }
 
+/// Разбор вставленной ссылки YouTube/YouTube Music → вид сущности + её id.
+#[tauri::command]
+pub async fn ytm_resolve(url: String) -> Result<ytm::YtmResolved, String> {
+    ytm::resolve(&url).await.map_err(|e| e.to_string())
+}
+
 /// Лог-строка из фронта в общий tracing-лог (диагностика, напр. матч YTM-бриджа).
 #[tauri::command]
 pub fn ui_log(msg: String) {
     tracing::info!("{msg}");
-}
-
-// ============================ Spotify ============================
-
-use crate::spotify;
-
-/// Поиск Spotify (треки/артисты/альбомы/плейлисты). Нужны creds в настройках.
-#[tauri::command]
-pub async fn sp_search(query: String) -> Result<spotify::SpSearch, String> {
-    spotify::search(&query).await.map_err(|e| e.to_string())
-}
-
-/// Альбом с треками.
-#[tauri::command]
-pub async fn sp_album(id: String) -> Result<spotify::SpEntity, String> {
-    spotify::album(&id).await.map_err(|e| e.to_string())
-}
-
-/// Артист: популярные треки + альбомы.
-#[tauri::command]
-pub async fn sp_artist(id: String) -> Result<spotify::SpEntity, String> {
-    spotify::artist(&id).await.map_err(|e| e.to_string())
-}
-
-/// Плейлист с треками.
-#[tauri::command]
-pub async fn sp_playlist(id: String) -> Result<spotify::SpEntity, String> {
-    spotify::playlist(&id).await.map_err(|e| e.to_string())
-}
-
-/// Один трек по id (ре-резолв из «недавних»).
-#[tauri::command]
-pub async fn sp_track(id: String) -> Result<spotify::SpTrack, String> {
-    spotify::track(&id).await.map_err(|e| e.to_string())
-}
-
-/// Сохранить креденшелы приложения Spotify (Client Credentials).
-#[tauri::command]
-pub fn sp_set_creds(client_id: String, client_secret: String) -> Result<(), String> {
-    config::save_spotify(&config::SpotifyCreds {
-        client_id: client_id.trim().to_string(),
-        client_secret: client_secret.trim().to_string(),
-    })
-    .map_err(|e| e.to_string())
-}
-
-/// Текущие сохранённые creds (для префилла полей настроек; локальный конфиг).
-#[tauri::command]
-pub fn sp_get_creds() -> Result<config::SpotifyCreds, String> {
-    config::load_spotify().map_err(|e| e.to_string())
-}
-
-/// Заданы ли creds (для гейта провайдера `isEnabled`).
-#[tauri::command]
-pub fn sp_has_creds() -> Result<bool, String> {
-    let c = config::load_spotify().map_err(|e| e.to_string())?;
-    Ok(!c.client_id.is_empty() && !c.client_secret.is_empty())
-}
-
-/// Проверить creds (обменять на токен). Ok → валидны.
-#[tauri::command]
-pub async fn sp_check() -> Result<(), String> {
-    spotify::check().await.map_err(|e| e.to_string())
-}
-
-/// Удалить сохранённые creds.
-#[tauri::command]
-pub fn sp_clear_creds() -> Result<(), String> {
-    config::clear_spotify().map_err(|e| e.to_string())
 }
 
 // ============================ SoundCloud ============================
@@ -1979,6 +1924,12 @@ pub async fn sc_artist_top_tracks(id_or_url: String, artist_name: Option<String>
 #[tauri::command]
 pub async fn sc_artist_data(id_or_url: String, artist_name: Option<String>) -> sc::ScArtistData {
     sc::artist_data(&id_or_url, artist_name.as_deref()).await
+}
+
+/// Похожие исполнители (секция «Похожие» на странице артиста).
+#[tauri::command]
+pub async fn sc_related_artists(id_or_url: String) -> Vec<sc::ScRawArtist> {
+    sc::related_artists(&id_or_url).await
 }
 
 /// Следующая страница треков артиста по курсору.

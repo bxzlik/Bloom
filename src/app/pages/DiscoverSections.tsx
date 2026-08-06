@@ -5,6 +5,7 @@ import { getProviders, type NewReleases } from '@features/providers'
 import { playSingleTrack, PlayStateOverlay } from '@features/player'
 import { useDetailStore } from '@features/search'
 import { useYmAuthStore } from '@features/yandex'
+import { useUiPrefsStore } from '@features/settings'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, YmLogo, providerBrandColor, type Track } from '@entities/track'
 import type { Playlist } from '@entities/playlist'
@@ -27,6 +28,8 @@ type BlockData =
 /** Кеш загруженных секций (по mode+провайдеру), чтобы не дёргать сеть на каждый заход. */
 const cache = new Map<string, { data: BlockData; at: number }>()
 const TTL = 30 * 60 * 1000
+/** Паузы перед тихими повторами, если ответ пустой/упал (последняя = сдаёмся). */
+const RETRY_MS = [1500, 4000]
 
 const fetchBlock = async (mode: Mode, pid: string): Promise<BlockData | null> => {
   const key = `${mode}:${pid}`
@@ -135,6 +138,8 @@ const openAlbum = (pid: string, a: Playlist): void => {
     id: a.id,
     title: a.title,
     cover: a.cover ?? null,
+    ownerAvatar: a.ownerAvatar ?? null,
+    year: a.year,
     round: false,
   })
 }
@@ -165,42 +170,48 @@ const DiscoverBlock = ({
   const selected = tabs[0]?.id ?? null
 
   const [data, setData] = useState<BlockData | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [failed, setFailed] = useState(false)
   const reqRef = useRef(0)
 
   useEffect(() => {
     if (!selected || !active) return
     const req = ++reqRef.current
-    setFailed(false)
-    // Кеш есть — показываем мгновенно, без спиннера; иначе грузим.
+    // Кеш есть — показываем мгновенно; иначе грузим.
     const key = `${mode}:${selected}`
     const hit = cache.get(key)
     if (hit && Date.now() - hit.at < TTL) {
       setData(hit.data)
-      setLoading(false)
       return
     }
-    setLoading(true)
-    fetchBlock(mode, selected)
-      .then((d) => {
-        if (req !== reqRef.current) return
-        setData(d)
-        setFailed(!d || (d.kind === 'tracks' ? d.tracks.length === 0 : d.albums.length === 0))
-      })
-      .catch(() => {
-        if (req !== reqRef.current) return
-        setData(null)
-        setFailed(true)
-      })
-      .finally(() => {
-        if (req === reqRef.current) setLoading(false)
-      })
+    let timer = 0
+    // Пока данных нет — секции нет вовсе: ни скелетона, ни «Не удалось загрузить».
+    // Пустое место выглядит лучше мигающей заглушки, а сбой landing3 у Яндекса
+    // почти всегда транзиентный, поэтому тихо перезапрашиваем — секция просто
+    // появится чуть позже. Ранее показанные данные при сбое не стираем.
+    const attempt = (n: number) => {
+      fetchBlock(mode, selected)
+        .then((d) => {
+          if (req !== reqRef.current) return
+          const empty = !d || (d.kind === 'tracks' ? d.tracks.length === 0 : d.albums.length === 0)
+          if (!empty) {
+            setData(d)
+            return
+          }
+          if (n < RETRY_MS.length) timer = window.setTimeout(() => attempt(n + 1), RETRY_MS[n])
+        })
+        .catch(() => {
+          if (req !== reqRef.current) return
+          if (n < RETRY_MS.length) timer = window.setTimeout(() => attempt(n + 1), RETRY_MS[n])
+        })
+    }
+    attempt(0)
+    return () => {
+      if (timer) clearTimeout(timer)
+    }
     // tick — форс переоценки после регистрации провайдеров.
   }, [mode, selected, active, tick])
 
-  // Нет ни одной площадки для режима — блок скрыт целиком.
-  if (!tabs.length || !selected) return null
+  // Нет площадки для режима либо данные ещё не пришли — блок скрыт целиком.
+  if (!tabs.length || !selected || !data) return null
 
   return (
     <div className="home-section home-disc">
@@ -209,17 +220,7 @@ const DiscoverBlock = ({
         <DiscInfoBadge />
       </div>
 
-      {loading && !data ? (
-        <div className="home-cards home-disc-loading">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div className="home-card" key={i}>
-              <div className="hc-cover" />
-            </div>
-          ))}
-        </div>
-      ) : failed || !data ? (
-        <div className="home-empty-hint">{t('home.discFail')}</div>
-      ) : data.kind === 'tracks' ? (
+      {data.kind === 'tracks' ? (
         <div className="home-cards">
           {data.tracks.map((tr) => (
             <div className="home-card" key={tr.id} onClick={() => playSingleTrack(tr.id)} onContextMenu={(e) => onTrackCtx(e, tr)}>
@@ -253,9 +254,10 @@ const DiscoverBlock = ({
               <div className="hc-cover">
                 {a.cover ? <img src={a.cover} alt="" /> : <Ico name="note" width={24} height={24} />}
                 <CoverProviderBadge provider={a.source} size={24} />
+                {/* Альбом открывается по клику, а не играет → стрелка. */}
                 <div className="hc-play-overlay">
                   <div className="hc-play-btn">
-                    <Ico name="play" width="100%" height="100%" style={{ color: 'var(--accent)', marginLeft: 2 }} />
+                    <Ico name="arrowRightStraight" width="100%" height="100%" style={{ color: 'var(--accent)' }} />
                   </div>
                 </div>
               </div>
@@ -269,16 +271,23 @@ const DiscoverBlock = ({
   )
 }
 
-/** Обе секции витрины на главной. Сначала «Новинки», затем «Чарты». */
+/**
+ * Обе секции витрины на главной. Сначала «Новинки», затем «Чарты». Каждая
+ * скрывается отдельно из «Настройки → Страницы → Главная».
+ */
 export const DiscoverSections = ({
   active,
   onTrackCtx,
 }: {
   active: boolean
   onTrackCtx: (e: ReactMouseEvent, t: Track) => void
-}) => (
-  <>
-    <DiscoverBlock mode="new" active={active} onTrackCtx={onTrackCtx} />
-    <DiscoverBlock mode="chart" active={active} onTrackCtx={onTrackCtx} />
-  </>
-)
+}) => {
+  const showNew = useUiPrefsStore((s) => s.homeNew)
+  const showCharts = useUiPrefsStore((s) => s.homeCharts)
+  return (
+    <>
+      {showNew && <DiscoverBlock mode="new" active={active} onTrackCtx={onTrackCtx} />}
+      {showCharts && <DiscoverBlock mode="chart" active={active} onTrackCtx={onTrackCtx} />}
+    </>
+  )
+}

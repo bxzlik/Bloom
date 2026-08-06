@@ -32,7 +32,7 @@
   --ov-opt-hover: 8%;
   /* main.css использует var(--hover) для hover-фона .lib-item, .ci
      и других. Дефолт — subtle подсветка 5% белым. */
-  --hover: rgba(255, 255, 255, 0.05);
+  --hover: rgba(var(--ovl-rgb), 0.05);
   /* --card / --card-solid используются модалками и ctx-меню через
      `color-mix(in srgb, var(--card-solid, var(--card)) 40%, #000 60%)`.
      В задаются через JS-настройки. Дефолт — равны цвету блоков,
@@ -239,24 +239,24 @@ body {
    полупрозрачными (сквозь стекло видно). Правило `.lib-item.active` ловит и
    системные пункты — у них тоже есть класс `.lib-item`. */
 .lib-sidebar .lib-item:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(var(--ovl-rgb), 0.06) !important;
 }
 .lib-sidebar .lib-item.active {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(var(--ovl-rgb), 0.08) !important;
 }
 
 /* Play-кнопка в пунктах sidebar (.lib-item-play) — убираем color-change на
    :hover. Сама кнопка появляется на hover родителя .lib-item, но при наведении
    на саму кнопку цвет фона не меняется. */
 .lib-item-play:hover {
-  background: #fff !important;
+  background: var(--text) !important;
 }
 
 /* Кнопки .cc плеера (страница #playerContent + нижний #miniPlayer) — hover БЕЗ
    подложки: фон не рисуем, иконка лишь светлеет (--icon-fg → --text). Едино для
    страницы и бара, чтобы hover выглядел одинаково на любой поверхности. Активные
    тоглы (.cc.on) остаются акцентными. BigPicture/PiP правятся у себя.
-   Тут был rgba(255,255,255,.95) — расходился и с соседним правилом, и с
+   Тут был rgba(var(--ovl-rgb),.95) — расходился и с соседним правилом, и с
    собственным комментарием; вернули к --text. */
 .cc:hover {
   background: none;
@@ -271,17 +271,58 @@ body {
 #miniPlayer .cc.on {
   color: var(--accent);
 }
+/* И под курсором он тоже акцентный, а не белый: `#miniPlayer .cc:hover` выше и
+   в base.css идут с !important, поэтому перебить их можно только тем же
+   !important. Подсветка — brightness, как у `.cc.on:hover` в player.css. */
+#miniPlayer .cc.on:hover {
+  color: var(--accent) !important;
+  filter: brightness(1.15);
+}
 
 /* Детальный вид (артист/альбом/плейлист) — скроллбар скрыт полностью
    (scrollbar-width:none). */
 .sp-detail-view::-webkit-scrollbar { display: none; }
 
-/* Артист-карточки поиска — видимая hover-подсветка.
-   Legacy `.sp-artist-card:hover{background:var(--card)}`, но в bloom
-   --card == --block-color == --bg, поэтому подсветка была невидимой → тинт --hover.
-   Трек/альбом/плейлист-карточки фон НЕ получают — у них только play-бейдж
-   (.sp-tc-play на hover),. */
-.sp-artist-card:hover { background: var(--hover); }
+/* Артист-карточки поиска: подложки на hover больше нет (ни legacy --card, ни
+   тинт --hover) — вместо неё, как у треков/плейлистов/альбомов, тёмная плёнка
+   поверх круглой аватарки со стрелкой «открыть». */
+.sp-artist-card:hover { background: transparent; }
+/* Аватар — во всю ширину карточки (ширина = у трек-карточки, ряды совпадают),
+   подписи под ним: имя чуть мельче трек-названия, ниже — подписчики. */
+.sp-artist-grid { gap: 4px; }
+.sp-artist-card { width: 172px; padding: 0 0 12px; gap: 0; }
+/* 88% ширины карточки — аватар чуть уже обложки трека, но ряды по-прежнему
+   выровнены (ширина самой карточки не меняется). */
+.sp-ac-av { position: relative; width: 88%; height: auto; aspect-ratio: 1; }
+.sp-ac-name { font-size: 13px; margin-top: 8px; }
+.sp-ac-sub { margin-top: 1px; }
+.sp-artist-card .sp-tc-play { border-radius: 50%; }
+.sp-artist-card:hover .sp-tc-play { opacity: 1; }
+.sp-artist-card:hover .sp-tc-play-btn { transform: scale(1); }
+
+/* ── Наезд обложки при наведении ─────────────────────────────────────────
+   Тот же жест, что у «Любимых»/«Истории» на Главной (home.css .hqc-bg):
+   один только scale с плавным возвратом, без осветления.
+
+   Едет СОДЕРЖИМОЕ обложки (картинка / коллаж плейлиста / плейсхолдер), а не
+   карточка: плёнка со стрелкой, бейдж площадки и индикатор воспроизведения
+   остаются на месте, а overflow:hidden контейнера обрезает наезд.
+
+   transition висит на самих элементах (не на :hover) — иначе возврат после
+   увода курсора был бы мгновенным. will-change намеренно НЕ ставим: карточек
+   в сетках десятки, постоянные композитные слои дороже, чем их создание на
+   время анимации.
+
+   Ручка: --cov-zoom (по умолчанию 1.08, как у главной). */
+:is(.sp-tc-cover, .sp-ac-av, .hc-cover, .hpc-cover)
+  > *:not(.sp-tc-play, .hc-play-overlay, .hpc-play-overlay, .cov-badge, .trcov-loading, .tr-playing-overlay) {
+  transition: scale .5s cubic-bezier(.22, .61, .36, 1);
+}
+:is(.sp-track-card, .sp-am-track-card, .sp-artist-card, .home-card, .home-pl-card):hover
+  :is(.sp-tc-cover, .sp-ac-av, .hc-cover, .hpc-cover)
+  > *:not(.sp-tc-play, .hc-play-overlay, .hpc-play-overlay, .cov-badge, .trcov-loading, .tr-playing-overlay) {
+  scale: var(--cov-zoom, 1.08);
+}
 
 /* Недавнее (.sp-recent-item) — hover-подсветка. Legacy hover = var(--card),
    а в bloom --card == --bg → было невидимо. */
@@ -314,14 +355,11 @@ body {
 #bigPicOverlay .bp-title-row .bp-title-wrap { width: auto; min-width: 0; max-width: 100%; }
 #bigPicOverlay .bp-inner.bp-align-left .bp-title-row { justify-content: flex-start; }
 #bigPicOverlay .bp-inner.bp-align-right .bp-title-row { justify-content: flex-end; }
-#bigPicOverlay .bp-inner.bp-align-left .bp-artist,
-#bigPicOverlay .bp-inner.bp-align-left .bp-lyr-scroll .lyrics-line,
-#bigPicOverlay .bp-inner.bp-align-left .bp-lyr-scroll .lyrics-status { text-align: left; }
-#bigPicOverlay .bp-inner.bp-align-center .bp-lyr-scroll .lyrics-line,
-#bigPicOverlay .bp-inner.bp-align-center .bp-lyr-scroll .lyrics-status { text-align: center; }
-#bigPicOverlay .bp-inner.bp-align-right .bp-artist,
-#bigPicOverlay .bp-inner.bp-align-right .bp-lyr-scroll .lyrics-line,
-#bigPicOverlay .bp-inner.bp-align-right .bp-lyr-scroll .lyrics-status { text-align: right; }
+/* NB: текст песни из этих правил исключён — в фуллскрине он всегда прижат к
+   правому краю (см. .bp-lyr-scroll в big-picture.css). titleAlign продолжает
+   рулить только заголовком и артистом. */
+#bigPicOverlay .bp-inner.bp-align-left .bp-artist { text-align: left; }
+#bigPicOverlay .bp-inner.bp-align-right .bp-artist { text-align: right; }
 /* Чтобы лево/право реально сдвигали артиста — бокс на всю ширину (иначе
    align-items:center у .bp-info ужимает его до контента и центрирует). */
 #bigPicOverlay .bp-inner.bp-align-left .bp-artist,
@@ -349,7 +387,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, .9);
+  color: rgba(var(--ovl-rgb), .9);
   opacity: 0;
   pointer-events: none;
   transition: opacity .18s, transform .12s;

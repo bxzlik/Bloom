@@ -115,7 +115,7 @@ export const YandexSection = () => {
         )}
 
         {status && (
-          <div style={{ fontSize: 11.5, color: STATUS_COLOR[status.kind], marginTop: 10 }}>{status.text}</div>
+          <div style={{ fontSize: 12, color: STATUS_COLOR[status.kind], marginTop: 10 }}>{status.text}</div>
         )}
       </IntegrationCard>
     </div>

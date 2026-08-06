@@ -133,7 +133,9 @@ export const FONT_CATS: Record<FontCat, FontDef[]> = {
 }
 
 const GF_MAP: Record<string, string> = {
-  Monocraft: 'https://cdn.jsdelivr.net/gh/IdreesInc/Monocraft@main/fonts/Monocraft.ttf',
+  // Monocraft тут не нужен: он подключён @font-face'ом в root.css. Раньше здесь
+  // стояла ссылка на .ttf, которую ensureFontLoaded вставлял как
+  // <link rel="stylesheet"> — так шрифты не грузятся, запрос уходил впустую.
   Inter: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap',
   Roboto: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap',
   Nunito: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap',
@@ -187,6 +189,21 @@ const GF_MAP: Record<string, string> = {
   Silkscreen: 'https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap',
   VT323: 'https://fonts.googleapis.com/css2?family=VT323&display=swap',
   'Pixelify Sans': 'https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap',
+}
+
+/**
+ * Растровые (пиксельные) шрифты. У них глиф — сетка квадратных клеток, а не
+ * кривые, поэтому обычный режим рендера их портит: сглаживание размывает края
+ * клеток, поддельный жир размазывает штрих, дробный трекинг сдвигает клетки с
+ * пиксельной сетки. Под эти шрифты включается `html.pixel-font`
+ * (см. pixel-font.css), в котором всё перечисленное выключено.
+ */
+const PIXEL_FONTS = ['Monocraft', 'Press Start 2P', 'Silkscreen', 'VT323', 'Pixelify Sans']
+
+/** Пиксельный ли шрифт — по CSS-значению font-family (первое семейство). */
+export const isPixelFont = (fontValue: string): boolean => {
+  const m = fontValue?.match(/['"]([^'"]+)['"]/)
+  return !!m && PIXEL_FONTS.includes(m[1])
 }
 
 const loaded = new Set<string>()

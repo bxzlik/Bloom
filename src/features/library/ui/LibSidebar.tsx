@@ -16,6 +16,7 @@ import {
   useFavStore,
   useFollowStore,
   useUnifiedOrderStore,
+  usePlAutoStore,
   type LibFilter,
   type UnifiedItem,
 } from '../model'
@@ -93,14 +94,15 @@ const stopAnd = (fn: () => void) => (e: ReactMouseEvent) => {
 }
 
 // Иконка циклической кнопки-фильтра по текущему состоянию.
-const FILTER_ICON: Record<LibFilter, IconName> = {
+// Экспортируются — grid-обзор (LibGridOverview) переиспользует ту же кнопку.
+export const FILTER_ICON: Record<LibFilter, IconName> = {
   all: 'widget',
   playlists: 'queue',
   folders: 'folder',
   artists: 'user',
 }
 // Соответствие значения фильтра типу записи в объединённом списке.
-const FILTER_TYPE: Record<Exclude<LibFilter, 'all'>, 'playlist' | 'folder' | 'artist'> = {
+export const FILTER_TYPE: Record<Exclude<LibFilter, 'all'>, 'playlist' | 'folder' | 'artist'> = {
   playlists: 'playlist',
   folders: 'folder',
   artists: 'artist',
@@ -143,6 +145,10 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
   const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [sortMode, setSortMode] = useLibSidebarSort()
+  // Авто-обновление плейлистов: кнопка тулбара открывает боковую панель,
+  // подсветка (`sort-active`) — расписание включено.
+  const openAutoDrawer = usePlAutoStore((s) => s.openDrawer)
+  const autoEnabled = usePlAutoStore((s) => s.enabled)
 
   // Тост-фидбек импорта.
   const handleImported = (res: { playlists: number; tracks: number } | null) => {
@@ -311,6 +317,17 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
             }}
           >
             <Ico name="sort" width={16} height={16} />
+          </button>
+          <button
+            id="libAutoBtn"
+            className={cn(autoEnabled && 'sort-active')}
+            aria-label={t('lib.plauto.open')}
+            onClick={(e) => {
+              e.stopPropagation()
+              openAutoDrawer()
+            }}
+          >
+            <Ico name="refresh" width={16} height={16} />
           </button>
           <button
             ref={addBtnRef}

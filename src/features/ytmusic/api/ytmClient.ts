@@ -47,6 +47,8 @@ export interface YtmRawPlaylist {
   title: string
   cover: string
   ownerName: string
+  /** Число треков — только если YTM его дал (у альбомов и чужих плейлистов нет). */
+  trackCount?: number
 }
 
 export interface YtmRawSearch {
@@ -65,12 +67,31 @@ export interface YtmRawEntity {
   /** Только у артиста: «Популярные». */
   popularTracks: YtmRawTrack[]
   albums: YtmRawAlbum[]
+  /** Только у артиста: похожие исполнители («Fans might also like»). */
+  similarArtists: YtmRawArtist[]
+  /** Год выпуска (альбом). */
+  year: string
+  /** Аватар артиста/владельца из шапки (`straplineThumbnail`). */
+  ownerAvatar: string
+  /** Только у артиста: биография из шапки (пусто, если YTM её не даёт). */
+  description: string
+  /** Только у артиста: число подписчиков канала. */
+  subscribers: number
 }
 
 /* ── Контент ───────────────────────────────────────────────────────────── */
 
 export const ytmSearch = (query: string): Promise<YtmRawSearch> =>
   invoke<YtmRawSearch>('ytm_search', { query })
+
+/** Порция догрузки поиска (токен продолжения хранится в Rust). */
+export interface YtmRawSearchMore {
+  tracks: YtmRawTrack[]
+  hasMore: boolean
+}
+
+export const ytmSearchMore = (query: string): Promise<YtmRawSearchMore> =>
+  invoke<YtmRawSearchMore>('ytm_search_more', { query })
 
 export const ytmAlbum = (id: string): Promise<YtmRawEntity> =>
   invoke<YtmRawEntity>('ytm_album', { id })
@@ -84,6 +105,17 @@ export const ytmPlaylist = (id: string): Promise<YtmRawEntity> =>
 /** Один трек по videoId (для ре-резолва из «недавних»). */
 export const ytmTrack = (videoId: string): Promise<YtmRawTrack> =>
   invoke<YtmRawTrack>('ytm_track', { videoId })
+
+/** Что открывает ссылка YouTube/YouTube Music: вид сущности + её id. */
+export interface YtmRawResolved {
+  kind: 'track' | 'album' | 'playlist' | 'artist'
+  /** videoId (трек) либо browseId страницы. */
+  id: string
+}
+
+/** Разбор вставленной ссылки. Бросает, если ссылка не разобралась. */
+export const ytmResolve = (url: string): Promise<YtmRawResolved> =>
+  invoke<YtmRawResolved>('ytm_resolve', { url })
 
 /* ── Стрим ─────────────────────────────────────────────────────────────── */
 

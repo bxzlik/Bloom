@@ -93,8 +93,12 @@ export interface ScRawPlaylist {
   title: string
   artist: string
   artwork: string | null
+  /** Аватар владельца (`user.avatar_url`). */
+  artistAvatar: string | null
   trackCount: number
   duration: number
+  /** Год выпуска (release_date / created_at). */
+  year: string
   permalink?: string
 }
 
@@ -203,7 +207,9 @@ export interface ScPlaylistFull {
   title: string
   cover: string | null
   ownerName: string
+  ownerAvatar: string | null
   trackCount: number
+  year: string
 }
 /** Один трек по числовому SC-id; null при ошибке. */
 export const getTrackById = (id: number): Promise<ScRawTrack | null> =>
@@ -225,6 +231,10 @@ export const getArtistData = (
   artistName?: string,
 ): Promise<{ tracks: ScRawTrack[]; tracksNext: string | null; albums: ScRawPlaylist[]; userId: number }> =>
   scInvoke('sc_artist_data', { idOrUrl: String(idOrUrl), artistName: artistName ?? null })
+
+/** Похожие исполнители (`/users/{id}/relatedartists`); ошибки — пустой список. */
+export const getRelatedArtists = (idOrUrl: number | string): Promise<ScRawArtist[]> =>
+  scInvoke('sc_related_artists', { idOrUrl: String(idOrUrl) })
 
 /** Следующая страница треков артиста по курсору (`next_href`). */
 export const getArtistTracksPage = (

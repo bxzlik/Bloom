@@ -1,19 +1,50 @@
 /* ===== BIG PICTURE MODE ===== */
-#bigPicOverlay{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center}
-#bigPicOverlay.open{display:flex}
+/* overflow:hidden — из-за шторки: .bp-blur растянут scale(1.25) (а в дрейфе до
+   1.55), и пока оверлей едет, этот излишек размытой обложки вылезал светящимся
+   ореолом над его верхней кромкой. Попапы внутри (♥/+, ПКМ-меню) рендерятся
+   порталом в body, так что клип их не режет.
+   `clip` (с `hidden` как запасным) — не просто обрезка: в отличие от hidden он
+   НЕ делает оверлей контейнером прокрутки. Скрытый скролл-контейнер всё равно
+   можно прокрутить из кода, и любой scrollIntoView внутри (текст, очередь)
+   сдвигал бы оверлей целиком, обнажая окно под ним. */
+#bigPicOverlay{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;overflow:hidden;overflow:clip}
+/* Шторка: оверлей целиком (фон + блюр + контент) выезжает снизу. Без
+   `forwards` у входа — конечный кадр совпадает с обычным состоянием, а
+   оставленный fill-mode держал бы transform и ломал position:fixed внутри
+   (нижняя полоса прогресса) + изолировал backdrop-filter. У выхода forwards
+   нужен: элемент размонтируется сразу после анимации. */
+/* Вход и выход — одна длительность (.46s = BP_SHEET_OUT_MS) и ОДНА И ТА ЖЕ
+   кривая, а не зеркальная. Скорость движения мы читаем по его началу: у
+   (.22,1,.36,1) ~80% пути проходится за первые 40% времени, дальше мягкое
+   доседание. Зеркало (.64,0,.78,0) при той же длительности стартует почти с
+   нулевой скорости — и выход, формально равный входу, ощущался медленнее. */
+#bigPicOverlay.open{display:flex;animation:bpSheetIn .46s cubic-bezier(.22,1,.36,1)}
+#bigPicOverlay.open.bp-closing{animation:bpSheetOut .46s cubic-bezier(.22,1,.36,1) forwards;pointer-events:none}
 #bigPicOverlay .bp-bg{position:absolute;inset:0;background:#090909;z-index:0}
 #bigPicOverlay .bp-blur{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(70px) saturate(1.8) brightness(.75);transform:scale(1.25);opacity:.85;pointer-events:none;z-index:1;animation:bpBlurDrift 15s ease-in-out infinite}
 #bigPicOverlay .bp-blur.bp-frozen{animation-play-state:paused}
 #bigPicOverlay .bp-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,.02) 0%,rgba(0,0,0,.45) 100%);z-index:2;pointer-events:none}
-#bigPicOverlay .bp-titlebar{position:absolute;top:0;left:0;right:0;height:32px;z-index:4;cursor:default;-webkit-app-region:drag}
+/* Верхняя полоса-«тайтлбар» = зона перетаскивания окна. Тянет её ТОЛЬКО
+   `data-tauri-drag-region` (Tauri смотрит на target события) — без
+   `-webkit-app-region:drag`: тот собирает нативный регион по геометрии, и
+   перекрывающие кнопки из него не вычитаются (нужен явный no-drag). Верхние
+   кнопки висят на top:12 при высоте 33px → их верхние 20px попадали в drag-регион
+   и нажатие туда уезжало в перетаскивание окна вместо клика.
+   z-index — ниже .bp-inner (3), иначе полоса глушила бы шапку очереди/текста,
+   которая в этих режимах начинается на 24px от верха. */
+#bigPicOverlay .bp-titlebar{position:absolute;top:0;left:0;right:0;height:32px;z-index:2;cursor:default}
 #bigPicOverlay .bp-top-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:4;opacity:1;transition:opacity .25s ease,transform .25s ease}
-#bigPicOverlay .bp-top-actions.bp-chrome-hidden{opacity:0;transform:translateY(-8px);pointer-events:none}
+/* Выход из фуллскрина — слева сверху, отдельной группой. */
+#bigPicOverlay .bp-top-left{position:absolute;top:12px;left:12px;display:flex;gap:6px;z-index:4;opacity:1;transition:opacity .25s ease,transform .25s ease}
+#bigPicOverlay .bp-top-actions.bp-chrome-hidden,#bigPicOverlay .bp-top-left.bp-chrome-hidden{opacity:0;transform:translateY(-8px);pointer-events:none}
 /* Фон/блюр — как у бейджей (.preset-badge): плоская заливка + лёгкий blur(6px). */
-#bigPicOverlay .bp-top-btn{width:33px;height:33px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s,border-color .15s;outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
-#bigPicOverlay .bp-top-btn:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.18)}
+/* Иконка — непрозрачный нейтральный серый (полупрозрачный белый набирал бы
+   цвет размытой обложки под стеклом). */
+#bigPicOverlay .bp-top-btn{width:33px;height:33px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#9b9b9b;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s,border-color .15s;outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
+#bigPicOverlay .bp-top-btn:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.18);color:#e8e8e8}
 #bigPicOverlay .bp-top-btn:focus{outline:none}
 #bigPicOverlay .bp-top-btn:active{background:rgba(255,255,255,.16)}
-#bigPicOverlay .bp-top-btn.bp-lyr-active{color:var(--accent,#6c5ce7)}
+#bigPicOverlay .bp-top-btn.bp-lyr-active{color:#fff}
 #bigPicOverlay .bp-font-panel{position:absolute;top:53px;right:12px;z-index:4;background:linear-gradient(160deg,rgba(40,40,44,.45),rgba(16,16,18,.55));border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:8px;backdrop-filter:blur(34px) saturate(1.7);-webkit-backdrop-filter:blur(34px) saturate(1.7);box-shadow:0 18px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);display:flex;flex-direction:column;gap:4px;transform-origin:top right;animation:ctxIn .18s cubic-bezier(.22,1,.36,1)}
 .bp-panel-sep{height:1px;background:rgba(255,255,255,.09);margin:4px 6px}
 .bp-view{display:flex;flex-direction:column;gap:2px}
@@ -34,8 +65,20 @@
 .bp-font-off-btn{width:40px;height:36px;border:none;background:rgba(255,255,255,.06);color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;font-family:var(--font);outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;border-radius:10px}
 .bp-font-off-btn:hover{background:rgba(255,255,255,.12)}
 #bpOffsetVal{flex:1;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,.5);min-width:50px;background:transparent}
-#bigPicOverlay .bp-inner{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:24px;padding:32px;max-width:600px;width:100%;animation:bpIn .35s cubic-bezier(.22,1,.36,1) forwards}
-#bigPicOverlay .bp-cover{width:clamp(300px,52vmin,500px);height:clamp(300px,52vmin,500px);border-radius:20px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.07);flex-shrink:0;transition:box-shadow .6s ease,transform .08s ease;position:relative}
+/* --bp-cov — единый размер обложки (и ширина левой колонки) во всех режимах. */
+/* Вертикальный бюджет: `100vh - 280px` — резерв под подпись/транспорт/полосу,
+   иначе на низких окнах нижний блок налезал бы на прогресс. --bp-drop (сдвиг
+   обложки ниже центра) по той же причине тает к низким окнам и на ~600px
+   обнуляется; --bp-drop-max задаёт его потолок для режима. */
+#bigPicOverlay{--bp-cov:clamp(180px,min(60vmin,100vh - 280px),600px)}
+/* Содержимое только проявляется: вертикальное движение целиком отдано шторке
+   (bpSheetIn на #bigPicOverlay). Свой translate здесь был бы, во-первых, вторым
+   движением поверх первого, во-вторых — сбивал бы замеры FLIP левой колонки.
+   Никакого `forwards`: оставленный fill-mode держал композиторный слой и
+   изолировал backdrop — backdrop-filter у прогресс-бара внутри переставал
+   видеть фон окна. */
+#bigPicOverlay .bp-inner{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:24px;padding:32px;max-width:600px;width:100%;animation:bloom-fade-in .42s ease}
+#bigPicOverlay .bp-cover{width:var(--bp-cov);height:var(--bp-cov);border-radius:20px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.07);flex-shrink:0;transition:box-shadow .6s ease,transform .08s ease;position:relative}
 #bigPicOverlay .bp-cover img{width:100%;height:100%;object-fit:cover}
 #bigPicOverlay .bp-cover.bp-vinyl-mode{border-radius:50%;box-shadow:none;overflow:visible}
 #bigPicOverlay .bp-cover.bp-vinyl-mode img{border-radius:50%;clip-path:circle(50%);transform-origin:center center}
@@ -43,6 +86,17 @@
 #bigPicOverlay .bp-cover.bp-vinyl-spin img{animation:vinyl-spin 10s linear infinite}
 #bigPicOverlay .bp-cover.bp-vinyl-paused img{animation-play-state:paused}
 #bigPicOverlay .bp-ctrl .cc:hover{color:#fff}
+/* ...но активный тогл (shuffle/repeat) в белый не уходит — он и под курсором
+   акцентный, как на странице плеера, лишь чуть светлее. */
+#bigPicOverlay .bp-ctrl .cc.on:hover{color:var(--accent);filter:brightness(1.15)}
+/* ♥/+ поверх обложки — как в плеере (.cov-fav/.cov-add), но со своими классами:
+   правило `.app.cov-btns-in-bar .cov-fav{display:none}` фуллскрина не касается. */
+#bigPicOverlay .bp-cov-fav,#bigPicOverlay .bp-cov-add{position:absolute;bottom:10px;width:43px;height:43px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s,opacity .25s ease,transform .25s ease;z-index:4;outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
+#bigPicOverlay .bp-cov-fav{left:10px;border-radius:50%;color:#e03030}
+#bigPicOverlay .bp-cov-fav.off{color:rgba(255,255,255,.85)}
+#bigPicOverlay .bp-cov-add{right:10px;border-radius:calc(var(--radius) * 0.7);color:rgba(255,255,255,.85)}
+#bigPicOverlay .bp-cov-fav:hover,#bigPicOverlay .bp-cov-add:hover{background:rgba(255,255,255,.14);color:#fff}
+#bigPicOverlay .bp-cov-fav:hover{color:#e03030}
 #bigPicOverlay .bp-cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:.12;background:rgba(255,255,255,.05)}
 #bigPicOverlay .bp-info{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
 #bigPicOverlay .bp-title-wrap{overflow:hidden;width:100%;max-width:100%;position:relative;text-align:center}
@@ -52,36 +106,126 @@
 #bigPicOverlay .bp-title{font-size:23px;font-weight:800;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 #bigPicOverlay .bp-artist{font-size:14px;color:rgba(255,255,255,.5);text-align:center}
 #bigPicOverlay .bp-progress{width:100%;display:flex;flex-direction:column;gap:6px}
-#bigPicOverlay .bp-bar-wrap{position:relative;height:5px;background:rgba(255,255,255,.18);border-radius:99px;cursor:pointer}
-#bigPicOverlay .bp-bar-fill{position:absolute;left:0;top:0;height:100%;background:#fff;border-radius:99px;pointer-events:none;transition:width .08s linear}
+/* Материал полосы в фуллскрине — один на ВСЕ типы слайдера, отсюда токены.
+   Заливка не белая: почти прозрачная подложка + backdrop-filter, который
+   осветляет фон под полосой. Цвет пройденной части берётся из фона (размытой
+   обложки), белым остаётся только лёгкая подсветка, чтобы полоса не исчезала
+   на совсем чёрных обложках. */
+#bigPicOverlay{--bp-track:rgba(255,255,255,.07);--bp-fill:rgba(255,255,255,.10);--bp-fill-fx:brightness(1.9) saturate(1.35);--bp-thumb:var(--bp-fill);--bp-thumb-fx:blur(4px) brightness(1.9) saturate(1.35)}
+#bigPicOverlay .bp-bar-wrap{position:relative;height:5px;background:var(--bp-track);border-radius:99px;cursor:pointer}
+#bigPicOverlay .bp-bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--bp-fill);backdrop-filter:var(--bp-fill-fx);-webkit-backdrop-filter:var(--bp-fill-fx);border-radius:99px;pointer-events:none;transition:width .08s linear}
+/* Полоса в фуллскрине — приглушённо-белая, а не акцентная. Селекторы нарочно
+   специфичнее, чем `body.slider-* #bigPicOverlay …` из sliders-telemetry.css:
+   там варианты слайдера красят заливку и ползунок в var(--accent), а дорожку
+   iOS-сегмента — в свою альфу .18. */
+html body #bigPicOverlay .bp-progress .bp-bar-fill{background:var(--bp-fill)!important;backdrop-filter:var(--bp-fill-fx);-webkit-backdrop-filter:var(--bp-fill-fx)}
+/* Ползунок «Тонкого»/iOS — тот же материал, что и заливка, на которой он стоит.
+   Был глухой rgba(255,255,255,.6): вдвое ярче полосы, читался как отдельный
+   светлый элемент поверх тусклой дорожки.
+   Полоса проходит НАСКВОЗЬ ползунка (дорожка — фон .bp-bar-wrap во всю ширину),
+   а материал полупрозрачный, поэтому через кружок видна линия — и своим
+   brightness он её же и подсвечивает. Лечится blur в --bp-thumb-fx: 1.5px-линия
+   под 10px кружком размывается в ровный тон. Ручки — --bp-thumb/--bp-thumb-fx. */
+html body #bigPicOverlay .bp-progress .bp-bar-thumb{background:var(--bp-thumb)!important;backdrop-filter:var(--bp-thumb-fx);-webkit-backdrop-filter:var(--bp-thumb-fx)}
+/* Перемотка курсором — без сглаживания ширины, иначе полоса «резиновая» и
+   отстаёт от ползунка (класс вешает BpProgress на время drag). */
+#bigPicOverlay .bp-bar-wrap.bp-seeking .bp-bar-fill{transition:none}
+/* iOS: незаполненный остаток дорожки рисует ::before — на нём своя альфа. */
+body.slider-ios #bigPicOverlay .bp-bar-wrap::before{background:var(--bp-track)!important}
 #bigPicOverlay .bp-bar-inp{position:absolute;inset:-8px 0;opacity:0;cursor:pointer;width:100%;-webkit-appearance:none}
 #bigPicOverlay .bp-times{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.35)}
-#bigPicOverlay .bp-ctrl{display:flex;align-items:center;justify-content:center;gap:10px}
+/* Вид «только обложка»: полоса внизу окна во всю ширину (отступ 24px),
+   времена всплывают над ней по наведению. */
+#bigPicOverlay .bp-progress-bottom{position:fixed;left:24px;right:24px;bottom:24px;width:auto;z-index:4;animation:bloom-fade-in .32s ease}
+#bigPicOverlay .bp-progress-bottom .bp-times{position:absolute;bottom:calc(100% + 8px);left:0;right:0;opacity:0;transition:opacity .18s ease;pointer-events:none}
+#bigPicOverlay .bp-progress-bottom:hover .bp-times{opacity:1}
+/* Транспорт — крупные кнопки во всех режимах (по референсу). */
+#bigPicOverlay .bp-ctrl{display:flex;align-items:center;justify-content:center;gap:4px;transition:opacity .25s ease,transform .25s ease}
+#bigPicOverlay .bp-ctrl .cc{width:46px;height:46px}
+/* Бейджи тоглов («умная» перемешка, «повтор одного») — по умолчанию они в углу
+   бокса кнопки, а он тут 46px при иконке 22px, т.е. бейдж отлетал бы от глифа
+   на 12px. Сажаем его на угол самой иконки: (46-22)/2 - 13/2 ≈ 5px.
+   На странице плеера тот же расчёт даёт 4px (задан инлайном в PagePlayer). */
+#bigPicOverlay .bp-ctrl .cc-badge{top:5px;right:5px}
+#bigPicOverlay .bp-ctrl .cc-play{width:52px;height:52px}
+/* Курсор вне окна — ♥/+ на обложке и транспорт гаснут, как верхние кнопки. */
+#bigPicOverlay .bp-inner.bp-chrome-out .bp-ctrl{opacity:0;transform:translateY(8px);pointer-events:none}
+#bigPicOverlay .bp-inner.bp-chrome-out .bp-cov-fav,#bigPicOverlay .bp-inner.bp-chrome-out .bp-cov-add{opacity:0;transform:translateY(6px);pointer-events:none}
 #bigPicOverlay .bp-btn{width:38px;height:38px;background:none;border:none;color:rgba(255,255,255,.65);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 #bigPicOverlay .bp-btn:hover{color:#fff;transform:scale(1.15)}
 #bigPicOverlay .bp-play{width:54px;height:54px;border-radius:50%;background:#fff;border:none;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
 #bigPicOverlay .bp-play:hover{background:rgba(255,255,255,.88)}
+/* Вид «только обложка» — крупные название/артист (в режимах с панелями они
+   мельче, как на референсе). Название/артист режутся по ширине обложки. */
+/* Нижний padding = резерв под фиксированную полосу прогресса у края окна. */
+#bigPicOverlay .bp-inner.bp-cov-mode{max-width:720px;height:100vh;padding:12px 32px 64px}
+#bigPicOverlay .bp-inner.bp-cov-mode .bp-left{width:var(--bp-cov)}
+#bigPicOverlay .bp-inner.bp-cov-mode .bp-info{gap:6px}
+#bigPicOverlay .bp-inner.bp-cov-mode .bp-title{font-size:28px}
+#bigPicOverlay .bp-inner.bp-cov-mode .bp-artist{font-size:18px}
+/* Режимы с панелями: времена — по краям полосы, а не под ней (референс). */
+#bigPicOverlay .bp-inner:not(.bp-cov-mode) .bp-progress{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:88%;margin:0 auto}
+#bigPicOverlay .bp-inner:not(.bp-cov-mode) .bp-progress .bp-bar-wrap{grid-column:2;grid-row:1}
+#bigPicOverlay .bp-inner:not(.bp-cov-mode) .bp-times{display:contents}
+#bigPicOverlay .bp-inner:not(.bp-cov-mode) .bp-times #bpCurt{grid-column:1;grid-row:1}
+#bigPicOverlay .bp-inner:not(.bp-cov-mode) .bp-times #bpDurt{grid-column:3;grid-row:1}
 /* ===== BIG PICTURE LYRICS ===== */
-#bigPicOverlay .bp-left{display:flex;flex-direction:column;align-items:center;gap:24px;flex-shrink:0;width:100%}
-#bigPicOverlay .bp-inner.bp-lyr-mode{flex-direction:row;align-items:stretch;max-width:1100px;gap:48px;height:calc(100vh - 64px)}
-#bigPicOverlay .bp-inner.bp-lyr-mode .bp-left{width:clamp(300px,52vmin,500px);flex-shrink:0;justify-content:center}
+/* Левая колонка — грид из трёх строк: пустой спейсер (::before), обложка,
+   всё остальное. Обе `1fr`-строки равны → обложка стоит ровно по центру высоты
+   окна в любом режиме, а подпись/прогресс/транспорт висят под ней. Если нижний
+   блок не влезает в свою половину — строка растёт и обложка уезжает вверх.
+   --bp-drop/--bp-rise — насколько колонка опущена ниже / поднята выше точного
+   центра (padding съедает высоту грида, поэтому сдвиг = половина padding). Оба
+   тают к низким окнам и на ~600px обнуляются — там лишних пикселей нет.
+   ВАЖНО: clamp() считается на том элементе, где объявлен, поэтому и потолки
+   (--bp-drop-max/--bp-rise-max), и сами переменные живут на .bp-left — иначе
+   переопределение в режимах с панелями молча не сработает. */
+#bigPicOverlay .bp-left{display:grid;grid-template-rows:1fr auto 1fr;justify-items:center;align-items:start;gap:20px;flex-shrink:0;width:100%;height:100%;--bp-drop:clamp(0px,(100vh - 600px) / 8,var(--bp-drop-max,28px));--bp-rise:clamp(0px,(100vh - 600px) / 8,var(--bp-rise-max,0px));padding-top:calc(var(--bp-drop) * 2);padding-bottom:calc(var(--bp-rise) * 2)}
+#bigPicOverlay .bp-left::before{content:''}
+#bigPicOverlay .bp-below{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;min-width:0}
+/* Обложка прижата к левому краю окна, текст занимает всё остальное. */
+#bigPicOverlay .bp-inner.bp-lyr-mode{flex-direction:row;align-items:stretch;max-width:none;gap:48px;padding:24px 48px;height:100vh}
+/* С панелями нижний блок выше (есть прогресс) — держим колонку чуть повыше,
+   чем в виде «только обложка». */
+#bigPicOverlay .bp-inner.bp-lyr-mode .bp-left{width:var(--bp-cov);flex-shrink:0;--bp-drop-max:0px;--bp-rise-max:24px}
 /* Вид «Текст» — прячем обложку, текст на всю ширину по центру. */
 #bigPicOverlay .bp-inner.bp-lv-text{justify-content:center}
 #bigPicOverlay .bp-inner.bp-lv-text .bp-left{display:none}
 #bigPicOverlay .bp-inner.bp-lv-text .bp-lyr-wrap{flex:0 1 760px;max-width:760px}
 #bigPicOverlay .bp-lyr-wrap{display:none;flex-direction:column;flex:1;min-width:0;min-height:0;overflow:hidden}
-#bigPicOverlay .bp-lyr-wrap.bp-lyr-open{display:flex}
+#bigPicOverlay .bp-lyr-wrap.bp-lyr-open{display:flex;animation:bpPanelIn .38s cubic-bezier(.22,1,.36,1)}
 #bigPicOverlay .bp-q-wrap{display:none;flex-direction:column;flex:1;min-width:0;min-height:0;overflow:hidden}
-#bigPicOverlay .bp-q-wrap.bp-q-open{display:flex}
+#bigPicOverlay .bp-q-wrap.bp-q-open{display:flex;animation:bpPanelIn .38s cubic-bezier(.22,1,.36,1)}
+/* Закрытие панели: класс висит BP_PANEL_OUT_MS (BigPicture.tsx), пока панель
+   уезжает вправо, и только потом React её размонтирует. `forwards` — чтобы в
+   последнем кадре она не мигнула обратно в непрозрачную. Правила ниже
+   `.bp-*-open` по порядку при равной специфичности → перебивают вход. */
+#bigPicOverlay .bp-lyr-wrap.bp-panel-out,#bigPicOverlay .bp-q-wrap.bp-panel-out{animation:bpPanelOut .24s cubic-bezier(.4,0,1,1) forwards;pointer-events:none}
+/* Левая колонка при смене режима переезжает из центра к краю окна не прыжком, а
+   FLIP-сдвигом — inline transform/transition ставит BigPicture.tsx. */
 #bigPicOverlay .bp-q-header{flex-shrink:0;padding:0 4px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 #bigPicOverlay .bp-q-list{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none}
 #bigPicOverlay .bp-q-list::-webkit-scrollbar{display:none;width:0;height:0}
-#bigPicOverlay .bp-inner.bp-q-mode{flex-direction:row;align-items:stretch;max-width:1100px;gap:48px;height:calc(100vh - 64px)}
-#bigPicOverlay .bp-inner.bp-q-mode .bp-left{width:clamp(300px,52vmin,500px);flex-shrink:0;justify-content:center}
-#bigPicOverlay .bp-lyr-scroll{flex:1;min-height:0;overflow-y:auto;padding:40vh 24px 40vh;scrollbar-width:none}
+#bigPicOverlay .bp-inner.bp-q-mode{flex-direction:row;align-items:stretch;max-width:none;gap:48px;padding:24px 48px;height:100vh}
+#bigPicOverlay .bp-inner.bp-q-mode .bp-left{width:var(--bp-cov);flex-shrink:0;--bp-drop-max:0px;--bp-rise-max:24px}
+/* Правая колонка не растягивается на всю ширь монитора — колонка по центру
+   свободного места (у текста и очереди свои максимумы). */
+#bigPicOverlay .bp-q-wrap>*{width:100%;max-width:860px;margin:0 auto}
+/* Строки текста всегда выровнены по левому краю — независимо от настройки
+   titleAlign; сама колонка стоит по центру свободного места. */
+/* Отступы сверху/снизу — ровно половина высоты окна: меньше (было 40vh) не
+   хватало, чтобы вывести в центр первую и последнюю строки, и контейнер
+   упирался в конец прокрутки, не доехав. */
+#bigPicOverlay .bp-lyr-scroll{flex:1;min-height:0;overflow-y:auto;padding:50vh 24px 50vh;scrollbar-width:none;width:100%;max-width:860px;align-self:center}
 #bigPicOverlay .bp-lyr-scroll::-webkit-scrollbar{display:none}
-#bigPicOverlay .bp-lyr-scroll .lyrics-line{font-size:var(--bp-lyr-fs,36px);line-height:1.55;color:rgba(255,255,255,.3);margin:0;padding:4px 0;cursor:pointer;transition:color .3s;user-select:text;text-align:left}
+#bigPicOverlay .bp-lyr-scroll .lyrics-line{font-size:var(--bp-lyr-fs,36px);line-height:1.35;color:rgba(255,255,255,.3);margin:0;padding:22px 0;cursor:pointer;transition:color .3s;user-select:text;text-align:left}
 #bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-past{color:rgba(255,255,255,.22)}
+/* Точки-интро: крупнее, чем в маленьких панелях, и в цветах фуллскрина.
+   Выравнивание — по левому краю, как строки выше (база в lyrics.css центрует). */
+#bigPicOverlay .bp-lyr-scroll{--lyr-dot:13px}
+#bigPicOverlay .bp-lyr-scroll .lyrics-intro{padding:14px 0;justify-content:flex-start}
+#bigPicOverlay .bp-lyr-scroll .lyrics-intro.lyr-active{color:#fff}
+#bigPicOverlay .bp-lyr-scroll .lyrics-intro.lyr-past{color:rgba(255,255,255,.22)}
 #bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-upcoming{color:rgba(255,255,255,.4)}
 #bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-active{color:#fff;font-size:var(--bp-lyr-fs-active,46px);font-weight:700;cursor:default}
 #bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.5);font-size:var(--bp-lyr-fs,36px)}

@@ -6,16 +6,16 @@
 .dups-inline-info strong{color:var(--text);font-weight:800}
 .dups-inline-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .dups-close{width:28px;height:28px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
-.dups-close:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.dups-close:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
 .dups-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px 0;color:var(--muted)}
-.dups-empty-icon{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center}
+.dups-empty-icon{width:48px;height:48px;border-radius:50%;background:rgba(var(--ovl-rgb),.04);display:flex;align-items:center;justify-content:center}
 .dups-group{background:var(--card-solid,var(--card));border:1px solid var(--border);border-radius:calc(var(--radius)*.75);overflow:hidden}
 .dups-group-head{padding:9px 12px;background:var(--sni-hover);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .dups-group-label{font-size:11px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:5px}
 .dups-group-badge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;background:rgba(224,48,48,.15);color:#e03030;letter-spacing:.3px}
-.dups-del-btn{padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:700;background:rgba(224,48,48,.12);border:1px solid rgba(224,48,48,.3);color:#e03030;cursor:pointer;transition:.15s;font-family:var(--font)}
+.dups-del-btn{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(224,48,48,.12);border:1px solid rgba(224,48,48,.3);color:#e03030;cursor:pointer;transition:.15s;font-family:var(--font)}
 .dups-del-btn:hover{background:rgba(224,48,48,.22)}
-.dups-track{display:flex;align-items:center;gap:9px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:.12s;position:relative}
+.dups-track{display:flex;align-items:center;gap:9px;padding:7px 12px;border-bottom:1px solid rgba(var(--ovl-rgb),.04);cursor:pointer;transition:.12s;position:relative}
 .dups-track:last-child{border-bottom:none}
 .dups-track:hover{background:var(--sni-hover)}
 .dups-track.keep{background:rgba(var(--accent-rgb),.06)}
@@ -24,15 +24,15 @@
 .dups-track-cov img{width:100%;height:100%;object-fit:cover}
 .dups-track-info{flex:1;min-width:0}
 .dups-track-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dups-track-artist{font-size:10.5px;color:var(--text2);margin-top:1px}
-.dups-track-dur{font-size:10.5px;color:var(--muted);flex-shrink:0;width:34px;text-align:right}
+.dups-track-artist{font-size:11px;color:var(--text2);margin-top:1px}
+.dups-track-dur{font-size:11px;color:var(--muted);flex-shrink:0;width:34px;text-align:right}
 /* Бейдж «оставить» у лучшего трека группы. */
 .dups-keep-badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(var(--accent-rgb),.16);color:var(--accent);letter-spacing:.3px;flex-shrink:0;text-transform:uppercase}
 /* Кнопка удаления одного дубля (на hover ряда). */
 .dups-track-del{width:26px;height:26px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0;opacity:0}
 .dups-track:hover .dups-track-del{opacity:1}
 .dups-track-del:hover{background:rgba(224,48,48,.14);color:#e03030}
-.dups-delete-all{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:calc(var(--radius)*.6);font-size:11.5px;font-weight:700;background:rgba(224,48,48,.12);border:1px solid rgba(224,48,48,.3);color:#e03030;cursor:pointer;transition:.15s;font-family:var(--font);white-space:nowrap}
+.dups-delete-all{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:calc(var(--radius)*.6);font-size:12px;font-weight:700;background:rgba(224,48,48,.12);border:1px solid rgba(224,48,48,.3);color:#e03030;cursor:pointer;transition:.15s;font-family:var(--font);white-space:nowrap}
 .dups-delete-all:hover{background:rgba(224,48,48,.22)}
 
 /* ===== SOUNDCLOUD MODAL ===== */
@@ -44,7 +44,7 @@
 .sc-head-title{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800}
 .sc-head-logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#ff7700,#ff3300);display:flex;align-items:center;justify-content:center;flex-shrink:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='12' viewBox='0 0 40 28'%3E%3Crect x='2' y='18' width='2.5' height='7' rx='1.25' fill='white'/%3E%3Crect x='6' y='15' width='2.5' height='10' rx='1.25' fill='white'/%3E%3Crect x='10' y='13' width='2.5' height='12' rx='1.25' fill='white'/%3E%3Crect x='14' y='12' width='2.5' height='13' rx='1.25' fill='white'/%3E%3Crect x='18' y='13' width='2.5' height='12' rx='1.25' fill='white'/%3E%3Cpath d='M23 11a7 7 0 00-3.5.94V25h14.5a5.5 5.5 0 000-11 5.5 5.5 0 00-.28-.01A7 7 0 0023 11z' fill='white'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center}
 .sc-close{width:28px;height:28px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
-.sc-close:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.sc-close:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
 .sc-tabs{display:flex;gap:2px;padding:10px 14px 0;flex-shrink:0;border-bottom:1px solid var(--border)}
 .sc-tab{padding:7px 14px;border-radius:calc(var(--radius)*.55) calc(var(--radius)*.55) 0 0;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);border:none;background:none;transition:.15s;font-family:var(--font);border-bottom:2px solid transparent;margin-bottom:-1px}
 .sc-tab:hover{color:var(--text)}
@@ -53,7 +53,7 @@
 .sc-search-wrap{padding:14px 16px 10px;flex-shrink:0;display:flex;gap:8px}
 .sc-search-type{display:flex;gap:4px;padding:0 12px 8px;flex-shrink:0}
 .sc-inp{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:calc(var(--radius)*.6);color:var(--text);padding:8px 12px;font-size:13px;outline:none;font-family:var(--font);transition:.15s}
-.sc-inp:focus{border-color:var(--accent)}
+.sc-inp:focus{border-color:var(--border-focus)}
 .sc-btn{padding:8px 16px;border-radius:calc(var(--radius)*.6);background:var(--accent);color:var(--accent-text);border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap;flex-shrink:0}
 .sc-btn:hover{opacity:.85}
 .sc-btn:disabled{opacity:.45;cursor:not-allowed}
@@ -91,12 +91,12 @@
 .sc-load-more-card{width:172px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:calc(var(--radius)*.8);background:var(--card);border:1.5px dashed var(--border);color:var(--text2);font-size:12px;font-family:var(--font);cursor:pointer;transition:.15s;padding:12px 8px}
 .sc-load-more-card:hover{background:var(--hover);color:var(--text);border-color:var(--text2)}
 .sc-load-more-card:disabled{opacity:.5;cursor:default}
-.sc-status{padding:20px;text-align:center;font-size:12.5px;color:var(--text2)}
+.sc-status{padding:20px;text-align:center;font-size:13px;color:var(--text2)}
 .sc-status.error{color:#e03030}
-.sc-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:bloom-spin .7s linear infinite;margin:0 auto 8px}
+.sc-spinner{width:20px;height:20px;border:2px solid rgba(var(--ovl-rgb),.1);border-top-color:var(--accent);border-radius:50%;animation:bloom-spin .7s linear infinite;margin:0 auto 8px}
 .sc-uni-section{margin-top:16px}
 .sc-uni-section:first-child{margin-top:0}
-.sc-uni-more{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:10.5px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font);margin:4px 8px 6px}
+.sc-uni-more{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font);margin:4px 8px 6px}
 .sc-uni-more:hover{background:var(--hover);color:var(--text)}
 /* ── Search result grids ── */
 .sp-track-grid{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
@@ -142,7 +142,7 @@
 .sc-inp-wrap{position:relative;flex:1;display:flex}
 .sc-inp-wrap .sc-inp{flex:1;padding-right:30px}
 .sc-inp-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);display:none;align-items:center;justify-content:center;padding:2px;transition:.15s;border-radius:50%}
-.sc-inp-clear:hover{color:var(--text);background:rgba(255,255,255,.08)}
+.sc-inp-clear:hover{color:var(--text);background:rgba(var(--ovl-rgb),.08)}
 .sc-inp-clear.visible{display:flex}
 .sc-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;background:rgba(255,85,0,.15);border:1px solid rgba(255,85,0,.3);color:#ff5500;font-size:10px;font-weight:700;letter-spacing:.3px;flex-shrink:0}
 
@@ -168,9 +168,15 @@ body.titlebar-autohide .tb-edge-trigger{display:block;position:fixed;top:0;left:
 body.titlebar-autohide #winTitlebar{margin-top:-32px;transition:margin-top .22s ease}
 body.titlebar-autohide .tb-edge-trigger:hover ~ #winTitlebar,
 body.titlebar-autohide #winTitlebar:hover{margin-top:0}
+/* ===== ФОН ПАНЕЛИ ОКНА (настройка «Фон панели») =====
+   По умолчанию тайтлбар прозрачный и сливается с фоном приложения/обложкой.
+   С классом `titlebar-bg` он получает собственную плашку цвета блоков и
+   хайрлайн снизу — панель читается как отдельная полоса. Стекло/прозрачность
+   перебивают фон в transparency.css (тайтлбар там — внешний контейнер). */
+body.titlebar-bg #winTitlebar{background:var(--block-color);box-shadow:inset 0 -1px 0 var(--ovl-line)}
 .win-icon{width:16px;height:16px;flex-shrink:0;pointer-events:none;background-color:currentColor;-webkit-mask-image:url('/logo.png');mask-image:url('/logo.png');-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;color:var(--text2)}
 .win-title{font-size:12px;font-weight:600;color:var(--text2);flex:0 0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.win-ver{font-size:10.5px;font-weight:600;color:var(--text2);opacity:.55;letter-spacing:.3px;flex-shrink:0;pointer-events:none;margin-left:-2px}
+.win-ver{font-size:11px;font-weight:600;color:var(--text2);opacity:.55;letter-spacing:.3px;flex-shrink:0;pointer-events:none;margin-left:-2px}
 #winTitleCenter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;pointer-events:none;white-space:nowrap}
 #winTitleCenter .wtc-icon{width:13px;height:13px;flex-shrink:0;opacity:.7}
 #winTitleCenter .wtc-label{font-size:12px;font-weight:600;color:var(--text2)}
@@ -178,8 +184,7 @@ body.titlebar-autohide #winTitlebar:hover{margin-top:0}
 .win-btn{width:32px;height:32px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
 /* Ховер по всему ряду одинаковый: без плашки, только подсветка иконки. */
 .win-btn:hover{background:none;color:var(--text)}
-/* Колокольчик/пин — не оконные, но ширина та же 32px: в Dotify весь блок идёт
-   ровным шагом 32px без «рваных» промежутков. */
+/* Колокольчик/пин — не оконные, но ширина та же 32px*/
 .win-bell,.win-pin{width:32px}
 .win-pin.on{color:var(--text)}
 /* Закрытие — тот же «безфоновый» ховер, но краснеет сама иконка. */
@@ -193,7 +198,7 @@ body.titlebar-autohide #winTitlebar:hover{margin-top:0}
 .drpc-main-card.active .drpc-main-icon{background:rgba(88,101,242,.22);color:#7289da}
 .drpc-main-info{flex:1;min-width:0}
 .drpc-main-title{font-size:14px;font-weight:700;color:var(--text)}
-.drpc-main-sub{font-size:11.5px;color:var(--text2);margin-top:3px}
+.drpc-main-sub{font-size:12px;color:var(--text2);margin-top:3px}
 .drpc-on-chip{font-size:10px;font-weight:800;letter-spacing:.8px;padding:4px 10px;border-radius:20px;background:rgba(88,101,242,.15);color:#5865f2;border:1px solid rgba(88,101,242,.3);flex-shrink:0;transition:.2s}
 .drpc-main-card:not(.active) .drpc-on-chip{background:rgba(128,128,128,.1);color:var(--muted);border-color:var(--border)}
 .drpc-feats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 0}

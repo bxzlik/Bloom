@@ -37,8 +37,7 @@ pub fn apply_dwm(hwnd: HWND) {
     }
 }
 
-/// Устанавливает AppUserModelID процесса для группировки в панели задач
-/// и корректной работы Jump List.
+/// Устанавливает AppUserModelID процесса для группировки окон в панели задач.
 pub fn set_app_user_model_id() {
     let id = HSTRING::from(APP_USER_MODEL_ID);
     unsafe {

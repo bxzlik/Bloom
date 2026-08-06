@@ -6,8 +6,8 @@
 
 **Музыка из всех источников в одном плеере.**
 
-Десктоп-плеер: Локальная библиотека, Yandex Music, SoundCloud,
-YouTube Music и Spotify в одном окне
+Десктоп-плеер: Локальная библиотека, Yandex Music, SoundCloud
+и YouTube Music в одном окне
 
 [**🌐 Сайт**](https://bloom-site-x.vercel.app/) · [**📦 Релизы**](https://github.com/bxzlik/Bloom/releases)
 
@@ -22,7 +22,6 @@ YouTube Music и Spotify в одном окне
 | 🟠 **SoundCloud** | Нативное воспроизведение |
 | 🟡 **Yandex Music** | Нативное воспроизведение |
 | 🔴 **YouTube Music** | Поиск и метаданные, воспроизведение через мост в SoundCloud |
-| 🟢 **Spotify** | Поиск и метаданные, воспроизведение через мост в SoundCloud |
 
 ## 🚀 Разработка
 

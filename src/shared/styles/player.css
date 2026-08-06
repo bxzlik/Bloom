@@ -8,8 +8,8 @@
    .sidebar и .main: бар стоит в общем ряду блоков и должен читаться так же.
    В плавающем он висит поверх контента отдельной плашкой, и там кромка считается
    от --bg — чуть светлее фона приложения, чтобы плашка от него отделялась. */
-#miniPlayer{border:1px solid rgba(255,255,255,var(--wb))}
-.app.mp-floating #miniPlayer{border-color:color-mix(in srgb, var(--bg) 97%, #fff)}
+#miniPlayer{border:1px solid var(--ovl-line)}
+.app.mp-floating #miniPlayer{border-color:color-mix(in srgb, var(--bg) 97%, var(--text))}
 
 /* ===== PLAYERBAR POSITION: TOP ===== */
 .app.playerbar-top .main-wrap{flex-direction:column-reverse}
@@ -67,7 +67,7 @@
 /* Бар прижат к краю окна. Скругление и внешние кромки снимаются: на самом краю
    от них остаётся видимый обрубок рамки. (mp-flush несовместим с mp-compact.) */
 .app.mp-full.mp-flush #miniPlayer{left:0;right:0;bottom:0;border-radius:0!important;border-left:none;border-right:none;border-bottom:none}
-.app.mp-full.mp-flush.playerbar-top #miniPlayer{bottom:auto;top:0;border-top:none;border-bottom:1px solid rgba(255,255,255,var(--wb))}
+.app.mp-full.mp-flush.playerbar-top #miniPlayer{bottom:auto;top:0;border-top:none;border-bottom:1px solid var(--ovl-line)}
 
 /* ===== PLAYERBAR: COMPACT (по центру, ДОЛЯ ширины окна) — bottom/top =====
    Ширина бара — MP_COMPACT_W из PlayerBar, приезжает в --mp-fw. Раньше считалась
@@ -128,19 +128,19 @@
 @keyframes page-in{from{opacity:.55}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.page.active{animation:none}}
 #page-lib{flex-direction:row;gap:0;padding:0}
-#bloom-loading{position:fixed;inset:0;z-index:9999;background:#0f0f0f;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;transition:opacity .35s}
+#bloom-loading{position:fixed;inset:0;z-index:9999;background:var(--bg,#0f0f0f);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;transition:opacity .35s}
 #bloom-loading.fade{opacity:0;pointer-events:none}
-.bloom-logo-spin{width:32px;height:32px;border:2px solid rgba(255,255,255,.07);border-top-color:var(--accent,#888);border-radius:50%;animation:bloom-spin .75s linear infinite}
-#bloom-loading p{font-size:11px;color:rgba(255,255,255,.28);letter-spacing:.05em;margin:0}
+.bloom-logo-spin{width:32px;height:32px;border:2px solid rgba(var(--ovl-rgb),.07);border-top-color:var(--accent,#888);border-radius:50%;animation:bloom-spin .75s linear infinite}
+#bloom-loading p{font-size:11px;color:rgba(var(--ovl-rgb),.28);letter-spacing:.05em;margin:0}
 .player-section{display:flex;padding:16px 24px 16px 16px;gap:24px;flex-shrink:0;align-items:stretch}
 .ps-cover{width:auto;height:100%;aspect-ratio:1/1;min-width:120px;max-width:min(45vh,380px);border-radius:var(--radius);background:var(--card);overflow:hidden;flex-shrink:0;position:relative;box-shadow:none;transition:box-shadow .6s ease,transform .08s ease}
 .ps-cover img{width:100%;height:100%;object-fit:cover}
 .ps-cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;opacity:.12}
-.cov-fav{position:absolute;bottom:10px;left:10px;width:43px;height:43px;border-radius:50%;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);color:#e03030;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(10px);z-index:4}
-.cov-fav:hover{background:rgba(255,255,255,.12)}
+.cov-fav{position:absolute;bottom:10px;left:10px;width:43px;height:43px;border-radius:50%;background:rgba(0,0,0,.65);border:1px solid rgba(var(--ovl-rgb),.15);color:#e03030;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(10px);z-index:4}
+.cov-fav:hover{background:rgba(var(--ovl-rgb),.12)}
 .cov-fav.off{color:var(--icon-fg)}
-.cov-add{position:absolute;bottom:10px;right:10px;width:43px;height:43px;border-radius:calc(var(--radius) * 0.7);background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);color:var(--icon-fg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(10px);z-index:4}
-.cov-add:hover{color:var(--text);background:rgba(255,255,255,.12)}
+.cov-add{position:absolute;bottom:10px;right:10px;width:43px;height:43px;border-radius:calc(var(--radius) * 0.7);background:rgba(0,0,0,.65);border:1px solid rgba(var(--ovl-rgb),.15);color:var(--icon-fg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(10px);z-index:4}
+.cov-add:hover{color:var(--text);background:rgba(var(--ovl-rgb),.12)}
 /* Затемнение обложки при наведении */
 .ps-cover::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.38);opacity:0;transition:opacity .2s ease;pointer-events:none;z-index:2}
 .ps-cover:hover::before{opacity:1}
@@ -156,19 +156,16 @@
 .app.cov-btns-in-bar #mainCovBtnsWrap{display:flex}
 #mainCovFav{color:#e03030}#mainCovFav.off{color:var(--icon-fg)}
 #bpFavBtn{color:#e03030}#bpFavBtn.off{color:var(--text2)}
-.ps-cover-loading{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:5;backdrop-filter:blur(4px);border-radius:var(--radius);pointer-events:none;animation:coverLoadFadeIn .2s ease}
-.ps-cover-loading .sc-spinner{width:32px;height:32px;border-width:3px}
 /* Vinyl disc mode */
 .ps-cover.vinyl-mode{border-radius:50%;box-shadow:none;overflow:visible;height:auto;width:min(100%,45vh,380px);align-self:center}
 .ps-cover.vinyl-mode img{border-radius:50%;clip-path:circle(50%);transform-origin:center center}
-.ps-cover.vinyl-mode::after{content:'';position:absolute;top:50%;left:50%;width:22%;height:22%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#111 30%,#222 58%,rgba(255,255,255,.1) 60%,rgba(255,255,255,.03) 62%,#1a1a1a 64%);z-index:3;pointer-events:none}
-.ps-cover.vinyl-mode:hover::after{background:radial-gradient(circle,#111 30%,#222 58%,rgba(255,255,255,.1) 60%,rgba(255,255,255,.03) 62%,#1a1a1a 64%);color:transparent}
+.ps-cover.vinyl-mode::after{content:'';position:absolute;top:50%;left:50%;width:22%;height:22%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#111 30%,#222 58%,rgba(var(--ovl-rgb),.1) 60%,rgba(var(--ovl-rgb),.03) 62%,#1a1a1a 64%);z-index:3;pointer-events:none}
+.ps-cover.vinyl-mode:hover::after{background:radial-gradient(circle,#111 30%,#222 58%,rgba(var(--ovl-rgb),.1) 60%,rgba(var(--ovl-rgb),.03) 62%,#1a1a1a 64%);color:transparent}
 .ps-cover.vinyl-spin img{animation:vinyl-spin 10s linear infinite}
 .ps-cover.vinyl-paused img{animation-play-state:paused}
 .ps-cover.opt-cover-anim-paused img{animation-play-state:paused!important}
 #bigPicOverlay .bp-cover.opt-cover-anim-paused img{animation-play-state:paused!important}
 .ps-cover.vinyl-mode .cov-fav,.ps-cover.vinyl-mode .cov-add{z-index:4}
-.ps-cover.vinyl-mode .ps-cover-loading{border-radius:50%}
 .ps-cover.vinyl-mode #lyricsPanel{border-radius:50%;z-index:4;overflow:hidden}.ps-cover.vinyl-mode #lyricsPanel .lyrics-content{padding:52px 52px 52px}
 /* Large player style — grid layout 50/50 */
 #playerContent.style-large{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr) auto;gap:8px;padding:8px;overflow:hidden;height:100%}
@@ -180,14 +177,17 @@
 #playerContent.style-large>.sl-cover-wrap .cov-fav,#playerContent.style-large>.sl-cover-wrap .cov-add{z-index:3}
 #playerContent.style-large>.sl-cover-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(transparent,rgba(0,0,0,.52));border-radius:0;pointer-events:none;z-index:1}
 #playerContent.style-large .sl-progress{position:absolute;bottom:0;left:0;right:0;padding:0 20px 12px;z-index:2;background:none;border-radius:0 0 var(--radius) var(--radius)}
-#playerContent.style-large .sl-progress .ps-times{font-size:12px;font-weight:400;color:rgba(255,255,255,.65);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.6px}
+#playerContent.style-large .sl-progress .ps-times{font-size:12px;font-weight:400;color:rgba(var(--ovl-rgb),.65);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.6px}
 #playerContent.style-large .sl-progress .ps-bar-wrap{height:5px!important;background:rgba(0,0,0,.28)!important;border-radius:99px!important}
 #playerContent.style-large .sl-progress .ps-bar-fill{border-radius:99px!important;background:var(--accent)!important}
 #playerContent.style-large .sl-progress .ps-bar-wrap:hover .ps-bar-fill{filter:brightness(1.15)}
 #playerContent.style-large .sl-progress .ps-bar-inp{inset:-9px 0!important}
-#playerContent.style-large>.sl-bottom{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:6px 12px;min-height:48px;border-radius:var(--radius);border:1px solid rgba(255,255,255,var(--wb));background:rgba(255,255,255,.02);backdrop-filter:blur(12px)}
+#playerContent.style-large>.sl-bottom{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:6px 12px;min-height:48px;border-radius:var(--radius);border:1px solid var(--ovl-line);background:rgba(var(--ovl-rgb),.02);backdrop-filter:blur(12px)}
 #playerContent.style-large>.sl-bottom .sl-bottom-info{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;width:100%;flex-shrink:1;grid-column:1;justify-self:start;overflow:hidden}
-#playerContent.style-large>.sl-bottom .sl-bottom-info>div:first-child{min-width:0;flex:1}
+/* НЕ flex:1 — иначе текстовый блок растягивается на всю колонку 1fr и ♥/+ уезжают
+   к её правому краю. flex:0 1 auto → ширина по контенту (кнопки прижаты к
+   названию/артисту), но при нехватке места блок ужимается и текст режется. */
+#playerContent.style-large>.sl-bottom .sl-bottom-info>div:first-child{min-width:0;flex:0 1 auto}
 #playerContent.style-large>.sl-bottom .sl-bottom-info .sl-text-wrap{display:flex;flex-direction:column;gap:1px;min-width:0;overflow:hidden;max-width:100%}
 #playerContent.style-large>.sl-bottom .sl-bottom-info .ps-title{font-size:13px;text-align:left;white-space:nowrap;display:block;font-weight:700}
 #playerContent.style-large>.sl-bottom .ps-title-wrap{overflow:hidden;min-width:0;padding-right:4px}
@@ -227,7 +227,7 @@
 #playerContent.style-cinema .cn-center-title .sl-title-wrap,#playerContent.style-cinema .cn-center-title .ps-title-wrap{overflow:hidden;min-width:0;max-width:100%}
 #playerContent.style-cinema .cn-center-title>div:first-child{justify-content:center!important;max-width:100%}
 #playerContent.style-cinema .cn-center-title .ps-title{font-size:28px;font-weight:800;text-align:center;white-space:nowrap;display:block;color:#fff}
-#playerContent.style-cinema .cn-center-title .ps-artist{font-size:17px;text-align:center;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.78);margin:0}
+#playerContent.style-cinema .cn-center-title .ps-artist{font-size:17px;text-align:center;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(var(--ovl-rgb),.78);margin:0}
 #playerContent.style-cinema>.sl-cover-wrap:hover .cn-center-title{opacity:0}
 /* ♥ · на весь экран · + — на месте тайтла, появляются по наведению (разнесены) */
 #playerContent.style-cinema .cn-hover-actions{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);z-index:4;display:flex;align-items:center;justify-content:space-between;padding:0 13%;opacity:0;pointer-events:none;transition:opacity .18s ease}
@@ -240,22 +240,43 @@
 #playerContent.style-cinema .cn-hover-actions .cov-fav,#playerContent.style-cinema .cn-hover-actions .cov-add,#playerContent.style-cinema .cn-hover-actions .cn-bigpic{position:static;width:auto;height:auto;border:none;background:none!important;backdrop-filter:none;border-radius:0;color:#fff;opacity:.92;cursor:pointer;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 8px rgba(0,0,0,.55));transition:opacity .15s,transform .12s}
 #playerContent.style-cinema .cn-hover-actions .cov-fav:hover,#playerContent.style-cinema .cn-hover-actions .cov-add:hover,#playerContent.style-cinema .cn-hover-actions .cn-bigpic:hover{opacity:1;transform:scale(1.12)}
 #playerContent.style-cinema .cn-hover-actions .cov-fav svg,#playerContent.style-cinema .cn-hover-actions .cov-add svg,#playerContent.style-cinema .cn-hover-actions .cn-bigpic svg{width:26px;height:26px}
+/* «Кнопки на обложке в плеер»: ♥/+ уехали в cn-vol-row (#mainCovBtnsWrap), в
+   оверлее остаётся один ⤢ — space-between прижал бы его к левому краю. */
+.app.cov-btns-in-bar #playerContent.style-cinema .cn-hover-actions{justify-content:center;padding:0}
 /* Затемнение низа обложки под контролы (сильнее, чем в large — текста больше) */
 #playerContent.style-cinema>.sl-cover-wrap::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4),rgba(0,0,0,.34) 40%,rgba(0,0,0,.86));border-radius:0;pointer-events:none;z-index:1}
 /* Оверлей: прогресс + контролы внизу обложки (фон даёт ::after-градиент) */
 #playerContent.style-cinema .cn-overlay{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:12px;padding:18px 22px 18px}
 /* Прогресс */
-#playerContent.style-cinema .cn-progress .ps-bar-wrap{height:5px!important;background:rgba(255,255,255,.22)!important;border-radius:99px!important}
+#playerContent.style-cinema .cn-progress .ps-bar-wrap{height:5px!important;background:rgba(var(--ovl-rgb),.22)!important;border-radius:99px!important}
 #playerContent.style-cinema .cn-progress .ps-bar-fill{border-radius:99px!important;background:var(--accent)!important}
 #playerContent.style-cinema .cn-progress .ps-bar-wrap:hover .ps-bar-fill{filter:brightness(1.15)}
 #playerContent.style-cinema .cn-progress .ps-bar-inp{inset:-9px 0!important}
-#playerContent.style-cinema .cn-progress .ps-times{font-size:12px;color:rgba(255,255,255,.7);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.6px}
+#playerContent.style-cinema .cn-progress .ps-times{font-size:12px;color:rgba(var(--ovl-rgb),.7);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.6px}
 /* Транспорт — отдельной строкой в боксе с фоном (download | плеер | дизлайк) */
 #playerContent.style-cinema .cn-overlay>.ps-ctrl{width:100%;background:rgba(0,0,0,.32);backdrop-filter:blur(8px)}
 /* Громкость — полным слайдером в своей строке + source/eq/скорость (боксы с рамкой) */
 #playerContent.style-cinema .cn-vol-row{display:flex;align-items:center;gap:6px;width:100%}
 #playerContent.style-cinema .cn-vol-row .ps-ctrl{background:rgba(0,0,0,.28);backdrop-filter:blur(8px)}
-#playerContent.style-cinema .cn-vol-row .vol-pct{color:rgba(255,255,255,.85)}
+#playerContent.style-cinema .cn-vol-row .vol-pct{color:rgba(var(--ovl-rgb),.85)}
+/* Высота визуализатора (#vizWrap + canvas/фото внутри). Тянется от размера окна,
+   но зажата снизу/сверху: min(5vw, 9vh) — берём меньшую из «ширинной» и
+   «высотной» оценки, чтобы в широком, но низком окне блок не съедал вертикаль.
+   Ручки настройки: 62px min, 94px max, 5vw/9vh — скорость роста.
+   ВАЖНО: vw/vh — в CSS-пикселях, т.е. зум вебвью учитывается автоматически
+   (в отличие от JS-брейкпоинтов по innerWidth). */
+:root{--viz-h:clamp(62px, min(5vw, 9vh), 94px)}
+/* Кегль названия/артиста в «Стандарте» — тоже от размера окна, той же схемой
+   min(vw,vh): в широком, но низком окне заголовок не должен съедать высоту.
+   Опорная точка подобрана так, чтобы при ~1300×890 логических px получались
+   прежние 26px/13px, дальше растёт до потолка.
+   Ручки: 22/36px и 2vw|3.8vh — название; 12/18px и 1vw|1.9vh — артист;
+   боковая очередь (--ps-title-fs-side) идёт от прежних 20px. */
+:root{
+  --ps-title-fs:clamp(22px, min(2vw, 3.8vh), 36px);
+  --ps-title-fs-side:clamp(18px, min(1.55vw, 3vh), 27px);
+  --ps-artist-fs:clamp(12px, min(1vw, 1.9vh), 18px);
+}
 /* Визуализатор в «Кино»/«Большом» — блок с рамкой под прогрессом, но фон чуть
    прозрачный (как панели контролов в этих стилях): полупрозрачная подложка + blur,
    чтобы сквозь визуализатор слегка читалась обложка. overflow:hidden (инлайн)
@@ -275,7 +296,7 @@
 .marquee-wrap.is-scrolling:hover .marquee-inner{animation-play-state:paused}
 .tri{overflow:hidden;min-width:0}
 .trn,.tra{display:block;will-change:transform}
-.ps-title{font-size:26px;font-weight:900;white-space:nowrap;overflow:hidden;cursor:pointer;letter-spacing:-.4px;position:relative}
+.ps-title{font-size:var(--ps-title-fs);font-weight:900;white-space:nowrap;overflow:hidden;cursor:pointer;letter-spacing:-.4px;position:relative}
 .ps-title-wrap{overflow:hidden;min-width:0;max-width:100%;position:relative;cursor:pointer}
 .ps-title-wrap .ps-title{display:inline-block;overflow:visible;white-space:nowrap;animation:none}
 .ps-title-wrap.ps-scrolling .ps-title{animation:ps-marquee linear infinite}
@@ -300,7 +321,7 @@
 #fpNameWrap.fp-scrolling #fpName{animation:fp-marquee linear infinite}
 #fpNameWrap.fp-scrolling:hover #fpName{animation-play-state:paused}
 body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps-title-wrap .ps-title,body.opt-marquee-paused #mpTitle,body.opt-marquee-paused .mp-title-wrap .mp-title,body.opt-marquee-paused #fpName,body.opt-marquee-paused .bp-title{animation-play-state:paused!important}
-.ps-artist{font-size:13px;color:var(--text2);cursor:pointer;text-align:center;display:block;width:fit-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 auto}
+.ps-artist{font-size:var(--ps-artist-fs);color:var(--text2);cursor:pointer;text-align:center;display:block;width:fit-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 auto}
 /* Базовая толщина дорожки — она же у типов «Стандарт», «iOS» и «Обложка».
    «Тонкий» и «Волна» задают свою высоту в sliders-telemetry.css. Радиус pill,
    иначе на такой высоте концы читаются как обрубленный прямоугольник. */
@@ -315,13 +336,22 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 /* Тайминги под баром: кегль/вес крупнее, отступ вниз заметный, края — ровно
    по началу и концу полосы (line-height:1 убирает поле строки, tabular-nums
    держит ширину цифр стабильной, чтобы правая метка не «дышала»). */
-.ps-times{display:flex;justify-content:space-between;font-size:11.8px;font-weight:500;line-height:1;margin-top:6px;color:var(--text2);font-variant-numeric:tabular-nums}
+.ps-times{display:flex;justify-content:space-between;font-size:12px;font-weight:500;line-height:1;margin-top:6px;color:var(--text2);font-variant-numeric:tabular-nums}
 /* Транспорт (play/prev/next/…): бокс чуть выше — .cc 40 + вертикальный паддинг. */
-.ps-ctrl{display:flex;align-items:center;justify-content:center;gap:4px;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 1.2);padding:11px 14px;background:transparent}
+.ps-ctrl{display:flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 1.2);padding:11px 14px;background:transparent}
+/* Заливка боксов управления в ДЕФОЛТНОМ стиле плеера: транспорт, ряд громкости
+   и группы (площадка / EQ+скорость) — плотнее, чем плёнка самого блока, чтобы
+   читались отдельными пилюлями поверх него (см. --pl-film-ctrl, root.css).
+   Работает ТОЛЬКО в режиме прозрачности: вне его --pl-ctrl-bg == transparent,
+   то есть эта строка ничего не меняет (плеер как раньше).
+   large/cinema исключены: там контролы лежат на обложке и у них своя тёмная
+   подложка rgba(0,0,0,…) — плёнка по теме там дала бы двойной слой. */
+#playerContent:not(.style-large):not(.style-cinema) .ps-ctrl,
+#playerContent:not(.style-large):not(.style-cinema) .vol-pct{background:var(--pl-ctrl-bg)}
 /* Бейдж громкости: радиус/бордер — как у остальных боксов (var(--radius), --wb),
    а не фиксированные 6px. margin-left уравнивает зазор «ползунок→бейдж» с
    визуальным зазором «иконка→ползунок» (у .cc есть свой внутренний воздух). */
-.vol-pct{font-size:11px;font-weight:600;color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.7);padding:2px 4px;margin-left:6px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
+.vol-pct{font-size:11px;font-weight:600;color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.7);padding:2px 4px;margin-left:6px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
 .cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--icon-fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative;will-change:transform}
 .cc:hover{color:var(--text)}
 /* Вжатие при нажатии — ровно тот же жест, что у .cc-play: .94 за .15s (тайминг
@@ -351,6 +381,13 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 #miniPlayer .cc-play svg{stroke-width:1.2}
 #miniPlayer .vol-sl{width:64px}
 .cc.on{color:var(--accent)}
+/* Ховер активного тогла — остаётся акцентным, только чуть светлеет. Без этого
+   правила его перебивал `.cc:hover{color:var(--text)}` (та же специфичность, но
+   объявлен позже — в overrides-main.css), и включённые shuffle/repeat/очередь
+   белели под курсором. Отклик даём brightness, а НЕ var(--accent2): у пресетов
+   тем это самостоятельный цвет палитры (в светлой — вообще серый), для иконки
+   он читался бы как смена цвета, а не как подсветка. */
+.cc.on:hover{color:var(--accent);filter:brightness(1.15)}
 /* «Умная» перемешка — мини-значок в кружке акцентного цвета сверху справа над shuffle. */
 .cc-badge{position:absolute;top:0;right:0;width:13px;height:13px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;line-height:1;color:var(--accent-text);pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.3);animation:cc-badge-pop .18s ease-out}
 /* Лёгкое появление бейджика: плавно проявляется (без масштабирования, чтобы
@@ -360,6 +397,15 @@ body.opt-marquee-paused .marquee-wrap .marquee-inner,body.opt-marquee-paused .ps
 /* Числовые бейджи (repeat-one, громкость): цифры оптически сидят выше центра —
    компенсируем небольшим отступом сверху, чтобы визуально были по центру. */
 .cc-badge.num{padding-top:1px}
+/* Кнопка скорости: на 1× — спидометр, иначе на его месте само значение.
+   min-width, а НЕ width — соседнее правило `#playerContent .ps-vol-row .cc
+   {width:30px}` специфичнее одного id, но min-width всё равно выигрывает у
+   width при расчёте бокса. Держим его одинаковым для обоих состояний, иначе
+   при смене скорости кнопка меняет ширину и ряд рядом с ней дёргается.
+   Цифра наследует color кнопки, т.е. на не-дефолтной скорости она акцентная
+   через тот же .cc.on, что красит иконки-тоглы. */
+#speedBtn{min-width:36px}
+#speedBtn .cc-cap{font-size:10px;font-weight:800;line-height:1;letter-spacing:-.2px;font-variant-numeric:tabular-nums}
 .cc-play{width:48px;height:48px;border-radius:calc(var(--radius) * 0.85);background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s,transform .08s;will-change:transform}
 .cc-play:hover{background:var(--accent2)}
 /* Эффект вжатия при нажатии (как в мини-плеере/трее). */

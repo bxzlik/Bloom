@@ -76,6 +76,7 @@ export const toAlbum = (a: YmRawAlbum): Playlist => ({
   cover: a.cover || null,
   ownerName: a.artist || '',
   trackCount: a.trackCount || 0,
+  year: a.year || undefined,
   source: 'yandex',
 })
 

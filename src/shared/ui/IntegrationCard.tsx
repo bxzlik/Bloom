@@ -94,9 +94,9 @@ export const HelpPopup = ({ children }: { children: ReactNode }) => {
                 maxWidth: 'calc(100vw - 24px)',
                 padding: 14,
                 background: 'color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift))',
-                border: '1px solid rgba(255,255,255,.08)',
+                border: '1px solid rgba(var(--ovl-rgb),.08)',
                 borderRadius: 'calc(var(--radius)*.7)',
-                boxShadow: '0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04)',
+                boxShadow: 'none',
                 fontSize: 12,
                 color: 'var(--text2)',
                 lineHeight: 1.6,
@@ -250,9 +250,9 @@ export const IntegrationCard = ({
         {icon}
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 800, lineHeight: 1.2 }}>{title}</div>
+        <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>{title}</div>
         {status && (
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>{status}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{status}</div>
         )}
       </div>
       {actions}
@@ -269,7 +269,7 @@ export const HelpTitle = ({ children }: { children: ReactNode }) => (
 
 /** Нумерованный список шагов внутри попапа-инструкции. */
 export const HelpSteps = ({ children }: { children: ReactNode }) => (
-  <ol style={{ fontSize: 11.5, color: 'var(--text2)', paddingLeft: 18, lineHeight: 1.9, margin: 0 }}>
+  <ol style={{ fontSize: 12, color: 'var(--text2)', paddingLeft: 18, lineHeight: 1.9, margin: 0 }}>
     {children}
   </ol>
 )

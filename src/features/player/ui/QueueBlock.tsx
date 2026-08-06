@@ -13,7 +13,7 @@ import {
 } from '@features/library'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
-import { PlaylistCover } from '@shared/ui'
+import { PlaylistCover, HoverMarquee } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
@@ -204,8 +204,8 @@ const QueueBlockImpl = ({
         flex: '1 1 0',
         minHeight: 0,
         borderRadius: 'var(--radius)',
-        border: '1px solid rgba(255,255,255,var(--wb))',
-        background: 'rgba(255,255,255,.02)',
+        border: '1px solid var(--ovl-line)',
+        background: 'rgba(var(--ovl-rgb),.02)',
         backdropFilter: 'blur(12px)',
       }}
     >
@@ -223,7 +223,10 @@ const QueueBlockImpl = ({
         ref={scrollRef}
         className="qp-list"
         id="qpList"
-        style={{ padding: '6px 16px 20px', overflowY: 'auto', flex: 1 }}
+        // Верхнего padding'а нет намеренно: первая строка — жёсткий потолок
+        // скролла (при scrollTop=0 она лежит вплотную к кромке блока, «воздуха»
+        // сверху промотать нельзя). Снизу запас остаётся.
+        style={{ padding: '0 16px 20px', overflowY: 'auto', flex: 1 }}
       >
         {items.length === 0 && (
           <div className="empty" style={{ padding: '28px 0', textAlign: 'center' }}>
@@ -313,6 +316,9 @@ const QueueBlockImpl = ({
 export const QueueBlock = memo(QueueBlockImpl)
 
 // ── HEADER ────────────────────────────────────────────────────────────────
+
+/** Потолок ширины пилюли источника (#qpSourcePill), px. Дальше — ellipsis + marquee. */
+const QP_PILL_MAX = 260
 
 const sourceLabel = (s: PlaySource, t: TFunc): string => {
   if (!s) return '—'
@@ -458,6 +464,7 @@ const QueueHeader = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: 8,
     }}
   >
     <div
@@ -469,20 +476,26 @@ const QueueHeader = ({
         padding: '5px 10px 5px 6px',
         borderRadius: 'calc(var(--radius) * 0.8)',
         background: 'transparent',
-        border: '1px solid rgba(255,255,255,var(--wb))',
+        border: '1px solid var(--ovl-line)',
+        // Пилюля не растёт под длинное название плейлиста: жёсткий потолок, дальше
+        // ellipsis + hover-marquee внутри. Иконка/шафл/счётчик остаются на месте.
+        maxWidth: QP_PILL_MAX,
+        minWidth: 0,
       }}
     >
       <SourceIcon source={source} />
-      <span
+      <HoverMarquee
+        text={sourceLabel(source, t)}
         style={{
           fontSize: 12,
           fontWeight: 700,
           color: 'var(--text)',
           lineHeight: 1,
+          // lineHeight:1 + overflow:hidden режет нижние выносы («р», «у») —
+          // добавляем ровно пиксель воздуха снизу.
+          paddingBottom: 1,
         }}
-      >
-        {sourceLabel(source, t)}
-      </span>
+      />
       {shuffle && (
         <span
           id="qShuf"
@@ -494,14 +507,14 @@ const QueueHeader = ({
             height: 18,
             flexShrink: 0,
             color: 'var(--text2)',
-            border: '1px solid rgba(255,255,255,var(--wb))',
+            border: '1px solid var(--ovl-line)',
             borderRadius: 20,
           }}
         >
           <Ico name="shuffle" width={10} height={10} />
         </span>
       )}
-      <span style={{ width: 1, height: 10, background: 'rgba(255,255,255,.08)', borderRadius: 1 }} />
+      <span style={{ width: 1, height: 10, flexShrink: 0, background: 'rgba(var(--ovl-rgb),.08)', borderRadius: 1 }} />
       <span
         id="qpSourceCount"
         style={{
@@ -512,14 +525,15 @@ const QueueHeader = ({
           color: 'var(--text2)',
           padding: '0 6px',
           height: 18,
+          flexShrink: 0,
           borderRadius: 20,
-          border: '1px solid rgba(255,255,255,var(--wb))',
+          border: '1px solid var(--ovl-line)',
         }}
       >
         {count}
       </span>
     </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
       {canClear && (
         <button
           id="clearQueueBtn"
@@ -532,7 +546,7 @@ const QueueHeader = ({
             height: 28,
             borderRadius: 'calc(var(--radius) * 0.6)',
             background: 'transparent',
-            border: '1px solid rgba(255,255,255,var(--wb))',
+            border: '1px solid var(--ovl-line)',
             color: 'var(--icon-fg)',
             cursor: 'pointer',
             transition: '.15s',
@@ -545,7 +559,7 @@ const QueueHeader = ({
           }}
           onMouseOut={(e) => {
             e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,var(--wb))'
+            e.currentTarget.style.borderColor = 'var(--ovl-line)'
             e.currentTarget.style.color = 'var(--icon-fg)'
           }}
         >
@@ -569,7 +583,7 @@ const SimilarButton = ({ icon }: { icon?: boolean }) => {
     justifyContent: 'center',
     borderRadius: 'calc(var(--radius) * 0.6)',
     background: 'transparent',
-    border: '1px solid rgba(255,255,255,var(--wb))',
+    border: '1px solid var(--ovl-line)',
     color: 'var(--icon-fg)',
     cursor: 'pointer',
     transition: '.15s',
@@ -585,12 +599,12 @@ const SimilarButton = ({ icon }: { icon?: boolean }) => {
       onClick={() => void waveApi.startByQueue()}
       style={style}
       onMouseOver={(e) => {
-        e.currentTarget.style.color = '#fff'
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,.3)'
+        e.currentTarget.style.color = 'var(--text)'
+        e.currentTarget.style.borderColor = 'rgba(var(--ovl-rgb),.3)'
       }}
       onMouseOut={(e) => {
         e.currentTarget.style.color = 'var(--icon-fg)'
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,var(--wb))'
+        e.currentTarget.style.borderColor = 'var(--ovl-line)'
       }}
     >
       {eq}

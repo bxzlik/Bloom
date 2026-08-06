@@ -1,19 +1,23 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { toast } from '@shared/ui'
-import { useT } from '@shared/i18n'
+import { useT, type TranslationKey } from '@shared/i18n'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useMediaLibStore } from '../model/mediaLibStore'
 import { useCustomizationStore } from '../model/customizationStore'
 import { usePresetsStore, resolvePresetImg, type Preset } from '../model/presetsStore'
+import { BackgroundCards } from './BackgroundCards'
 import type { MediaItem } from '../lib/mediaIdb'
-import { Ico } from '@shared/ui/icons/solar'
+import { Ico, type IconName } from '@shared/ui/icons/solar'
 
 /**
- * Раздел «Кастомизация» (`ssec-medialib`) — медиа-библиотека картинок
- * + применение к 4 контекстам (Фон / Обложка / Визуализатор / Курсор) + пресеты.
- * Все 4 контекста рабочие; пресеты — снимок 4-х (presetsStore). Параметры фона
- * (blur/dim/обложка-как-фон) — в отдельном разделе «Фон» (BackgroundSection).
+ * Раздел «Кастомизация» (`ssec-medialib`) — две вкладки в полосе `.s-ptabs`:
+ *
+ * - «Кастомизация» — медиа-библиотека картинок + применение к 5 контекстам
+ *   (Фон / Обложка / Визуализатор / Курсор / Слайдер) + пресеты (снимок
+ *   контекстов, presetsStore);
+ * - «Фон» — параметры фонового слоя (blur/dim/обложка-как-фон, BackgroundCards).
+ *   Раньше это был отдельный раздел сайдбара настроек.
  */
 
 type Ctx = 'bg' | 'cover' | 'viz' | 'cursor' | 'slider'
@@ -75,7 +79,57 @@ const CtxMenu = ({ pos, items, onClose }: { pos: { x: number; y: number } | null
   )
 }
 
+/** Вкладки раздела: сама медиа-библиотека и параметры фонового слоя. */
+type CustTab = 'media' | 'bg'
+
+const TABS: { id: CustTab; labelKey: TranslationKey; icon: IconName }[] = [
+  { id: 'media', labelKey: 'settings.nav.customization', icon: 'album' },
+  { id: 'bg', labelKey: 'settings.nav.background', icon: 'gallery' },
+]
+
 export const CustomizationSection = () => {
+  const t = useT()
+  const resetBg = useCustomizationStore((s) => s.resetBg)
+  const [tab, setTab] = useState<CustTab>('media')
+
+  return (
+    <div className="s-section active" id="ssec-medialib">
+      <div className="s-section-head">
+        <div className="s-section-title">
+          <Ico name="album" width={15} height={15} />{' '}
+          {t('settings.nav.customization')}
+        </div>
+        {/* Сброс есть только у фона (resetBg): у медиа-библиотеки сбрасывать
+            нечего — картинки удаляются поштучно. */}
+        {tab === 'bg' && (
+          <button className="s-section-reset" onClick={resetBg}>
+            <Ico name="refresh" width={10} height={10} />{' '}
+            {t('common.reset')}
+          </button>
+        )}
+      </div>
+
+      {/* Переключатель групп — полоса вкладок над карточками раздела. */}
+      <div className="s-ptabs">
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            className={`s-ptab${tab === tb.id ? ' active' : ''}`}
+            onClick={() => setTab(tb.id)}
+          >
+            <Ico name={tb.icon} width={14} height={14} />
+            {t(tb.labelKey)}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'media' ? <MediaCards /> : <BackgroundCards />}
+    </div>
+  )
+}
+
+/** Вкладка «Кастомизация»: контексты, галерея, пресеты. */
+const MediaCards = () => {
   const t = useT()
   const items = useMediaLibStore((s) => s.items)
   const addFiles = useMediaLibStore((s) => s.addFiles)
@@ -150,15 +204,8 @@ export const CustomizationSection = () => {
   const ctxCurrent: Record<Ctx, string | null> = { bg: bgUrl, cover: coverUrl, viz: vizUrl, cursor: cursorUrl, slider: sliderUrl }
 
   return (
-    <div className="s-section active" id="ssec-medialib">
-      <div className="s-section-head">
-        <div className="s-section-title">
-          <Ico name="album" width={15} height={15} />{' '}
-          {t('settings.nav.customization')}
-        </div>
-      </div>
-
-      {/* Контексты (4 вкладки) — без обёртки */}
+    <>
+      {/* Контексты (5 карточек) — без обёртки */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10 }}>
         <CtxCard ctx="bg" label={t('settings.custom.ctx.bg')} current={ctxCurrent.bg} selected={selCtx === 'bg'} onSelect={() => setSelCtx('bg')} onClear={() => clearCtx('bg')} icon={<BgIcon />} />
         <CtxCard ctx="cover" label={t('settings.custom.ctx.cover')} current={ctxCurrent.cover} selected={selCtx === 'cover'} onSelect={() => setSelCtx('cover')} onClear={() => clearCtx('cover')} icon={<CoverIcon />} />
@@ -240,7 +287,7 @@ export const CustomizationSection = () => {
           { label: t('settings.custom.ctxmenu.delete'), icon: <Ico name="trash" width={13} height={13} />, danger: true, onClick: () => removeItem(imgMenu.item.id) },
         ] : []}
       />
-    </div>
+    </>
   )
 }
 

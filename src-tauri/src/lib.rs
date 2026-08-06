@@ -20,7 +20,6 @@ mod soundcloud;
 mod thumb_toolbar;
 mod tray;
 mod updater;
-mod spotify;
 mod window_chrome;
 mod yandex;
 mod ytm;
@@ -67,9 +66,9 @@ pub fn run() {
 
     tracing::info!("Bloom starting...");
 
-    // AppUserModelID должен быть установлен ДО создания первого окна,
-    // иначе Windows привяжет к иконке в taskbar свой авто-ID и Jump List
-    // не найдёт цель. Та же причина: RegisterAppId в реестре.
+    // AppUserModelID должен быть установлен ДО создания первого окна, иначе
+    // Windows привяжет к иконке в taskbar свой авто-ID и сгруппирует окна
+    // неправильно. Та же причина: RegisterAppId в реестре.
     #[cfg(windows)]
     {
         if let Err(e) = window_chrome::register_app_id() {
@@ -88,21 +87,13 @@ pub fn run() {
         // --- Плагины ---
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             tracing::info!("second instance args: {:?}", argv);
-            let is_cmd = argv.iter().any(|a| {
-                matches!(a.as_str(), "--playpause" | "--next" | "--prev")
-            });
-            if is_cmd {
-                // Jump List команда — обработать без показа окна.
-                pipe::dispatch_argv(app, &argv);
-            } else {
-                // Любой другой запуск (в том числе bloom://) — показать окно и обработать URL.
-                if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.show();
-                    let _ = w.unminimize();
-                    let _ = w.set_focus();
-                }
-                pipe::dispatch_argv(app, &argv);
+            // Повторный запуск (в том числе по bloom://) — показать окно и обработать URL.
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.unminimize();
+                let _ = w.set_focus();
             }
+            pipe::dispatch_argv(app, &argv);
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -214,22 +205,14 @@ pub fn run() {
             commands::ym_chart,
             commands::ym_new_releases,
             commands::ytm_search,
+            commands::ytm_search_more,
             commands::ytm_stream_url,
             commands::ytm_album,
             commands::ytm_artist,
             commands::ytm_playlist,
             commands::ytm_track,
+            commands::ytm_resolve,
             commands::ui_log,
-            commands::sp_search,
-            commands::sp_album,
-            commands::sp_artist,
-            commands::sp_playlist,
-            commands::sp_track,
-            commands::sp_set_creds,
-            commands::sp_get_creds,
-            commands::sp_has_creds,
-            commands::sp_check,
-            commands::sp_clear_creds,
             commands::sc_set_client_id,
             commands::sc_check_connection,
             commands::sc_api_fetch,
@@ -244,6 +227,7 @@ pub fn run() {
             commands::sc_artist_reposts_page,
             commands::sc_artist_top_tracks,
             commands::sc_artist_data,
+            commands::sc_related_artists,
             commands::sc_artist_tracks_page,
             commands::sc_playlist_tracks,
             commands::sc_playlist_by_id,
@@ -374,7 +358,7 @@ pub fn run() {
                 }
             });
 
-            // Если приложение запущено с CLI-командой (через Jump List) — обработать.
+            // Если приложение запущено по bloom://-ссылке — обработать argv старта.
             pipe::dispatch_startup(app.handle());
 
             // Запускаем сканирование и watch-мониторинг пользовательских папок.

@@ -7,7 +7,7 @@ import { useFavStore } from '../model/favStore'
 import { saveTrackToLibrary } from './saveToLibrary'
 
 /** Площадка по виду ссылки — для бейджа в инпуте импорта (детект без сети). */
-export type LinkProvider = 'soundcloud' | 'yandex' | 'ytmusic' | 'spotify'
+export type LinkProvider = 'soundcloud' | 'yandex' | 'ytmusic'
 
 /**
  * Определить площадку по URL для бейджа. Только распознавание домена — резолв
@@ -20,7 +20,6 @@ export const detectLinkProvider = (url: string): LinkProvider | null => {
   if (/soundcloud\.com|snd\.sc/i.test(u)) return 'soundcloud'
   if (/music\.yandex\.[a-z]+/i.test(u)) return 'yandex'
   if (/music\.youtube\.com|(?:^|\.)youtube\.com|youtu\.be/i.test(u)) return 'ytmusic'
-  if (/open\.spotify\.com|spotify:/i.test(u)) return 'spotify'
   return null
 }
 

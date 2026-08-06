@@ -12,7 +12,7 @@ import { useNavStore } from '@app/navigationStore'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
-import { toast } from '@shared/ui'
+import { HoverMarquee, toast } from '@shared/ui'
 import { PlCover } from './PlCover'
 import { playFromSource, playShuffledFromSource, addTracksToQueue, playTracksNext, downloadPlaylistTracks, isDownloadable, type PlaySource } from '@features/player'
 import { downloadPlaylistOffline, removePlaylistOffline, useOfflineStore } from '@features/offline'
@@ -26,9 +26,11 @@ import {
   useActivityStore,
   useDupsStore,
   useMergeStore,
+  useConvertStore,
   useLibStore,
   useFavStore,
   useUnifiedOrderStore,
+  usePlAutoStore,
   type Playlist,
   type LibMode,
   type TrackSortMode,
@@ -544,6 +546,21 @@ export const PlMenu = ({
           useMergeStore.getState().openMerge(playlist.id)
         }}
       />,
+      // «Перенести на площадку» — конвертер: копия плейлиста с треками другой
+      // площадки. Пустой плейлист переносить нечего.
+      ...(playlist.trs.length
+        ? [
+            <Item
+              key="convert"
+              icon={<ConvertIcon />}
+              label={t('lib.plmenu.convert')}
+              onClick={() => {
+                onClose()
+                useConvertStore.getState().openConvert(playlist.id)
+              }}
+            />,
+          ]
+        : []),
       dupsActive && dupsPlId === playlist.id ? (
         <Item
           key="dups"
@@ -580,6 +597,19 @@ export const PlMenu = ({
           onClick={() => {
             onClose()
             void refreshPlaylistTracks(playlist.id)
+          }}
+        />,
+        <Item
+          key="auto-refresh"
+          icon={<Ico name="clock" width={11} height={11} />}
+          label={t('lib.plauto.title')}
+          onClick={() => {
+            onClose()
+            // Этот плейлист сразу отмечаем в наборе — открывать панель, чтобы
+            // ещё раз искать его в списке, было бы лишним шагом.
+            const st = usePlAutoStore.getState()
+            if (!st.ids.includes(playlist.id)) st.toggleId(playlist.id)
+            st.openDrawer()
           }}
         />,
       )
@@ -732,7 +762,8 @@ export const PlMenu = ({
           {headerIcon}
         </div>
         <div style={{ minWidth: 0 }}>
-          <div id="plMenuHeaderName">{heroName}</div>
+          {/* max-width:135px + ellipsis в CSS; на ховере догоняем текст marquee. */}
+          <HoverMarquee id="plMenuHeaderName" text={heroName} />
           <div id="plMenuHeaderSub">
             {heroSub}
             {mode === 'pl' && playlist && <PlaylistOfflineTag trackIds={playlist.trs} />}
@@ -882,6 +913,7 @@ const DiskIcon = () => <Ico name="save" width={11} height={11} />
 const OfflineOffIcon = () => <Ico name="trash" width={11} height={11} />
 const TrashIcon = () => <Ico name="trash" width={11} height={11} />
 const MergeIcon = () => <Ico name="merge" width={11} height={11} />
+const ConvertIcon = () => <Ico name="arrowRightStraight" width={11} height={11} />
 const DupsIcon = () => <Ico name="copy" width={11} height={11} />
 const RefreshIcon = () => <Ico name="refresh" width={11} height={11} />
 const PlusIcon = () => <Ico name="add" width={11} height={11} />

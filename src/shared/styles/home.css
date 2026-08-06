@@ -4,9 +4,9 @@
 .home-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
 .home-greeting{display:flex;align-items:center;gap:12px}
-.home-wave{width:38px;height:38px;border-radius:calc(var(--radius) * 0.7);background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0}
-.home-kaomoji{width:auto;min-width:38px;height:38px;padding:0 10px;border-radius:calc(var(--radius)*0.7);background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;line-height:1;white-space:nowrap;cursor:default;transition:background .2s}
-.home-kaomoji:hover{background:rgba(255,255,255,.09)}
+.home-wave{width:38px;height:38px;border-radius:calc(var(--radius) * 0.7);background:rgba(var(--ovl-rgb),.05);display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0}
+.home-kaomoji{width:auto;min-width:38px;height:38px;padding:0 10px;border-radius:calc(var(--radius)*0.7);background:rgba(var(--ovl-rgb),.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;line-height:1;white-space:nowrap;cursor:default;transition:background .2s}
+.home-kaomoji:hover{background:rgba(var(--ovl-rgb),.09)}
 #homeKaomojiText{transition:opacity .35s,transform .35s;display:inline-block}
 #homeKaomojiText.kao-fade{opacity:0;transform:translateY(4px)}
 .home-hello{font-size:18px;font-weight:800;line-height:1.2}
@@ -21,6 +21,8 @@
    обреза нет. Цвета орбов — в --wave-1/2/3 (акцент темы либо тон обложки трека,
    см. WaveCard.tsx). */
 .home-wave-bar{position:relative;height:440px;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;--wave-1:#fff;--wave-2:#fff;--wave-3:#fff}
+/* Фолбэк до того, как React проставит инлайн-палитру: белый по белому не виден. */
+:root.theme-light .home-wave-bar{--wave-1:#a8a8a8;--wave-2:#a8a8a8;--wave-3:#a8a8a8}
 
 /* Турбулентное пламя (SVG). Градиенты сами затухают в прозрачность к краям —
    отдельная маска не нужна, прямоугольного обреза нет. CSS-масштаб добавляет
@@ -39,6 +41,10 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .home-scroll.is-scrolling .home-wave-bar .hwb-fire-g{animation-play-state:paused}
 /* Круги пламени слитаются screen-блендом → бело-горячее ядро поверх тела/флейра */
 .home-wave-bar .hwb-fire-g circle{mix-blend-mode:screen}
+/* Светлая тема: screen тянет ядро в белый → на светлом фоне шар пропадает
+   целиком. Зеркалим — multiply, ядро становится самым ПЛОТНЫМ местом. Сам тон
+   тоже уходит темнее/насыщеннее (paletteFromHsl, WaveCard.tsx). */
+:root.theme-light .home-wave-bar .hwb-fire-g circle{mix-blend-mode:multiply}
 /* Цвета стопов — из палитры (акцент / тон обложки), см. WaveCard.tsx */
 .home-wave-bar .hwb-s-outer0{stop-color:var(--wave-1);stop-opacity:.95}
 .home-wave-bar .hwb-s-outer1{stop-color:var(--wave-1);stop-opacity:.4}
@@ -50,33 +56,109 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 
 .home-wave-bar .hwb-hero{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px}
 .home-wave-bar .hwb-hero-main{display:flex;align-items:center;gap:16px}
-.home-wave-bar .hwb-play{position:relative;width:64px;height:64px;border:none;background:transparent;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;font-family:var(--font)}
+.home-wave-bar .hwb-play{position:relative;width:64px;height:64px;border:none;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;font-family:var(--font)}
 .home-wave-bar .hwb-play svg{width:56px;height:56px;transition:transform .15s ease,opacity .22s ease;will-change:transform,opacity;filter:drop-shadow(0 2px 14px rgba(0,0,0,.4))}
 .home-wave-bar .hwb-play:hover svg{transform:scale(1.1)}
 .home-wave-bar .hwb-play:active svg{transform:scale(0.92)}
 .home-wave-bar .hwb-play.is-loading{cursor:default}
 .home-wave-bar .hwb-play.is-loading svg{opacity:0;transform:scale(0.6)}
-.home-wave-bar .hwb-play .hwb-spinner{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;opacity:0;transition:opacity .22s ease;pointer-events:none}
+.home-wave-bar .hwb-play .hwb-spinner{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:3px solid rgba(var(--ovl-rgb),.2);border-top-color:#fff;opacity:0;transition:opacity .22s ease;pointer-events:none}
 .home-wave-bar .hwb-play.is-loading .hwb-spinner{opacity:1;animation:hwbSpin .8s linear infinite}
-.home-wave-bar .hwb-title{font-size:40px;font-weight:900;color:#fff;letter-spacing:-1.5px;white-space:nowrap;line-height:1;text-shadow:0 2px 28px rgba(0,0,0,.5)}
-/* Тёмная подложка, а не светлая: на светлом огне (белый/ахроматичный акцент)
-   полупрозрачно-белая капсула сливалась с ауру и кнопка пропадала. */
-.home-wave-bar .hwb-tune{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 15px;border-radius:min(16px,calc(var(--radius)*.9));background:rgba(0,0,0,.32);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);color:#fff;cursor:pointer;transition:.15s;font-family:var(--font);font-size:12.5px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.55);box-shadow:0 2px 14px rgba(0,0,0,.28)}
-.home-wave-bar .hwb-tune:hover{background:rgba(0,0,0,.46);border-color:rgba(255,255,255,.24)}
+.home-wave-bar .hwb-title{font-size:40px;font-weight:900;color:var(--text);letter-spacing:-1.5px;white-space:nowrap;line-height:1;text-shadow:0 2px 28px rgba(0,0,0,.5)}
+/* Герой лежит на ядре фаербола, а в светлой теме оно тёмное (multiply) — это
+   «тёмный остров», поэтому текст и кнопка остаются белыми, а не var(--text). */
+:root.theme-light .home-wave-bar .hwb-title,
+:root.theme-light .home-wave-bar .hwb-play{color:#fff}
+/* Капсула без подложки — только контур блока (--ovl-line): сквозь неё виден
+   огонь. Читаемость на светлом огне держит тень текста, а не заливка. */
+.home-wave-bar .hwb-tune{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 15px;border-radius:min(16px,calc(var(--radius)*.9));background:none;border:1px solid var(--ovl-line);color:#fff;cursor:pointer;transition:.15s;font-family:var(--font);font-size:13px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.55);box-shadow:none}
+.home-wave-bar .hwb-tune:hover{background:rgba(var(--ovl-rgb),.07);border-color:rgba(var(--ovl-rgb),var(--wb2))}
+/* Тот же «тёмный остров»: в светлой теме --ovl-line чёрная и на ядре фаербола
+   пропадает — на нём контур белый, той же плотности --wb. */
+:root.theme-light .home-wave-bar .hwb-tune{border-color:rgba(255,255,255,var(--wb))}
+:root.theme-light .home-wave-bar .hwb-tune:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,var(--wb2))}
+
+/* ===== MY WAVE — ВИД «КОЛЬЦО» =====
+   Второй вид блока (uiPrefs.waveView='ring', см. WaveCard/WaveRing): обложки
+   сидов по эллипсу вокруг кнопки запуска, герой (кнопка + заголовок +
+   «Настроить») — в центре кольца.
+
+   Ручки вида: слоты (смещение/размер/форма/период качания) — в RING_SLOTS
+   (WaveRing.tsx), здесь — только масштаб и оформление. Все размеры — БЕЗРАЗМЕРНЫЕ
+   числа в px «дизайн-бокса» 620×400; каждое множится на --hwr-k = длина одной
+   такой px. Считает её КОНТЕЙНЕРНЫЙ запрос (100cqw = ширина самого блока): он
+   живёт в логических px контейнера и переживает зум webview, в отличие от @media
+   по ширине вьюпорта.
+
+   ГОЧА: --hwr-k — именно ДЛИНА, а не коэффициент. clamp(.46, calc(100cqw/612), 1)
+   смешивает число и длину → правило невалидно, вид схлопывается в кучу обложек
+   в углу. Поэтому все три аргумента clamp в px, а множители безразмерны. */
+.home-wave-bar.hwb-view-ring{height:auto;padding:6px 0;gap:0;container-type:inline-size}
+/* 612 — полная ширина кольца (2×250 радиус + 96 крайняя плитка) + запас. На
+   широком окне кольцо НЕ растягивается дальше дизайн-размера (масштаб упирается
+   в 1px). Ниже .46 обложки перестают читаться — это дно масштаба. */
+.hwb-view-ring .hwb-stage{--hwr-k:clamp(.46px,calc((100cqw - 16px) / 612),1px);position:relative;width:100%;height:calc(404 * var(--hwr-k))}
+
+.hwr-ring{position:absolute;inset:0;z-index:1}
+/* Позиция слота — margin'ами (а не translate), чтобы transform остался целиком
+   под качание; hover-масштаб живёт на вложенной плитке, две анимации не дерутся
+   за одно свойство. */
+.hwr-slot{position:absolute;left:calc(50% + var(--x) * var(--hwr-k));top:calc(50% + var(--y) * var(--hwr-k));width:calc(var(--sz) * var(--hwr-k));height:calc(var(--sz) * var(--hwr-k));margin-left:calc(var(--sz) * var(--hwr-k) / -2);margin-top:calc(var(--sz) * var(--hwr-k) / -2);animation:hwrFloat var(--dur) ease-in-out infinite;animation-delay:var(--delay);will-change:transform}
+/* Скрытый блок / листание главной — качание на паузу (как у фаербола). */
+body.bars-hidden .hwr-slot,
+.home-scroll.is-scrolling .hwr-slot{animation-play-state:paused}
+
+/* Ни свечения, ни падающих теней — плитки лежат прямо на фоне страницы. */
+.hwr-tile{position:relative;display:block;width:100%;height:100%;padding:0;border:none;background:rgba(var(--ovl-rgb),.06);border-radius:calc(var(--sz) * var(--hwr-k) * .3);overflow:hidden;cursor:pointer;transition:transform .2s ease}
+.hwr-slot.is-round .hwr-tile{border-radius:50%}
+.hwr-tile img{display:block;width:100%;height:100%;object-fit:cover}
+.hwr-tile:hover{transform:scale(1.07)}
+.hwr-tile:active{transform:scale(.98)}
+/* Плитка-заглушка: обложек меньше, чем слотов (почти пустая библиотека). */
+.hwr-tile.is-empty{display:flex;align-items:center;justify-content:center;color:var(--text2);opacity:.32;cursor:default}
+.hwr-tile.is-empty:hover{transform:none}
+/* Ждём ответа площадки — заглушки мягко дышат. */
+.hwr-tile.is-load{animation:hwrBusy 1.4s ease-in-out infinite}
+
+/* Плей на hover'е плитки — тем же акцентом, что и центральная кнопка. */
+.hwr-tile-ovl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.42);color:var(--accent);opacity:0;transition:opacity .18s ease}
+.hwr-tile:hover .hwr-tile-ovl{opacity:1}
+/* Волна с этого трека уже стартует — держим оверлей и мигаем. */
+.hwr-tile.is-busy .hwr-tile-ovl{opacity:1;animation:hwrBusy 1s ease-in-out infinite}
+
+/* Герой по центру кольца. До нижней плитки ~120px дизайн-бокса — заголовок и
+   «Настроить» помещаются, не задевая обложки. */
+.hwb-view-ring .hwb-hero{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;gap:calc(11 * var(--hwr-k))}
+.hwb-view-ring .hwb-hero-main{flex-direction:column;gap:calc(11 * var(--hwr-k))}
+/* Кнопка — залитый кружок АКЦЕНТОМ (а не «голая» иконка, как у фаербола);
+   глиф внутри — var(--accent-text), контрастная пара акцента. */
+.hwb-view-ring .hwb-play{width:calc(84 * var(--hwr-k));height:calc(84 * var(--hwr-k));border-radius:50%;background:var(--accent);color:var(--accent-text);box-shadow:none;transition:transform .15s ease}
+.hwb-view-ring .hwb-play svg{width:calc(28 * var(--hwr-k));height:calc(28 * var(--hwr-k));margin-left:calc(3 * var(--hwr-k));filter:none}
+/* Масштабируем кнопку целиком, а не глиф внутри (иначе прыгает один треугольник). */
+.hwb-view-ring .hwb-play:hover svg,.hwb-view-ring .hwb-play:active svg{transform:none}
+.hwb-view-ring .hwb-play:hover{transform:scale(1.06)}
+.hwb-view-ring .hwb-play:active{transform:scale(.94)}
+.hwb-view-ring .hwb-play .hwb-spinner{width:calc(60 * var(--hwr-k));height:calc(60 * var(--hwr-k));margin:calc(-30 * var(--hwr-k)) 0 0 calc(-30 * var(--hwr-k));border-color:rgba(var(--ovl-rgb),.25);border-top-color:var(--accent-text)}
+.hwb-view-ring .hwb-title{font-size:calc(23 * var(--hwr-k));font-weight:800;letter-spacing:-.4px;text-shadow:none}
+.hwb-view-ring .hwb-tune{height:calc(30 * var(--hwr-k));padding:0 calc(14 * var(--hwr-k));font-size:calc(12 * var(--hwr-k));box-shadow:none;text-shadow:none}
+/* В кольце герой лежит на ФОНЕ СТРАНИЦЫ, а не на тёмном ядре фаербола, —
+   правило «тёмного острова» (белый текст в светлой теме) здесь не действует. */
+:root.theme-light .home-wave-bar.hwb-view-ring .hwb-title{color:var(--text)}
+:root.theme-light .home-wave-bar.hwb-view-ring .hwb-play{color:var(--accent-text)}
 
 /* ===== WAVE TUNE POPUP =====
    Попап кнопки «Настроить» (портал в body, см. WaveCard). Площадки — ряд
    чипов без подложки: у выбранной прозрачно-серый кружок, а лого красится
    БРЕНДОВЫМ цветом площадки (приходит инлайном через --src-fg); невыбранные —
    приглушённо-серые. Анимации нажатия нет — только смена цвета/фона. */
-.wave-menu{display:flex;flex-direction:column;gap:9px;min-width:214px;padding:10px;box-sizing:border-box;transform-origin:top center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*.7);box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.04)}
+.wave-menu{display:flex;flex-direction:column;gap:9px;min-width:214px;padding:10px;box-sizing:border-box;transform-origin:top center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*.7);box-shadow:none}
 .wave-src-row{display:flex;align-items:center;justify-content:center;gap:4px;background:none}
 .wave-src{width:38px;height:38px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:50%;background:none;color:var(--text2);opacity:.55;cursor:pointer;transition:background .18s ease,color .18s ease,opacity .18s ease}
-.wave-src:hover{opacity:.9;background:rgba(255,255,255,.05)}
+.wave-src:hover{opacity:.9;background:rgba(var(--ovl-rgb),.05)}
 /* Выбранная: прозрачно-серый кружок, лого внутри — бренд-цветом площадки. */
-.wave-src.is-on,.wave-src.is-on:hover{background:rgba(255,255,255,.1);color:var(--src-fg,var(--accent));opacity:1}
-.wave-dislikes{display:flex;align-items:center;gap:9px;width:100%;box-sizing:border-box;padding:10px 12px;border-radius:calc(var(--radius)*.6);background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);color:var(--text2);cursor:pointer;transition:.15s;font-family:var(--font);font-size:12.5px;font-weight:600;text-align:left}
-.wave-dislikes:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.13);color:var(--text)}
+.wave-src.is-on,.wave-src.is-on:hover{background:rgba(var(--ovl-rgb),.1);color:var(--src-fg,var(--accent));opacity:1}
+.wave-dislikes{display:flex;align-items:center;gap:9px;width:100%;box-sizing:border-box;padding:10px 12px;border-radius:calc(var(--radius)*.6);background:rgba(var(--ovl-rgb),.02);border:1px solid rgba(var(--ovl-rgb),.08);color:var(--text2);cursor:pointer;transition:.15s;font-family:var(--font);font-size:13px;font-weight:600;text-align:left}
+.wave-dislikes:hover{background:rgba(var(--ovl-rgb),.06);border-color:rgba(var(--ovl-rgb),.13);color:var(--text)}
 
 /* ===== DISLIKED IN QUEUE ===== */
 .tr.is-disliked .trn,.tr.is-disliked .tra,.tr.is-disliked .trd{text-decoration:line-through;color:var(--text2);opacity:.55}
@@ -90,21 +172,21 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
    продолжить трек можно кликом по полосе прогресса или кнопке play, открыть
    плеер — по обложке. Источник/активность спрятаны в попап кнопки «!». */
 .home-continue-card{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);position:relative;overflow:hidden}
-.hcc-source,.hcc-state{display:flex;align-items:center;gap:5px;min-width:0;max-width:50%;height:26px;box-sizing:border-box;font-size:10.5px;font-weight:600;line-height:1;color:var(--text2);background:transparent;border:1px solid rgba(255,255,255,.07);padding:4px 8px;border-radius:calc(var(--radius) * 0.95)}
+.hcc-source,.hcc-state{display:flex;align-items:center;gap:5px;min-width:0;max-width:50%;height:26px;box-sizing:border-box;font-size:11px;font-weight:600;line-height:1;color:var(--text2);background:transparent;border:1px solid rgba(var(--ovl-rgb),.07);padding:4px 8px;border-radius:calc(var(--radius) * 0.95)}
 .hcc-source span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hcc-state{justify-content:center;flex-shrink:0;white-space:nowrap;padding-left:8px;padding-right:8px}
 .hcc-state.is-playing{gap:6px}
 .hcc-state.is-playing::before{content:'';display:block;width:6px;height:6px;min-width:6px;border-radius:50%;background:var(--accent);flex:0 0 auto}
 .hcc-row{display:flex;align-items:center;gap:10px;position:relative;z-index:1}
-.hcc-cover{width:44px;height:44px;border-radius:calc(var(--radius)*.6);flex-shrink:0;overflow:hidden;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:var(--muted);box-shadow:0 4px 16px rgba(0,0,0,.4);cursor:pointer;transition:filter .15s}
+.hcc-cover{width:44px;height:44px;border-radius:calc(var(--radius)*.6);flex-shrink:0;overflow:hidden;background:rgba(var(--ovl-rgb),.06);display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;transition:filter .15s}
 .hcc-cover:hover{filter:brightness(1.12)}
 .hcc-cover img{width:100%;height:100%;object-fit:cover}
-.hcc-play-btn{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);color:var(--text);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;position:relative;z-index:2}
-.hcc-play-btn:hover{background:rgba(255,255,255,.16)}
+.hcc-play-btn{width:44px;height:44px;border-radius:50%;background:rgba(var(--ovl-rgb),.1);color:var(--text);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;position:relative;z-index:2}
+.hcc-play-btn:hover{background:rgba(var(--ovl-rgb),.16)}
 .hcc-play-btn svg{margin-left:0}
 
 /* Полоса-пилюля с названием внутри + заливкой прогресса (перематываемая) */
-.hcc-seek{flex:1;min-width:0;position:relative;height:44px;border-radius:min(22px,calc(var(--radius)*1.5));background:rgba(255,255,255,.06);overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer}
+.hcc-seek{flex:1;min-width:0;position:relative;height:44px;border-radius:min(22px,calc(var(--radius)*1.5));background:rgba(var(--ovl-rgb),.06);overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer}
 .hcc-seek.is-seekable{touch-action:none}
 /* Заливка акцентом (как режим «Полоса» в оверлее). Без своего скругления —
    левый край режется overflow пилюли, правый ровный. Во время драга transition
@@ -113,36 +195,36 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .hcc-seek-label{position:absolute;inset:0;pointer-events:none}
 .hcc-seek-main,.hcc-seek-times{position:absolute;left:14px;right:42px;top:50%;transform:translateY(-50%);transition:opacity .15s}
 /* «!» внутри полосы (справа): открывает попап источник/активность */
-.hcc-seek-info{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;transition:.15s;font-family:var(--font)}
-.hcc-seek-info:hover{background:rgba(255,255,255,.16);color:var(--text)}
-.hcc-seek-info.active{background:rgba(255,255,255,.2);color:var(--text)}
+.hcc-seek-info{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:none;background:rgba(var(--ovl-rgb),.08);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;transition:.15s;font-family:var(--font)}
+.hcc-seek-info:hover{background:rgba(var(--ovl-rgb),.16);color:var(--text)}
+.hcc-seek-info.active{background:rgba(var(--ovl-rgb),.2);color:var(--text)}
 .hcc-seek-main{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
 .hcc-seek-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.hcc-seek-artist{font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;max-width:42%}
+.hcc-seek-artist{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;max-width:42%}
 .hcc-seek-times{opacity:0;text-align:center;font-size:12px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
 .hcc-seek.is-seekable:hover .hcc-seek-main{opacity:0}
 .hcc-seek.is-seekable:hover .hcc-seek-times{opacity:1}
 
 /* Круглые кнопки справа: лайк + контекстное меню (три точки) */
-.hcc-icon-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;font-family:var(--font)}
-.hcc-icon-btn:hover{background:rgba(255,255,255,.12);color:var(--text)}
+.hcc-icon-btn{width:36px;height:36px;border-radius:50%;background:rgba(var(--ovl-rgb),.06);border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;font-family:var(--font)}
+.hcc-icon-btn:hover{background:rgba(var(--ovl-rgb),.12);color:var(--text)}
 .hcc-like.active,.hcc-like.active:hover{color:var(--accent)}
 
 /* Попап кнопки «!» — источник + активность (стек), портал в body, открыт вверх */
-.hcc-info-pop{display:flex;flex-direction:column;gap:4px;padding:6px;min-width:196px;transform-origin:bottom center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*.7);box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.04)}
-.hcc-info-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(var(--radius)*.55);background:rgba(255,255,255,.035);min-width:0}
-.hcc-info-ico{width:30px;height:30px;flex-shrink:0;border-radius:calc(var(--radius)*.5);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.hcc-info-pop{display:flex;flex-direction:column;gap:4px;padding:6px;min-width:196px;transform-origin:bottom center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*.7);box-shadow:none}
+.hcc-info-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(var(--radius)*.55);background:rgba(var(--ovl-rgb),.035);min-width:0}
+.hcc-info-ico{width:30px;height:30px;flex-shrink:0;border-radius:calc(var(--radius)*.5);background:rgba(var(--ovl-rgb),.06);display:flex;align-items:center;justify-content:center;color:var(--text2)}
 .hcc-info-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hcc-info-cap{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);opacity:.65;line-height:1}
-.hcc-info-val{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcc-info-val{font-size:13px;font-weight:600;color:var(--text);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Статус-точка активности: акцентная с ореолом при воспроизведении */
 .hcc-info-dot{width:9px;height:9px;border-radius:50%;background:var(--text2);opacity:.5}
 .hcc-info-dot.is-playing{background:var(--accent);opacity:1;box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18),0 0 8px 1px rgba(var(--accent-rgb),.55)}
 
 /* ===== RANDOM MIX BUTTON ===== */
-.home-btn-secondary{display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);color:var(--text2);border:1px solid rgba(255,255,255,var(--wb));font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font);width:100%}
+.home-btn-secondary{display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);color:var(--text2);border:1px solid var(--ovl-line);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font);width:100%}
 .home-btn-secondary:hover{filter:brightness(1.1)}
-.home-btn-secondary .hbs-icon{width:30px;height:30px;border-radius:calc(var(--radius)*.6);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.home-btn-secondary .hbs-icon{width:30px;height:30px;border-radius:calc(var(--radius)*.6);background:rgba(var(--ovl-rgb),.06);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .home-btn-secondary .hbs-label{flex:1;text-align:left}
 .home-btn-secondary .hbs-arrow{display:none}
 
@@ -164,7 +246,7 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .home-card:hover .hc-play-overlay{opacity:1}
 .home-card:hover .hc-play-btn{transform:scale(1)}
 .hc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hc-artist{font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
+.hc-artist{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
 .home-empty-hint{font-size:12px;color:var(--muted);padding:8px 0}
 
 /* Playlist grid */
@@ -180,8 +262,8 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .home-pl-card:hover .hpc-play-btn{transform:scale(1)}
 .hpc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 .hpc-sub{font-size:10px;color:var(--text2);text-align:center;margin-top:2px}
-.home-pl-new{width:140px;height:140px;border-radius:var(--radius);background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font);transition:.15s}
-.home-pl-new:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.home-pl-new{width:140px;height:140px;border-radius:var(--radius);background:rgba(var(--ovl-rgb),.04);border:1px dashed rgba(var(--ovl-rgb),.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font);transition:.15s}
+.home-pl-new:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
 /* ===== LIB SIDEBAR SYSTEM ITEM COVERS =====
    Плоская тинт-подложка + цветная иконка — как у папок (--folder-tint),
    но каждый пункт держит свой смысловой цвет (синий/красный/золотой). */
@@ -214,7 +296,7 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
   --hqc-scrim-a:.42;--hqc-scrim-left:.5;
   --hqc-hover-scale:1.08;
   display:flex;flex-direction:row;align-items:center;gap:13px;border-radius:var(--radius);overflow:hidden;
-  border:1px solid rgba(255,255,255,var(--wb));cursor:pointer;transition:.15s;position:relative;
+  border:1px solid var(--ovl-line);cursor:pointer;transition:.15s;position:relative;
   height:92px;padding:0 18px;isolation:isolate;background:var(--block-bg,#2a2a2a)
 }
 .home-quick-card:hover{filter:brightness(1.15)}
@@ -254,13 +336,13 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 .hqc-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
 .hqc-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hqc-title{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-.hqc-sub{font-size:11.5px;color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hqc-sub{font-size:12px;color:rgba(var(--ovl-rgb),0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Пустая (нет обложек — нет истории / лайков): неактивная и нейтральная. */
 .home-quick-card.is-empty{--hqc-tint-a:.14;cursor:default}
 .home-quick-card.is-empty:hover{filter:none}
-.home-quick-card.is-empty .hqc-icon{color:rgba(255,255,255,.5)}
-.home-quick-card.is-empty .hqc-title{color:rgba(255,255,255,.6)}
-.home-quick-card.is-empty .hqc-sub{color:rgba(255,255,255,0.3)}
+.home-quick-card.is-empty .hqc-icon{color:rgba(var(--ovl-rgb),.5)}
+.home-quick-card.is-empty .hqc-title{color:rgba(var(--ovl-rgb),.6)}
+.home-quick-card.is-empty .hqc-sub{color:rgba(var(--ovl-rgb),0.3)}
 
 /* ===== HOME EXTRAS ===== */
 .home-time{font-size:11px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.02em;background:rgba(var(--accent-rgb),.1);padding:2px 8px;border-radius:min(20px,calc(var(--radius) * 0.95));margin-left:auto;flex-shrink:0}
@@ -269,11 +351,14 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 /* ===== HOME DISCOVER (Чарты / Новинки) ===== */
 .home-disc-hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 /* Кнопка-инфо «(i)» в заголовке (вместо переключателя площадок). */
-.home-disc-info{appearance:none;border:0;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
-.home-disc-info:hover{background:rgba(255,255,255,.16);color:var(--text)}
-.home-disc-info.active{background:rgba(255,255,255,.2);color:var(--text)}
-.home-disc-loading .hc-cover{animation:home-disc-pulse 1.2s ease-in-out infinite}
-@keyframes home-disc-pulse{0%,100%{opacity:.5}50%{opacity:.85}}
+.home-disc-info{appearance:none;border:0;width:28px;height:28px;border-radius:50%;background:rgba(var(--ovl-rgb),.08);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+.home-disc-info:hover{background:rgba(var(--ovl-rgb),.16);color:var(--text)}
+.home-disc-info.active{background:rgba(var(--ovl-rgb),.2);color:var(--text)}
+/* Секция монтируется только с готовыми данными → появление смягчаем фейдом,
+   чтобы поздний ответ сети не «дёргал» страницу резким блоком. */
+.home-disc{animation:home-disc-in .3s ease both}
+@keyframes home-disc-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.home-disc{animation:none}}
 
 /* ===== DISLIKES MODAL ===== */
 #dislikesModalOverlay{position:fixed;inset:0;z-index:992;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s}
@@ -281,23 +366,23 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
 
 /* Dislikes list row */
 .dlk-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;transition:.12s;cursor:default}
-.dlk-row:hover{background:rgba(255,255,255,.06)}
-.dlk-cov{width:38px;height:38px;border-radius:8px;background:rgba(255,255,255,.07);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.06)}
+.dlk-row:hover{background:rgba(var(--ovl-rgb),.06)}
+.dlk-cov{width:38px;height:38px;border-radius:8px;background:rgba(var(--ovl-rgb),.07);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(var(--ovl-rgb),.06)}
 .dlk-cov img{width:100%;height:100%;object-fit:cover;display:block}
 .dlk-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .dlk-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dlk-artist{font-size:11.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlk-artist{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dlk-rm{width:28px;height:28px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s;flex-shrink:0;font-family:var(--font);opacity:0}
 .dlk-row:hover .dlk-rm{opacity:1}
 .dlk-rm:hover{color:#e03030;background:rgba(224,48,48,.1)}
 .dlk-rm:active{transform:scale(.93)}
-.stats-modal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);width:440px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(255,255,255,.04) inset;overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
+.stats-modal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:var(--radius);width:440px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
 #dislikesModalOverlay.open .stats-modal{transform:translateY(0)}
-.stats-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0}
-.stats-modal-title{font-size:13.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.stats-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 14px;border-bottom:1px solid rgba(var(--ovl-rgb),.07);flex-shrink:0}
+.stats-modal-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
 .stats-modal-close{width:26px;height:26px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-family:var(--font)}
-.stats-modal-close:hover{background:rgba(255,255,255,.09);color:var(--text)}
+.stats-modal-close:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
 .stats-modal-body{overflow-y:auto;padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px}
 .stats-modal-body::-webkit-scrollbar{width:2px}
-.stats-modal-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.stats-modal-body::-webkit-scrollbar-thumb{background:rgba(var(--ovl-rgb),.12);border-radius:2px}
 /* ===== END HOME LAYOUT ===== */

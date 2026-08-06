@@ -19,8 +19,8 @@ use windows::Win32::UI::Shell::{
     THB_ICON, THB_TOOLTIP, THUMBBUTTON, THUMBBUTTONMASK,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    LoadImageW, RegisterWindowMessageW, HICON, IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE,
-    WM_COMMAND,
+    GetSystemMetrics, LoadImageW, RegisterWindowMessageW, HICON, IMAGE_ICON, LR_LOADFROMFILE,
+    SM_CXSMICON, SM_CYSMICON, WM_COMMAND,
 };
 use windows::core::w;
 
@@ -207,13 +207,23 @@ fn load_hicon(path: &Path) -> Option<HICON> {
         .chain(std::iter::once(0))
         .collect();
     unsafe {
+        // Явно просим размер «мелкой» иконки (16px × DPI): .ico многоразмерный,
+        // и так система возьмёт нужный кадр, а не отмасштабирует 32→16 с мылом.
+        let cx = match GetSystemMetrics(SM_CXSMICON) {
+            0 => 16,
+            v => v,
+        };
+        let cy = match GetSystemMetrics(SM_CYSMICON) {
+            0 => 16,
+            v => v,
+        };
         LoadImageW(
             None,
             windows::core::PCWSTR(wide.as_ptr()),
             IMAGE_ICON,
-            0,
-            0,
-            LR_LOADFROMFILE | LR_DEFAULTSIZE,
+            cx,
+            cy,
+            LR_LOADFROMFILE,
         )
         .ok()
         .map(|h| HICON(h.0))

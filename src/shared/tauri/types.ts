@@ -60,7 +60,7 @@ export interface UpdateNotePageRaw {
   body?: LocalizedText
   /** Имя файла из update-notes/assets/ или полная https-ссылка. */
   image?: string
-  /** Бренд-иконки площадок вместо/в дополнение к фото: 'spotify' | 'ytmusic' | 'soundcloud' | 'yandex'. */
+  /** Бренд-иконки площадок вместо/в дополнение к фото: 'ytmusic' | 'soundcloud' | 'yandex'. */
   icons?: string[]
 }
 

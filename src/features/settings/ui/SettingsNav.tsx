@@ -1,9 +1,8 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
-import { ScLogo, YmLogo, SpLogo, YtmLogo, providerBrandColor } from '@entities/track'
+import { ScLogo, YmLogo, YtmLogo, providerBrandColor } from '@entities/track'
 import { useT, useLocale, dictionaries, type TranslationKey } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { useLastfmStore } from '@features/lastfm'
-import { useSpAuthStore } from '@features/spotify'
 import { useYmAuthStore } from '@features/yandex'
 import { useGeniusStore } from '@features/lyrics'
 import { useSettingsStore } from '../model'
@@ -23,9 +22,8 @@ export type SectionId =
   // Оформление
   | 'view'
   | 'interface'
-  | 'library'
+  | 'pages'
   | 'tabs'
-  | 'background'
   | 'medialib'
   // Интеграции
   | 'soundcloud'
@@ -34,7 +32,6 @@ export type SectionId =
   | 'lastfm'
   | 'discord'
   | 'yandex'
-  | 'spotify'
 
 interface SectionDef {
   id: SectionId
@@ -113,19 +110,14 @@ const GROUPS: GroupDef[] = [
         icon: <Ico name="sidebar" width={13} height={13} />,
       },
       {
-        id: 'library',
-        labelKey: 'settings.nav.library',
-        icon: <Ico name="library" width={13} height={13} />,
+        id: 'pages',
+        labelKey: 'settings.nav.pages',
+        icon: <Ico name="grid" width={13} height={13} />,
       },
       {
         id: 'tabs',
         labelKey: 'settings.nav.tabs',
         icon: <Ico name="windowFrame" width={13} height={13} />,
-      },
-      {
-        id: 'background',
-        labelKey: 'settings.nav.background',
-        icon: <Ico name="gallery" width={13} height={13} />,
       },
       {
         id: 'medialib',
@@ -143,19 +135,14 @@ const GROUPS: GroupDef[] = [
         icon: <ScLogo size={13} />,
       },
       {
-        id: 'ytmusic',
-        brand: 'YouTube Music',
-        icon: <YtmLogo size={13} />,
-      },
-      {
-        id: 'spotify',
-        brand: 'Spotify',
-        icon: <SpLogo size={13} />,
-      },
-      {
         id: 'yandex',
         labelKey: 'settings.nav.yandex',
         icon: <YmLogo size={13} />,
+      },
+      {
+        id: 'ytmusic',
+        brand: 'YouTube Music',
+        icon: <YtmLogo size={13} />,
       },
       {
         id: 'lastfm',
@@ -216,16 +203,20 @@ const SEARCH_RULES: Record<SectionId, { include: string[]; exclude?: string[] }>
       'settings.interface.libView',
       'settings.interface.libSidebar',
       'settings.interface.libSbHover',
+      'settings.interface.libHeroBtns',
       'settings.interface.libDensity',
       'settings.interface.libCols',
     ],
   },
-  library: {
+  pages: {
     include: [
+      'settings.home.',
       'settings.library.',
+      'settings.search.',
       'settings.interface.libView',
       'settings.interface.libSidebar',
       'settings.interface.libSbHover',
+      'settings.interface.libHeroBtns',
       'settings.interface.libDensity',
       'settings.interface.libCols',
     ],
@@ -238,15 +229,14 @@ const SEARCH_RULES: Record<SectionId, { include: string[]; exclude?: string[] }>
       'settings.interface.nav',
     ],
   },
-  background: { include: ['settings.background.'] },
-  medialib: { include: ['settings.custom.'] },
+  // «Фон» переехал вкладкой внутрь «Кастомизации» — ищем по обоим namespace'ам.
+  medialib: { include: ['settings.custom.', 'settings.background.'] },
   soundcloud: { include: ['settings.sc.'] },
   ytmusic: { include: ['settings.ytm.'] },
   genius: { include: ['settings.genius.'] },
   lastfm: { include: ['settings.lastfm.'] },
   discord: { include: ['settings.discord.'] },
   yandex: { include: ['settings.ym.'] },
-  spotify: { include: ['settings.sp.'] },
 }
 
 export const SettingsNav = ({
@@ -265,14 +255,12 @@ export const SettingsNav = ({
   // (SoundCloud/YTM) работают без авторизации — всегда активны; остальные —
   // по факту логина/креденшелов/включённости (реактивно из их сторов).
   const lfmActive = useLastfmStore((s) => !!s.sk)
-  const spActive = useSpAuthStore((s) => s.enabled)
   const ymActive = useYmAuthStore((s) => s.authed)
   const geniusActive = useGeniusStore((s) => !!s.token)
   const discordActive = useSettingsStore((s) => s.discord_rpc)
   const activeIntegrations: Partial<Record<SectionId, boolean>> = {
     soundcloud: true,
     ytmusic: true,
-    spotify: spActive,
     yandex: ymActive,
     lastfm: lfmActive,
     genius: geniusActive,
@@ -306,7 +294,12 @@ export const SettingsNav = ({
     secLabel(s).toLowerCase().includes(q) || (contentIndex[s.id]?.includes(q) ?? false)
 
   return (
-    <div className="settings-modal-nav" id="smNav">
+    <div
+      className="settings-modal-nav"
+      id="smNav"
+      onMouseEnter={(e) => e.currentTarget.classList.add('sb-active')}
+      onMouseLeave={(e) => e.currentTarget.classList.remove('sb-active')}
+    >
       <div className="s-nav-search" style={{ marginBottom: 6 }}>
         <Ico name="search" width={13} height={13} />
         <input

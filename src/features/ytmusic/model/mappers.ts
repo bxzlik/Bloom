@@ -72,6 +72,7 @@ export const toAlbum = (a: YtmRawAlbum): Playlist => ({
   title: a.title || i18nT('ym.fallback.album'),
   cover: a.cover || null,
   ownerName: a.artist || '',
+  year: a.year || undefined,
   source: 'ytmusic',
 })
 
@@ -80,5 +81,8 @@ export const toPlaylist = (p: YtmRawPlaylist): Playlist => ({
   title: p.title || i18nT('ym.fallback.playlist'),
   cover: p.cover || null,
   ownerName: p.ownerName || '',
+  // Не подставляем 0: YTM даёт счётчик только у своих плейлистов, и «0 тр.»
+  // вместо «неизвестно» выглядит как пустой плейлист.
+  trackCount: p.trackCount,
   source: 'ytmusic',
 })

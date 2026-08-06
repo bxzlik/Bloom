@@ -10,6 +10,7 @@ import { usePlaylistStore } from '@features/library/model/playlistStore'
 import { mpAddToLib, mpAddToPlaylist, mpOpenNewPlaylist } from '@features/player'
 import { useT } from '@shared/i18n'
 import { PlCover } from '@features/library/ui/PlCover'
+import { tracksLabel } from '@features/library/lib/formatCount'
 import { Ico } from '@shared/ui/icons/solar'
 
 export interface AddPopupProps {
@@ -196,7 +197,7 @@ export const AddPopup = ({
             return (
               <div
                 key={pl.id}
-                className={already ? 'ci ci-active' : 'ci'}
+                className={already ? 'ci ci-pl ci-active' : 'ci ci-pl'}
                 onClick={() => {
                   // Повторный клик по отмеченному плейлисту — убрать трек из него.
                   if (trackId && already) removeTrackFromPl(pl.id, trackId)
@@ -211,11 +212,12 @@ export const AddPopup = ({
                     <PlCover trs={pl.trs} seed={pl.id} />
                   )}
                 </span>{' '}
-                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {pl.name}
+                <span className="ci-pl-txt">
+                  <span className="ci-pl-name">{pl.name}</span>
+                  <span className="ci-pl-sub">{tracksLabel(pl.trs.length)}</span>
                 </span>
                 {already && (
-                  <Ico name="check" width={13} height={13} style={{ flexShrink: 0, color: 'var(--accent)' }} />
+                  <Ico name="check" width={15} height={15} style={{ flexShrink: 0, color: 'var(--accent)' }} />
                 )}
               </div>
             )

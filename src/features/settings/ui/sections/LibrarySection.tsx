@@ -4,33 +4,23 @@ import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
- * Раздел «Библиотека» (`#ssec-library`). Вынесен из «Интерфейса»
- * (категория «БИБЛИОТЕКА»): вид библиотеки (список/сетка), плотность треклиста,
- * видимость колонок «Альбом» / «Добавлено», режим хранения локальных файлов.
+ * Карточки вкладки «Библиотека» раздела «Страницы» (`PagesSection`). Раньше это
+ * был самостоятельный раздел «Библиотека»: вид библиотеки (список/сетка),
+ * плотность треклиста, видимость колонок «Альбом» / «Добавлено», режим хранения
+ * локальных файлов.
  *
  * i18n-ключи вида библиотеки остались в namespace `settings.interface.lib*`
  * (см. dict.ts) — их не переносили, чтобы не плодить дубликаты; поиск по
- * вкладкам сопоставляет их этой секции через SEARCH_RULES (SettingsNav).
+ * вкладкам сопоставляет их разделу «Страницы» через SEARCH_RULES (SettingsNav).
  */
-export const LibrarySection = () => {
+export const LibraryCards = () => {
   const t = useT()
   const p = useUiPrefsStore()
   const importMode = useSettingsStore((s) => s.local_import_mode)
   const setImportMode = useSettingsStore((s) => s.setLocalImportMode)
 
   return (
-    <div className="s-section active" id="ssec-library">
-      <div className="s-section-head">
-        <div className="s-section-title">
-          <Ico name="library" width={15} height={15} />{' '}
-          {t('settings.nav.library')}
-        </div>
-        <button className="s-section-reset" onClick={() => p.reset()}>
-          <Ico name="refresh" width={10} height={10} />{' '}
-          {t('common.reset')}
-        </button>
-      </div>
-
+    <>
       <div className="sc sc-keep">
         <div className="sc-title">{t('settings.library.import.title')}</div>
         <div className="sc-desc">{t('settings.library.import.desc')}</div>
@@ -94,6 +84,31 @@ export const LibrarySection = () => {
         </div>
       </div>
       <div className="sc sc-keep">
+        <div className="sc-title">{t('settings.interface.libHeroBtns.title')}</div>
+        <div className="sc-desc">{t('settings.interface.libHeroBtns.desc')}</div>
+        <div className="s-opt-row">
+          <OptBtn active={p.libHeroBtns === 'right'} onClick={() => p.set('libHeroBtns', 'right')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
+              <rect x="2" y="7" width="7" height="7" rx="1.6" />
+              <line x1="11" y1="9" x2="16" y2="9" />
+              <line x1="11" y1="12.5" x2="14" y2="12.5" />
+              <rect x="17.5" y="8.6" width="4.5" height="3.4" rx="1.7" fill="currentColor" stroke="none" />
+            </svg>
+            {t('settings.interface.libHeroBtns.right')}
+          </OptBtn>
+          <OptBtn active={p.libHeroBtns === 'below'} onClick={() => p.set('libHeroBtns', 'below')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
+              <rect x="2" y="5.5" width="7" height="7" rx="1.6" />
+              <line x1="11" y1="7.5" x2="19" y2="7.5" />
+              <line x1="11" y1="11" x2="16" y2="11" />
+              <rect x="11" y="14" width="5.5" height="3.4" rx="1.7" fill="currentColor" stroke="none" />
+              <rect x="18" y="14" width="4" height="3.4" rx="1.7" />
+            </svg>
+            {t('settings.interface.libHeroBtns.below')}
+          </OptBtn>
+        </div>
+      </div>
+      <div className="sc sc-keep">
         <div className="sc-title">{t('settings.interface.libDensity.title')}</div>
         <div className="sc-desc">{t('settings.interface.libDensity.desc')}</div>
         <div className="s-opt-row">
@@ -125,7 +140,7 @@ export const LibrarySection = () => {
           <Toggle checked={p.libColDate} onChange={(v) => p.set('libColDate', v)} />
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

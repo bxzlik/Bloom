@@ -7,6 +7,8 @@ import '@shared/styles/overrides-main.css'
 import '@shared/styles/transparency.css'
 import '@shared/styles/telemetry.css'
 import '@shared/styles/eq.css'
+// Последним: режим растрового шрифта перебивает кегли и трекинг остальных стилей.
+import '@shared/styles/pixel-font.css'
 
 // Отключаем браузерное контекстное меню (кастомные меню рисуем сами через oncontextmenu).
 window.addEventListener('contextmenu', (e) => e.preventDefault())

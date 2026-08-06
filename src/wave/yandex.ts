@@ -68,10 +68,14 @@ export async function start(): Promise<boolean> {
   return startStation("user:onyourwave", i18nT("wave.title"));
 }
 
-/** Волна по конкретному Яндекс-треку (rotor `track:<id>`). */
-export async function startByTrack(ymTrackId: string): Promise<boolean> {
+/**
+ * Волна по конкретному Яндекс-треку (rotor `track:<id>`).
+ * `first` — bloom-id трека, который должен зазвучать первым (rotor не всегда
+ * возвращает сам сид в батче; см. startStation).
+ */
+export async function startByTrack(ymTrackId: string, first?: string): Promise<boolean> {
   if (!ymTrackId) return false;
-  return startStation(`track:${ymTrackId}`, i18nT("wave.label.track"));
+  return startStation(`track:${ymTrackId}`, i18nT("wave.label.track"), first);
 }
 
 /** Волна по Яндекс-артисту (rotor `artist:<id>`). */
@@ -84,7 +88,7 @@ export async function startByArtist(ymArtistId: string): Promise<boolean> {
  * Общий старт rotor-станции. `station` — сид (`user:onyourwave`/`track:<id>`),
  * `label` — подпись источника в плеере. Возвращает true, если волна пошла.
  */
-async function startStation(station: string, label: string): Promise<boolean> {
+async function startStation(station: string, label: string, first?: string): Promise<boolean> {
   if (!(await ymIsAuthed().catch(() => false))) {
     host.toast(i18nT("wave.toast.ymNoAuth"), "warn");
     return false;
@@ -114,6 +118,14 @@ async function startStation(station: string, label: string): Promise<boolean> {
   }
   if (!ids.length) return false;
 
+  // Трек, с которого волну попросили начать (клик по обложке в кольце), — в
+  // голову очереди. Если rotor уже вернул его в батче, не дублируем.
+  if (first && host.trackById(first)) {
+    const i = ids.indexOf(first);
+    if (i >= 0) ids.splice(i, 1);
+    ids.unshift(first);
+  }
+
   state = {
     station,
     batchId: batch.batchId || "",
@@ -129,7 +141,8 @@ async function startStation(station: string, label: string): Promise<boolean> {
 
   fb("radioStarted");
   host.loadPlay(ids[0]!);
-  fb("trackStarted", String(raws[0]!.id));
+  // Фидбек — по фактически первому треку очереди (он мог быть подменён `first`).
+  fb("trackStarted", host.trackById(ids[0]!)?.ymTrackId ?? String(raws[0]!.id));
   prefetch();
   return true;
 }

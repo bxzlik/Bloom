@@ -12,12 +12,15 @@
 @import './queue.css';
 @import './library.css';
 @import './big-picture.css';
+/* после player/big-picture: слои смены трека перебивают правила обложек */
+@import './track-swap.css';
 @import './audio-theme.css';
 @import './settings.css';
 @import './sliders-telemetry.css';
 @import './modals.css';
 @import './search-misc.css';
 @import './home.css';
+@import './wrapped.css';
 @import './track-modals.css';
 @import './stats-windows.css';
 @import './soundcloud-system.css';

@@ -12,22 +12,13 @@ const SOURCE_LABELS: Record<string, string> = {
   none: '',
 }
 
-const KARAOKE_KEY = 'bloom_lyrics_karaoke'
-const readKaraoke = (): boolean => {
-  try {
-    return localStorage.getItem(KARAOKE_KEY) !== '0'
-  } catch {
-    return true
-  }
-}
-
 export type LyricsStatus = 'idle' | 'loading' | 'ready' | 'empty'
 
 export interface LyricsState {
-  /** Панель открыта (overlay поверх обложки). */
+  /** Панель открыта (overlay поверх обложки).
+   *  Оформление текста живёт не здесь, а в `playerViewStore.lyricsStyle` —
+   *  оно своё у каждой поверхности и передаётся в `LyricsView` пропами. */
   open: boolean
-  /** Караоке-режим: подсветка по словам, а не по строкам. */
-  karaoke: boolean
 
   status: LyricsStatus
   /** Метка источника для бейджа (может быть пустой строкой). */
@@ -41,7 +32,6 @@ export interface LyricsState {
 
   toggleOpen: () => void
   setOpen: (v: boolean) => void
-  toggleKaraoke: () => void
 
   /** Начинает новый запрос: бампит requestId, ставит loading, чистит текст. */
   beginRequest: () => number
@@ -55,7 +45,6 @@ export interface LyricsState {
 
 export const useLyricsStore = create<LyricsState>((set, get) => ({
   open: false,
-  karaoke: readKaraoke(),
 
   status: 'idle',
   source: '',
@@ -66,16 +55,6 @@ export const useLyricsStore = create<LyricsState>((set, get) => ({
 
   toggleOpen: () => set((s) => ({ open: !s.open })),
   setOpen: (v) => set({ open: v }),
-  toggleKaraoke: () =>
-    set((s) => {
-      const next = !s.karaoke
-      try {
-        localStorage.setItem(KARAOKE_KEY, next ? '1' : '0')
-      } catch {
-        /* ignore */
-      }
-      return { karaoke: next }
-    }),
 
   beginRequest: () => {
     const id = get().requestId + 1

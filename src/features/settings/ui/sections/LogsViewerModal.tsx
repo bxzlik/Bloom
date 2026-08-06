@@ -72,7 +72,7 @@ export const LogsViewerModal = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 16px',
-            borderBottom: '1px solid rgba(255,255,255,.08)',
+            borderBottom: '1px solid rgba(var(--ovl-rgb),.08)',
             flexShrink: 0,
           }}
         >
@@ -100,12 +100,12 @@ export const LogsViewerModal = ({
             margin: 0,
             padding: '12px 16px',
             overflow: 'auto',
-            fontSize: 11.5,
+            fontSize: 12,
             lineHeight: 1.5,
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
-            color: 'rgba(255,255,255,.82)',
+            color: 'rgba(var(--ovl-rgb),.82)',
             userSelect: 'text',
             WebkitUserSelect: 'text',
             cursor: 'text',

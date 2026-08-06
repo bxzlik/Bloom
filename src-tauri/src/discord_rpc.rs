@@ -30,7 +30,7 @@ pub struct PresenceState {
     pub small_img_url: String,
     /// "off" | "default" | "custom" | "platform" ("" = legacy).
     pub small_img_mode: String,
-    /// Площадка текущего трека: "soundcloud" | "ytmusic" | "spotify" | "yandex" | "".
+    /// Площадка текущего трека: "soundcloud" | "ytmusic" | "yandex" | "".
     pub source: String,
     pub btn1_mode: String,
     pub btn1_label: String,
@@ -342,7 +342,6 @@ fn platform_asset_key(source: &str) -> &'static str {
     match source {
         "soundcloud" => "soundcloud",
         "ytmusic" => "ytmusic",
-        "spotify" => "spotify",
         "yandex" => "yandex",
         _ => "bloom",
     }
@@ -356,7 +355,6 @@ fn platform_label(source: &str, mode: &str) -> &'static str {
     match source {
         "soundcloud" => "SoundCloud",
         "ytmusic" => "YouTube Music",
-        "spotify" => "Spotify",
         "yandex" => "Яндекс Музыка",
         _ => "Bloom",
     }

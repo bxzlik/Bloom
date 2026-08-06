@@ -12,7 +12,7 @@ import {
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks } from '@entities/track'
 import { useNavStore } from '@app/navigationStore'
-import { useDetailStore } from '@features/search/model/detailStore'
+import { useDetailOpen } from '@features/search/model/detailStore'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
 import { useGrpStore } from '../model/grpStore'
@@ -33,6 +33,7 @@ import { audioEngine } from '../lib/audioEngine'
 import { MarqueeTitle } from './MarqueeTitle'
 import { PlayPauseButton } from './PlayPauseButton'
 import { AddPopup } from './AddPopup'
+import { TrackSwap } from './TrackSwap'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
@@ -97,7 +98,7 @@ const MP_PROGRESS_OP = 0.7
 export const useMiniBarVisible = (): boolean => {
   const curId = useQueueStore((s) => s.curId)
   const page = useNavStore((s) => s.page)
-  const detailOpen = useDetailStore((s) => s.stack.length > 0)
+  const detailOpen = useDetailOpen()
   const mpEnabled = usePlayerViewStore((s) => s.mpEnabled)
   return !!curId && mpEnabled && (page !== 'player' || detailOpen)
 }
@@ -132,6 +133,10 @@ export const PlayerBar = () => {
   const mpRounded = usePlayerViewStore((s) => s.mpRounded)
   const mpHide = usePlayerViewStore((s) => s.mpHide)
   const mpCompact = usePlayerViewStore((s) => s.mpCompact)
+  // Анимация смены трека для бара («Плеер» → Анимация смены трека → Нижний бар).
+  // Обложка и подпись — независимо.
+  const coverAnim = usePlayerViewStore((s) => s.trackAnim.bar.cover)
+  const textAnim = usePlayerViewStore((s) => s.trackAnim.bar.text)
   // В режиме «Фоном» весь бар = прогресс-бар → клик по нему перематывает
   // (линия #mpBarBg при этом обычно скрыта). Кнопки/обложку/название пропускаем.
   const mpBgProgress = usePlayerViewStore((s) => s.mpProgress.bg)
@@ -360,11 +365,15 @@ export const PlayerBar = () => {
                 cursor: 'pointer',
               }}
             >
-              {artwork ? (
-                <img src={artwork} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <NoteSvg size={16} />
-              )}
+              {/* Смена трека: обложка уезжает/приезжает слоями (настройка
+                  «Анимация смены трека» → Нижний бар). */}
+              <TrackSwap id={curId} kind={coverAnim} fill>
+                {artwork ? (
+                  <img src={artwork} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <NoteSvg size={16} />
+                )}
+              </TrackSwap>
               {/* Иконка «на весь экран» по центру обложки (появляется по наведению) — Solar bigpic. */}
               <span className="mp-cover-bigpic">
                 <Ico name="bigpic" width={17} height={17} />
@@ -372,14 +381,10 @@ export const PlayerBar = () => {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
-            <div
-              style={{
-                minWidth: 0,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+            {/* Подпись трека — тоже слоями. Колонка «название над артистом»
+                переехала из инлайн-стилей в CSS (`#miniPlayer .tsw-mp-text
+                .tsw-l`): раскладка нужна каждому слою, а не обёртке. */}
+            <TrackSwap id={curId} kind={textAnim} className="tsw-mp-text">
               <div
                 data-nav
                 onClick={() => goNav('player')}
@@ -420,7 +425,7 @@ export const PlayerBar = () => {
                   <ArtistLinks artist={artist} scId={curTrack?.artistScId} permalink={curTrack?.artistPermalink} artistId={curTrack?.artistId} provider={curTrack?.artistProvider} />
                 </span>
               </div>
-            </div>
+            </TrackSwap>
             {!mpHide.fav && (
               <button
                 id="mpFav"
@@ -466,6 +471,7 @@ export const PlayerBar = () => {
             {!mpHide.repeat && (
               <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
                 <RepeatSvg size={16} />
+                {repeat === 1 && <RepeatAllBadge />}
                 {repeat === 2 && <RepeatOneBadge />}
               </button>
             )}
@@ -674,7 +680,7 @@ const MpProgress = ({ tint }: { tint: string | null }) => {
             left: 0,
             right: 0,
             height: 2,
-            background: 'rgba(255,255,255,0.12)',
+            background: 'rgba(var(--ovl-rgb),0.12)',
             cursor: 'pointer',
             touchAction: 'none',
             zIndex: 2,
@@ -717,7 +723,7 @@ const MpProgress = ({ tint }: { tint: string | null }) => {
               lineHeight: 1,
               color: 'var(--text)',
               background: 'var(--block-color, #1a1a1a)',
-              border: '1px solid rgba(255,255,255,0.14)',
+              border: '1px solid rgba(var(--ovl-rgb),0.14)',
               boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
               fontVariantNumeric: 'tabular-nums',
               whiteSpace: 'nowrap',
@@ -769,7 +775,7 @@ const MpCircleRing = () => {
     >
       {shape.d ? (
         <>
-          <path d={shape.d} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          <path d={shape.d} fill="none" stroke="rgba(var(--ovl-rgb),0.15)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
           <path
             d={shape.d}
             fill="none"
@@ -787,7 +793,7 @@ const MpCircleRing = () => {
         </>
       ) : (
         <>
-          <circle cx={RING_BOX / 2} cy={RING_BOX / 2} r={RING_BOX / 2 - RING_INSET - 1} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2.5} />
+          <circle cx={RING_BOX / 2} cy={RING_BOX / 2} r={RING_BOX / 2 - RING_INSET - 1} fill="none" stroke="rgba(var(--ovl-rgb),0.15)" strokeWidth={2.5} />
           <circle
             cx={RING_BOX / 2}
             cy={RING_BOX / 2}
@@ -824,14 +830,14 @@ const MpTime = () => {
         fontVariantNumeric: 'tabular-nums',
         whiteSpace: 'nowrap',
         padding: '5px 10px',
-        border: '1px solid var(--border)',
+        border: '1px solid rgba(var(--ovl-rgb),.07)',
         borderRadius: 999,
         margin: '0 10px',
       }}
     >
       <span style={{ color: 'var(--text)' }}>{fmt(position)}</span>
-      <span style={{ color: 'rgba(255,255,255,.5)' }}>/</span>
-      <span style={{ color: 'rgba(255,255,255,.72)' }}>{fmt(duration)}</span>
+      <span style={{ color: 'rgba(var(--ovl-rgb),.5)' }}>/</span>
+      <span style={{ color: 'rgba(var(--ovl-rgb),.72)' }}>{fmt(duration)}</span>
     </div>
   )
 }
@@ -983,14 +989,14 @@ const VertVolPopup = ({
         position: 'fixed',
         left: pos?.left ?? -9999,
         top: pos?.top ?? -9999,
-        border: '1px solid rgba(255,255,255,.12)',
+        border: '1px solid rgba(var(--ovl-rgb),.12)',
         borderRadius: 10,
         padding: '10px 8px',
         zIndex: 9500,
         alignItems: 'center',
         flexDirection: 'column',
         gap: 6,
-        boxShadow: '0 8px 32px rgba(0,0,0,.8)',
+        boxShadow: 'none',
         background: 'var(--block-color, #141414)',
         isolation: 'isolate',
       }}
@@ -1023,6 +1029,10 @@ const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={siz
 const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (
   <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 700 }}>1</span>
+)
+/* «Повтор плейлиста» — та же иконка списка, что у вкладки «Плейлисты» в поиске. */
+const RepeatAllBadge = () => (
+  <span className="cc-badge"><Ico name="list" size={9} /></span>
 )
 const VolSvg = ({ size, v }: { size: number; v: number }) => {
   if (v === 0) return <Ico name="muted" size={size} />

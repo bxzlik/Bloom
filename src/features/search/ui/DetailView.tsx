@@ -1,5 +1,7 @@
 import {
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -8,6 +10,7 @@ import {
 } from 'react'
 import type { Track } from '@entities/track'
 import { ArtistLinks, CoverSourceBadge } from '@entities/track'
+import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
 import type { ArtistPageData, RepostItem } from '@features/providers'
 import { getProvider } from '@features/providers'
@@ -22,17 +25,20 @@ import {
   useFollowStore,
   useLibStore,
   tracksLabel,
+  tracksCountLabel,
   type ImportTarget,
 } from '@features/library'
 import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
 import { extractMpBgColor } from '@features/settings'
-import { toast, useShareStore, WindowedRows } from '@shared/ui'
+import { ExpandDesc, HoverMarquee, toast, useShareStore, WindowedRows } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
+import { parseArtists } from '@shared/lib/parseArtists'
 import { Ico } from '@shared/ui/icons/solar'
-import { useDetailStore, type DetailTarget } from '../model/detailStore'
+import { useDetailStore, useDetailStack, useDetailOpenSeq, type DetailTarget } from '../model/detailStore'
 import { ImportPopup } from './ImportPopup'
 import { TrackRowCover } from './TrackRowCover'
+import { TrackRowNum } from './TrackRowNum'
 
 /* ── Форматтеры ───── */
 const fmtNum = (n: number): string => {
@@ -60,13 +66,69 @@ const fmtDurLong = (secs: number): string => {
 const totalSec = (tracks: Track[]): number =>
   tracks.reduce((s, t) => s + durToSec(t.dur), 0)
 
+/**
+ * Год выпуска из треков — самый частый непустой `Track.year`. Фолбэк для площадок,
+ * которые не отдают год у самой коллекции (год есть у треков: SC/YM).
+ */
+const yearFromTracks = (tracks: Track[]): string => {
+  const cnt = new Map<string, number>()
+  for (const t of tracks) if (t.year) cnt.set(t.year, (cnt.get(t.year) ?? 0) + 1)
+  let best = ''
+  let bestN = 0
+  cnt.forEach((n, y) => {
+    if (n > bestN) {
+      best = y
+      bestN = n
+    }
+  })
+  return best
+}
+
+/**
+ * Аватар владельца из треков — фолбэк для SoundCloud: у коллекции аватара может
+ * не быть (открытие по permalink), но каждый SC-трек несёт `artistAvatar`.
+ */
+const avatarFromTracks = (tracks: Track[], owner?: string): string | null => {
+  if (!owner) return null
+  const norm = (s: string): string => s.trim().toLowerCase()
+  const o = norm(owner)
+  return tracks.find((t) => t.artistAvatar && norm(t.artist) === o)?.artistAvatar ?? null
+}
+
+/**
+ * Точные данные артиста-владельца из треков коллекции: ищем трек, чей артист
+ * совпадает с именем владельца, и берём его `artistId`/scId/permalink — клик по
+ * владельцу в hero откроет ИМЕННО его страницу, а не резолв по имени.
+ * Для плейлистов это ещё и признак «владелец = артист» (у чужих плейлистов
+ * владелец — обычный пользователь, ссылку не вешаем).
+ */
+const artistFromTracks = (tracks: Track[], owner?: string | null): Track | null => {
+  if (!owner) return null
+  const norm = (s: string): string => s.trim().toLowerCase()
+  const o = norm(owner)
+  return (
+    tracks.find(
+      (t) => norm(t.artist) === o || parseArtists(t.artist).some((a) => norm(a) === o),
+    ) ?? null
+  )
+}
+
 /* ── Иконки ───────────────────────────────────────────────────────────── */
 const PhTrack = () => <Ico name="note" width={20} height={20} style={{ opacity: 0.3 }} />
 const PhAlbum = () => <Ico name="vinyl" width={20} height={20} style={{ opacity: 0.3 }} />
+const PhArtist = () => <Ico name="user" width={20} height={20} style={{ opacity: 0.3 }} />
 const PlayBadge = () => (
   <div className="sp-tc-play">
     <div className="sp-tc-play-btn">
       <Ico name="play" width="100%" height="100%" style={{ color: 'var(--accent)', marginLeft: 2 }} />
+    </div>
+  </div>
+)
+/* Плейлисты/альбомы не играют по клику, а открываются → стрелка вместо play. */
+const OpenBadge = () => (
+  <div className="sp-tc-play">
+    <div className="sp-tc-play-btn">
+      <Ico name="arrowRightStraight" width="100%" height="100%" style={{ color: 'var(--accent)' }} />
     </div>
   </div>
 )
@@ -108,6 +170,16 @@ const FollowBtn = ({
   )
 }
 
+/** Аватарка владельца/артиста рядом с его именем в hero (битую просто прячем). */
+const OwnerAvatar = ({ src }: { src: string }) => {
+  const [failed, setFailed] = useState(false)
+  useEffect(() => setFailed(false), [src])
+  if (failed) return null
+  return (
+    <img className="sp-am-owner-av" src={src} loading="lazy" alt="" onError={() => setFailed(true)} />
+  )
+}
+
 /** Обложка с защитой от onerror-цикла (см. project_idle_cpu_backdrop). */
 const Cover = ({ src, placeholder }: { src?: string | null; placeholder: ReactNode }) => {
   const [failed, setFailed] = useState(false)
@@ -125,6 +197,28 @@ type Loaded =
 const detailCache = new Map<string, Loaded>()
 const cacheKey = (t: DetailTarget): string => `${t.providerId}:${t.kind}:${t.id}`
 
+/**
+ * Позиция скролла вида. Уход на другую вкладку размонтирует DOM оверлея, поэтому
+ * держим её снаружи компонента. Ключ (`viewKey`) — страница + номер открытия +
+ * сущность: возврат на вкладку и «назад» к артисту восстанавливают позицию, а
+ * открытие заново (openSeq вырос) начинает с начала.
+ */
+const viewScroll = new Map<string, number>()
+/** Вкладка артиста и раскрытые лимиты списков — под тем же ключом, что и скролл. */
+type ArtistTab = 'all' | 'popular' | 'tracks' | 'albums' | 'reposts'
+const viewTabs = new Map<string, { tab: ArtistTab; tracks: number; reposts: number }>()
+/** Раскрытые группы вкладки «Альбомы» (id альбомов) — тоже под ключом вида. */
+const viewAlbumsOpen = new Map<string, Set<string>>()
+/** Запись в кеш вида с обрезкой самых старых: ключи копятся на каждое открытие. */
+const remember = <V,>(map: Map<string, V>, key: string, value: V): void => {
+  map.set(key, value)
+  while (map.size > 50) {
+    const oldest = map.keys().next()
+    if (oldest.done) break
+    map.delete(oldest.value)
+  }
+}
+
 /* ── Строка трека (.tr) с подпиской на fav ────────────────────────────── */
 const TrackRow = ({
   track,
@@ -132,6 +226,7 @@ const TrackRow = ({
   onCtxMenu,
   onAddClick,
   reposter,
+  num,
   widx,
 }: {
   track: Track
@@ -140,6 +235,8 @@ const TrackRow = ({
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>) => void
   /** Имя репостнувшего (для вкладки «Репосты»): «⟲ name» рядом с заголовком. */
   reposter?: string
+  /** Порядковый номер: в альбомах вместо обложки (у всех треков она одна). */
+  num?: number
   /** Индекс в оконном списке (data-widx — замер высоты строки WindowedRows). */
   widx?: number
 }) => {
@@ -154,7 +251,11 @@ const TrackRow = ({
   }
   return (
     <div className="tr" data-widx={widx} onClick={onPlay} onContextMenu={onCtxMenu}>
-      <TrackRowCover track={track} placeholder={<PhTrack />} />
+      {num !== undefined ? (
+        <TrackRowNum num={num} trackId={track.id} />
+      ) : (
+        <TrackRowCover track={track} placeholder={<PhTrack />} />
+      )}
       <div className="tri">
         <div className="trn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
@@ -235,6 +336,7 @@ const Card = ({
   sub,
   square,
   showPlay,
+  openArrow,
   badgeTrack,
   onClick,
   onCtxMenu,
@@ -244,6 +346,8 @@ const Card = ({
   sub: ReactNode
   square: boolean
   showPlay: boolean
+  /** Карточка открывает сущность (альбом/плейлист), а не играет → стрелка. */
+  openArrow?: boolean
   /** Трек для бейджа площадки поверх обложки (только для трек-карточек). */
   badgeTrack?: Track
   onClick: () => void
@@ -253,13 +357,26 @@ const Card = ({
     <div className="sp-tc-cover" style={{ borderRadius: 'var(--radius)' }}>
       <Cover src={cover} placeholder={square ? <PhAlbum /> : <PhTrack />} />
       {badgeTrack && <CoverSourceBadge track={badgeTrack} size={26} />}
-      {showPlay && <PlayBadge />}
+      {showPlay && (openArrow ? <OpenBadge /> : <PlayBadge />)}
       {badgeTrack && <PlayStateOverlay trackId={badgeTrack.id} size="card" />}
     </div>
     <div className="sp-tc-info">
       <div className="sp-tc-name">{name}</div>
       <div className="sp-tc-artist">{sub}</div>
     </div>
+  </div>
+)
+
+/* ── Карточка похожего исполнителя (.sp-artist-card) ──────────────────── */
+/* Разметка та же, что у карточек артистов в выдаче поиска, — секция «Похожие»
+   должна выглядеть ровно как соседняя страница поиска, а не как ещё один вид. */
+const ArtistMiniCard = ({ artist, onOpen }: { artist: Artist; onOpen: () => void }) => (
+  <div className="sp-artist-card" onClick={onOpen} style={{ cursor: 'pointer' }}>
+    <div className="sp-ac-av">
+      <Cover src={artist.avatar} placeholder={<PhArtist />} />
+      <OpenBadge />
+    </div>
+    <div className="sp-ac-name">{artist.name}</div>
   </div>
 )
 
@@ -308,7 +425,9 @@ const Skeleton = () => (
  */
 export const DetailView = () => {
   const t = useT()
-  const stack = useDetailStore((s) => s.stack)
+  // Стек ТЕКУЩЕЙ страницы: детальный вид привязан к вкладке, на которой открыт
+  // (уход прячет, возврат показывает — см. detailStore.stacks).
+  const stack = useDetailStack()
   const back = useDetailStore((s) => s.back)
   const push = useDetailStore((s) => s.push)
   const close = useDetailStore((s) => s.close)
@@ -411,10 +530,82 @@ export const DetailView = () => {
   // активной страницы внутри .main; в прозрачном режиме сквозь его стекло иначе
   // просвечивает контент (обложки/текст) нижней страницы. CSS прячет
   // `#mainEl > .page` под оверлеем (см. transparency.css).
+  // Анимация появления. НОВОЕ открытие — «въезд» spDvBodyIn. Возврат на вкладку,
+  // где вид остался открытым, — та же page-in, что у страниц: оверлей перекрывает
+  // страницу, и без этого переключение вкладок под ним не читалось бы вовсе.
+  // openSeq растёт лишь в detailStore.open (и только у своей страницы), поэтому
+  // отличает одно от другого. Отыгранный номер помним ПО СТРАНИЦАМ: иначе первое
+  // открытие в одной вкладке считалось бы уже отанимированным из-за другой.
+  const page = useNavStore((s) => s.page)
+  const openSeq = useDetailOpenSeq()
+  const [animSeen, setAnimSeen] = useState<Partial<Record<string, number>>>({})
+  const animating = !!target && (animSeen[page] ?? 0) !== openSeq
   useEffect(() => {
+    if (!animating) return
+    // .22s анимации + запас: дальше вход считается отыгранным.
+    const id = setTimeout(() => setAnimSeen((m) => ({ ...m, [page]: openSeq })), 260)
+    return () => clearTimeout(id)
+  }, [animating, openSeq, page])
+  // Ключ сохранённого состояния вида (скролл, вкладка артиста): см. viewScroll.
+  const viewKey = key ? `${page}:${openSeq}:${key}` : ''
+  // Скролл восстанавливаем в callback-ref: при возврате на вкладку DOM оверлея
+  // монтируется заново, а deps эффектов при этом не меняются — эффект бы не
+  // сработал. Ref вызывается на каждое появление узла, до первого кадра.
+  // Пока идёт доводка (ниже) — не пишем позицию в кеш: промежуточные значения
+  // меньше сохранённого и затирали бы его.
+  const restoringRef = useRef(false)
+  const setRoot = useCallback(
+    (el: HTMLDivElement | null) => {
+      rootRef.current = el
+      if (!el || !viewKey) return
+      const top = viewScroll.get(viewKey) ?? 0
+      el.scrollTop = top
+      if (top <= 0) return
+      // Одной установки мало: контент дорастает асинхронно (группы вкладки
+      // «Альбомы» подгружают свои треки), и браузер обрезает scrollTop по ещё
+      // маленькой высоте. Держим цель, пока контент растёт — не дольше секунды и
+      // ровно до первого скролла самим пользователем.
+      restoringRef.current = true
+      const t0 = performance.now()
+      let mine = el.scrollTop
+      const step = () => {
+        if (rootRef.current !== el || Math.abs(el.scrollTop - mine) > 1) {
+          restoringRef.current = false // вид сменился или пользователь скроллит сам
+          return
+        }
+        if (el.scrollTop < top) el.scrollTop = top
+        mine = el.scrollTop
+        if (mine >= top - 1 || performance.now() - t0 > 1000) {
+          restoringRef.current = false
+          return
+        }
+        requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
+    },
+    [viewKey],
+  )
+  const onRootScroll = () => {
+    if (restoringRef.current) return
+    if (viewKey && rootRef.current) remember(viewScroll, viewKey, rootRef.current.scrollTop)
+  }
+
+  // Класс входа фиксируем на весь показ: смени мы его после отыгравшей анимации,
+  // браузер запустил бы вторую (класс добавлен → новая анимация).
+  const enterRef = useRef('')
+  if (!target) enterRef.current = ''
+  else if (!enterRef.current) enterRef.current = animating ? 'sp-dv-body-in' : 'sp-dv-page-in'
+
+  // useLayoutEffect, а НЕ useEffect: при возврате на вкладку классы должны стоять
+  // уже в первом кадре показа — иначе страница успевает мелькнуть под ещё
+  // полупрозрачным (page-in начинается с .55) оверлеем.
+  useLayoutEffect(() => {
     document.body.classList.toggle('detail-open', !!target)
-    return () => document.body.classList.remove('detail-open')
-  }, [target])
+    // Возврат на вкладку (входная анимация — page-in, не «въезд» открытия): гасим
+    // страницу под оверлеем сразу, иначе она видна сквозь кадры анимации.
+    document.body.classList.toggle('detail-instant', !!target && !animating)
+    return () => document.body.classList.remove('detail-open', 'detail-instant')
+  }, [target, animating])
 
   // При загрузке артиста — инициализируем пагинируемые списки/курсоры из данных
   // (или из кеша, если уже догружали и вернулись «назад»).
@@ -477,8 +668,12 @@ export const DetailView = () => {
   let heroName = target.title
   let heroCover = target.cover ?? null
   let heroDesc = ''
-  // Владелец плейлиста/альбома — отдельной строкой между именем и статами.
-  let heroOwner: ReactNode = null
+  // Владелец плейлиста/альбома — отдельной строкой между именем и статами
+  // (имя + его аватарка кружком слева).
+  let heroOwner: string | null = null
+  let heroOwnerAvatar: string | null = target.ownerAvatar ?? null
+  // Трек владельца (если он же артист коллекции) — источник точного id для клика.
+  let heroOwnerTrack: Track | null = null
   let subNode: ReactNode = target.subtitle ?? null
   let mainTracks: Track[] = []
 
@@ -514,10 +709,23 @@ export const DetailView = () => {
     heroName = playlist.title
     heroCover = playlist.cover ?? heroCover
     heroOwner = playlist.ownerName || null
+    // Аватарка владельца: от площадки, иначе из треков (SC), иначе то, с чем
+    // открыли (карточка поиска).
+    heroOwnerAvatar =
+      playlist.ownerAvatar ?? avatarFromTracks(tracks, playlist.ownerName) ?? heroOwnerAvatar
+    heroOwnerTrack = artistFromTracks(tracks, heroOwner)
     mainTracks = tracks
     const secs = totalSec(tracks)
+    // Год: от площадки, иначе самый частый год среди треков, иначе из target.
+    const year = playlist.year || yearFromTracks(tracks) || target.year || ''
     subNode = (
       <>
+        {!!year && (
+          <span className="sp-am-stat">
+            <Ico name="calendar" width={13} height={13} />
+            {year}
+          </span>
+        )}
         <span className="sp-am-stat">
           <Ico name="note" width={13} height={13} />
           {tracksLabel(tracks.length)}
@@ -531,6 +739,18 @@ export const DetailView = () => {
       </>
     )
   }
+
+  // ── Кликабельный владелец в hero ──
+  // У альбома владелец — всегда артист; у плейлиста ссылку вешаем, только если
+  // владелец действительно артист одного из треков (иначе это просто юзер).
+  // И только когда клик реально куда-то ведёт: есть точный id артиста или
+  // площадка умеет резолвить по имени (локальные плейлисты — нет).
+  const ownerProvider = heroOwnerTrack?.artistProvider ?? target.providerId
+  const ownerArtistId = heroOwnerTrack?.artistId ?? null
+  const ownerLinkable =
+    !!heroOwner &&
+    (target.kind === 'album' || !!heroOwnerTrack) &&
+    (!!ownerArtistId || !!getProvider(ownerProvider)?.resolveArtistByName)
 
   const onPlayAll = () => {
     if (!mainTracks.length) return
@@ -587,6 +807,13 @@ export const DetailView = () => {
     const { album: pl, tracks } = await prov.getAlbum(album.id)
     detailCache.set(k, { kind: 'album', playlist: pl, tracks })
     return tracks
+  }
+
+  // То же СИНХРОННО, из кеша: при возврате на вкладку группы должны иметь свою
+  // высоту уже в первом кадре, иначе восстановленный скролл съезжает вверх.
+  const cachedAlbumTracks = (album: Playlist): Track[] | null => {
+    const c = detailCache.get(`${target.providerId}:album:${album.id}`)
+    return c && c.kind === 'album' ? c.tracks : null
   }
 
   // Догрузка следующей страницы. Пишем результат и в кеш (loaded.data), чтобы
@@ -665,8 +892,9 @@ export const DetailView = () => {
 
   return (
     <div
-      ref={rootRef}
-      className="sp-detail-view sp-dv-body-in"
+      ref={setRoot}
+      onScroll={onRootScroll}
+      className={`sp-detail-view ${enterRef.current}`}
       style={{
         position: 'absolute',
         inset: 0,
@@ -701,10 +929,35 @@ export const DetailView = () => {
             </div>
             {/* Правая колонка: имя → статы → теги/описание → кнопки. */}
             <div className="sp-am-meta">
-              <div className="sp-am-name">{heroName}</div>
-              {heroOwner && <div className="sp-am-owner">{heroOwner}</div>}
+              {/* line-height:1.1 при 34px + overflow:hidden режет нижние выносы,
+                  поэтому 4px воздуха снизу и на столько же меньше margin. */}
+              <HoverMarquee
+                className="sp-am-name"
+                text={heroName}
+                style={{ paddingBottom: 4, marginBottom: 8 }}
+              />
+              {heroOwner && (
+                <div className="sp-am-owner">
+                  {heroOwnerAvatar && <OwnerAvatar src={heroOwnerAvatar} />}
+                  {/* Имя владельца — такая же `.tra-link`, как в строках треков:
+                      клик ловит глобальный делегат в App (см. ArtistLinks). */}
+                  <span>
+                    {ownerLinkable ? (
+                      <ArtistLinks
+                        artist={heroOwner}
+                        artistId={ownerArtistId}
+                        provider={ownerProvider}
+                        scId={heroOwnerTrack?.artistScId}
+                        permalink={heroOwnerTrack?.artistPermalink}
+                      />
+                    ) : (
+                      heroOwner
+                    )}
+                  </span>
+                </div>
+              )}
               <div className="sp-am-sub">{subNode}</div>
-              {heroDesc && <div className="sp-am-hero-desc">{heroDesc}</div>}
+              {heroDesc && <ExpandDesc className="sp-am-hero-desc" text={heroDesc} />}
               {loaded && (
                 <div className="sp-am-actions">
                   <button className="sp-am-play-btn" onClick={onPlayAll}>
@@ -767,7 +1020,9 @@ export const DetailView = () => {
 
         {loaded?.kind === 'artist' && (
           <ArtistBody
+            key={viewKey}
             scrollRef={rootRef}
+            viewKey={viewKey}
             data={loaded.data}
             tracks={artistTracks}
             reposts={artistReposts}
@@ -780,6 +1035,7 @@ export const DetailView = () => {
             onCtxMenu={onCtxMenu}
             onAddTrack={onAddTrack}
             onLoadAlbumTracks={loadAlbumTracks}
+            onCachedAlbumTracks={cachedAlbumTracks}
             onOpenAlbum={(p) =>
               push({
                 kind: 'album',
@@ -787,7 +1043,10 @@ export const DetailView = () => {
                 id: p.id,
                 title: p.title,
                 cover: p.cover ?? null,
-                subtitle: t('search.tracksCount', { n: p.trackCount ?? 0 }),
+                subtitle: tracksCountLabel(p.trackCount),
+                // Год/аватар известны уже из карточки — hero покажет их сразу.
+                ownerAvatar: p.ownerAvatar ?? loaded.data.artist.avatar ?? null,
+                year: p.year,
                 round: false,
               })
             }
@@ -798,8 +1057,20 @@ export const DetailView = () => {
                 id: p.id,
                 title: p.title,
                 cover: p.cover ?? null,
-                subtitle: t('search.tracksCount', { n: p.trackCount ?? 0 }),
+                subtitle: tracksCountLabel(p.trackCount),
+                ownerAvatar: p.ownerAvatar ?? null,
+                year: p.year,
                 round: false,
+              })
+            }
+            onOpenArtist={(a) =>
+              push({
+                kind: 'artist',
+                providerId: target.providerId,
+                id: a.id,
+                title: a.name,
+                cover: a.avatar ?? null,
+                round: true,
               })
             }
           />
@@ -809,6 +1080,7 @@ export const DetailView = () => {
           <PlaylistBody
             scrollRef={rootRef}
             tracks={loaded.tracks}
+            numbered={loaded.kind === 'album'}
             onPlayTrack={playOne}
             onCtxMenu={onCtxMenu}
             onAddTrack={onAddTrack}
@@ -866,6 +1138,8 @@ export const DetailView = () => {
 const ALBUM_PREVIEW = 5
 const AlbumGroup = ({
   album,
+  viewKey,
+  initialTracks,
   onOpen,
   onLoadTracks,
   onPlayTrack,
@@ -873,6 +1147,10 @@ const AlbumGroup = ({
   onAddTrack,
 }: {
   album: Playlist
+  /** Ключ вида — под ним помним, какие группы были раскрыты (см. viewAlbumsOpen). */
+  viewKey: string
+  /** Треки из кеша (если уже грузили) — сразу, без промежуточного скелета. */
+  initialTracks: Track[] | null
   onOpen: () => void
   onLoadTracks: (album: Playlist) => Promise<Track[]>
   onPlayTrack: (track: Track) => void
@@ -880,11 +1158,23 @@ const AlbumGroup = ({
   onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
 }) => {
   const t = useT()
-  const [tracks, setTracks] = useState<Track[] | null>(null)
-  const [showAll, setShowAll] = useState(false)
+  const [tracks, setTracks] = useState<Track[] | null>(initialTracks)
+  // Раскрытие переживает уход на другую страницу (DOM вида размонтируется).
+  // Стартовое состояние без transition — grid 0fr↔1fr анимируется только на смену.
+  const [showAll, setShowAll] = useState(() => !!viewAlbumsOpen.get(viewKey)?.has(album.id))
+  const toggleAll = () => {
+    const next = !showAll
+    const set = viewAlbumsOpen.get(viewKey) ?? new Set<string>()
+    if (next) set.add(album.id)
+    else set.delete(album.id)
+    remember(viewAlbumsOpen, viewKey, set)
+    setShowAll(next)
+  }
 
   // Грузим треки сразу при монтировании — альбомы раскрыты по умолчанию (как в SC).
+  // Из кеша (initialTracks) они уже есть — сеть не трогаем.
   useEffect(() => {
+    if (initialTracks) return
     let cancelled = false
     onLoadTracks(album)
       .then((tr) => !cancelled && setTracks(tr))
@@ -897,6 +1187,10 @@ const AlbumGroup = ({
   const preview = tracks ? tracks.slice(0, ALBUM_PREVIEW) : []
   const extra = tracks ? tracks.slice(ALBUM_PREVIEW) : []
   const hasMore = extra.length > 0
+  // Карточка альбома в каруселях приходит без счётчика треков (его знает только
+  // страница альбома) — берём длину уже загруженного списка, а пока он грузится
+  // не пишем ничего: «0 треков» под пятью видимыми строками выглядит как баг.
+  const count = album.trackCount ?? (tracks ? tracks.length : null)
 
   return (
     <div className="sp-am-album">
@@ -907,7 +1201,9 @@ const AlbumGroup = ({
         <div className="sp-am-album-meta" onClick={onOpen}>
           <div className="sp-am-album-label">{t('search.detail.album')}</div>
           <div className="sp-am-album-name">{album.title}</div>
-          <div className="sp-am-album-sub">{t('search.tracksCount', { n: album.trackCount ?? 0 })}</div>
+          <div className="sp-am-album-sub">
+            {[album.year, tracksCountLabel(count)].filter(Boolean).join(' · ')}
+          </div>
         </div>
       </div>
 
@@ -916,10 +1212,11 @@ const AlbumGroup = ({
         {tracks && tracks.length === 0 && (
           <div className="sc-status" style={{ padding: '8px 0' }}>{t('search.noTracks')}</div>
         )}
-        {preview.map((tr) => (
+        {preview.map((tr, i) => (
           <TrackRow
             key={tr.id}
             track={tr}
+            num={i + 1}
             onPlay={() => onPlayTrack(tr)}
             onCtxMenu={(e) => onCtxMenu(e, tr)}
             onAddClick={(e) => onAddTrack(e, tr)}
@@ -929,10 +1226,11 @@ const AlbumGroup = ({
         {hasMore && (
           <div className={`sp-am-album-extra${showAll ? ' open' : ''}`}>
             <div>
-              {extra.map((tr) => (
+              {extra.map((tr, i) => (
                 <TrackRow
                   key={tr.id}
                   track={tr}
+                  num={ALBUM_PREVIEW + i + 1}
                   onPlay={() => onPlayTrack(tr)}
                   onCtxMenu={(e) => onCtxMenu(e, tr)}
                   onAddClick={(e) => onAddTrack(e, tr)}
@@ -942,7 +1240,7 @@ const AlbumGroup = ({
           </div>
         )}
         {hasMore && (
-          <button className="sp-am-album-more" onClick={() => setShowAll((v) => !v)}>
+          <button className="sp-am-album-more" onClick={toggleAll}>
             {showAll ? t('search.album.collapse') : t('search.album.showAll', { n: tracks!.length })}
           </button>
         )}
@@ -959,7 +1257,7 @@ const MoreBtn = ({ loading, onClick, label }: { loading: boolean; onClick: () =>
     style={{
       display: 'block', width: '100%', marginTop: 8, padding: 9,
       borderRadius: 'var(--radius)', background: 'transparent',
-      border: '1px solid rgba(255,255,255,var(--wb))', color: 'var(--text2)',
+      border: '1px solid var(--ovl-line)', color: 'var(--text2)',
       fontSize: 12, fontWeight: 600, cursor: loading ? 'default' : 'pointer',
       fontFamily: 'var(--font)', opacity: loading ? 0.6 : 1,
     }}
@@ -971,6 +1269,7 @@ const MoreBtn = ({ loading, onClick, label }: { loading: boolean; onClick: () =>
 /* ── Тело страницы артиста ────────────────────────────────────────────── */
 const ArtistBody = ({
   scrollRef,
+  viewKey,
   data,
   tracks,
   reposts,
@@ -984,10 +1283,14 @@ const ArtistBody = ({
   onAddTrack,
   onOpenAlbum,
   onOpenPlaylist,
+  onOpenArtist,
   onLoadAlbumTracks,
+  onCachedAlbumTracks,
 }: {
   /** Скролл-контейнер оверлея (для оконной виртуализации списков). */
   scrollRef: React.RefObject<HTMLDivElement | null>
+  /** Ключ сохранённого состояния вида (вкладка, раскрытые списки) — см. viewTabs. */
+  viewKey: string
   data: ArtistPageData
   /** Пагинируемые списки приходят из родителя (DetailView), не из data. */
   tracks: Track[]
@@ -1002,23 +1305,30 @@ const ArtistBody = ({
   onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
   onOpenAlbum: (p: Playlist) => void
   onOpenPlaylist: (p: Playlist, kind: 'album' | 'playlist') => void
+  onOpenArtist: (a: Artist) => void
   onLoadAlbumTracks: (album: Playlist) => Promise<Track[]>
+  /** Уже загруженные треки альбома из кеша — синхронно, для верной высоты групп. */
+  onCachedAlbumTracks: (album: Playlist) => Track[] | null
 }) => {
   const t = useT()
   const { artist, topTracks, albums } = data
+  const similar = data.similarArtists ?? []
 
   // Вкладки «Все / Популярные / Треки / Альбомы». Показываем только те, под
   // которыми есть контент; «Все» — всегда (если хоть что-то есть).
-  const [tab, setTab] = useState<'all' | 'popular' | 'tracks' | 'albums' | 'reposts'>('all')
+  // Стартовые значения — из viewTabs: уход на другую страницу размонтирует вид,
+  // и без этого возврат сбрасывал бы выбранную вкладку и раскрытые списки.
+  // Сброс при смене артиста/нового открытия делает `key={viewKey}` у ArtistBody.
+  const saved = viewTabs.get(viewKey)
+  const [tab, setTab] = useState<ArtistTab>(saved?.tab ?? 'all')
   // Сколько превью-строк раскрыто на вкладке «Все» (старт 15 / 5). «Загрузить
   // ещё» наращивает лимит и подтягивает следующую страницу из сети, когда
-  // загруженного перестаёт хватать. Сброс при смене артиста.
-  const [allTracksLimit, setAllTracksLimit] = useState(15)
-  const [allRepostsLimit, setAllRepostsLimit] = useState(5)
+  // загруженного перестаёт хватать.
+  const [allTracksLimit, setAllTracksLimit] = useState(saved?.tracks ?? 15)
+  const [allRepostsLimit, setAllRepostsLimit] = useState(saved?.reposts ?? 5)
   useEffect(() => {
-    setAllTracksLimit(15)
-    setAllRepostsLimit(5)
-  }, [data.artist.id])
+    remember(viewTabs, viewKey, { tab, tracks: allTracksLimit, reposts: allRepostsLimit })
+  }, [viewKey, tab, allTracksLimit, allRepostsLimit])
   const tabs = (
     [
       { id: 'all' as const, label: t('search.tab.all'), icon: 'list' as const, show: true },
@@ -1184,7 +1494,7 @@ const ArtistBody = ({
                       (r.playlist.ownerName ? ' · ' + r.playlist.ownerName : '')}
                   </div>
                 </div>
-                <div className="trd">{t('search.tracksCount', { n: r.playlist.trackCount ?? 0 })}</div>
+                <div className="trd">{tracksCountLabel(r.playlist.trackCount)}</div>
               </div>
             )
           }
@@ -1208,6 +1518,8 @@ const ArtistBody = ({
               <AlbumGroup
                 key={a.id}
                 album={a}
+                viewKey={viewKey}
+                initialTracks={onCachedAlbumTracks(a)}
                 onOpen={() => onOpenAlbum(a)}
                 onLoadTracks={onLoadAlbumTracks}
                 onPlayTrack={onPlayTrack}
@@ -1222,9 +1534,10 @@ const ArtistBody = ({
                   key={a.id}
                   cover={a.cover}
                   name={a.title}
-                  sub={t('search.tracksCount', { n: a.trackCount ?? 0 })}
+                  sub={[a.year, tracksCountLabel(a.trackCount)].filter(Boolean).join(' · ')}
                   square
                   showPlay
+                  openArrow
                   onClick={() => onOpenAlbum(a)}
                 />
               ))}
@@ -1260,6 +1573,18 @@ const ArtistBody = ({
         </div>
       )}
 
+      {/* «Похожие» — хвост страницы: своей вкладки нет, показываем только в «Все». */}
+      {activeTab === 'all' && similar.length > 0 && (
+        <div className="sp-am-section">
+          <div className="sp-am-section-hdr"><span className="sp-am-section-title">{t('search.similarArtists')}</span></div>
+          <div className="sp-artist-grid">
+            {similar.map((a) => (
+              <ArtistMiniCard key={a.id} artist={a} onOpen={() => onOpenArtist(a)} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {!topTracks.length && !tracks.length && !albums.length && !reposts.length && (
         <div className="sc-status">{t('search.noArtistTracks')}</div>
       )}
@@ -1271,6 +1596,7 @@ const ArtistBody = ({
 const PlaylistBody = ({
   scrollRef,
   tracks,
+  numbered,
   onPlayTrack,
   onCtxMenu,
   onAddTrack,
@@ -1278,6 +1604,8 @@ const PlaylistBody = ({
   /** Скролл-контейнер оверлея (для оконной виртуализации списка). */
   scrollRef: React.RefObject<HTMLDivElement | null>
   tracks: Track[]
+  /** Альбом: вместо обложек — номера треков ([TrackRowNum]). */
+  numbered?: boolean
   onPlayTrack: (track: Track) => void
   onCtxMenu: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
   onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
@@ -1295,6 +1623,7 @@ const PlaylistBody = ({
             key={tr.id}
             track={tr}
             widx={i}
+            num={numbered ? i + 1 : undefined}
             onPlay={() => onPlayTrack(tr)}
             onCtxMenu={(e) => onCtxMenu(e, tr)}
             onAddClick={(e) => onAddTrack(e, tr)}

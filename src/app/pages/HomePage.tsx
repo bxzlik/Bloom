@@ -30,7 +30,7 @@ import {
   type PlaySource,
 } from '@features/player'
 import { seek, seekLive } from '@features/player/api/play'
-import { extractAccentFromCover } from '@features/settings'
+import { extractAccentFromCover, useUiPrefsStore } from '@features/settings'
 import { trackRegistry, coverCache, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
 import { PlaylistCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
@@ -55,6 +55,13 @@ export const HomePage = ({ active }: { active: boolean }) => {
   const startEdit = usePlEditStore((s) => s.startEdit)
   // Блок «Моя волна + Продолжить» скрыт на пустой библиотеке.
   const hasTracks = useLibStore((s) => s.tracks.length > 0)
+  // Видимость секций — «Настройки → Страницы → Главная» (uiPrefs). Подписываемся
+  // по одному флагу, а не на весь стор: иначе любая правка префов (зум, ширины)
+  // перерисовывала бы всю главную.
+  const showWave = useUiPrefsStore((s) => s.homeWave)
+  const showContinue = useUiPrefsStore((s) => s.homeContinue)
+  const showRecent = useUiPrefsStore((s) => s.homeRecent)
+  const showPlaylists = useUiPrefsStore((s) => s.homePlaylists)
 
   // Пока идёт скролл — вешаем .is-scrolling, чтобы CSS поставил на паузу тяжёлый
   // SVG-фильтр фаербола «Моей волны» (feTurbulence/feDisplacementMap не
@@ -94,22 +101,24 @@ export const HomePage = ({ active }: { active: boolean }) => {
   return (
     <div className={`page${active ? ' active' : ''}`} id="page-home">
       <div className="home-scroll" ref={scrollRef}>
-        {hasTracks && (
+        {hasTracks && (showWave || showContinue) && (
           <div className="home-actions">
-            <WaveCard />
-            <ContinueCard onTrackCtx={onTrackCtx} />
+            {showWave && <WaveCard />}
+            {showContinue && <ContinueCard onTrackCtx={onTrackCtx} />}
           </div>
         )}
         <QuickGrid />
         <DiscoverSections active={active} onTrackCtx={onTrackCtx} />
-        <RecentSection onTrackCtx={onTrackCtx} />
-        <PlaylistsSection
-          onPlCtx={onPlCtx}
-          onNewPl={() => {
-            goNav('lib')
-            createPlaylistInline()
-          }}
-        />
+        {showRecent && <RecentSection onTrackCtx={onTrackCtx} />}
+        {showPlaylists && (
+          <PlaylistsSection
+            onPlCtx={onPlCtx}
+            onNewPl={() => {
+              goNav('lib')
+              createPlaylistInline()
+            }}
+          />
+        )}
       </div>
 
       {/* ПКМ-меню трека (продолжить / трек дня / недавнее) */}
@@ -164,7 +173,6 @@ const playlistProvider = (trs: string[], libTracks: Track[]): string | null => {
   if (!tracks.length) return null
   if (tracks.every((t) => t._ym)) return 'yandex'
   if (tracks.every((t) => t._ytm)) return 'ytmusic'
-  if (tracks.every((t) => t._sp)) return 'spotify'
   if (tracks.every((t) => t._sc)) return 'soundcloud'
   return null
 }
@@ -683,26 +691,35 @@ const QuickGrid = () => {
     goNav('lib')
     selectBuiltin(m)
   }
+  // Карточки скрываются по отдельности («Настройки → Страницы → Главная»).
+  // Осталась одна — растягиваем её на всю ширину вместо половины сетки.
+  const showFav = useUiPrefsStore((s) => s.homeFav)
+  const showHist = useUiPrefsStore((s) => s.homeHistory)
+  if (!showFav && !showHist) return null
   return (
-    <div className="home-quick-grid">
-      <QuickCard
-        kind="fav"
-        empty={favs.size === 0}
-        covers={favCovers}
-        icon={<Ico name="heart" variant="bold" width={22} height={22} />}
-        title={t('home.favTracks')}
-        sub={t('home.favSub')}
-        onOpen={() => open('fav')}
-      />
-      <QuickCard
-        kind="hist"
-        empty={entries.length === 0}
-        covers={histCovers}
-        icon={<Ico name="clock" variant="bold" width={22} height={22} />}
-        title={t('lib.history')}
-        sub={t('home.historySub')}
-        onOpen={() => open('history')}
-      />
+    <div className="home-quick-grid" style={showFav && showHist ? undefined : { gridTemplateColumns: '1fr' }}>
+      {showFav && (
+        <QuickCard
+          kind="fav"
+          empty={favs.size === 0}
+          covers={favCovers}
+          icon={<Ico name="heart" variant="bold" width={22} height={22} />}
+          title={t('home.favTracks')}
+          sub={t('home.favSub')}
+          onOpen={() => open('fav')}
+        />
+      )}
+      {showHist && (
+        <QuickCard
+          kind="hist"
+          empty={entries.length === 0}
+          covers={histCovers}
+          icon={<Ico name="clock" variant="bold" width={22} height={22} />}
+          title={t('lib.history')}
+          sub={t('home.historySub')}
+          onOpen={() => open('history')}
+        />
+      )}
     </div>
   )
 }
@@ -798,9 +815,10 @@ const PlaylistsSection = ({
             <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
               {pl.cover ? <img src={pl.cover} alt="" /> : <PlaylistCover covers={pl.trs.map((id) => (libById.get(id) ?? trackRegistry.get(id))?.cover)} seed={pl.id} />}
               <CoverProviderBadge provider={playlistProvider(pl.trs, libTracks)} size={24} />
+              {/* Плейлист открывается по клику, а не играет → стрелка. */}
               <div className="hpc-play-overlay">
                 <div className="hpc-play-btn">
-                  <Ico name="play" width="100%" height="100%" style={{ color: 'var(--accent)', marginLeft: 2 }} />
+                  <Ico name="arrowRightStraight" width="100%" height="100%" style={{ color: 'var(--accent)' }} />
                 </div>
               </div>
             </div>

@@ -6,7 +6,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { createPortal } from 'react-dom'
-import type { Track } from '@entities/track'
+import { ArtistLinks, type Track } from '@entities/track'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import {
   addToQueue,
@@ -26,7 +26,7 @@ import { PlCover } from './PlCover'
 import { useT } from '@shared/i18n'
 import { useFavStore, useLibStore, usePlaylistStore, useTrackInfoStore } from '../model'
 import { Ico } from '@shared/ui/icons/solar'
-import { deleteUploadedTrack, saveTrackToLibrary } from '../lib'
+import { deleteUploadedTrack, saveTrackToLibrary, tracksLabel } from '../lib'
 
 export interface TrackCtxMenuProps {
   /** Координаты курсора (от события). null = меню скрыто. */
@@ -78,6 +78,10 @@ export const TrackCtxMenu = ({
   const inLib = useLibStore((s) => (track ? s.tracks.some((t) => t.id === track.id) : false))
   // Доступен ли трек офлайн (для тоггла «Слушать офлайн / Убрать из офлайна»).
   const isOffline = useOfflineStore((s) => (track ? s.paths.has(track.id) : false))
+
+  // Всегда свежий onClose для слушателей с постоянной подпиской (см. ниже).
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
 
   const [clampedPos, setClampedPos] = useState<{ x: number; y: number } | null>(null)
   // Какое подменю-флайаут открыто: 'pl' (в плейлист), 'src' (сменить площадку)
@@ -179,6 +183,26 @@ export const TrackCtxMenu = ({
     }
   }, [pos, onClose])
 
+  // Клик по имени артиста в превью: страницу открывает глобальный делегат
+  // `.tra-link` (см. App), а меню надо закрыть отдельно — onDown его пропускает
+  // (клик ВНУТРИ меню), а React-onClick сюда не дойдёт: делегат гасит всплытие
+  // ещё в capture на document. Поэтому слушаем там же, в capture.
+  //
+  // Подписка ОДИН раз (deps []) через ref: делегат App синхронно дёргает сторы →
+  // ререндер → эффект с [onClose] снял бы и заново повесил слушатель ПРЯМО внутри
+  // текущей диспетчеризации, а браузер идёт по копии списка слушателей, снятой в
+  // её начале — свежий слушатель в неё не попадает и не вызывается.
+  useEffect(() => {
+    const onLink = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      if (!t?.closest?.('.tra-link')) return
+      if (!menuRef.current?.contains(t)) return
+      closeRef.current()
+    }
+    document.addEventListener('click', onLink, true)
+    return () => document.removeEventListener('click', onLink, true)
+  }, [])
+
   if (!pos || !track) return null
 
   const renderPos = clampedPos ?? pos
@@ -198,7 +222,7 @@ export const TrackCtxMenu = ({
   // Платформенные действия (share/wave/download) — общий флаг для разделителя.
   const hasShare = track.scId != null || track.scPermalink != null
   const hasWave = track.scId != null || track.scTrackId != null || !!track._ym
-  const hasDl = !!(track._sc || track._ym || track._ytm || track._sp)
+  const hasDl = !!(track._sc || track._ym || track._ytm)
   // Сменить площадку — только для библиотечного трека с площадочным origin и при
   // наличии хотя бы одной ДРУГОЙ сетевой площадки (замена = поиск + ремап записи).
   const curProv = trackProviderId(track)
@@ -239,7 +263,19 @@ export const TrackCtxMenu = ({
           </div>
           <div style={{ minWidth: 0 }}>
             <div id="cxPreviewName">{track.name || '—'}</div>
-            <div id="cxPreviewArtist">{track.artist || '—'}</div>
+            <div id="cxPreviewArtist">
+              {track.artist ? (
+                <ArtistLinks
+                  artist={track.artist}
+                  scId={track.artistScId}
+                  permalink={track.artistPermalink}
+                  artistId={track.artistId}
+                  provider={track.artistProvider}
+                />
+              ) : (
+                '—'
+              )}
+            </div>
           </div>
         </div>
 
@@ -375,7 +411,7 @@ export const TrackCtxMenu = ({
         )}
 
         {/* cxdl — «Скачать» → флайаут (скачать файл / слушать офлайн), только для
-            треков площадок (SC/Yandex/YTM/Spotify). Объединено ради экономии места. */}
+            треков площадок (SC/Yandex/YTM). Объединено ради экономии места. */}
         {hasDl && (
           <div
             ref={dlItemRef}
@@ -539,7 +575,7 @@ export const TrackCtxMenu = ({
                 return (
                   <div
                     key={pl.id}
-                    className={already ? 'ci ci-active' : 'ci'}
+                    className={already ? 'ci ci-pl ci-active' : 'ci ci-pl'}
                     onClick={() => {
                       // Повторный клик по отмеченному плейлисту — убрать трек из него.
                       if (already) removeTrackFromPl(pl.id, track.id)
@@ -561,11 +597,12 @@ export const TrackCtxMenu = ({
                         <PlCover trs={pl.trs} seed={pl.id} />
                       )}
                     </span>{' '}
-                    <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {pl.name}
+                    <span className="ci-pl-txt">
+                      <span className="ci-pl-name">{pl.name}</span>
+                      <span className="ci-pl-sub">{tracksLabel(pl.trs.length)}</span>
                     </span>
                     {already && (
-                      <Ico name="check" width={13} height={13} style={{ flexShrink: 0, color: 'var(--accent)' }} />
+                      <Ico name="check" width={15} height={15} style={{ flexShrink: 0, color: 'var(--accent)' }} />
                     )}
                   </div>
                 )

@@ -208,41 +208,6 @@ pub fn clear_yandex() -> Result<()> {
     Ok(())
 }
 
-// ---------------- spotify.json ----------------
-// Креденшелы Spotify-приложения (Client Credentials flow). Секрет — отдельным
-// файлом, не в appsettings.json. Вводятся пользователем в настройках.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct SpotifyCreds {
-    #[serde(default, rename = "clientId")]
-    pub client_id: String,
-    #[serde(default, rename = "clientSecret")]
-    pub client_secret: String,
-}
-
-pub fn load_spotify() -> Result<SpotifyCreds> {
-    let path = local_appdata_dir()?.join("spotify.json");
-    if !path.exists() {
-        return Ok(SpotifyCreds::default());
-    }
-    let raw = std::fs::read_to_string(&path)?;
-    Ok(serde_json::from_str(&raw).unwrap_or_default())
-}
-
-pub fn save_spotify(c: &SpotifyCreds) -> Result<()> {
-    let dir = local_appdata_dir()?;
-    std::fs::create_dir_all(&dir)?;
-    std::fs::write(dir.join("spotify.json"), serde_json::to_string_pretty(c)?)?;
-    Ok(())
-}
-
-pub fn clear_spotify() -> Result<()> {
-    let path = local_appdata_dir()?.join("spotify.json");
-    if path.exists() {
-        std::fs::remove_file(path)?;
-    }
-    Ok(())
-}
-
 // ---------------- folders.json / files.json ----------------
 fn load_path_list(name: &str) -> Result<Vec<PathBuf>> {
     let path = local_appdata_dir()?.join(name);
@@ -282,7 +247,7 @@ pub fn save_files(files: &[PathBuf]) -> Result<()> {
 
 // ---------------- offline.json ----------------
 
-/// Корень для офлайн-копий треков площадок (SC/YM/YTM/Spotify), скачанных
+/// Корень для офлайн-копий треков площадок (SC/YM/YTM), скачанных
 /// кнопкой «Скачать офлайн». Отдельно от `music`/`tracks`: это невидимый кеш,
 /// а не добавленная пользователем библиотека — в UI такие треки остаются
 /// треками своей площадки, просто играют из локальной копии.

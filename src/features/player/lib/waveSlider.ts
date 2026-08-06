@@ -5,7 +5,8 @@
  * `waveData` — 120 псевдослучайных высот столбиков, генерируются заново на
  * каждый трек (детерминированной формы нет). Рисуем на
  * `<canvas>` внутри `.ps-bar-wrap`: столбики до позиции — акцентом, остальные —
- * полупрозрачным белым. Видимость канваса — через `body.slider-wave` (CSS).
+ * плёнкой `--ovl-rgb` (см. `restColor`). Видимость канваса — через
+ * `body.slider-wave` (CSS).
  */
 
 let waveData: number[] | null = null
@@ -45,6 +46,27 @@ const drawBars = (ctx: CanvasRenderingContext2D, h: number, bw: number): void =>
   }
 }
 
+/**
+ * Цвет НЕзаполненных столбиков.
+ *
+ * Раньше был зашит `rgba(255,255,255,.2)`: вдвое ярче любой другой дорожки в
+ * приложении (`--track` — 4% плёнки) и невидим на светлой теме. Считаем сами из
+ * `--ovl-rgb` — токен плёнки, который сам переворачивается (тёмная тема → белый,
+ * светлая → чёрный) и переопределён на «тёмных островах». Берём его с канваса,
+ * а не с :root, чтобы такие острова отработали.
+ *
+ * Ручка яркости — `--wave-rest-a` (по умолчанию .1). `--wave-rest` перебивает
+ * всё целиком, но только литеральным цветом: canvas не умеет `var()`, а
+ * `getPropertyValue` кастомного свойства отдаёт его нераскрытым.
+ */
+const restColor = (cs: CSSStyleDeclaration): string => {
+  const explicit = cs.getPropertyValue('--wave-rest').trim()
+  if (explicit && !explicit.includes('var(')) return explicit
+  const rgb = cs.getPropertyValue('--ovl-rgb').trim() || '255,255,255'
+  const a = cs.getPropertyValue('--wave-rest-a').trim() || '.1'
+  return `rgba(${rgb},${a})`
+}
+
 /** Перерисовать волну на канвасе с заливкой до `pct` (0..100). */
 export const drawWaveTo = (c: HTMLCanvasElement | null, pct: number): void => {
   if (!c || !waveData || !document.body.classList.contains('slider-wave')) return
@@ -65,15 +87,22 @@ export const drawWaveTo = (c: HTMLCanvasElement | null, pct: number): void => {
   ctx.clearRect(0, 0, w, h)
   const bw = w / waveData.length
   const splitX = (w * pct) / 100
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#888'
-  ctx.fillStyle = 'rgba(255,255,255,.2)'
+  // Цвета берём с самого канваса, а не из :root: так поверхность может задать
+  // свою палитру обычным CSS (фуллскрин — приглушённо-белая вместо акцентной,
+  // см. --wave-fill в big-picture.css). По умолчанию — акцент, как было.
+  const cs = getComputedStyle(c)
+  const played =
+    cs.getPropertyValue('--wave-fill').trim() ||
+    getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
+    '#888'
+  ctx.fillStyle = restColor(cs)
   drawBars(ctx, h, bw)
   if (splitX > 0) {
     ctx.save()
     ctx.beginPath()
     ctx.rect(0, 0, splitX, h)
     ctx.clip()
-    ctx.fillStyle = accent
+    ctx.fillStyle = played
     drawBars(ctx, h, bw)
     ctx.restore()
   }

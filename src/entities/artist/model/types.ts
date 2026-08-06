@@ -4,7 +4,7 @@ export interface Artist {
   avatar?: string | null
   verified?: boolean
   permalink?: string | null
-  source?: 'local' | 'yandex' | 'soundcloud' | 'ytmusic' | 'spotify'
+  source?: 'local' | 'yandex' | 'soundcloud' | 'ytmusic'
   /** Доп. поля для страницы артиста (заполняются провайдером в getArtist). */
   followers?: number
   /** Полное имя (full_name) — для подзаголовка профиля рядом с подписчиками. */

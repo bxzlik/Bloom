@@ -8,6 +8,7 @@ export const wave = waveApi
 export default waveApi
 
 export { WaveCard } from './ui/WaveCard'
+export { WaveRing } from './ui/WaveRing'
 export { DislikeButton } from './ui/DislikeButton'
 export { DislikesModal } from './ui/DislikesModal'
 export { useDislikesStore } from './model/dislikesStore'

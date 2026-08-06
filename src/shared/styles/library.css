@@ -9,19 +9,19 @@
 #plCtxMenuHeaderCov img{width:100%;height:100%;object-fit:cover}
 #plCtxMenuHeaderName{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:125px;line-height:1.3}
 #plCtxMenuHeaderSub{font-size:11px;color:var(--text2);margin-top:2px}
-#plCtxMenu,#folderCtxMenu,#artistCtxMenu{position:fixed;z-index:8000;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*.9);padding:5px;min-width:185px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none}
+#plCtxMenu,#folderCtxMenu,#artistCtxMenu{position:fixed;z-index:8000;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*.9);padding:5px;min-width:185px;box-shadow:none;display:none}
 #plCtxMenu.open,#folderCtxMenu.open,#artistCtxMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 .lib-pin-dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:1.5px solid var(--bg);pointer-events:none;z-index:1}
 #libGridOverview .lib-pin-dot{width:12px;height:12px;border-width:2px}
-.plctx-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:calc(var(--radius)*.5);font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;transition:background .1s,box-shadow .1s;white-space:nowrap}
+.plctx-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:calc(var(--radius)*.5);font-size:13px;font-weight:500;color:var(--text);cursor:pointer;transition:background .1s,box-shadow .1s;white-space:nowrap}
 .plctx-item:hover{background:var(--hover);box-shadow:inset 2.5px 0 0 var(--accent)}
-.plctx-item:hover .ci-icon{background:rgba(255,255,255,.11)}
+.plctx-item:hover .ci-icon{background:rgba(var(--ovl-rgb),.11)}
 .plctx-item.danger{color:#e03030}
 .plctx-item.danger .ci-icon{background:rgba(224,48,48,.12)}
 .plctx-item.danger:hover{background:rgba(224,48,48,.08);box-shadow:inset 2.5px 0 0 #e03030;color:#e03030}
 .plctx-item.danger:hover .ci-icon{background:rgba(224,48,48,.18)}
 .plctx-sep{height:1px;background:var(--border);margin:4px 3px;opacity:.65}
-#plMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:8000;min-width:210px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none}
+#plMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:8000;min-width:210px;box-shadow:none;display:none}
 #plMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 #plMenuHeader{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:10px 12px 11px;margin:0 0 4px;border-radius:calc(var(--radius)*0.7);pointer-events:none}
 /* Размытая обложка фоном шапки + затемняющий градиент поверх для читаемости. */
@@ -36,11 +36,11 @@
 #plMenuHeader.sys-all #plMenuHeaderCov svg{color:var(--sys-all-ico)}
 #plMenuHeader.sys-fav #plMenuHeaderCov svg{color:var(--sys-fav-ico)}
 #plMenuHeader.sys-hist #plMenuHeaderCov svg{color:var(--sys-hist-ico)}
-#plMenuHeader[class*="sys-"] #plMenuHeaderCov{box-shadow:0 2px 10px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.14)}
+#plMenuHeader[class*="sys-"] #plMenuHeaderCov{box-shadow:0 2px 10px rgba(0,0,0,.5),inset 0 0 0 1px rgba(var(--ovl-rgb),.14)}
 #plMenuHeaderCov{width:46px;height:46px;border-radius:calc(var(--radius)*0.65);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 #plMenuHeaderCov img{width:100%;height:100%;object-fit:cover}
-#plMenuHeaderName{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
-#plMenuHeaderSub{font-size:11px;color:rgba(255,255,255,.8);margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#plMenuHeaderName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+#plMenuHeaderSub{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .ci.sort-active .ci-icon{background:rgba(var(--accent-rgb,255,255,255),.18)!important;color:var(--accent)}
 .ci.sort-active{color:var(--accent)}
 #plMenuPage1,#plMenuPage2{animation-fill-mode:forwards}
@@ -49,8 +49,10 @@
 .pl-menu-back{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 10px;border-top:1px solid var(--border);margin-top:4px;font-size:12px;color:var(--text2);cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:background .1s,color .1s}
 .pl-menu-back:hover{background:var(--hover);color:var(--text)}
 .pl-sort-group{margin-bottom:2px}
-.lib-content{flex:1;display:flex;flex-direction:column;overflow:hidden;margin:var(--page-pad) var(--page-pad) var(--page-pad) 10px;gap:10px}
-.lib-content-head{position:relative;padding:16px;flex-shrink:0;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75)}
+/* position:relative — точка отсчёта для плавающей пилюли «Сейчас играет»
+   (.lib-jump): она висит НАД трек-листом, а не внутри его скролла. */
+.lib-content{position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;margin:var(--page-pad) var(--page-pad) var(--page-pad) 10px;gap:10px}
+.lib-content-head{position:relative;padding:16px;flex-shrink:0;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75)}
 .lib-content-hero{display:flex;align-items:center;gap:14px}
 /* Шапка плейлиста с обложкой — размытая обложка фоном + затемняющий градиент,
    как в шапке контекстного меню (#plMenuHeader). */
@@ -59,21 +61,35 @@
 .lib-content-head.has-cover::after{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.62))}
 .lib-content-head.has-cover>*{position:relative;z-index:1}
 .lib-content-head.has-cover .lib-hero-name{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.lib-content-head.has-cover .lib-hero-sub,.lib-content-head.has-cover .lib-hero-desc{color:rgba(255,255,255,.82);text-shadow:0 1px 3px rgba(0,0,0,.55)}
+.lib-content-head.has-cover .lib-hero-sub,.lib-content-head.has-cover .lib-hero-desc{color:rgba(var(--ovl-rgb),.82);text-shadow:0 1px 3px rgba(0,0,0,.55)}
+/* Текстовая колонка шапки: название/описание/подпись, а в раскладке «Под
+   названием» (настройка libHeroBtns) — ещё и ряд действий под ними. */
+.lib-hero-main{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.lib-hero-main>.lib-hero-edit{flex:none;width:100%;max-width:420px}
 .lib-hero-btns{display:flex;gap:8px;align-items:center;flex-shrink:0;margin-left:auto}
+/* Ряд действий под названием: прижат влево, переносится на узком окне. */
+.lib-hero-main>.lib-hero-btns{margin:14px auto 0 0;flex-wrap:wrap;row-gap:8px;max-width:100%}
 /* Иконочные кнопки шапки собраны в капсулы с тонкой рамкой — как на странице
    артиста/плейлиста в поиске (.sp-am-btn-group, onboarding-search.css).
    Внутри капсулы кнопки без подложки: на hover подсвечивается только иконка. */
-.lib-btn-group{display:flex;align-items:center;gap:2px;padding:2px;border-radius:999px;border:1px solid rgba(255,255,255,.07);background:transparent}
+.lib-btn-group{display:flex;align-items:center;gap:2px;padding:2px;border-radius:999px;border:1px solid rgba(var(--ovl-rgb),.07);background:transparent;flex-shrink:0}
 .lib-btn-group .btn-icon{width:28px;height:28px;border-radius:50%;background:transparent;border:none}
-.lib-btn-group .btn-icon:hover{background:transparent;color:#fff}
+.lib-btn-group .btn-icon:hover{background:transparent;color:var(--text)}
 .lib-btn-group .btn-icon:disabled:hover{background:transparent;color:var(--text2)}
 /* Опасные действия (SelActions) — заливки нет, краснеет сама иконка. */
 .lib-btn-group .btn-icon.is-danger:hover{background:transparent;color:#e03030}
 .lib-btn-group .btn-icon.is-danger:disabled:hover{background:transparent;color:var(--text2)}
+/* Открытый поиск занимает место левой капсулы иконок — та же высота (34px),
+   ширина резиновая и ограничена, чтобы название рядом не схлопывалось. Базовые
+   стили капсулы — .lib-isp-wrap в onboarding-search.css. */
+.lib-hero-btns .lib-isp-wrap{height:34px;flex:0 0 auto;width:clamp(150px,24vw,300px);max-width:none;padding:0 6px 0 14px;gap:7px}
+.lib-hero-main>.lib-hero-btns .lib-isp-wrap{width:clamp(180px,30vw,340px)}
+.lib-isp-clr{width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text2);border-radius:50%;cursor:pointer;transition:.15s}
+.lib-isp-clr:hover{background:rgba(var(--ovl-rgb),.1);color:var(--text)}
 /* На обложечной шапке рамка капсулы светлее — иначе тонет в затемнении. */
 .lib-content-head.has-cover .lib-btn-group,
-.lib-content-head.has-cover .lib-isp-wrap{border-color:rgba(255,255,255,.14)}
+.lib-content-head.has-cover .lib-isp-wrap{border-color:rgba(var(--ovl-rgb),.14)}
+.lib-content-head.has-cover .lib-isp-wrap:focus-within{border-color:rgba(var(--ovl-rgb),.26)}
 .lib-hero-icon{width:110px;height:110px;border-radius:calc(var(--radius) * 0.85);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
 .lib-hero-icon.off-icon{background:var(--sys-all-tint)}
 .lib-hero-icon.fav-icon{background:var(--sys-fav-tint)}
@@ -90,48 +106,48 @@
 .lib-hero-cov-edit{position:relative;background:transparent;overflow:visible;cursor:default}
 .lib-hero-cov-edit .pl-cov-zone{border-radius:inherit;border-width:1.5px}
 .lib-hero-edit{display:flex;flex-direction:column;justify-content:center;gap:7px;flex:0 1 420px;min-width:0}
-.lib-hero-name-inp,.lib-hero-desc-inp{width:100%;box-sizing:border-box;font-family:var(--font);background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.14);border-radius:7px;color:#fff;outline:none;transition:border-color .15s,background .15s}
+.lib-hero-name-inp,.lib-hero-desc-inp{width:100%;box-sizing:border-box;font-family:var(--font);background:rgba(0,0,0,.28);border:1px solid rgba(var(--ovl-rgb),.14);border-radius:7px;color:var(--text);outline:none;transition:border-color .15s,background .15s}
 .lib-hero-name-inp{font-size:15px;font-weight:800;padding:6px 10px}
-.lib-hero-desc-inp{font-size:11.5px;font-weight:500;padding:5px 10px;color:rgba(255,255,255,.85)}
-.lib-hero-name-inp::placeholder,.lib-hero-desc-inp::placeholder{color:rgba(255,255,255,.4);font-weight:500}
-.lib-hero-name-inp:focus,.lib-hero-desc-inp:focus{border-color:rgba(var(--accent-rgb),.85);background:rgba(0,0,0,.42)}
+.lib-hero-desc-inp{font-size:12px;font-weight:500;padding:5px 10px;color:rgba(var(--ovl-rgb),.85)}
+.lib-hero-name-inp::placeholder,.lib-hero-desc-inp::placeholder{color:rgba(var(--ovl-rgb),.4);font-weight:500}
+.lib-hero-name-inp:focus,.lib-hero-desc-inp:focus{border-color:rgba(var(--ovl-rgb),.28);background:rgba(0,0,0,.42)}
 /* Большой редактор плейлиста — на месте трек-листа, пока идёт редактирование.
    Вход/выход — лёгкий fade+slide; на выходе редактор держится смонтированным
    ~180мс (класс is-closing из LibContent), потом монтируется трек-лист. */
 @keyframes plEditIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes plEditOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px)}}
-.pl-edit-body{flex:1;overflow-y:auto;padding:22px 24px 80px;scrollbar-width:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);animation:plEditIn .22s ease}
+.pl-edit-body{flex:1;overflow-y:auto;padding:22px 24px 80px;scrollbar-width:none;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);animation:plEditIn .22s ease}
 .pl-edit-body.is-closing{animation:plEditOut .18s ease forwards;pointer-events:none}
 .pl-edit-body::-webkit-scrollbar{display:none}
 .pl-src-head{font-size:13px;font-weight:800;letter-spacing:.02em}
-.pl-src-hint{font-size:11.5px;color:var(--text2);margin-top:5px;max-width:520px;line-height:1.5}
+.pl-src-hint{font-size:12px;color:var(--text2);margin-top:5px;max-width:520px;line-height:1.5}
 .pl-src-list{display:flex;flex-direction:column;gap:6px;margin-top:16px;max-width:640px}
-.pl-src-row{display:flex;align-items:center;gap:11px;padding:9px 12px;border:1px solid var(--border);border-radius:calc(var(--radius) * 0.7);background:rgba(255,255,255,.03)}
+.pl-src-row{display:flex;align-items:center;gap:11px;padding:9px 12px;border:1px solid var(--border);border-radius:calc(var(--radius) * 0.7);background:var(--ovl-bg)}
 .pl-src-logo{display:flex;align-items:center;justify-content:center;width:22px;height:22px;flex-shrink:0}
 .pl-src-txt{flex:1;min-width:0}
-.pl-src-title{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pl-src-sub{font-size:10.5px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-src-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-src-sub{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-src-rmv{width:26px;height:26px;flex-shrink:0;border-radius:50%;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
-.pl-src-rmv:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.pl-src-rmv:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
 .pl-src-add{display:flex;gap:8px;margin-top:14px;max-width:640px}
 .pl-src-inp-wrap{position:relative;flex:1;min-width:0;display:flex;align-items:center}
-.pl-src-inp{width:100%;box-sizing:border-box;font-family:var(--font);font-size:12px;padding:9px 34px 9px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:calc(var(--radius) * 0.7);color:var(--text);outline:none;transition:border-color .15s,background .15s}
+.pl-src-inp{width:100%;box-sizing:border-box;font-family:var(--font);font-size:12px;padding:9px 34px 9px 12px;background:rgba(var(--ovl-rgb),.04);border:1px solid var(--border);border-radius:calc(var(--radius) * 0.7);color:var(--text);outline:none;transition:border-color .15s,background .15s}
 .pl-src-inp::placeholder{color:var(--text2);opacity:.75}
-.pl-src-inp:focus{border-color:rgba(var(--accent-rgb),.85);background:rgba(255,255,255,.06)}
+.pl-src-inp:focus{border-color:var(--border-focus);background:rgba(var(--ovl-rgb),.06)}
 .pl-src-inp-wrap .pl-src-logo{position:absolute;right:9px}
 .pl-src-add-btn{display:flex;align-items:center;gap:6px;padding:0 15px;border-radius:calc(var(--radius) * 0.7);background:none;border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:.15s;flex-shrink:0}
 .pl-src-add-btn:hover:not(:disabled){border-color:var(--text2);color:var(--text)}
 .pl-src-add-btn:disabled{opacity:.45;cursor:default}
-.pl-src-spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--text);border-radius:50%;animation:plSrcSpin .7s linear infinite}
+.pl-src-spinner{width:12px;height:12px;border:2px solid rgba(var(--ovl-rgb),.25);border-top-color:var(--text);border-radius:50%;animation:plSrcSpin .7s linear infinite}
 @keyframes plSrcSpin{to{transform:rotate(360deg)}}
-.lib-hero-btns .btn-icon.is-save{background:#fff;color:#000;border-color:#fff}
+.lib-hero-btns .btn-icon.is-save{background:var(--text);color:var(--bg);border-color:var(--text)}
 .lib-hero-btns .btn-icon.is-save:hover{background:var(--accent2);border-color:var(--accent2)}
 .lib-hero-btns .btn-icon.is-save:disabled{opacity:.45;cursor:default}
-.lib-hero-btns .btn-icon.is-save:disabled:hover{background:#fff;border-color:#fff}
-.btn-play-all{display:flex;align-items:center;gap:6px;height:34px;padding:0 18px;border-radius:calc(var(--radius) * 0.72);background:var(--accent);color:var(--accent-text);border:none;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
-.btn-play-all:hover{filter:brightness(1.15)}
+.lib-hero-btns .btn-icon.is-save:disabled:hover{background:var(--text);border-color:var(--text)}
+.btn-play-all{display:flex;align-items:center;gap:6px;height:34px;padding:0 18px;white-space:nowrap;flex-shrink:0;border-radius:calc(var(--radius) * 0.72);background:var(--accent);color:var(--accent-text);border:none;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
+.btn-play-all:hover{background:var(--accent-hover)}
 .btn-icon{width:34px;height:34px;border-radius:calc(var(--radius) * 0.72);background:var(--icon-bg);border:1px solid transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
-.btn-icon:hover{background:rgba(255,255,255,.13);color:var(--text)}
+.btn-icon:hover{background:rgba(var(--ovl-rgb),.13);color:var(--text)}
 .btn-icon:disabled{opacity:.4;cursor:default}
 .btn-icon:disabled:hover{background:var(--icon-bg);color:var(--text2)}
 /* Деструктивные bulk-действия в шапке (удалить / из плейлиста / из любимых) */
@@ -143,8 +159,25 @@
 .btn-sel-count:disabled{opacity:.5;cursor:default;filter:none}
 /* Fade на маунт: заметен при возврате из большого редактора (секции его не
    ремоунтят — там анимация не дёргается). */
-.lib-tracklist{flex:1;overflow-y:auto;padding:8px 12px 80px;scrollbar-width:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);animation:bloom-fade-in .22s ease}
+.lib-tracklist{flex:1;overflow-y:auto;padding:8px 12px 80px;scrollbar-width:none;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);animation:bloom-fade-in .22s ease}
 .lib-tracklist::-webkit-scrollbar{display:none}
+/* ── Пилюля «Сейчас играет» (LibTracklist) ────────────────────────────────
+   Всплывает над низом трек-листа, когда играющий трек уехал далеко за край
+   видимой области; клик возвращает скролл к нему. Стрелка показывает
+   направление (трек выше/ниже). Поверхность и скругление — как у всплывающих
+   меню: color-mix(block-color + ov-lift), radius из настроек (без тени, как
+   #plMenu/.ctx), поэтому пилюля попадает и в стекло оверлеев. */
+.lib-jump{position:absolute;left:50%;bottom:16px;z-index:6;display:flex;align-items:center;gap:9px;max-width:min(340px,calc(100% - 60px));padding:5px 12px 5px 5px;border-radius:calc(var(--radius)*.9);border:1px solid rgba(var(--ovl-rgb),.09);background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));color:var(--text);font-family:var(--font);cursor:pointer;box-shadow:none;transform:translateX(-50%);animation:libJumpIn .2s ease;transition:border-color .15s ease}
+.lib-jump:hover{border-color:rgba(var(--ovl-rgb),.22)}
+.lib-jump>svg{flex-shrink:0;color:var(--text2)}
+.lib-jump:hover>svg{color:var(--text)}
+.lib-jump-cov{position:relative;width:32px;height:32px;border-radius:calc(var(--radius)*.5);overflow:hidden;flex-shrink:0;background:var(--hover);display:flex;align-items:center;justify-content:center}
+.lib-jump-cov img{width:100%;height:100%;object-fit:cover}
+.lib-jump-eq{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.lib-jump-txt{display:flex;flex-direction:column;gap:1px;min-width:0;text-align:left}
+.lib-jump-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-jump-art{font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@keyframes libJumpIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 /* Индикатор прокрутки на нижней границе шапки (LibScrollbar): тонкая линия +
    акцентный бегунок, отражающий позицию вертикального скролла `.lib-tracklist`.
    Absolute — вне потока, на раскладку не влияет; появляется только когда список
@@ -153,20 +186,20 @@
 .lib-content-head .lib-scrubber.is-on{opacity:1;pointer-events:auto}
 .lib-scrubber-track{position:relative;width:100%;height:100%;border-radius:2px;background:transparent;cursor:pointer;touch-action:none}
 .lib-scrubber-thumb{position:absolute;top:0;left:0;height:100%;border-radius:2px;background:var(--accent);cursor:grab;transition:filter .15s ease}
-.lib-scrubber-track:hover .lib-scrubber-thumb{filter:brightness(1.15)}
+.lib-scrubber-track:hover .lib-scrubber-thumb{background:var(--accent-hover)}
 .lib-album-hdr{display:flex;align-items:center;gap:12px;padding:16px 8px 7px;margin-top:2px}
-.lib-album-hdr-cov{width:50px;height:50px;border-radius:calc(var(--radius)*.7);background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.07)}
+.lib-album-hdr-cov{width:50px;height:50px;border-radius:calc(var(--radius)*.7);background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(var(--ovl-rgb),.07)}
 .lib-album-hdr-cov img{width:100%;height:100%;object-fit:cover}
 .lib-album-hdr-info{flex:1;min-width:0}
 .lib-album-hdr-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-album-hdr-meta{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-album-hdr-play{width:28px;height:28px;border-radius:50%;background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:.15s;padding:0}
 .lib-album-hdr:hover .lib-album-hdr-play{opacity:1}
-.lib-album-hdr-play:hover{filter:brightness(1.15)}
-.lib-album-gap{height:10px;border-bottom:1px solid rgba(255,255,255,.05);margin:0 4px 6px}
+.lib-album-hdr-play:hover{background:var(--accent-hover)}
+.lib-album-gap{height:10px;border-bottom:1px solid rgba(var(--ovl-rgb),.05);margin:0 4px 6px}
 .lib-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;background:var(--accent);color:var(--accent-text);border:none;cursor:pointer;transition:.15s;font-family:var(--font);width:100%;box-sizing:border-box;text-align:center}
 .lib-upload-btn:hover{background:var(--accent2)}
-.lib-block-folders{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
+.lib-block-folders{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
 
 #libGridOverview{display:none;padding:8px 12px 80px;overflow-y:auto;scrollbar-width:none;flex:1}
 #libGridOverview::-webkit-scrollbar{display:none}
@@ -184,10 +217,10 @@
 .lib-grid-card-artist .sp-tc-play{border-radius:50%}
 #libGridOverview .home-pl-card{width:100%}
 #libGridOverview .hpc-cover{width:100%;height:auto;aspect-ratio:1}
-.lib-grid-section{grid-column:1/-1;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;padding:6px 2px 2px;margin-top:4px}
+.lib-grid-section{grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;padding:6px 2px 2px;margin-top:4px}
 .lib-grid-sys-row{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.lib-grid-sys-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s;min-height:78px}
-.lib-grid-sys-card:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,var(--wb2))}
+.lib-grid-sys-card{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s;min-height:78px}
+.lib-grid-sys-card:hover{background:rgba(var(--ovl-rgb),.06);border-color:var(--ovl-line2)}
 .lib-grid-sys-card-info{display:flex;flex-direction:column;gap:3px;min-width:0}
 .lib-grid-sys-card-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-grid-sys-card-sub{font-size:11px;color:var(--text2)}
@@ -197,8 +230,8 @@
 .lib-grid-sys-card-all::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#1a5fb4 0%,transparent 100%);pointer-events:none;z-index:0}
 .lib-grid-sys-card-all .lib-grid-sys-card-icon,.lib-grid-sys-card-all .lib-grid-sys-card-info{position:relative;z-index:1}
 .lib-grid-sys-card-all .lib-grid-sys-card-icon{margin-left:0;opacity:1}
-.lib-grid-sys-card-all .lib-grid-sys-card-name{font-size:13px;font-weight:800;color:#fff}
-.lib-grid-sys-card-all .lib-grid-sys-card-sub{font-size:10.5px;color:rgba(255,255,255,.45)}
+.lib-grid-sys-card-all .lib-grid-sys-card-name{font-size:13px;font-weight:800;color:var(--text)}
+.lib-grid-sys-card-all .lib-grid-sys-card-sub{font-size:11px;color:rgba(var(--ovl-rgb),.45)}
 .lib-grid-sys-card-all:hover{background:var(--block-bg,#2a2a2a);filter:brightness(1.15)}
 .lib-grid-sys-card-fav{background:var(--block-bg,#2a2a2a)}
 .lib-grid-sys-card-fav::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#c0144e 0%,transparent 100%);pointer-events:none;z-index:0}
@@ -206,32 +239,43 @@
 .lib-grid-sys-card-hist::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#b8860b 0%,transparent 100%);pointer-events:none;z-index:0}
 .lib-grid-sys-card-fav .lib-grid-sys-card-icon,.lib-grid-sys-card-fav .lib-grid-sys-card-info,.lib-grid-sys-card-hist .lib-grid-sys-card-icon,.lib-grid-sys-card-hist .lib-grid-sys-card-info{position:relative;z-index:1}
 .lib-grid-sys-card-fav .lib-grid-sys-card-icon,.lib-grid-sys-card-hist .lib-grid-sys-card-icon{margin-left:0;opacity:1}
-.lib-grid-sys-card-fav .lib-grid-sys-card-name,.lib-grid-sys-card-hist .lib-grid-sys-card-name{font-size:13px;font-weight:800;color:#fff}
-.lib-grid-sys-card-fav .lib-grid-sys-card-sub,.lib-grid-sys-card-hist .lib-grid-sys-card-sub{font-size:10.5px;color:rgba(255,255,255,.45)}
+.lib-grid-sys-card-fav .lib-grid-sys-card-name,.lib-grid-sys-card-hist .lib-grid-sys-card-name{font-size:13px;font-weight:800;color:var(--text)}
+.lib-grid-sys-card-fav .lib-grid-sys-card-sub,.lib-grid-sys-card-hist .lib-grid-sys-card-sub{font-size:11px;color:rgba(var(--ovl-rgb),.45)}
 .lib-grid-sys-card-fav:hover,.lib-grid-sys-card-hist:hover{background:var(--block-bg,#2a2a2a);filter:brightness(1.15)}
 /* Видимостью #libBackToGrid в bloom управляет условный рендер React
    (показан только в grid-виде вне обзора). Жёсткий display:none тут перекрывал
    бы его и кнопка «назад» никогда не появлялась. */
 .folder-settings-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .folder-settings-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:calc(var(--radius)*.7)}
-.folder-settings-path{flex:1;font-size:11.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-family:monospace}
+.folder-settings-path{flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-family:monospace}
 .folder-settings-del{width:24px;height:24px;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s;padding:0}
 .folder-settings-del:hover{color:#e03030;background:rgba(224,48,48,.12)}
 .folder-settings-scan{font-size:11px;color:var(--text2);background:var(--hover);border:none;border-radius:calc(var(--radius)*.6);padding:4px 10px;cursor:pointer;transition:.12s;font-family:var(--font)}
-.folder-settings-scan:hover{color:var(--text);background:rgba(255,255,255,.1)}
+.folder-settings-scan:hover{color:var(--text);background:rgba(var(--ovl-rgb),.1)}
 .folder-add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;background:transparent;color:var(--text2);border:1px solid var(--border);cursor:pointer;transition:.15s;font-family:var(--font);width:100%;box-sizing:border-box;justify-content:center}
-.folder-add-btn:hover{background:var(--hover);color:var(--text);border-color:rgba(255,255,255,.15)}
+.folder-add-btn:hover{background:var(--hover);color:var(--text);border-color:rgba(var(--ovl-rgb),.15)}
 /* БЕЗ content-visibility: списки виртуализированы окном (useWindowedList) —
    в DOM только видимый срез. contain-intrinsic-size с border-box давал skipped-
    строкам высоту контента 63 + паддинги/бордер = 75px против реальных 63 —
    12px рассинхрона на строку ломали спейсерную математику окна (прыжки скролла
    при drag-расширении, дрейф при скролле во время drag). */
-.tr{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:calc(var(--radius) * 0.7);cursor:pointer;transition:.15s;margin-bottom:5px;border:1px solid rgba(255,255,255,var(--wb));min-height:63px}
-.tr:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,var(--wb2))}
+.tr{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:calc(var(--radius) * 0.7);cursor:pointer;transition:.15s;margin-bottom:5px;border:1px solid var(--ovl-line);min-height:63px}
+.tr:hover{background:rgba(var(--ovl-rgb),.04);border-color:var(--ovl-line2)}
 .tr.playing{background:rgba(var(--accent-rgb),.04);border-color:rgba(var(--accent-rgb),calc(var(--wb)*2))}
 .tr.playing .trn{color:color-mix(in srgb,var(--accent) 55%,var(--text))}
 .trcov{position:relative;width: 45px;height: 45px;;border-radius:calc(var(--radius) * 0.6);background:var(--hover);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:12px}
 .trcov img{width:100%;height:100%;object-fit:cover}
+
+/* Номер трека вместо обложки (альбомы — обложка у всех треков одна). Ширина как
+   у .trcov, чтобы колонка названий не съезжала относительно других списков.
+   При наведении на строку номер сменяется иконкой play. */
+.trnum{position:relative;width:45px;height:45px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
+.trnum-i,.trnum-p{position:absolute;display:flex;align-items:center;justify-content:center;transition:opacity .12s ease}
+.trnum-i{font-size:13px;font-weight:500;font-variant-numeric:tabular-nums}
+.trnum-p{opacity:0;color:var(--text)}
+.tr:hover .trnum-i{opacity:0}
+.tr:hover .trnum-p{opacity:1}
+.tr.playing .trnum{color:var(--accent)}
 
 /* Бейдж площадки поверх обложки (нижний-правый угол), прячется при наведении на
    обложку. Работает в строках треков (.trcov) и карточках (.sp-tc-cover). */
@@ -252,14 +296,14 @@
 .ym-tra-link:hover{color:var(--text);text-decoration:underline}
 .tra-sep{color:var(--text2)}
 .tri:hover .trn,.tri:hover .tra{overflow:visible;text-overflow:clip}
-.trd{font-size:11px;color:var(--text2);display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600;min-width:46px;box-sizing:border-box;text-align:center;transition:.15s}
+.trd{font-size:11px;color:var(--text2);display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600;min-width:46px;box-sizing:border-box;text-align:center;transition:.15s}
 /* Слот справа: длительность трека, а при наведении на строку — кнопка «…». */
 .trtime{position:relative;display:flex;align-items:center;justify-content:center;min-width:46px;flex-shrink:0}
 .trmore{position:absolute;inset:0;margin:auto;opacity:0;pointer-events:none}
 .tr:hover .trd{opacity:0}
 .tr:hover .trmore{opacity:1;pointer-events:auto}
 .tr-offline{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
-.trplays{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);flex-shrink:0;background:transparent;border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600}
+.trplays{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);flex-shrink:0;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600}
 .trplays svg{opacity:.7}
 .tr-repost{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap}
 .tr-repost svg{opacity:.8}
@@ -325,6 +369,8 @@ body.win-lib-wide .tr-album,body.win-lib-wide .tr-date{display:block}
 .ib{width:25px;height:25px;border-radius:calc(var(--radius) * 0.55);background:transparent;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-size:12px}
 .ib:hover{background:transparent;color:var(--text)}
 .ib.fav{color:#e03030}
+/* «Трек уже в этом плейлисте» — акцент (в отличие от fav, у которого свой красный). */
+.ib.added,.ib.added:hover{color:var(--accent)}
 .ib-rmq:hover{color:#e03030!important;background:transparent!important}
 .bars{display:flex;gap:2px;align-items:center;height:14px}
 .bars span{width:3px;height:8px;border-radius:2px;background:var(--accent);animation:npBar 0.8s ease-in-out infinite alternate;animation-fill-mode:backwards}

@@ -35,7 +35,18 @@ import { useOfflineStore } from '@features/offline'
 /** Стартовый запас строк окна на время drag — небольшой: дальше окно дорастает
  *  при скролле само (grow-only), а большой буфер делал захват трека медленным. */
 const DRAG_WINDOW_EXPAND = 40
+
+/** На сколько играющий трек должен уехать за край вьюпорта, чтобы появилась
+ *  пилюля «Сейчас играет» (px). Пара строк запаса — чтобы она не мигала, когда
+ *  трек стоит ровно на границе. */
+const JUMP_SHOW_GAP = 140
+/** Отступ сверху при возврате к треку — над ним остаётся немного контекста. */
+const JUMP_SCROLL_MARGIN = 96
+/** Дальше этого расстояния плавный скролл длится неприлично долго — прыгаем сразу. */
+const JUMP_SMOOTH_MAX = 4000
+
 export const LibTracklist = () => {
+  const tr = useT()
   const mode = useLibStore((s) => s.mode)
   const folderPath = useLibStore((s) => s.folderPath)
   const plId = useLibStore((s) => s.plId)
@@ -96,6 +107,13 @@ export const LibTracklist = () => {
   // Toggle: повторный клик на ту же кнопку закрывает попап.
   const addAnchorRef = useRef<HTMLElement | null>(null)
   const [addPopupTrackId, setAddPopupTrackId] = useState<string | null>(null)
+  // Множество треков открытого плейлиста — по нему «+» в строке рисуется
+  // bold-вариантом (трек уже добавлен). Только режим `pl`: в «Все треки»,
+  // «Любимое», истории и папках понятия «этот плейлист» нет.
+  const plTrsSet = useMemo(
+    () => (mode === 'pl' && playlistTrs ? new Set(playlistTrs) : null),
+    [mode, playlistTrs],
+  )
   const openAddPopup = (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => {
     e.stopPropagation()
     const btn = e.currentTarget
@@ -230,6 +248,77 @@ export const LibTracklist = () => {
     if (dupsActive && (mode !== 'pl' || plId !== dupsPlId)) dupsExit()
   }, [dupsActive, mode, plId, dupsPlId, dupsExit])
 
+  // ── Пилюля «Сейчас играет» ───────────────────────────────────────────
+  // Показывается, когда играющий трек уехал за пределы видимой части списка
+  // (дальше JUMP_SHOW_GAP от края); клик возвращает скролл к нему.
+  // Строки играющего трека может не быть в DOM (виртуализация) — позицию
+  // считаем по модели окна (win.offsetOf), а не по querySelector.
+  const curId = useQueueStore((s) => s.curId)
+  const curIdx = useMemo(() => {
+    if (!curId) return -1
+    if (histFlat) return histFlat.findIndex((it) => it.type === 0 && it.track.id === curId)
+    return viewTracks.findIndex((x) => x.id === curId)
+  }, [curId, histFlat, viewTracks])
+  const curTrack = useMemo(() => {
+    if (curIdx < 0) return null
+    if (histFlat) {
+      const it = histFlat[curIdx]
+      return it && it.type === 0 ? it.track : null
+    }
+    return viewTracks[curIdx] ?? null
+  }, [curIdx, histFlat, viewTracks])
+  /** 0 — скрыта, -1 — трек выше вьюпорта, 1 — ниже. */
+  const [jumpDir, setJumpDir] = useState<0 | -1 | 1>(0)
+  const evalJumpRef = useRef<() => void>(() => {})
+  evalJumpRef.current = () => {
+    const el = win.containerRef.current
+    let next: 0 | -1 | 1 = 0
+    if (el && curIdx >= 0) {
+      const st = el.scrollTop
+      const vh = el.clientHeight
+      if (vh > 0) {
+        if (win.offsetOf(curIdx + 1) < st - JUMP_SHOW_GAP) next = -1
+        else if (win.offsetOf(curIdx) > st + vh + JUMP_SHOW_GAP) next = 1
+      }
+    }
+    setJumpDir((v) => (v === next ? v : next))
+  }
+  // Пересчёт на каждом рендере (смена трека, данных, плотности) — два чтения
+  // layout'а; на сам скролл ре-рендера нет, поэтому ещё и слушатель ниже.
+  useEffect(() => {
+    evalJumpRef.current()
+  })
+  useEffect(() => {
+    const el = win.containerRef.current
+    if (!el) return
+    let raf: number | null = null
+    const onScroll = () => {
+      if (raf != null) return
+      raf = requestAnimationFrame(() => {
+        raf = null
+        evalJumpRef.current()
+      })
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      el.removeEventListener('scroll', onScroll)
+      if (raf != null) cancelAnimationFrame(raf)
+    }
+    // Контейнер пересоздаётся при переходе список ↔ пустое состояние и при
+    // входе/выходе из инлайн-дублей — переподписываемся.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, plId, folderPath, searchQuery, dupsActive, viewTracks.length === 0])
+
+  const jumpToCurrent = () => {
+    const el = win.containerRef.current
+    if (!el || curIdx < 0) return
+    const top = Math.max(0, win.offsetOf(curIdx) - JUMP_SCROLL_MARGIN)
+    el.scrollTo({
+      top,
+      behavior: Math.abs(top - el.scrollTop) > JUMP_SMOOTH_MAX ? 'auto' : 'smooth',
+    })
+  }
+
   const onTrackCtx = (e: ReactMouseEvent<HTMLElement>, t: Track) => {
     e.preventDefault()
     e.stopPropagation()
@@ -283,6 +372,7 @@ export const LibTracklist = () => {
   }
 
   return (
+    <>
     <div
       ref={(el) => {
         sortable.containerRef.current = el
@@ -331,6 +421,7 @@ export const LibTracklist = () => {
             onMore={(e) => onTrackCtx(e, t)}
             onClick={(e) => onTrackClickWithMods(t, idx, e)}
             onAddClick={openAddPopup}
+            inPl={!!plTrsSet?.has(t.id)}
             showAlbum={showAlbum}
             showDate={showDate}
             rootProps={rootProps}
@@ -360,6 +451,33 @@ export const LibTracklist = () => {
         }}
       />
     </div>
+    {/* Плавающая пилюля «Сейчас играет» — вне скролл-контейнера (абсолют внутри
+        .lib-content), поэтому висит на одном месте независимо от прокрутки. */}
+    {curTrack && jumpDir !== 0 && (
+      <button
+        type="button"
+        className="lib-jump"
+        onClick={jumpToCurrent}
+        aria-label={tr('lib.jumpToNow')}
+      >
+        <span className="lib-jump-cov">
+          {curTrack.cover ? (
+            <img src={curTrack.cover} alt="" />
+          ) : (
+            <Ico name="note" width={14} height={14} style={{ opacity: 0.4 }} />
+          )}
+          <span className="lib-jump-eq">
+            <span className="bars"><span /><span /><span /></span>
+          </span>
+        </span>
+        <span className="lib-jump-txt">
+          <span className="lib-jump-name">{curTrack.name || '—'}</span>
+          <span className="lib-jump-art">{curTrack.artist || tr('common.unknownArtist')}</span>
+        </span>
+        <Ico name={jumpDir === -1 ? 'arrowUp' : 'arrowDown'} width={15} height={15} />
+      </button>
+    )}
+    </>
   )
 }
 
@@ -622,6 +740,7 @@ const TrackRow = ({
   onMore,
   onClick,
   onAddClick,
+  inPl,
   showAlbum,
   showDate,
   rootProps,
@@ -637,6 +756,8 @@ const TrackRow = ({
   onMore?: (e: ReactMouseEvent<HTMLButtonElement>) => void
   onClick?: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick?: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
+  /** Трек уже лежит в открытом плейлисте — «+» рисуется bold-кружком. */
+  inPl?: boolean
   /** Показывать ячейку «Альбом» (пер-колонка гейт; ширина — через CSS). */
   showAlbum?: boolean
   /** Показывать ячейку «Добавлено». */
@@ -669,9 +790,7 @@ const TrackRow = ({
       ? 'yandex'
       : track._ytm
         ? 'ytmusic'
-        : track._sp
-          ? 'spotify'
-          : 'local'
+        : 'local'
 
   return (
   <div
@@ -806,13 +925,20 @@ const TrackRow = ({
       >
         <Ico name="heart" variant={isFav ? 'bold' : 'linear'} width={13} height={13} />
       </button>
+      {/* «Уже в этом плейлисте» — залитый solar add-circle-bold в акценте
+          (как отмеченный трек в Spotify). Кружок оптически крупнее голого
+          «+», поэтому 15 против 13: иначе он читается мельче соседей. */}
       <button
-        className="ib"
+        className={`ib${inPl ? ' added' : ''}`}
         type="button"
         aria-label={t('player.aria.add')}
         onClick={(e) => onAddClick?.(e, track.id)}
       >
-        <Ico name="add" width={13} height={13} />
+        {inPl ? (
+          <Ico name="addCircle" variant="bold" width={15} height={15} />
+        ) : (
+          <Ico name="add" width={13} height={13} />
+        )}
       </button>
     </div>
     {/* Индикатор «доступно офлайн» (скачано для локального прослушивания) —

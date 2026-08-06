@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
@@ -7,13 +8,24 @@ import { Ico, type IconName } from '@shared/ui/icons/solar'
  * расположение/режим сайдбара, разделители, авто-скрытие, навигационные кнопки и
  * индикатор активной вкладки; набор элементов тайтлбара и его авто-скрытие.
  *
+ * Две группы разделены полосой вкладок (`.s-ptabs`) — как в разделе «Страницы»,
+ * а не заголовками-категориями: «Сайдбар» и «Тайтлбар».
+ *
  * Перенесено из раздела «Интерфейс». i18n-ключи карточек остались прежними
- * (`settings.interface.*`); новые ключи — только метка вкладки и заголовки
- * категорий (`settings.tabs.*`).
+ * (`settings.interface.*`); новые ключи — только метка вкладки и названия
+ * групп (`settings.tabs.*`).
  */
+type TabsTab = 'sidebar' | 'titlebar'
+
+const TABS: { id: TabsTab; labelKey: TranslationKey; icon: IconName }[] = [
+  { id: 'sidebar', labelKey: 'settings.tabs.cat.sidebar', icon: 'sidebar' },
+  { id: 'titlebar', labelKey: 'settings.tabs.cat.titlebar', icon: 'windowFrame' },
+]
+
 export const TabsSection = () => {
   const t = useT()
   const p = useUiPrefsStore()
+  const [tab, setTab] = useState<TabsTab>('sidebar')
 
   return (
     <div className="s-section active" id="ssec-tabs">
@@ -28,7 +40,32 @@ export const TabsSection = () => {
         </button>
       </div>
 
-      <div className="s-cat-label">{t('settings.tabs.cat.sidebar')}</div>
+      {/* Переключатель групп — полоса вкладок над карточками раздела. */}
+      <div className="s-ptabs">
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            className={`s-ptab${tab === tb.id ? ' active' : ''}`}
+            onClick={() => setTab(tb.id)}
+          >
+            <Ico name={tb.icon} width={14} height={14} />
+            {t(tb.labelKey)}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'sidebar' ? <SidebarCards /> : <TitlebarCards />}
+    </div>
+  )
+}
+
+/** Карточки вкладки «Сайдбар»: расположение/режим, вид, тогглы. */
+const SidebarCards = () => {
+  const t = useT()
+  const p = useUiPrefsStore()
+
+  return (
+    <>
       <div className="sc sc-keep">
         <div className="sc-title">{t('settings.interface.sidebarPos.title')}</div>
         <div className="sc-desc">{t('settings.interface.sidebarPos.desc')}</div>
@@ -62,22 +99,44 @@ export const TabsSection = () => {
         </div>
       </div>
 
+      <div className="sc sc-keep">
+        <div className="sc-title">{t('settings.interface.sidebarView.title')}</div>
+        <div className="sc-desc">{t('settings.interface.sidebarView.desc')}</div>
+        <div className="s-opt-row">
+          <OptBtn active={p.sidebarView === 'icons'} onClick={() => p.set('sidebarView', 'icons')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="5" height="18" rx="1" /><circle cx="5.5" cy="8" r="1.1" fill="currentColor" stroke="none" /><circle cx="5.5" cy="12" r="1.1" fill="currentColor" stroke="none" /><circle cx="5.5" cy="16" r="1.1" fill="currentColor" stroke="none" /><rect x="11" y="3" width="10" height="18" rx="1" /></svg>
+            {t('settings.interface.sidebarView.icons')}
+          </OptBtn>
+          <OptBtn active={p.sidebarView === 'full'} onClick={() => p.set('sidebarView', 'full')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="10" height="18" rx="1" /><circle cx="5.8" cy="8" r="1.1" fill="currentColor" stroke="none" /><circle cx="5.8" cy="12" r="1.1" fill="currentColor" stroke="none" /><circle cx="5.8" cy="16" r="1.1" fill="currentColor" stroke="none" /><path d="M8.4 8h2.4M8.4 12h2.4M8.4 16h2.4" strokeWidth={1.4} /><rect x="16" y="3" width="5" height="18" rx="1" /></svg>
+            {t('settings.interface.sidebarView.full')}
+          </OptBtn>
+        </div>
+      </div>
+
       {/* Тогглы сайдбара отдельными плитками (обычная .sc без sc-keep → каждый .sr
           превращается в отдельную строку-плитку, как блок навигации). */}
       <div className="sc">
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.interface.sidebar.sep.title')}</div>
-            <div className="ssub">{t('settings.interface.sidebar.sep.sub')}</div>
-          </div>
-          <Toggle checked={p.sbSep} onChange={(v) => p.set('sbSep', v)} />
-        </div>
         <div className="sr">
           <div>
             <div className="sl2">{t('settings.interface.sidebar.autohide.title')}</div>
             <div className="ssub">{t('settings.interface.sidebar.autohide.sub')}</div>
           </div>
           <Toggle checked={p.sidebarAutohide} onChange={(v) => p.set('sidebarAutohide', v)} />
+        </div>
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.interface.sidebar.lock.title')}</div>
+            <div className="ssub">{t('settings.interface.sidebar.lock.sub')}</div>
+          </div>
+          <Toggle checked={p.sbResizeLock} onChange={(v) => p.set('sbResizeLock', v)} />
+        </div>
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.interface.sidebar.sep.title')}</div>
+            <div className="ssub">{t('settings.interface.sidebar.sep.sub')}</div>
+          </div>
+          <Toggle checked={p.sbSep} onChange={(v) => p.set('sbSep', v)} />
         </div>
         <div className="sr">
           <div>
@@ -88,7 +147,52 @@ export const TabsSection = () => {
         </div>
       </div>
 
-      <div className="s-cat-label">{t('settings.tabs.cat.titlebar')}</div>
+      <WrappedSettingsCard />
+    </>
+  )
+}
+
+/**
+ * Пункт «Итоги» в сайдбаре: сам тумблер видимости + снятие расписания. Итоги
+ * появляются по понедельникам / 1-го числа / 21–31 декабря и только если за
+ * период было что слушать — «Показывать всегда» снимает первое ограничение
+ * (второе не снимается никогда: нет данных — нет итогов).
+ */
+const WrappedSettingsCard = () => {
+  const t = useT()
+  const p = useUiPrefsStore()
+
+  return (
+    <div className="sc">
+      {/* Заголовок группы (капс с хайрлайнами) — так же оформлены группы в
+          «Системе»/«Аудио». `.sc-title`/`.sc-desc` в раскладке со строками .sr
+          скрыты стилями, поэтому подписи живут в самих строках. */}
+      <h3>{t('settings.wrapped.title')}</h3>
+      <div className="sr">
+        <div>
+          <div className="sl2">{t('settings.wrapped.show')}</div>
+          <div className="ssub">{t('settings.wrapped.showSub')}</div>
+        </div>
+        <Toggle checked={p.wrappedShow} onChange={(v) => p.set('wrappedShow', v)} />
+      </div>
+      <div className="sr">
+        <div>
+          <div className="sl2">{t('settings.wrapped.always')}</div>
+          <div className="ssub">{t('settings.wrapped.alwaysSub')}</div>
+        </div>
+        <Toggle checked={p.wrappedAlways} onChange={(v) => p.set('wrappedAlways', v)} />
+      </div>
+    </div>
+  )
+}
+
+/** Карточки вкладки «Тайтлбар»: набор элементов панели + её тогглы. */
+const TitlebarCards = () => {
+  const t = useT()
+  const p = useUiPrefsStore()
+
+  return (
+    <>
       <div className="sc">
         <div className="sc-title">{t('settings.interface.titlebar.title')}</div>
         <div className="sc-desc">{t('settings.interface.titlebar.desc')}</div>
@@ -104,7 +208,7 @@ export const TabsSection = () => {
           ))}
         </div>
       </div>
-      {/* Автоскрытие тайтлбара — отдельной плиткой. */}
+      {/* Автоскрытие и фон тайтлбара — отдельными плитками. */}
       <div className="sc">
         <div className="sr">
           <div>
@@ -113,8 +217,15 @@ export const TabsSection = () => {
           </div>
           <Toggle checked={p.titlebarAutohide} onChange={(v) => p.set('titlebarAutohide', v)} />
         </div>
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.interface.titlebar.bg.title')}</div>
+            <div className="ssub">{t('settings.interface.titlebar.bg.sub')}</div>
+          </div>
+          <Toggle checked={p.titlebarBg} onChange={(v) => p.set('titlebarBg', v)} />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

@@ -8,9 +8,9 @@
   gap: 10px;
   padding: 12px;
   background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-lift));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
-  border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(var(--ovl-rgb), 0.07);
+  border-radius: calc(var(--radius) * 0.9);
+  box-shadow: none;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -38,7 +38,7 @@
   height: 26px;
   flex-shrink: 0;
   color: var(--text2);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--ovl-rgb), 0.05);
   border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
@@ -46,7 +46,7 @@
 }
 .eq-reset:hover {
   background: var(--hover);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(var(--ovl-rgb), 0.2);
   color: var(--text);
 }
 /* Кнопка вкл/выкл: подсвечена акцентом, когда эквалайзер включён */
@@ -88,10 +88,10 @@
 }
 .eq-add,
 .eq-chip {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text2);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--ovl-rgb), 0.05);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 5px 11px;
@@ -108,10 +108,12 @@
 }
 .eq-name-input {
   width: 110px;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--accent);
+  background: rgba(var(--ovl-rgb), 0.06);
+  /* Поле появляется только в режиме переименования, то есть всегда «активно» —
+     держим ту же нейтральную рамку фокуса, что и остальные поля ввода. */
+  border: 1px solid var(--border-focus);
   border-radius: 8px;
   padding: 5px 9px;
   outline: none;
@@ -143,7 +145,7 @@
 .eq-add:hover,
 .eq-chip:hover {
   background: var(--hover);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(var(--ovl-rgb), 0.2);
   color: var(--text);
 }
 .eq-chip.active {
@@ -204,7 +206,7 @@
   flex-direction: column;
   gap: 8px;
   padding-top: 10px;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-top: 1px solid var(--border, rgba(var(--ovl-rgb), 0.08));
 }
 .eq-fx-title {
   font-size: 10px;
@@ -219,10 +221,10 @@
 }
 .eq-fx-chip {
   flex: 1;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text2);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--ovl-rgb), 0.05);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 0;
@@ -231,7 +233,7 @@
 }
 .eq-fx-chip:hover {
   background: var(--hover);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(var(--ovl-rgb), 0.2);
   color: var(--text);
 }
 .eq-fx-chip.active {

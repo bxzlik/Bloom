@@ -26,6 +26,8 @@ const SETTINGS_KEYS = [
   'bloom_grp_side',
   'bloom_volume',
   'bloom_speed_idx',
+  'bloom_speed_rate',
+  'bloom_speed_nightcore',
   'bloom_lyrics_karaoke',
   'bloom_tele_ttl',
   'bloom_search_source',

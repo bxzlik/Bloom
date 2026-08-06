@@ -37,12 +37,25 @@ const fetchSourceTracks = async (src: PlSourceRef): Promise<Track[]> => {
   return (await resolveCollectionUrl(src.url)).tracks
 }
 
-export const refreshPlaylistTracks = async (plId: string): Promise<void> => {
+/** Итог обновления одного плейлиста. */
+export interface PlRefreshResult {
+  /** Сколько новых треков легло наверх плейлиста. */
+  added: number
+  /** Первая ошибка источника (если хотя бы один упал). */
+  err: unknown | null
+  /** Плейлист найден и у него есть привязанные источники. */
+  ok: boolean
+}
+
+/**
+ * Ядро обновления: без тостов, отдаёт результат.
+ * Используется и «Обновить треки» (ниже), и авто-обновлением (plAutoRefresh).
+ */
+export const refreshPlaylistSilent = async (plId: string): Promise<PlRefreshResult> => {
   const pl = usePlaylistStore.getState().playlists.find((p) => p.id === plId)
   const sources = pl?.sources ?? []
-  if (!pl || !sources.length) return
+  if (!pl || !sources.length) return { added: 0, err: null, ok: false }
 
-  toast(t('toast.refreshPl'))
   // Источники тянем последовательно (их обычно единицы, а параллель зря душит
   // прокси-команды); упавший источник не отменяет остальные.
   const fresh: Track[] = []
@@ -58,7 +71,7 @@ export const refreshPlaylistTracks = async (plId: string): Promise<void> => {
 
   // Актуальный список треков плейлиста (мог измениться за время запросов).
   const cur = usePlaylistStore.getState().playlists.find((p) => p.id === plId)
-  if (!cur) return
+  if (!cur) return { added: 0, err: firstErr, ok: false }
   const existingSet = new Set(cur.trs)
   const newIds: string[] = []
   for (const t of fresh) {
@@ -72,10 +85,21 @@ export const refreshPlaylistTracks = async (plId: string): Promise<void> => {
     // Новые — наверх (`pl.trs = newIds.concat(pl.trs)`).
     usePlaylistStore.getState().reorderPlTracks(plId, [...newIds, ...cur.trs])
   }
-  if (firstErr !== null && !fresh.length) {
+  // Ошибку возвращаем только если не вытянули НИЧЕГО: частичный успех считаем
+  // успехом (один из источников мог быть удалён на площадке).
+  return { added: newIds.length, err: fresh.length ? null : firstErr, ok: true }
+}
+
+export const refreshPlaylistTracks = async (plId: string): Promise<void> => {
+  const pl = usePlaylistStore.getState().playlists.find((p) => p.id === plId)
+  if (!pl?.sources?.length) return
+
+  toast(t('toast.refreshPl'))
+  const res = await refreshPlaylistSilent(plId)
+  if (res.err !== null) {
     // Все источники упали — показываем ошибку вместо «новых треков нет».
-    toast(t('toast.refreshError', { msg: firstErr instanceof Error ? firstErr.message : String(firstErr) }))
+    toast(t('toast.refreshError', { msg: res.err instanceof Error ? res.err.message : String(res.err) }))
     return
   }
-  toast(newIds.length ? t('toast.refreshAdded', { n: newIds.length }) : t('toast.refreshNoNew'))
+  toast(res.added ? t('toast.refreshAdded', { n: res.added }) : t('toast.refreshNoNew'))
 }

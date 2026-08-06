@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavStore } from '@app/navigationStore'
-import { useDetailStore } from '@features/search/model/detailStore'
+import { useDetailOpen } from '@features/search/model/detailStore'
 import { usePlayerViewStore } from '@features/settings'
 import { useQueueStore } from '../model/queueStore'
 import { PlayerBar } from './PlayerBar'
@@ -22,7 +22,7 @@ export const VerticalBarColumn = ({ side }: { side: 'left' | 'right' }) => {
   const mpEnabled = usePlayerViewStore((s) => s.mpEnabled)
   // Как и у горизонтального бара: детальный оверлей (артист/альбом) поверх плеера
   // держит page='player', но полный плеер перекрыт → бар показываем.
-  const detailOpen = useDetailStore((s) => s.stack.length > 0)
+  const detailOpen = useDetailOpen()
   const visible = !!curId && mpEnabled && (page !== 'player' || detailOpen)
   const colRef = useRef<HTMLDivElement>(null)
 

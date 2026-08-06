@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { useUiPrefsStore } from '@features/settings'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
-import { PathLine, PlaylistCover } from '@shared/ui'
+import { HoverMarquee, PathLine, PlaylistCover } from '@shared/ui'
 import {
   useLibStore,
   usePlaylistStore,
@@ -93,6 +93,10 @@ export const LibContent = () => {
   const libView = useUiPrefsStore((s) => s.libView)
   const gridHome = useLibStore((s) => s.gridHome)
   const overview = libView === 'grid' && gridHome
+
+  // Раскладка ряда действий: справа от названия (исторический вид) или под ним,
+  // внутри текстовой колонки («Настройки → Страницы → Библиотека»).
+  const heroBtnsBelow = useUiPrefsStore((s) => s.libHeroBtns) === 'below'
 
   const [searchOpen, setSearchOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -246,6 +250,197 @@ export const LibContent = () => {
   // в редакторе обложку, не дожидаясь сохранения.
   const headCover = editing ? editCover : heroCover
 
+  /**
+   * Открытый поиск: капсула той же высоты, что и группы иконок — встаёт на место
+   * левой группы, а не подменяет собой название (как было раньше).
+   */
+  const searchCapsule = (
+    <div key="grp-list" className="lib-isp-wrap" id="libInlineSearch">
+      <Ico name="search" width={13} height={13} style={{ flexShrink: 0, opacity: 0.4 }} />
+      <input
+        ref={searchInputRef}
+        type="text"
+        id="libInlineSearchInp"
+        className="lib-isp-inp"
+        placeholder={t('lib.searchInPlaylist')}
+        autoComplete="off"
+        spellCheck={false}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            setSearchQuery('')
+            setSearchOpen(false)
+          }
+        }}
+      />
+      <button
+        type="button"
+        className="lib-isp-clr"
+        id="libInlineSearchBtn"
+        aria-label={t('common.clear')}
+        onClick={toggleSearch}
+      >
+        <Ico name="close" width={12} height={12} />
+      </button>
+    </div>
+  )
+
+  /**
+   * Ряд действий шапки: «Играть все» + капсулы иконок (либо bulk-режим SelActions,
+   * либо кнопки сохранения редактора). Рендерится в одном из двух мест —
+   * справа от названия или под ним (`heroBtnsBelow`), поэтому собран отдельно.
+   */
+  const heroBtns = (
+    <div className={`lib-hero-btns${editing || editorClosing ? ' is-anim' : ''}`}>
+      {editing ? (
+        <div key="edit-actions" className="lib-btn-group">
+          <button
+            type="button"
+            className="btn-icon"
+            aria-label={t('common.cancel')}
+            onClick={cancelEdit}
+          >
+            <Ico name="close" width={14} height={14} />
+          </button>
+          <button
+            type="button"
+            className="btn-icon is-save"
+            aria-label={t('common.save')}
+            onClick={saveEdit}
+            disabled={!editName.trim()}
+          >
+            <Ico name="check" variant="bold" width={15} height={15} />
+          </button>
+        </div>
+      ) : selMode ? (
+        <>
+          {/* Кнопки поиска в bulk-ряду нет, но уже наложенный фильтр прятать
+              нельзя — иначе список отфильтрован «невидимо». Держим строку. */}
+          {searchOpen && searchCapsule}
+          <SelActions />
+        </>
+      ) : (
+        <>
+          {/* «Назад к сетке» — только в grid-виде, когда провалились в раздел. */}
+          {libView === 'grid' && (
+            <div key="back" className="lib-btn-group">
+              <button className="btn-icon" id="libBackToGrid" onClick={backToGrid}>
+                <Ico name="arrowLeft" width={14} height={14} />
+              </button>
+            </div>
+          )}
+          <button
+            key="play-all"
+            className="btn-play-all"
+            onClick={() => {
+              const view = getCurrentView()
+              if (!view.tracks.length) return
+              playFromSource(view.tracks.map((t) => t.id), view.source)
+            }}
+          >
+            <Ico name="play" width={16} height={16} />
+            {t('lib.playAll')}
+          </button>
+          {/* Иконки собраны в капсулы — как в шапке артиста/плейлиста в поиске
+              (.sp-am-btn-group): работа со списком слева, воспроизведение/меню справа.
+              Открытый поиск подменяет левую капсулу строкой ввода той же высоты —
+              название и подпись при этом остаются на месте. */}
+          {searchOpen ? (
+            searchCapsule
+          ) : (
+            <div key="grp-list" className="lib-btn-group">
+              <button className="btn-icon" id="libInlineSearchBtn" onClick={toggleSearch}>
+                <Ico name="search" width={14} height={14} />
+              </button>
+              {mode === 'pl' && activePlaylist && (
+                <button
+                  className="btn-icon"
+                  id="plEditBtn"
+                  aria-label={t('lib.plmenu.editPlaylist')}
+                  onClick={() => startEdit(activePlaylist.id)}
+                >
+                  <Ico name="edit" width={14} height={14} />
+                </button>
+              )}
+              {/* Редактирование треков: включает selMode — ряд подменяется SelActions. */}
+              <button
+                className="btn-icon"
+                id="libSelModeBtn"
+                aria-label={t('lib.sel.edit')}
+                onClick={() => setSticky(true)}
+              >
+                <Ico name="square" width={14} height={14} />
+              </button>
+            </div>
+          )}
+          <div key="grp-play" className="lib-btn-group">
+            {/* Весь текущий вид (плейлист/папка/любимое) — в конец очереди.
+                Источник передаём для случая пустой очереди: там добавление
+                превращается в запуск и ярлык источника должен быть верным. */}
+            <button
+              className="btn-icon"
+              id="libToQueueBtn"
+              aria-label={t('lib.plmenu.toQueue')}
+              onClick={() => {
+                const view = getCurrentView()
+                if (!view.tracks.length) return
+                addTracksToQueue(view.tracks.map((t) => t.id), view.source)
+              }}
+            >
+              <Ico name="addQueue" width={14} height={14} />
+            </button>
+            <button
+              className="btn-icon"
+              id="libPlayNextBtn"
+              aria-label={t('lib.plmenu.playNext')}
+              onClick={() => {
+                const view = getCurrentView()
+                if (!view.tracks.length) return
+                playTracksNext(view.tracks.map((t) => t.id), view.source)
+              }}
+            >
+              <Ico name="playNext" width={13} height={13} />
+            </button>
+            <button
+              className="btn-icon"
+              onClick={() => {
+                const view = getCurrentView()
+                if (!view.tracks.length) return
+                playShuffledFromSource(view.tracks.map((t) => t.id), view.source)
+              }}
+            >
+              <Ico name="shuffle" width={13} height={13} />
+            </button>
+            {/* Системный диалог Tauri, а не <input type=file>: нужен путь к
+                файлу, а браузерный File его не отдаёт. */}
+            {mode === 'all' && (
+              <button
+                id="libUploadBtn"
+                className="btn-icon"
+                onClick={() => void importTracks().catch((e) => console.warn('importTracks failed', e))}
+              >
+                <Ico name="add" width={14} height={14} />
+              </button>
+            )}
+            <button
+              ref={plMenuBtnRef}
+              className="btn-icon"
+              id="plMenuBtn"
+              onClick={(e) => {
+                e.stopPropagation()
+                setPlMenuCursor(null)
+                setPlMenuOpen((v) => !v)
+              }}
+            >
+              <Ico name="kebab" width={14} height={14} />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+
   return (
     <div className="lib-content">
       {overview ? (
@@ -315,6 +510,7 @@ export const LibContent = () => {
               {!heroCover && <HeroIcon />}
             </div>
           )}
+          <div className="lib-hero-main">
           {editing ? (
             <div className="lib-hero-edit" id="libHeroNameWrap">
               <input
@@ -343,11 +539,11 @@ export const LibContent = () => {
                 }}
               />
             </div>
-          ) : !searchOpen ? (
-            <div style={{ flex: 1, minWidth: 0 }} id="libHeroNameWrap">
-              <div className="lib-hero-name" id="libHeroName">
-                {heroName}
-              </div>
+          ) : (
+            <div style={{ minWidth: 0 }} id="libHeroNameWrap">
+              {/* Неразрывное длинное название (без пробелов) не переносится и
+                  раньше лезло под кнопки шапки — теперь clip + hover-marquee. */}
+              <HoverMarquee className="lib-hero-name" id="libHeroName" text={heroName} />
               {/* Слот описания: у плейлиста — его текст, у папки — полный путь
                   (клик открывает её в проводнике). */}
               {mode === 'folder' && folderPath ? (
@@ -371,184 +567,10 @@ export const LibContent = () => {
                 )}
               </div>
             </div>
-          ) : null}
-          {/* Inline-поиск `libInlineSearch` */}
-          {!editing && searchOpen && (
-            <div
-              id="libInlineSearch"
-              style={{ display: 'flex', flex: 1, minWidth: 0, alignItems: 'center' }}
-            >
-              <div className="lib-isp-wrap">
-                <Ico name="search" width={13} height={13} style={{ flexShrink: 0, opacity: 0.4 }} />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  id="libInlineSearchInp"
-                  className="lib-isp-inp"
-                  placeholder={t('lib.searchInPlaylist')}
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      setSearchQuery('')
-                      setSearchOpen(false)
-                    }
-                  }}
-                />
-              </div>
-            </div>
           )}
-          <div className={`lib-hero-btns${editing || editorClosing ? ' is-anim' : ''}`}>
-            {editing ? (
-              <div key="edit-actions" className="lib-btn-group">
-                <button
-                  type="button"
-                  className="btn-icon"
-                  aria-label={t('common.cancel')}
-                  onClick={cancelEdit}
-                >
-                  <Ico name="close" width={14} height={14} />
-                </button>
-                <button
-                  type="button"
-                  className="btn-icon is-save"
-                  aria-label={t('common.save')}
-                  onClick={saveEdit}
-                  disabled={!editName.trim()}
-                >
-                  <Ico name="check" variant="bold" width={15} height={15} />
-                </button>
-              </div>
-            ) : selMode ? (
-              <SelActions />
-            ) : (
-            <>
-            {/* «Назад к сетке» — только в grid-виде, когда провалились в раздел. */}
-            {libView === 'grid' && (
-              <div key="back" className="lib-btn-group">
-                <button
-                  className="btn-icon"
-                  id="libBackToGrid"
-                  onClick={backToGrid}
-                >
-                  <Ico name="arrowLeft" width={14} height={14} />
-                </button>
-              </div>
-            )}
-            <button
-              key="play-all"
-              className="btn-play-all"
-              onClick={() => {
-                const view = getCurrentView()
-                if (!view.tracks.length) return
-                playFromSource(view.tracks.map((t) => t.id), view.source)
-              }}
-            >
-              <Ico name="play" width={16} height={16} />
-              {t('lib.playAll')}
-            </button>
-            {/* Иконки собраны в капсулы — как в шапке артиста/плейлиста в поиске
-                (.sp-am-btn-group): работа со списком слева, воспроизведение/меню справа. */}
-            <div key="grp-list" className="lib-btn-group">
-              <button
-                className="btn-icon"
-                id="libInlineSearchBtn"
-                onClick={toggleSearch}
-                style={searchOpen ? { color: 'var(--accent)' } : undefined}
-              >
-                {searchOpen ? (
-                  <Ico name="close" width={14} height={14} />
-                ) : (
-                  <Ico name="search" width={14} height={14} />
-                )}
-              </button>
-              {mode === 'pl' && activePlaylist && (
-                <button
-                  className="btn-icon"
-                  id="plEditBtn"
-                  aria-label={t('lib.plmenu.editPlaylist')}
-                  onClick={() => startEdit(activePlaylist.id)}
-                >
-                  <Ico name="edit" width={14} height={14} />
-                </button>
-              )}
-              {/* Редактирование треков: включает selMode — ряд подменяется SelActions. */}
-              <button
-                className="btn-icon"
-                id="libSelModeBtn"
-                aria-label={t('lib.sel.edit')}
-                onClick={() => setSticky(true)}
-              >
-                <Ico name="square" width={14} height={14} />
-              </button>
-            </div>
-            <div key="grp-play" className="lib-btn-group">
-              {/* Весь текущий вид (плейлист/папка/любимое) — в конец очереди.
-                  Источник передаём для случая пустой очереди: там добавление
-                  превращается в запуск и ярлык источника должен быть верным. */}
-              <button
-                className="btn-icon"
-                id="libToQueueBtn"
-                aria-label={t('lib.plmenu.toQueue')}
-                onClick={() => {
-                  const view = getCurrentView()
-                  if (!view.tracks.length) return
-                  addTracksToQueue(view.tracks.map((t) => t.id), view.source)
-                }}
-              >
-                <Ico name="addQueue" width={14} height={14} />
-              </button>
-              <button
-                className="btn-icon"
-                id="libPlayNextBtn"
-                aria-label={t('lib.plmenu.playNext')}
-                onClick={() => {
-                  const view = getCurrentView()
-                  if (!view.tracks.length) return
-                  playTracksNext(view.tracks.map((t) => t.id), view.source)
-                }}
-              >
-                <Ico name="playNext" width={13} height={13} />
-              </button>
-              <button
-                className="btn-icon"
-                onClick={() => {
-                  const view = getCurrentView()
-                  if (!view.tracks.length) return
-                  playShuffledFromSource(view.tracks.map((t) => t.id), view.source)
-                }}
-              >
-                <Ico name="shuffle" width={13} height={13} />
-              </button>
-              {/* Системный диалог Tauri, а не <input type=file>: нужен путь к
-                  файлу, а браузерный File его не отдаёт. */}
-              {mode === 'all' && (
-                <button
-                  id="libUploadBtn"
-                  className="btn-icon"
-                  onClick={() => void importTracks().catch((e) => console.warn('importTracks failed', e))}
-                >
-                  <Ico name="add" width={14} height={14} />
-                </button>
-              )}
-              <button
-                ref={plMenuBtnRef}
-                className="btn-icon"
-                id="plMenuBtn"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setPlMenuCursor(null)
-                  setPlMenuOpen((v) => !v)
-                }}
-              >
-                <Ico name="kebab" width={14} height={14} />
-              </button>
-            </div>
-            </>
-            )}
+          {heroBtnsBelow && heroBtns}
           </div>
+          {!heroBtnsBelow && heroBtns}
         </div>
         {/* Индикатор прокрутки на нижней границе шапки — отражает/двигает
             вертикальный скролл трек-листа. Только когда список показан. */}

@@ -1,30 +1,42 @@
-import { usePlayerViewStore, matchMpPreset } from '../../model/playerViewStore'
-import { useLyricsStore } from '@features/lyrics'
-import { useGrpStore } from '@features/player/model/grpStore'
-import { useT } from '@shared/i18n'
-import { Ico } from '@shared/ui/icons/solar'
+import { useState } from 'react'
+import {
+  usePlayerViewStore,
+  matchMpPreset,
+  type TrackAnimCfg,
+  type TrackAnimKind,
+  type LyricsFill,
+  type LyricsFx,
+  type LyricsStyleCfg,
+} from '../../model/playerViewStore'
+import { useT, type TranslationKey } from '@shared/i18n'
+import { Ico, type IconName } from '@shared/ui/icons/solar'
 
 /**
- * Раздел «Плеер» (`#ssec-view`). Перенесена РАБОЧАЯ часть:
- * выравнивание заголовка, кнопки на обложке в баре, ambient glow, parallax.
+ * Раздел «Плеер» (`#ssec-view`). Группы разнесены по полосе вкладок
+ * (`.s-ptabs`, как в разделах «Страницы» и «Вкладки»), а не идут одной
+ * простынёй с заголовками-категориями:
  *
- * Отложено (тяжёлая инфра, отдельными заходами): стиль плеера (vinyl/large),
- * тип слайдера (default/thin/ios/wave), положение очереди, текст/караоке/
- * скрыть-очередь/след.трек, мини-плеер (пресеты/фон/прогресс/форма/позиция),
- * визуализатор.
+ * - «Плеер» — выравнивание заголовка, стиль, слайдер, кнопки на обложке;
+ * - «Очередь и текст» — позиция и вид очереди, текст и караоке;
+ * - «Мини-плеер» — пресеты, фон, прогресс, форма, элементы, позиция, раскладка;
+ * - «Анимации» — смена трека на трёх поверхностях.
+ *
+ * Кнопка сброса в шапке общая (сбрасывает playerViewStore целиком, как и раньше).
  */
+type ViewTab = 'player' | 'queue' | 'mini' | 'anim'
+
+const TABS: { id: ViewTab; labelKey: TranslationKey; icon: IconName }[] = [
+  { id: 'player', labelKey: 'settings.view.cat.player', icon: 'note' },
+  { id: 'queue', labelKey: 'settings.view.cat.queueLyrics', icon: 'lyrics' },
+  { id: 'mini', labelKey: 'settings.view.cat.miniPlayer', icon: 'widget' },
+  { id: 'anim', labelKey: 'settings.view.cat.anim', icon: 'stars' },
+]
+
 export const ViewSection = () => {
   const t = useT()
-  const p = usePlayerViewStore()
-  const karaoke = useLyricsStore((s) => s.karaoke)
-  const toggleKaraoke = useLyricsStore((s) => s.toggleKaraoke)
-  const grpSide = useGrpStore((s) => s.side)
-  const setGrpSide = useGrpStore((s) => s.setSide)
-  const activePreset = matchMpPreset(p)
-  const setProgress = (key: 'line' | 'bg' | 'circle') =>
-    p.set('mpProgress', { ...p.mpProgress, [key]: !p.mpProgress[key] })
-  const toggleHide = (key: keyof typeof p.mpHide) =>
-    p.set('mpHide', { ...p.mpHide, [key]: !p.mpHide[key] })
+  const reset = usePlayerViewStore((s) => s.reset)
+  const [tab, setTab] = useState<ViewTab>('player')
+
   return (
     <div className="s-section active" id="ssec-view">
       <div className="s-section-head">
@@ -32,13 +44,46 @@ export const ViewSection = () => {
           <Ico name="note" width={15} height={15} />{' '}
           {t('settings.nav.player')}
         </div>
-        <button className="s-section-reset" onClick={() => p.reset()}>
+        <button className="s-section-reset" onClick={() => reset()}>
           <Ico name="refresh" width={10} height={10} />{' '}
           {t('common.reset')}
         </button>
       </div>
 
-      <div className="s-cat-label">{t('settings.view.cat.player')}</div>
+      {/* Переключатель групп — полоса вкладок над карточками раздела. */}
+      <div className="s-ptabs">
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            className={`s-ptab${tab === tb.id ? ' active' : ''}`}
+            onClick={() => setTab(tb.id)}
+          >
+            <Ico name={tb.icon} width={14} height={14} />
+            {t(tb.labelKey)}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'player' && <PlayerCards />}
+      {tab === 'queue' && <QueueLyricsCards />}
+      {tab === 'mini' && <MiniPlayerCards />}
+      {tab === 'anim' && <AnimCards />}
+    </div>
+  )
+}
+
+/**
+ * Вкладка «Плеер»: выравнивание, стиль, слайдер, кнопки на обложке и эффекты
+ * страницы плеера — визуализатор, ambient glow, parallax.
+ */
+const PlayerCards = () => {
+  const t = useT()
+  const p = usePlayerViewStore()
+  // «Кнопки на обложке в плеер» бессмысленна в большом плеере — там ♥/+ всегда в баре.
+  const covBtnsLocked = p.playerStyle === 'large'
+
+  return (
+    <>
       <div className="sc">
         <div className="sc-title">{t('settings.view.titleAlign')}</div>
         <div className="sc-desc">{t('settings.view.titleAlign.desc')}</div>
@@ -124,31 +169,80 @@ export const ViewSection = () => {
         </div>
       </div>
 
+      {/* В большом плеере ♥/+ и так живут в нижнем баре (единственная их копия,
+          см. .sl-bottom-info в PagePlayer) — настройке нечего переносить, поэтому
+          тумблер недоступен и нейтрален по цвету. */}
       <div className="sc">
         <div className="sr">
-          <div>
+          <div style={covBtnsLocked ? { opacity: 0.45 } : undefined}>
             <div className="sl2">{t('settings.view.covBtns')}</div>
             <div className="ssub">{t('settings.view.covBtns.sub')}</div>
           </div>
-          <Toggle checked={p.covBtnsInBar} onChange={(v) => p.set('covBtnsInBar', v)} />
+          <Toggle
+            checked={p.covBtnsInBar}
+            disabled={covBtnsLocked}
+            onChange={(v) => p.set('covBtnsInBar', v)}
+          />
         </div>
       </div>
 
-      <div className="s-cat-label">{t('settings.view.cat.queueLyrics')}</div>
+      {/* Визуализатор. Загрузка фото-фона (vizPhoto) отложена. */}
       <div className="sc">
-        <div className="sc-title">{t('settings.view.grpSide')}</div>
-        <div className="sc-desc">{t('settings.view.grpSide.desc')}</div>
-        <div className="s-opt-row">
-          <OptBtn active={grpSide === 'left'} onClick={() => setGrpSide('left')}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="7" height="18" rx="1" /><rect x="13" y="3" width="8" height="18" rx="1" /></svg>
-            {t('settings.view.grpSide.left')}
-          </OptBtn>
-          <OptBtn active={grpSide === 'right'} onClick={() => setGrpSide('right')}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="14" y="3" width="7" height="18" rx="1" /><rect x="3" y="3" width="8" height="18" rx="1" /></svg>
-            {t('settings.view.grpSide.right')}
-          </OptBtn>
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.view.viz')}</div>
+            <div className="ssub">{t('settings.view.viz.sub')}</div>
+          </div>
+          <Toggle checked={p.vizEnabled} onChange={(v) => p.set('vizEnabled', v)} />
         </div>
       </div>
+      {p.vizEnabled && (
+        <div className="sc">
+          <div className="viz-type-row">
+            <OptBtn active={p.vizType === 'wave'} onClick={() => p.set('vizType', 'wave')}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M2 12c2 0 2-6 4-6s2 12 4 12 2-12 4-12 2 12 4 12 2-6 4-6" /></svg>
+              {t('settings.view.viz.wave')}
+            </OptBtn>
+            <OptBtn active={p.vizType === 'bars'} onClick={() => p.set('vizType', 'bars')}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polyline points="4 14 4 18" /><polyline points="9 6 9 18" /><polyline points="14 10 14 18" /><polyline points="20 4 20 18" /></svg>
+              {t('settings.view.viz.bars')}
+            </OptBtn>
+          </div>
+        </div>
+      )}
+
+      <div className="sc">
+        <h3>{t('settings.view.moreEffects')}</h3>
+        <div className="sr">
+          <div>
+            <div className="sl2">Ambient Glow</div>
+            <div className="ssub">{t('settings.view.glow.sub')}</div>
+          </div>
+          <Toggle checked={p.ambientGlow} onChange={(v) => p.set('ambientGlow', v)} />
+        </div>
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.view.parallax')}</div>
+            <div className="ssub">{t('settings.view.parallax.sub')}</div>
+          </div>
+          <Toggle checked={p.parallax} onChange={(v) => p.set('parallax', v)} />
+        </div>
+      </div>
+    </>
+  )
+}
+
+/**
+ * Вкладка «Очередь и текст»: позиция и вид очереди, текст/караоке.
+ * Сторона выезжающей панели и блокировка её ширины переехали в «Интерфейс» →
+ * «Боковые панели» (там же общая настройка сторон для всех drawer'ов).
+ */
+const QueueLyricsCards = () => {
+  const t = useT()
+  const p = usePlayerViewStore()
+
+  return (
+    <>
       <div className="sc">
         <div className="sc-title">{t('settings.view.queuePos')}</div>
         <div className="sc-desc">{t('settings.view.queuePos.desc')}</div>
@@ -200,13 +294,6 @@ export const ViewSection = () => {
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.view.karaoke')}</div>
-            <div className="ssub">{t('settings.view.karaoke.sub')}</div>
-          </div>
-          <Toggle checked={karaoke} onChange={() => toggleKaraoke()} />
-        </div>
-        <div className="sr">
-          <div>
             <div className="sl2">{t('settings.view.hideQueue')}</div>
             <div className="ssub">{t('settings.view.hideQueue.sub')}</div>
           </div>
@@ -232,7 +319,32 @@ export const ViewSection = () => {
         )}
       </div>
 
-      <div className="s-cat-label">{t('settings.view.cat.miniPlayer')}</div>
+      {/* Оформление текста — своя карточка на каждую поверхность. */}
+      {(['player', 'panel', 'big'] as const).map((surface) => (
+        <LyricsStyleCard
+          key={surface}
+          label={t(`settings.view.lyricsStyle.${surface}`)}
+          sub={t(`settings.view.lyricsStyle.${surface}.sub`)}
+          cfg={p.lyricsStyle[surface]}
+          onChange={(next) => p.set('lyricsStyle', { ...p.lyricsStyle, [surface]: next })}
+        />
+      ))}
+    </>
+  )
+}
+
+/** Вкладка «Мини-плеер»: пресеты и всё, что раскрывается при включённом баре. */
+const MiniPlayerCards = () => {
+  const t = useT()
+  const p = usePlayerViewStore()
+  const activePreset = matchMpPreset(p)
+  const setProgress = (key: 'line' | 'bg' | 'circle') =>
+    p.set('mpProgress', { ...p.mpProgress, [key]: !p.mpProgress[key] })
+  const toggleHide = (key: keyof typeof p.mpHide) =>
+    p.set('mpHide', { ...p.mpHide, [key]: !p.mpHide[key] })
+
+  return (
+    <>
       <div className="sc">
         <div className="sc-title">{t('settings.view.mpPreset')}</div>
         <div className="sc-desc">{t('settings.view.mpPreset.desc')}</div>
@@ -462,51 +574,202 @@ export const ViewSection = () => {
           )}
         </>
       )}
+    </>
+  )
+}
 
-      <div className="s-cat-label">{t('settings.view.cat.effects')}</div>
-      {/* Визуализатор. Загрузка фото-фона (vizPhoto) отложена. */}
-      <div className="sc">
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.view.viz')}</div>
-            <div className="ssub">{t('settings.view.viz.sub')}</div>
-          </div>
-          <Toggle checked={p.vizEnabled} onChange={(v) => p.set('vizEnabled', v)} />
-        </div>
+/**
+ * Вкладка «Анимации» — только смена трека. Эффекты (визуализатор, glow,
+ * parallax) живут во вкладке «Плеер»: они про статичный вид обложки, а здесь —
+ * движение. Каждая поверхность (плеер / нижний бар / фуллскрин) — своя карточка:
+ * у них разный размер коробки, и одна настройка на всех заставляла бы выбирать
+ * между «красиво в плеере» и «не рябит в баре».
+ */
+const AnimCards = () => {
+  const t = useT()
+  const p = usePlayerViewStore()
+
+  return (
+    <>
+      {(['player', 'bar', 'big'] as const).map((surface) => (
+        <TrackAnimCard
+          key={surface}
+          label={t(`settings.view.trackAnim.${surface}`)}
+          sub={t(`settings.view.trackAnim.${surface}.sub`)}
+          cfg={p.trackAnim[surface]}
+          onChange={(next) => p.set('trackAnim', { ...p.trackAnim, [surface]: next })}
+        />
+      ))}
+    </>
+  )
+}
+
+/**
+ * Карточка анимации смены трека для одной поверхности. Две независимые строки:
+ * обложка и подпись — у них разный вес в кадре, и слайд обложки при спокойном
+ * затухании текста (или наоборот) — рабочая комбинация, а не «недонастройка».
+ */
+const TrackAnimCard = ({
+  label,
+  sub,
+  cfg,
+  onChange,
+}: {
+  label: string
+  sub: string
+  cfg: TrackAnimCfg
+  onChange: (next: TrackAnimCfg) => void
+}) => {
+  const t = useT()
+  return (
+    <div className="sc">
+      <div className="sc-title">{label}</div>
+      <div className="sc-desc">{sub}</div>
+      <TrackAnimRow
+        icon="gallery"
+        label={t('settings.view.trackAnim.cover')}
+        value={cfg.cover}
+        onChange={(kind) => onChange({ ...cfg, cover: kind })}
+      />
+      <TrackAnimRow
+        icon="text"
+        label={t('settings.view.trackAnim.text')}
+        value={cfg.text}
+        onChange={(kind) => onChange({ ...cfg, text: kind })}
+      />
+    </div>
+  )
+}
+
+/** Строка выбора типа анимации для одной цели (обложка / подпись). */
+const TrackAnimRow = ({
+  icon,
+  label,
+  value,
+  onChange,
+}: {
+  icon: 'gallery' | 'text'
+  label: string
+  value: TrackAnimKind
+  onChange: (kind: TrackAnimKind) => void
+}) => {
+  const t = useT()
+  return (
+    <>
+      <div className="sc-desc" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Ico name={icon} width={13} height={13} />
+        {label}
       </div>
-      {p.vizEnabled && (
-        <div className="sc">
-          <div className="viz-type-row">
-            <OptBtn active={p.vizType === 'wave'} onClick={() => p.set('vizType', 'wave')}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M2 12c2 0 2-6 4-6s2 12 4 12 2-12 4-12 2 12 4 12 2-6 4-6" /></svg>
-              {t('settings.view.viz.wave')}
-            </OptBtn>
-            <OptBtn active={p.vizType === 'bars'} onClick={() => p.set('vizType', 'bars')}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polyline points="4 14 4 18" /><polyline points="9 6 9 18" /><polyline points="14 10 14 18" /><polyline points="20 4 20 18" /></svg>
-              {t('settings.view.viz.bars')}
-            </OptBtn>
-          </div>
-        </div>
-      )}
+      <div className="s-opt-row">
+        <OptBtn active={value === 'none'} onClick={() => onChange('none')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="12" cy="12" r="9" /><line x1="6" y1="18" x2="18" y2="6" /></svg>
+          {t('settings.view.trackAnim.none')}
+        </OptBtn>
+        <OptBtn active={value === 'slide'} onClick={() => onChange('slide')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="9" height="12" rx="1.5" opacity={0.4} /><rect x="13" y="6" width="9" height="12" rx="1.5" /><path d="M9 12h6" opacity={0.4} /></svg>
+          {t('settings.view.trackAnim.slide')}
+        </OptBtn>
+        <OptBtn active={value === 'fade'} onClick={() => onChange('fade')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="6" width="12" height="12" rx="1.5" opacity={0.35} /><rect x="9" y="6" width="12" height="12" rx="1.5" /></svg>
+          {t('settings.view.trackAnim.fade')}
+        </OptBtn>
+      </div>
+    </>
+  )
+}
 
-      <div className="sc">
-        <h3>{t('settings.view.moreEffects')}</h3>
-        <div className="sr">
-          <div>
-            <div className="sl2">Ambient Glow</div>
-            <div className="ssub">{t('settings.view.glow.sub')}</div>
-          </div>
-          <Toggle checked={p.ambientGlow} onChange={(v) => p.set('ambientGlow', v)} />
-        </div>
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.view.parallax')}</div>
-            <div className="ssub">{t('settings.view.parallax.sub')}</div>
-          </div>
-          <Toggle checked={p.parallax} onChange={(v) => p.set('parallax', v)} />
-        </div>
+/** Порядок заливок в карточке — от самой спокойной к самой дробной. */
+const LYRICS_FILLS: LyricsFill[] = ['line', 'word', 'letter', 'wipe']
+const LYRICS_FXS: LyricsFx[] = ['none', 'fade', 'glow', 'spring']
+
+/**
+ * Карточка оформления текста одной поверхности. Две независимые строки:
+ * ЗАЛИВКА (чем меряется прогресс) и ЭФФЕКТ (как появляется единица) — это
+ * разные вещи, и «по буквам со свечением» ничем не хуже «по словам сразу».
+ */
+const LyricsStyleCard = ({
+  label,
+  sub,
+  cfg,
+  onChange,
+}: {
+  label: string
+  sub: string
+  cfg: LyricsStyleCfg
+  onChange: (next: LyricsStyleCfg) => void
+}) => {
+  const t = useT()
+  return (
+    <div className="sc">
+      <div className="sc-title">{label}</div>
+      <div className="sc-desc">{sub}</div>
+      <div className="sc-desc" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Ico name="lyrics" width={13} height={13} />
+        {t('settings.view.lyricsStyle.fill')}
+      </div>
+      <div className="s-opt-row">
+        {LYRICS_FILLS.map((fill) => (
+          <OptBtn key={fill} active={cfg.fill === fill} onClick={() => onChange({ ...cfg, fill })}>
+            <LyricsStyleIcon kind={fill} />
+            {t(`settings.view.lyricsStyle.fill.${fill}`)}
+          </OptBtn>
+        ))}
+      </div>
+      <div className="sc-desc" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Ico name="stars" width={13} height={13} />
+        {t('settings.view.lyricsStyle.fx')}
+      </div>
+      <div className="s-opt-row">
+        {LYRICS_FXS.map((fx) => (
+          <OptBtn key={fx} active={cfg.fx === fx} onClick={() => onChange({ ...cfg, fx })}>
+            <LyricsStyleIcon kind={fx} />
+            {t(`settings.view.lyricsStyle.fx.${fx}`)}
+          </OptBtn>
+        ))}
       </div>
     </div>
+  )
+}
+
+/**
+ * Мини-превью заливки/эффекта: строка как ряд плашек-единиц, яркость плашки —
+ * спето / поётся / ещё нет. Рисуем прямо здесь, а не иконкой из набора: тут
+ * важно показать РАСПРЕДЕЛЕНИЕ яркости внутри строки, а не предмет.
+ */
+const LyricsStyleIcon = ({ kind }: { kind: LyricsFill | LyricsFx }) => {
+  const bar = (x: number, w: number, o: number, y = 10) => (
+    <rect key={`${x}-${y}`} x={x} y={y} width={w} height={4} rx={1.5} fill="currentColor" opacity={o} />
+  )
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24">
+      {/* заливки */}
+      {kind === 'line' && [bar(2, 20, 0.22, 4), bar(2, 20, 1, 10), bar(2, 20, 0.22, 16)]}
+      {kind === 'word' && [bar(2, 6, 1), bar(10, 5, 1), bar(17, 5, 0.22)]}
+      {kind === 'letter' && [
+        bar(2, 2.4, 1),
+        bar(5.4, 2.4, 1),
+        bar(8.8, 2.4, 1),
+        bar(12.2, 2.4, 0.22),
+        bar(15.6, 2.4, 0.22),
+        bar(19, 2.4, 0.22),
+      ]}
+      {kind === 'wipe' && [bar(2, 6, 1), bar(10, 2.6, 1), bar(12.6, 2.4, 0.22), bar(17, 5, 0.22)]}
+      {/* эффекты */}
+      {kind === 'none' && [bar(2, 9, 1), bar(13, 9, 0.22)]}
+      {kind === 'fade' && [bar(2, 6, 1), bar(10, 5, 0.55), bar(17, 5, 0.22)]}
+      {kind === 'glow' && [
+        bar(2, 6, 1),
+        <rect key="halo" x={8.5} y={8} width={8} height={8} rx={3} fill="currentColor" opacity={0.22} />,
+        bar(10, 5, 1),
+        bar(18, 4, 0.22),
+      ]}
+      {/* пружина: средняя единица «вспухла» — крупнее соседних */}
+      {kind === 'spring' && [
+        bar(2, 6, 1),
+        <rect key="pop" x={9.5} y={6.5} width={6} height={7} rx={2} fill="currentColor" />,
+        bar(17.5, 4.5, 0.22),
+      ]}
+    </svg>
   )
 }
 
@@ -531,9 +794,22 @@ const OptBtn = ({
   </button>
 )
 
-const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
+const Toggle = ({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  disabled?: boolean
+}) => (
   <label className="tele-sw">
-    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    <input
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.checked)}
+    />
     <span className="tele-sw-track" />
   </label>
 )

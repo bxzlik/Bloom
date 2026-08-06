@@ -10,14 +10,15 @@ import {
 import { cn } from '@shared/lib/cn'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import type { Track } from '@entities/track'
-import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, YtmLogo, SpLogo, providerBrandColor, trackRegistry } from '@entities/track'
+import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, YtmLogo, providerBrandColor } from '@entities/track'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
+import { placeSrcPopup } from '@shared/lib/srcPopupPos'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
 import { playSingleTrack, AddPopup, PlayStateOverlay, addToQueue, playNextInQueue } from '@features/player'
 import { getAllProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
-import { toast, WindowedRows } from '@shared/ui'
+import { ExpandDesc, toast, WindowedRows } from '@shared/ui'
 import { useT, useLocale, t as tt, type TranslationKey } from '@shared/i18n'
 import {
   TrackCtxMenu,
@@ -26,20 +27,35 @@ import {
   usePlaylistStore,
   useFavStore,
   useLibStore,
+  tracksCountLabel,
 } from '@features/library'
 import { useNavStore } from '@app/navigationStore'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
 import { useSearchStore, looksLikeUrl, type SearchTab, type RecentItem } from '../model/store'
-import { useDetailStore, type DetailTarget } from '../model/detailStore'
+import { useDetailOpen } from '../model/detailStore'
+import {
+  openArtistFromSearch,
+  openPlaylistFromSearch,
+  playSearchTrack,
+  openRecentItem,
+} from '../lib/openActions'
 import { TrackRowCover } from './TrackRowCover'
 
-/* ── Иконки page-search ─────────────────────────────── */
-const IconSearch = () => <Ico name="search" width={16} height={16} style={{ flexShrink: 0, opacity: 0.5 }} />
-const IconClose = () => <Ico name="close" width={13} height={13} />
+/* ── Иконки page-search (экспортируются: их переиспользует SearchOverlay) ── */
+export const IconSearch = () => <Ico name="search" width={16} height={16} style={{ flexShrink: 0, opacity: 0.5 }} />
+export const IconClose = () => <Ico name="close" width={13} height={13} />
 const PlayBadge = () => (
   <div className="sp-tc-play">
     <div className="sp-tc-play-btn">
       <Ico name="play" width="100%" height="100%" style={{ color: 'var(--accent)', marginLeft: 2 }} />
+    </div>
+  </div>
+)
+/* Плейлисты/альбомы не играют по клику, а открываются → стрелка вместо play. */
+const OpenBadge = () => (
+  <div className="sp-tc-play">
+    <div className="sp-tc-play-btn">
+      <Ico name="arrowRightStraight" width="100%" height="100%" style={{ color: 'var(--accent)' }} />
     </div>
   </div>
 )
@@ -80,15 +96,32 @@ const TrackCard = ({
   </div>
 )
 
+/** «12 345» → «12K», «2 100 000» → «2.1M»; null, если счётчика нет. */
+const fmtFollowers = (n?: number | null): string | null =>
+  n == null
+    ? null
+    : n >= 1_000_000
+      ? (n / 1_000_000).toFixed(1) + 'M'
+      : n >= 1000
+        ? (n / 1000).toFixed(0) + 'K'
+        : String(n)
+
 const ArtistCard = ({ artist, onOpen }: { artist: Artist; onOpen: () => void }) => {
   const t = useT()
+  const followers = fmtFollowers(artist.followers)
   return (
   <div className="sp-artist-card" onClick={onOpen} style={{ cursor: 'pointer' }}>
+    {/* Плёнка со стрелкой прямо на круглой аватарке — как у плейлистов/альбомов
+        (фон-подложку карточки на hover не рисуем). */}
     <div className="sp-ac-av">
       <Cover src={artist.avatar} placeholder={<PhArtist />} />
+      <OpenBadge />
     </div>
     <div className="sp-ac-name">{artist.name}</div>
-    <div className="sp-ac-sub">{t('search.kind.artist')}</div>
+    {/* Подзаголовок — число подписчиков; если площадка его не отдала, остаётся «Артист». */}
+    <div className="sp-ac-sub">
+      {followers ? t('search.followers', { n: followers }) : t('search.kind.artist')}
+    </div>
   </div>
   )
 }
@@ -98,13 +131,16 @@ const PlaylistCard = ({ playlist, onOpen }: { playlist: Playlist; onOpen: () => 
     <div className="sp-tc-cover">
       <Cover src={playlist.cover} placeholder={<PhTrack />} />
       <CoverProviderBadge provider={playlist.source} size={26} />
-      <PlayBadge />
+      <OpenBadge />
     </div>
     <div className="sp-tc-info">
       <div className="sp-tc-name">{playlist.title}</div>
       <div className="sp-tc-artist">
-        {playlist.ownerName ? `${playlist.ownerName} · ` : ''}
-        {playlist.trackCount ?? 0} тр.
+        {/* «{владелец} · {год} · N тр.» — год есть у альбомов, счётчик не у всех
+            площадок (YTM не даёт его альбомам) — тогда сегмент опускаем. */}
+        {[playlist.ownerName, playlist.year, tracksCountLabel(playlist.trackCount)]
+          .filter(Boolean)
+          .join(' · ')}
       </div>
     </div>
   </div>
@@ -240,8 +276,8 @@ const AllLogo = () => <Ico name="grid" width={16} height={16} />
  * `accentBadges` выключена): неактивные иконки красятся в фирменный цвет площадки.
  */
 const sourceIcon = (id: string, accentText = false, brand = false): ReactNode => {
-  if (id === 'soundcloud' || id === 'yandex' || id === 'ytmusic' || id === 'spotify') {
-    const Logo = id === 'soundcloud' ? ScLogo : id === 'ytmusic' ? YtmLogo : id === 'spotify' ? SpLogo : YmLogo
+  if (id === 'soundcloud' || id === 'yandex' || id === 'ytmusic') {
+    const Logo = id === 'soundcloud' ? ScLogo : id === 'ytmusic' ? YtmLogo : YmLogo
     // Бренд-цвет в приоритете (в т.ч. на активном пункте — фон-подсветка и так
     // показывает выбор, иначе иконка стала бы тёмной от --accent-text). Без
     // бренд-режима: на активном фоне белый, иначе акцент.
@@ -259,16 +295,23 @@ const sourceIcon = (id: string, accentText = false, brand = false): ReactNode =>
 const sourceLabel = (id: string, providerLabel?: string): string =>
   id === 'all' ? tt('search.allSources') : providerLabel ?? id
 
-const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: string) => void }) => {
+export const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: string) => void }) => {
   useLocale()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  usePopupOpenAnimation(panelRef, open)
+  // Попап открывается «из иконки»: выбранный источник ложится ровно на кнопку.
+  // Кнопка живёт у верхнего края страницы, поэтому раскладка почти всегда
+  // зеркальная (активный первым, список вниз) — это и есть дефолт flip.
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const [flip, setFlip] = useState(true)
+  const flipRef = useRef(true)
+  flipRef.current = flip
+  usePopupOpenAnimation(panelRef, pos)
   // Бренд-режим иконок (если настройка «акцентные бейджи» выключена).
   const brand = !useBadgePrefs((s) => s.accentBadges)
-  // Дропдаун показывает ВСЕ площадки (вкл. ненастроенные — напр. Spotify без
-  // Premium): пользователь видит полный список и может выбрать любую.
+  // Дропдаун показывает ВСЕ площадки, включая ненастроенные: пользователь видит
+  // полный список и может выбрать любую.
   const providers = getAllProviders()
   const options = ['all', ...providers.map((p) => p.id)]
   const labelOf = (id: string) => sourceLabel(id, providers.find((p) => p.id === id)?.label)
@@ -276,6 +319,44 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
   // показываем как «Все источники» — иначе кнопка светит иконкой «all», но ни один
   // пункт не подсвечен, а поиск (через searchAll-фолбэк) и так идёт по всем.
   const effSource = options.includes(source) ? source : 'all'
+  // Столбик только иконок: отдельной группой «все источники» + «моя библиотека»,
+  // затем площадки в порядке реестра, и отдельной строкой у кнопки-анкера —
+  // ВЫБРАННЫЙ источник, отделённый линией (она же индикатор выбора, подсветки
+  // фоном нет). Сторона зависит от раскладки, см. `flip`.
+  const meta = ['all', 'local'].filter((id) => options.includes(id) && id !== effSource)
+  const plat = providers.map((p) => p.id).filter((id) => id !== 'local' && id !== effSource)
+
+  const srcBtn = (id: string, active: boolean) => (
+    <button
+      key={id}
+      aria-label={labelOf(id)}
+      aria-current={active || undefined}
+      onClick={() => {
+        onSource(id)
+        setOpen(false)
+      }}
+      style={{ color: active ? 'var(--accent)' : 'var(--text2)', cursor: active ? 'default' : 'pointer' }}
+    >
+      {sourceIcon(id, false, brand)}
+    </button>
+  )
+
+  // Анкер — сама кнопка (обёртка .ym-srcdd по ней и обжата). Считаем во
+  // вьюпорт-координатах и переводим в координаты обёртки: попап позиционируется
+  // относительно неё, без портала.
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null)
+      return
+    }
+    const wrap = ref.current
+    const p = panelRef.current
+    if (!wrap || !p) return
+    const wr = wrap.getBoundingClientRect()
+    const r = placeSrcPopup(p, wr, flipRef.current)
+    setFlip(r.flip)
+    setPos({ left: r.left - wr.left, top: r.top - wr.top })
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -307,42 +388,21 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
       {open && (
         <div
           ref={panelRef}
+          className="bloom-dl-inner bloom-srcp srcp-round"
           style={{
-            position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 60,
-            display: 'flex', flexDirection: 'column', gap: 2, padding: 6,
-            background: 'color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift))', border: '1px solid var(--border)',
-            borderRadius: 'calc(var(--radius)*.85)', boxShadow: '0 10px 34px rgba(0,0,0,.45)', minWidth: 160,
-            transformOrigin: 'top right',
+            position: 'absolute', zIndex: 60,
+            left: pos?.left ?? -9999, top: pos?.top ?? -9999,
+            visibility: pos ? 'visible' : 'hidden',
+            transformOrigin: flip ? 'top center' : 'bottom center',
           }}
         >
-          {options.map((id) => {
-            const active = id === effSource
-            return (
-              <button
-                key={id}
-                onClick={() => {
-                  onSource(id)
-                  setOpen(false)
-                }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-                  border: 'none', borderRadius: 'calc(var(--radius)*.6)', cursor: 'pointer',
-                  fontFamily: 'var(--font)', fontSize: 12, fontWeight: active ? 700 : 500,
-                  background: active ? 'var(--accent)' : 'transparent',
-                  color: active ? 'var(--accent-text,#fff)' : 'var(--text2)', transition: '.15s', textAlign: 'left',
-                }}
-                onMouseOver={(e) => {
-                  if (!active) e.currentTarget.style.background = 'var(--hover)'
-                }}
-                onMouseOut={(e) => {
-                  if (!active) e.currentTarget.style.background = 'transparent'
-                }}
-              >
-                <span style={{ display: 'flex', width: 18, justifyContent: 'center' }}>{sourceIcon(id, active, brand)}</span>
-                {labelOf(id)}
-              </button>
-            )
-          })}
+          {flip && srcBtn(effSource, true)}
+          {flip && <div className="bloom-srcp-div" />}
+          {meta.map((id) => srcBtn(id, false))}
+          {!!meta.length && !!plat.length && <div className="bloom-srcp-div" />}
+          {plat.map((id) => srcBtn(id, false))}
+          {!flip && <div className="bloom-srcp-div" />}
+          {!flip && srcBtn(effSource, true)}
         </div>
       )}
     </div>
@@ -352,13 +412,13 @@ const SourceDropdown = ({ source, onSource }: { source: string; onSource: (s: st
 /* ── Выпадающая история поиска (.sp-hist) ─ */
 const RecentDel = () => <Ico name="close" width={13} height={13} />
 /** Плейсхолдер-иконка недавнего по типу. */
-const RecentKindIcon = ({ kind }: { kind: string }) => {
+export const RecentKindIcon = ({ kind }: { kind: string }) => {
   const name: IconName = kind === 'artist' ? 'user' : kind === 'album' ? 'album' : kind === 'track' ? 'note' : 'list'
   return <Ico name={name} width={16} height={16} style={{ opacity: 0.5 }} />
 }
 
 /** Строка истории: недавний запрос ИЛИ недавно открытая сущность. */
-type RecentRow =
+export type RecentRow =
   | { type: 'search'; ts: number; q: string }
   | { type: 'item'; ts: number; item: RecentItem }
 
@@ -368,7 +428,7 @@ type RecentRow =
  * отсортированный по времени. Каждая строка — с крестиком удаления; внизу —
  * «Очистить историю».
  */
-const SearchHistoryDropdown = ({
+export const SearchHistoryDropdown = ({
   rows,
   onOpenItem,
   onApplySearch,
@@ -552,14 +612,7 @@ const ProfileView = ({
   const { artist, playlists, likes } = profile
   const [likesShown, setLikesShown] = useState(30) // «показать ещё» лайки (+30)
   const av = artist.avatar ?? null
-  const followers =
-    artist.followers != null
-      ? artist.followers >= 1_000_000
-        ? (artist.followers / 1_000_000).toFixed(1) + 'M'
-        : artist.followers >= 1000
-          ? (artist.followers / 1000).toFixed(0) + 'K'
-          : String(artist.followers)
-      : null
+  const followers = fmtFollowers(artist.followers)
   return (
     <div className="sp-profile">
       {/* Hero */}
@@ -573,7 +626,7 @@ const ProfileView = ({
         <div style={{ position: 'relative', zIndex: 2, padding: '24px 24px 22px', display: 'flex', alignItems: 'center', gap: 20 }}>
           <div
             onClick={onOpenArtist}
-            style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--hover)', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid rgba(255,255,255,.2)', boxShadow: '0 8px 28px rgba(0,0,0,.6)', cursor: 'pointer' }}
+            style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--hover)', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid rgba(var(--ovl-rgb),.2)', boxShadow: '0 8px 28px rgba(0,0,0,.6)', cursor: 'pointer' }}
           >
             <Cover src={av} placeholder={<PhArtist />} />
           </div>
@@ -582,19 +635,20 @@ const ProfileView = ({
               {artist.name}
             </div>
             {(artist.fullName || followers) && (
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)' }}>
+              <div style={{ fontSize: 12, color: 'rgba(var(--ovl-rgb),.45)' }}>
                 {[artist.fullName, followers ? t('search.followers', { n: followers }) : null].filter(Boolean).join(' · ')}
               </div>
             )}
             {artist.description && (
-              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.35)', lineHeight: 1.6, marginTop: 7, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxWidth: 420 }}>
-                {artist.description}
-              </div>
+              <ExpandDesc
+                text={artist.description}
+                style={{ fontSize: 12, color: 'rgba(var(--ovl-rgb),.35)', lineHeight: 1.6, marginTop: 7, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxWidth: 420, cursor: 'pointer' }}
+              />
             )}
             <div style={{ display: 'flex', gap: 8, marginTop: 13, flexWrap: 'wrap' }}>
               <button
                 onClick={onOpenArtist}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: '#fff', color: '#111', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', fontFamily: 'inherit' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', fontFamily: 'inherit' }}
               >
                 <Ico name="play" variant="bold" width={10} height={10} />
                 {t('search.tab.tracks')}
@@ -603,7 +657,7 @@ const ProfileView = ({
 . */}
               <button
                 onClick={onApplyToAccount}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.18)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: 'rgba(var(--ovl-rgb),.12)', border: '1px solid rgba(var(--ovl-rgb),.18)', color: 'var(--text)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 <Ico name="user" width={10} height={10} />
                 {t('search.profile')}
@@ -620,7 +674,7 @@ const ProfileView = ({
             <span style={{ fontSize: 16, fontWeight: 700 }}>{t('search.tab.playlists')} · {playlists.length}</span>
             <button
               onClick={onImportPlaylists}
-              style={{ background: 'rgba(255,255,255,.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
+              style={{ background: 'rgba(var(--ovl-rgb),.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
             >
               {t('search.importAll')}
             </button>
@@ -641,13 +695,13 @@ const ProfileView = ({
             <div style={{ display: 'flex', gap: 5 }}>
               <button
                 onClick={onImportLikes}
-                style={{ background: 'var(--accent)', border: 'none', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--accent-text,#fff)', fontSize: 10.5, fontWeight: 700, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
+                style={{ background: 'var(--accent)', border: 'none', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--accent-text,#fff)', fontSize: 11, fontWeight: 700, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
               >
                 {t('search.importAll')}
               </button>
               <button
                 onClick={onLikesAsPlaylist}
-                style={{ background: 'rgba(255,255,255,.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
+                style={{ background: 'rgba(var(--ovl-rgb),.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
               >
                 {t('search.asPlaylist')}
               </button>
@@ -671,7 +725,7 @@ const ProfileView = ({
               style={{
                 display: 'block', width: '100%', marginTop: 8, padding: 9,
                 borderRadius: 'var(--radius)', background: 'transparent',
-                border: '1px solid rgba(255,255,255,var(--wb))', color: 'var(--text2)',
+                border: '1px solid var(--ovl-line)', color: 'var(--text2)',
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)',
               }}
             >
@@ -696,9 +750,10 @@ const SkCard = () => (
 )
 const SkArtist = () => (
   <div className="sp-artist-card" style={{ pointerEvents: 'none' }}>
-    <div className="sk-block" style={{ width: 100, height: 100, borderRadius: '50%' }} />
-    <div className="sk-block" style={{ height: 12, width: '75%', borderRadius: 6 }} />
-    <div className="sk-block" style={{ height: 10, width: '45%', borderRadius: 6 }} />
+    <div className="sk-block" style={{ width: '88%', aspectRatio: 1, borderRadius: '50%' }} />
+    {/* Отступы вручную: у карточки gap:0 (имя и подписчики стоят вплотную). */}
+    <div className="sk-block" style={{ height: 12, width: '75%', borderRadius: 6, marginTop: 10 }} />
+    <div className="sk-block" style={{ height: 10, width: '45%', borderRadius: 6, marginTop: 5 }} />
   </div>
 )
 const SkListRow = () => (
@@ -739,7 +794,7 @@ const SearchSkeleton = ({ tab }: { tab: SearchTab }) => {
     return (
       <div className="sc-uni-section">
         <SkSecTitle />
-        <div className="sp-pl-grid">{Array.from({ length: 6 }).map((_, i) => <SkCard key={i} />)}</div>
+        <div className="sp-pl-grid sp-pl-grid-lg">{Array.from({ length: 6 }).map((_, i) => <SkCard key={i} />)}</div>
       </div>
     )
   // 'all' — ряд карточек треков + ряд артистов
@@ -819,7 +874,6 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const loadingMore = useSearchStore((s) => s.loadingMore)
   const recentSearches = useSearchStore((s) => s.recentSearches)
   const recentItems = useSearchStore((s) => s.recentItems)
-  const pushRecentItem = useSearchStore((s) => s.pushRecentItem)
   const removeRecentItem = useSearchStore((s) => s.removeRecentItem)
   const removeRecentSearch = useSearchStore((s) => s.removeRecentSearch)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
@@ -827,38 +881,14 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const createPl = usePlaylistStore((s) => s.createPl)
   const reorderPlTracks = usePlaylistStore((s) => s.reorderPlTracks)
   const profile = useSearchStore((s) => s.profile)
-  const openDetail = useDetailStore((s) => s.open)
   // Открыт ли оверлей детального вида — пока он есть, история под строкой поиска
   // не должна всплывать поверх него (см. blurInput при переходе из истории).
-  const detailOpen = useDetailStore((s) => s.stack.length > 0)
+  const detailOpen = useDetailOpen()
 
-  // Открытие детального вида + запись в «недавно открытые» (author — в подзаголовок).
-  const openTarget = (t: DetailTarget, author?: string) => {
-    pushRecentItem({ ...t, author })
-    openDetail(t)
-  }
-  const openArtist = (a: Artist) =>
-    openTarget({
-      kind: 'artist',
-      providerId: a.source ?? 'soundcloud',
-      id: a.id,
-      title: a.name,
-      cover: a.avatar ?? null,
-      round: true,
-    }) // у артиста автора нет → подзаголовок «Артист»
-  const openPlaylist = (p: Playlist, kind: 'album' | 'playlist') =>
-    openTarget(
-      {
-        kind,
-        providerId: p.source ?? 'soundcloud',
-        id: p.id,
-        title: p.title,
-        cover: p.cover ?? null,
-        subtitle: t('search.tracksCount', { n: p.trackCount ?? 0 }),
-        round: false,
-      },
-      p.ownerName, // автор/владелец → «{owner} · Плейлист/Альбом»
-    )
+  // Открытие детального вида + запись в «недавно открытые» — общие хелперы с
+  // всплывающим поиском (см. lib/openActions).
+  const openArtist = openArtistFromSearch
+  const openPlaylist = openPlaylistFromSearch
 
   // ── Применить профиль SoundCloud к аккаунту: ник = username, аватар = avatar профиля. ──
   const applyProfileToAccount = () => {
@@ -920,6 +950,10 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
   // Фокус инпута — управляет показом выпадающей истории.
   const [focused, setFocused] = useState(false)
+  // Зона табов+фильтров раскрывается только по наведению на саму строку поиска
+  // (наведение на её собственную полоску ничего не открывает), а закрывается при
+  // выходе курсора из общей верхней зоны — чтобы можно было спуститься к табам.
+  const [filtersHover, setFiltersHover] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   // Снять фокус с инпута при переходе из истории. `.sp-hist` гасит mousedown
   // (чтобы клик по строке не закрывал список через onBlur), поэтому инпут
@@ -987,47 +1021,10 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   // результату поиска ставит очередь ИЗ ОДНОГО трека, а не из всей выдачи.
   const playTrack = (id: string) => playSingleTrack(id)
 
-  // Проигрывание трека ИЗ ПОИСКА + запись в «недавно открытые».
-  const playTrackFromSearch = (t: Track) => {
-    pushRecentItem({
-      kind: 'track',
-      providerId: t._ym ? 'yandex' : t._ytm ? 'ytmusic' : t._sp ? 'spotify' : t._sc ? 'soundcloud' : 'local',
-      id: t.id,
-      title: t.name,
-      cover: t.cover ?? null,
-      author: t.artist, // → подзаголовок «{артист} · Трек»
-      round: false,
-    })
-    playSingleTrack(t.id)
-  }
-
-  // Клик по элементу «недавно открытые»: трек → играть (с ре-резолвом по id после
-  // рестарта); артист/альбом/плейлист → открыть DetailView.
-  const onRecentItem = (it: RecentItem) => {
-    if (it.kind === 'track') {
-      pushRecentItem(it) // наверх
-      const found =
-        useLibStore.getState().tracks.some((t) => t.id === it.id) || !!trackRegistry.get(it.id)
-      if (found) {
-        playSingleTrack(it.id)
-        return
-      }
-      const prov = getProvider(it.providerId)
-      void prov?.resolveTrackById?.(it.id).then((t) => {
-        if (t) playSingleTrack(t.id)
-      })
-      return
-    }
-    openTarget({
-      kind: it.kind,
-      providerId: it.providerId,
-      id: it.id,
-      title: it.title,
-      cover: it.cover ?? null,
-      subtitle: it.subtitle,
-      round: it.round,
-    })
-  }
+  // Проигрывание трека ИЗ ПОИСКА + запись в «недавно открытые» и клик по элементу
+  // «недавно открытые» — общие с всплывающим поиском (lib/openActions).
+  const playTrackFromSearch = playSearchTrack
+  const onRecentItem = openRecentItem
 
   // ── Client-side мета-фильтры треков (dur/year/genre) ──
   const trackSec = (dur?: string): number => {
@@ -1111,7 +1108,8 @@ export const SearchPage = ({ active }: SearchPageProps) => {
     <div className={cn('page', active && 'active')} id="page-search" style={{ position: 'relative' }}>
       <div className={cn('search-page', centered && 'sp-centered')}>
         <div className="sp-spacer" aria-hidden />
-        <div className="sp-header sp-header-sc">
+        <div className="sp-top-zone" onMouseLeave={() => setFiltersHover(false)}>
+        <div className="sp-header sp-header-sc" onMouseEnter={() => setFiltersHover(true)}>
           <div className="sp-inp-wrap">
             <IconSearch />
             <input
@@ -1152,7 +1150,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
         </div>
 
         {!profile && (
-          <div className="sp-filter-zone">
+          <div className={cn('sp-filter-zone', filtersHover && 'open')}>
             <div className="sp-filter-zone-in">
             <FilterTabs tab={tab} onTab={setTab} />
 
@@ -1182,6 +1180,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
             </div>
           </div>
         )}
+        </div>
 
         <div
           id="spScScroll"
@@ -1305,7 +1304,8 @@ export const SearchPage = ({ active }: SearchPageProps) => {
                 {showPlaylists && (
                   <div className="sc-uni-section" data-sp-section="playlists">
                     <div className="sp-sec-title">{t('search.tab.playlists')}</div>
-                    <div className="sp-pl-grid">
+                    {/* Отдельным табом — крупная сетка (.sp-pl-grid-lg); в «Все» остаётся ряд. */}
+                    <div className={cn('sp-pl-grid', tab !== 'all' && 'sp-pl-grid-lg')}>
                       {playlists.map((p) => (
                         <PlaylistCard key={p.id} playlist={p} onOpen={() => openPlaylist(p, 'playlist')} />
                       ))}
@@ -1316,7 +1316,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
                 {showAlbums && (
                   <div className="sc-uni-section" data-sp-section="albums">
                     <div className="sp-sec-title">{t('search.tab.albums')}</div>
-                    <div className="sp-pl-grid">
+                    <div className={cn('sp-pl-grid', tab !== 'all' && 'sp-pl-grid-lg')}>
                       {albums.map((p) => (
                         <PlaylistCard key={p.id} playlist={p} onOpen={() => openPlaylist(p, 'album')} />
                       ))}

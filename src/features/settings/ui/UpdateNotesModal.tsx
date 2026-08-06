@@ -4,13 +4,12 @@ import ReactMarkdown from 'react-markdown'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT, useI18nStore } from '@shared/i18n'
-import { ScBadge, YmBadge, YtmBadge, SpBadge } from '@entities/track'
+import { ScBadge, YmBadge, YtmBadge } from '@entities/track'
 import { useUpdateStore, formatNoteDate } from '../model/updateStore'
 import { Ico } from '@shared/ui/icons/solar'
 
 /** Бренд-бейдж площадки по строковому id (для строки иконок на странице). */
 const BRAND_BADGE: Record<string, (p: { size: number }) => React.ReactNode> = {
-  spotify: SpBadge,
   ytmusic: YtmBadge,
   soundcloud: ScBadge,
   yandex: YmBadge,
@@ -172,7 +171,7 @@ export const UpdateNotesModal = () => {
                   width: 26,
                   height: 26,
                   borderRadius: '50%',
-                  border: '3px solid rgba(255,255,255,.18)',
+                  border: '3px solid rgba(var(--ovl-rgb),.18)',
                   borderTopColor: 'var(--accent, #fff)',
                   animation: 'bloom-spin .8s linear infinite',
                 }}
@@ -228,7 +227,7 @@ export const UpdateNotesModal = () => {
                 </div>
               )}
               {cur.body && (
-                <div className="update-notes-md" style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--text2)' }}>
+                <div className="update-notes-md" style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--text2)' }}>
                   <ReactMarkdown
                     components={{
                       a: ({ href, children }) => (
@@ -297,7 +296,7 @@ export const UpdateNotesModal = () => {
                 close()
                 void downloadInstall()
               }}
-              style={{ fontSize: 12.5, padding: '7px 18px' }}
+              style={{ fontSize: 13, padding: '7px 18px' }}
             >
               {t('settings.about.update')}
             </button>

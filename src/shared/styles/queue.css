@@ -56,7 +56,7 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 #playerContent.queue-right .ps-right,
 #playerContent.queue-left .ps-right{width:100%;justify-content:center}
 #playerContent.queue-right .ps-title,
-#playerContent.queue-left .ps-title{text-align:center;font-size:20px}
+#playerContent.queue-left .ps-title{text-align:center;font-size:var(--ps-title-fs-side)}
 #playerContent.queue-right .ps-artist,
 #playerContent.queue-left .ps-artist{text-align:center}
 /* Text alignment options */
@@ -81,11 +81,11 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 .lib-sidebar.lib-sb-reveal{transition:margin-left .2s ease,width .18s ease}
 .lib-sidebar.lib-sb-reveal.is-collapsed{margin-left:-248px}
 .lib-sidebar.lib-sb-reveal.lib-sb-covers.is-collapsed{margin-left:-74px}
-.lib-block{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
-.lib-block-search{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:6px 8px}
-.lib-block-btns{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);padding:8px;display:flex;flex-direction:column;gap:6px}
-.lib-block-pl{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75);flex:1;display:flex;flex-direction:column;overflow:hidden}
-.lib-block-combined{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,var(--wb));border-radius:calc(var(--radius) * 0.75)}
+.lib-block{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
+.lib-block-search{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);padding:6px 8px}
+.lib-block-btns{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);padding:8px;display:flex;flex-direction:column;gap:6px}
+.lib-block-pl{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);flex:1;display:flex;flex-direction:column;overflow:hidden}
+.lib-block-combined{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75)}
 #libPlList::-webkit-scrollbar{display:none}
 .lib-block .lib-section-title,.lib-block-pl .lib-section-title,.lib-block-combined .lib-section-title{padding:6px 10px 4px}
 .lib-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 14px 6px;display:flex;justify-content:space-between;align-items:center}
@@ -97,33 +97,33 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 .lib-toolbar-block{padding:0;flex-shrink:0}
 .lib-toolbar{display:flex;align-items:stretch;gap:4px;padding:6px}
 .lib-toolbar button{flex:1;display:flex;align-items:center;justify-content:center;height:30px;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:8px;transition:background .15s,color .15s}
-.lib-toolbar button:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.lib-toolbar button:hover{color:var(--text);background:rgba(var(--ovl-rgb),.06)}
 .lib-toolbar #libAddBtn svg{transition:transform .22s cubic-bezier(.34,1.25,.64,1)}
 .lib-toolbar #libAddBtn.open svg{transform:rotate(45deg)}
-#libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;width:248px;box-sizing:border-box;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
+#libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(var(--ovl-rgb),.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;width:248px;box-sizing:border-box;z-index:9999;box-shadow:none;transform-origin:top center;display:none}
 #libAddMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libAddMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #libAddMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
-#libAddMenu button:hover{background:var(--hover,rgba(255,255,255,.07))}
+#libAddMenu button:hover{background:var(--hover,rgba(var(--ovl-rgb),.07))}
 #libAddMenu .lam-chevron{margin-left:auto;color:var(--muted);opacity:.7}
 /* Inline-ввод (создание плейлиста / ссылка импорта) */
 #libAddMenu .lam-input-row{display:flex;align-items:center;gap:6px;padding:3px 3px 6px}
 #libAddMenu .lam-input-field{flex:1;min-width:0;position:relative;display:flex}
-#libAddMenu .lam-input{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,var(--wb));border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .12s}
+#libAddMenu .lam-input{flex:1;min-width:0;background:rgba(var(--ovl-rgb),.05);border:1px solid var(--ovl-line);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .12s}
 #libAddMenu .lam-input.lam-input-badged{padding-right:32px}
-#libAddMenu .lam-input:focus{border-color:rgba(var(--accent-rgb),.5)}
+#libAddMenu .lam-input:focus{border-color:var(--ovl-line2)}
 #libAddMenu .lam-input::placeholder{color:var(--muted)}
 #libAddMenu .lam-link-logo{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;pointer-events:none}
 #libAddMenu .lam-check{flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--accent);color:var(--accent-text,#fff);border-radius:8px;transition:.12s}
-#libAddMenu .lam-check:hover{background:var(--accent);filter:brightness(1.12)}
+#libAddMenu .lam-check:hover{background:var(--accent-hover)}
 #libAddMenu .lam-check:disabled{opacity:.6;cursor:default}
-#libAddMenu .lam-spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:lamSpin .6s linear infinite}
+#libAddMenu .lam-spinner{width:13px;height:13px;border:2px solid rgba(var(--ovl-rgb),.4);border-top-color:var(--text);border-radius:50%;animation:lamSpin .6s linear infinite}
 @keyframes lamSpin{to{transform:rotate(360deg)}}
 /* Выбор цели импорта */
 #libAddMenu .lam-target-wrap{position:relative}
 #libAddMenu .lam-target-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #libAddMenu .lam-target-caret{color:var(--muted);opacity:.8;flex-shrink:0;transition:transform .18s cubic-bezier(.34,1.25,.64,1)}
-#libAddMenu .lam-target-btn.open{background:var(--hover,rgba(255,255,255,.07));box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.45)}
+#libAddMenu .lam-target-btn.open{background:var(--hover,rgba(var(--ovl-rgb),.07));box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.45)}
 #libAddMenu .lam-target-btn.open .lam-target-caret{color:var(--accent);opacity:1;transform:rotate(180deg)}
 #libAddMenu .lam-icon-box{width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 #libAddMenu .lam-all-thumb{width:22px;height:22px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--sys-all-tint)}
@@ -132,34 +132,61 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 /* Вложенное подменю — на ярус выше родительского #libAddMenu (тот на --ov-lift),
    поэтому свой процент, а не переменная. Ослаблено с 3% вместе с базовым ярусом,
    чтобы отрыв от родителя остался прежним на глаз. */
-#libAddMenu .lam-target-menu{position:absolute;top:calc(100% + 2px);left:0;right:0;background:color-mix(in srgb,var(--block-color),var(--text) 2%);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:10px;padding:4px;z-index:1;box-shadow:0 10px 28px rgba(0,0,0,.5);max-height:240px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;animation:libMenuIn .15s cubic-bezier(.22,1,.36,1) forwards;transform-origin:top}
+#libAddMenu .lam-target-menu{position:absolute;top:calc(100% + 2px);left:0;right:0;background:color-mix(in srgb,var(--block-color),var(--text) 2%);border:1px solid var(--border,rgba(var(--ovl-rgb),.1));border-radius:10px;padding:4px;z-index:1;box-shadow:none;max-height:240px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;animation:libMenuIn .15s cubic-bezier(.22,1,.36,1) forwards;transform-origin:top}
 #libAddMenu .lam-target-menu::-webkit-scrollbar{width:0;height:0;display:none}
 #libAddMenu .lam-target-menu button.active{color:var(--accent);background:rgba(var(--accent-rgb),.1)}
 #libAddMenu .lam-active-check{flex-shrink:0;color:var(--accent)}
-#libAddMenu .lam-target-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 6px}
+#libAddMenu .lam-target-sep{height:1px;background:rgba(var(--ovl-rgb),.07);margin:4px 6px}
 #libAddMenu .lam-back{color:var(--muted)}
-#speedPicker{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:10px 12px;gap:10px;z-index:9100;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top left;display:none;align-items:center}
+/* Пикер скорости: карточки-пресеты + полоса произвольной скорости + тумблер
+   питча. Ширина фиксированная — иначе слайдер и карточки «дышат» по контенту
+   локали. */
+#speedPicker{position:fixed;box-sizing:border-box;width:268px;flex-direction:column;align-items:stretch;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*0.95);padding:12px;gap:12px;z-index:9100;box-shadow:none;transform-origin:top left;display:none}
 #speedPicker.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #speedPicker.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
-#speedPicker .sp-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:none;border:none;padding:0;font-family:var(--font)}
-#speedPicker .sp-circle{width:36px;height:36px;border-radius:50%;background:transparent;border:1.5px solid var(--border,rgba(255,255,255,.15));display:flex;align-items:center;justify-content:center;transition:.15s;color:var(--text2,#999)}
-#speedPicker .sp-item:hover .sp-circle{border-color:var(--text2,#999);color:var(--text)}
-#speedPicker .sp-item.active .sp-circle{background:var(--accent);border-color:var(--accent);color:var(--accent-text,#fff)}
-#speedPicker .sp-item.play .sp-circle{width:42px;height:42px}
-#speedPicker .sp-label{font-size:10px;font-weight:700;color:var(--text2,#999)}
-#speedPicker .sp-item.active .sp-label{color:var(--text)}
-#speedPicker .sp-num{font-size:9.5px;font-weight:800;letter-spacing:-.3px}
-#libSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.55);transform-origin:top center;display:none}
+/* Пресеты */
+#speedPicker .sp-presets{display:flex;gap:8px}
+#speedPicker .sp-card{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;height:44px;padding:0 4px;border-radius:calc(var(--radius)*0.7);background:rgba(var(--ovl-rgb),.05);border:1px solid rgba(var(--ovl-rgb),.07);color:var(--text);font-family:var(--font);cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+#speedPicker .sp-card:hover{background:rgba(var(--ovl-rgb),.09);border-color:rgba(var(--ovl-rgb),.14)}
+#speedPicker .sp-card.active{background:var(--accent);border-color:var(--accent);color:var(--accent-text,#fff)}
+#speedPicker .sp-val{font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1}
+/* Полоса произвольной скорости. Заливка — linear-gradient по --sp-p (ставится
+   инлайном из компонента). */
+#speedPicker .sp-slider{display:flex;flex-direction:column;gap:8px}
+#speedPicker .sp-slider-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#speedPicker .sp-slider-title{font-size:11px;font-weight:600;color:var(--text2,#999)}
+#speedPicker .sp-cur{font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:-.2px;color:var(--text2,#999);background:rgba(var(--ovl-rgb),.06);border:1px solid transparent;border-radius:999px;padding:2px 9px;cursor:pointer;transition:.15s}
+#speedPicker .sp-cur:hover{border-color:rgba(var(--ovl-rgb),.14)}
+#speedPicker .sp-cur.on{color:var(--accent);background:rgba(var(--accent-rgb),.12)}
+/* padding-bottom = место под засечки: 7px рисок + 6px зазора, чтобы бегунок
+   (13px, свисает на 4.5px ниже дорожки) их не перекрывал. */
+#speedPicker .sp-track{position:relative;padding-bottom:13px}
+#speedPicker .sp-range{display:block;-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:3px;outline:none;cursor:pointer;background:linear-gradient(90deg,var(--accent) var(--sp-p,50%),rgba(var(--ovl-rgb),.12) var(--sp-p,50%))}
+#speedPicker .sp-range::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer}
+#speedPicker .sp-ticks{position:absolute;left:6.5px;right:6.5px;bottom:0;height:7px;pointer-events:none}
+#speedPicker .sp-tick{position:absolute;bottom:0;width:1px;height:4px;transform:translateX(-.5px);background:rgba(var(--ovl-rgb),.16)}
+#speedPicker .sp-tick.major{height:7px;background:rgba(var(--ovl-rgb),.3)}
+#speedPicker .sp-scale{display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:var(--muted,#666)}
+/* Тумблер «Nightcore» (питч едет за темпом). Переключатель — общий .tele-sw,
+   здесь только уменьшен. */
+#speedPicker .sp-pitch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:11px;border-top:1px solid rgba(var(--ovl-rgb),.07);cursor:pointer}
+#speedPicker .sp-pitch-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+#speedPicker .sp-pitch-title{font-size:12px;font-weight:600;color:var(--text)}
+#speedPicker .sp-pitch-sub{font-size:10px;color:var(--muted,#666)}
+#speedPicker .sp-sw{width:34px;height:19px}
+#speedPicker .sp-sw .tele-sw-track::after{width:13px;height:13px}
+#speedPicker .sp-sw input:checked+.tele-sw-track::after{transform:translateX(15px) translateY(-50%)}
+#libSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(var(--ovl-rgb),.1));border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:none;transform-origin:top center;display:none}
 #libSortMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #libSortMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
 #libSortMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
-#libSortMenu button:hover{background:var(--hover,rgba(255,255,255,.07))}
+#libSortMenu button:hover{background:var(--hover,rgba(var(--ovl-rgb),.07))}
 #libSortMenu button.active{color:var(--accent)}
-#afsSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(255,255,255,.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:9999;min-width:210px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 6px 20px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04);display:none}
+#afsSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:9999;min-width:210px;box-shadow:none;display:none}
 #afsSortMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 #afsSortBtn.sort-active{color:var(--accent)!important;border-color:rgba(var(--accent-rgb),.3)!important}
 #addFromLibList::-webkit-scrollbar{width:2px}
-#addFromLibList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+#addFromLibList::-webkit-scrollbar-thumb{background:rgba(var(--ovl-rgb),.12);border-radius:2px}
 #libSortBtn.sort-active,#libFilterBtn.sort-active{color:var(--accent)!important}
 #libAddBtn svg{transition:transform .22s cubic-bezier(.34,1.25,.64,1)}
 #libAddBtn.open svg{transform:rotate(45deg)}
@@ -185,7 +212,7 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 .lib-icon.off-icon{background:var(--sys-all-tint)}
 .lib-icon.off-icon svg{color:var(--sys-all-ico)}
 .lib-icon.pl-icon{background:var(--card)}
-.lib-item-play{width:28px;height:28px;border-radius:calc(var(--radius) * 0.7);background:#fff;border:none;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:opacity .15s,background .15s;pointer-events:none;position:absolute;right:6px;top:50%;margin-top:-14px}
+.lib-item-play{width:28px;height:28px;border-radius:calc(var(--radius) * 0.7);background:var(--text);border:none;color:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:opacity .15s,background .15s;pointer-events:none;position:absolute;right:6px;top:50%;margin-top:-14px}
 .lib-item:hover .lib-item-play{opacity:1;pointer-events:all}
 .lib-item-play:hover{background:var(--accent2)}
 .lib-item-info{flex:1;min-width:0}
@@ -198,5 +225,5 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 .lai-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .lai-name{font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-follow-btn{width:36px;height:36px;border-radius:var(--radius);border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
-.sp-follow-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.sp-follow-btn:hover{background:rgba(var(--ovl-rgb),.1);color:var(--text)}
 .sp-follow-btn.followed{color:var(--accent);background:rgba(var(--accent-rgb),.16)}

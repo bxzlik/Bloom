@@ -1,10 +1,10 @@
-import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
 import { useThemeStore } from '@features/settings'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
-import { PathLine } from '@shared/ui'
+import { ExpandDesc, PathLine } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -13,13 +13,15 @@ import { Ico } from '@shared/ui/icons/solar'
  *
  * Hero: размытая обложка-фон + cover + name (+ explicit) + artist (avatar /
  * verified / ссылка) + credited. Body: сетка (Альбом / Год / Длительность /
- * Паблишер / Жанры) + описание с hover-попапом (#tiDescPopup) для длинного текста.
+ * Паблишер / Жанры) + описание, которое по клику разворачивается попапом,
+ * если не влезло в две строки (shared/ui/ExpandDesc).
  *
  * Открытие/закрытие — модальная конвенция: класс `.open` (opacity .26s + scale
  * /translate .32s, см. [[project-modal-style]]). Unmount после transition.
  *
  * `--ti-r/g/b` ставим из текущего цвета блока (`--block-color`) —
  * (там из blockR/G/B настроек). Без них CSS падает на дефолт rgb(15,15,15).
+ * На :root, а не на модалке, т.к. .ti-overlay — не предок всех потребителей.
  */
 export const TrackInfoModal = ({
   track,
@@ -33,7 +35,6 @@ export const TrackInfoModal = ({
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
   const [shownTrack, setShownTrack] = useState<Track | null>(null)
-  const [descPopup, setDescPopup] = useState<{ html: string; left: number; top: number } | null>(null)
 
   const open = track !== null
 
@@ -50,11 +51,10 @@ export const TrackInfoModal = ({
       return runEnterAnimation(setOpening)
     } else {
       setOpening(false)
-      setDescPopup(null)
     }
   }, [open])
 
-  // --ti-r/g/b из цвета блока (на :root, т.к. #tiDescPopup рендерится отдельно).
+  // --ti-r/g/b из цвета блока.
   useEffect(() => {
     if (!mounted) return
     const { r, g, b } = hexToRgb(blockColor)
@@ -81,17 +81,6 @@ export const TrackInfoModal = ({
   const hasYear = !!t?.year
   const hasDur = !!(t?.dur && t.dur !== '—')
   const genres = t?.genres?.length ? t.genres : []
-  const longDesc = !!t?.description && (t.description.length > 100 || t.description.split('\n').length > 2)
-
-  const onDescEnter = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (!t?.description || !longDesc) return
-    const pw = 320, ph = 220
-    let left = e.clientX + 14
-    if (left + pw > window.innerWidth - 8) left = e.clientX - pw - 14
-    let top = e.clientY + 14
-    if (top + ph > window.innerHeight - 8) top = e.clientY - ph - 14
-    setDescPopup({ html: parseDesc(t.description), left: Math.max(8, left), top: Math.max(8, top) })
-  }
 
   return createPortal(
     <>
@@ -220,47 +209,15 @@ export const TrackInfoModal = ({
             {t?.description && (
               <div className="ti-desc-cell" id="tiDescRow">
                 <div className="ti-lbl">{tr('lib.ti.description')}</div>
-                <div
-                  className="ti-desc"
-                  id="tiDesc"
-                  onMouseEnter={onDescEnter}
-                  onMouseLeave={(e) => {
-                    const rt = e.relatedTarget as Node | null
-                    const popup = document.getElementById('tiDescPopup')
-                    if (rt && popup?.contains(rt)) return
-                    setDescPopup(null)
-                  }}
-                >
-                  {t.description}
-                </div>
+                <ExpandDesc className="ti-desc" id="tiDesc" text={t.description} />
               </div>
             )}
           </div>
         </div>
       </div>
-      {descPopup && (
-        <div
-          id="tiDescPopup"
-          style={{ display: 'block', left: descPopup.left, top: descPopup.top }}
-          onMouseLeave={() => setDescPopup(null)}
-          dangerouslySetInnerHTML={{ __html: descPopup.html }}
-        />
-      )}
     </>,
     document.body,
   )
-}
-
-/** Парс описания: URL → ссылки, остальное эскейпится. tiParseDesc. */
-const parseDesc = (text: string): string => {
-  const parts = text.split(/(https?:\/\/[^\s]+)/g)
-  return parts
-    .map((p, i) => {
-      if (i % 2 === 1)
-        return `<a href="${p.replace(/"/g, '&quot;')}" target="_blank" rel="noopener">${p.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</a>`
-      return p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    })
-    .join('')
 }
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } => {

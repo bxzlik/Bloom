@@ -79,7 +79,7 @@ export const ProfileCard = () => {
   }
 
   return (
-    <div style={{ borderRadius: 'var(--radius)', border: '1px solid rgba(255,255,255,var(--wb))', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+    <div style={{ borderRadius: 'var(--radius)', border: '1px solid var(--ovl-line)', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
       <div className="acc-banner-wrap" id="accBannerWrap" style={{ height: 250, position: 'relative' }}>
         {p.banner ? (
           <img className="acc-banner-img" src={p.banner} alt="" />

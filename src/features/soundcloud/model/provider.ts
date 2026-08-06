@@ -14,6 +14,7 @@ import {
   getArtistData,
   getArtistTopTracks,
   getArtistReposts,
+  getRelatedArtists,
   getArtistTracksPage,
   getArtistRepostsPage,
   getPlaylistTracks,
@@ -53,7 +54,9 @@ interface ScPlaylistHandle {
   title: string
   artwork: string | null
   ownerName: string
+  ownerAvatar: string | null
   trackCount: number
+  year: string
 }
 const scHandles = new Map<string, ScArtistHandle | ScPlaylistHandle>()
 
@@ -79,7 +82,9 @@ const putPlaylistHandle = (
     title: p.title || '',
     artwork: p.artwork ?? null,
     ownerName: p.artist || '',
+    ownerAvatar: p.artistAvatar ?? null,
     trackCount: p.trackCount || 0,
+    year: p.year || '',
   })
 }
 
@@ -264,11 +269,12 @@ export const scProvider: MusicProvider = {
       else throw new Error(i18nT('search.err.artistNotFound'))
     }
 
-    const [dataR, userR, topR, repostR] = await Promise.allSettled([
+    const [dataR, userR, topR, repostR, relatedR] = await Promise.allSettled([
       getArtistData(ref, hintName),
       getUser(ref),
       getArtistTopTracks(ref, hintName),
       getArtistReposts(ref),
+      getRelatedArtists(ref),
     ])
     const { tracks: rawTracks, tracksNext, albums: rawAlbums } =
       dataR.status === 'fulfilled'
@@ -277,6 +283,7 @@ export const scProvider: MusicProvider = {
     const user = userR.status === 'fulfilled' ? userR.value : null
     const rawTop = topR.status === 'fulfilled' ? topR.value : []
     const rawReposts = repostR.status === 'fulfilled' ? repostR.value : { items: [], next: null }
+    const rawRelated = relatedR.status === 'fulfilled' ? relatedR.value : []
 
     const tracks = rawTracks.map(toTrack)
     const topTracks = rawTop.map(toTrack)
@@ -284,6 +291,13 @@ export const scProvider: MusicProvider = {
       const p = toPlaylist(raw)
       putPlaylistHandle(p.id, raw, 'album')
       return p
+    })
+
+    // Похожим кладём хэндл — иначе клик по карточке не откроет их страницу.
+    const similarArtists: Artist[] = rawRelated.map((raw) => {
+      const a = toArtist(raw)
+      putArtistHandle(a.id, raw)
+      return a
     })
 
     const { reposts, tracks: repostTracks } = mapReposts(rawReposts.items)
@@ -310,6 +324,7 @@ export const scProvider: MusicProvider = {
       albums,
       playlists: [],
       reposts,
+      similarArtists,
       tracksCursor: tracksNext,
       repostsCursor: rawReposts.next,
     }
@@ -355,7 +370,14 @@ const loadScPlaylist = async (
   const permalink = h && h.kind !== 'artist' ? h.permalink : null
 
   let raw: Awaited<ReturnType<typeof getPlaylistTracks>>
-  let meta: { title: string; cover: string | null; ownerName: string; trackCount: number } | null = null
+  let meta: {
+    title: string
+    cover: string | null
+    ownerName: string
+    ownerAvatar: string | null
+    trackCount: number
+    year: string
+  } | null = null
   if (permalink) {
     raw = await getPlaylistTracks(permalink)
   } else {
@@ -363,7 +385,14 @@ const loadScPlaylist = async (
     if (!m) throw new Error(i18nT('search.err.playlistNotFound'))
     const full = await getPlaylistById(Number(m[1]))
     raw = full.tracks
-    meta = { title: full.title, cover: full.cover, ownerName: full.ownerName, trackCount: full.trackCount }
+    meta = {
+      title: full.title,
+      cover: full.cover,
+      ownerName: full.ownerName,
+      ownerAvatar: full.ownerAvatar,
+      trackCount: full.trackCount,
+      year: full.year,
+    }
   }
 
   const tracks = raw.map(toTrack)
@@ -375,6 +404,8 @@ const loadScPlaylist = async (
     title: hp?.title || meta?.title || '',
     cover: hp?.artwork ?? meta?.cover ?? null,
     ownerName: hp?.ownerName || meta?.ownerName || '',
+    ownerAvatar: hp?.ownerAvatar ?? meta?.ownerAvatar ?? null,
+    year: hp?.year || meta?.year || undefined,
     trackCount: tracks.length || hp?.trackCount || meta?.trackCount || 0,
     source: 'soundcloud',
     // permalink для «Обновить треки» (доступен из handle; при открытии по id — нет).

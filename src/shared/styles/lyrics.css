@@ -5,34 +5,121 @@
 .lyrics-btn:hover{color:var(--text)}
 .lyrics-btn:active{transform:scale(.94)}
 .lyrics-btn.lyr-active{color:var(--accent)}
-.lyrics-panel{position:absolute;inset:0;background:rgba(15,15,15,.96);display:flex;flex-direction:column;z-index:10;transition:opacity .25s ease,transform .25s ease;border-radius:inherit}
+/* Подложка панели — от темы (раньше был зашитый rgba(15,15,15,.96): в светлой
+   теме получалась чёрная плашка с уже потемневшим текстом). */
+.lyrics-panel{position:absolute;inset:0;background:color-mix(in srgb,var(--block-color,#0f0f0f) 96%,transparent);display:flex;flex-direction:column;z-index:10;transition:opacity .25s ease,transform .25s ease;border-radius:inherit}
 .lyrics-panel.lyr-hidden{opacity:0;pointer-events:none;transform:scale(.97)}
 .lyrics-panel.lyr-visible{opacity:1;pointer-events:all;transform:scale(1)}
-.lyrics-close{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:.15s;z-index:1;flex-shrink:0}
-.lyrics-close:hover{background:rgba(255,255,255,.2);color:#fff}
+.lyrics-close{position:absolute;top:8px;right:8px;background:rgba(var(--ovl-rgb),.1);border:none;color:rgba(var(--ovl-rgb),.7);font-size:13px;cursor:pointer;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:.15s;z-index:1;flex-shrink:0}
+.lyrics-close:hover{background:rgba(var(--ovl-rgb),.2);color:var(--text)}
 .lyrics-source-badge{display:none}
 .lyrics-content{flex:1;overflow-y:auto;padding:36px 14px 16px;scroll-behavior:smooth;scrollbar-width:none}
 .lyrics-content::-webkit-scrollbar{display:none}
-.lyrics-line{font-size:16px;line-height:1.75;color:rgba(255,255,255,.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
-.lyrics-line.lyr-past{color:rgba(255,255,255,.15)}
-.lyrics-line.lyr-upcoming{color:rgba(255,255,255,.45)}
-.lyrics-line.lyr-active{color:#fff;font-size:19px;font-weight:700;cursor:default}
-.lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.6);font-size:16px}
-.lyrics-status{color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:0 10px;line-height:1.6}
-/* ===== KARAOKE (per-word) ===== */
-.lyrics-line .kw{transition:color .14s ease,opacity .14s ease;display:inline}
-.lyrics-line.lyr-active .kw{color:rgba(255,255,255,.32)}
-.lyrics-line.lyr-active .kw.kw-on{color:#fff}
-#bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-active .kw{color:rgba(255,255,255,.32)}
-#bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-active .kw.kw-on{color:#fff}
+.lyrics-line{font-size:16px;line-height:1.75;color:rgba(var(--ovl-rgb),.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
+.lyrics-line.lyr-past{color:rgba(var(--ovl-rgb),.15)}
+.lyrics-line.lyr-upcoming{color:rgba(var(--ovl-rgb),.45)}
+.lyrics-line.lyr-active{color:var(--text);font-size:19px;font-weight:700;cursor:default}
+.lyrics-line.lyr-plain{cursor:default;color:rgba(var(--ovl-rgb),.6);font-size:16px}
+.lyrics-status{color:rgba(var(--ovl-rgb),.25);font-size:12px;text-align:center;padding:0 10px;line-height:1.6}
+/* ===== INTRO DOTS (три точки вместо первой строки, пока идёт вступление) =====
+   Точки «зажигаются» по мере приближения к первой строке, вся группа при этом
+   мягко дышит. Размер — через --lyr-dot, поверхности задают свой.
+   Выравнивание повторяет text-align строк своей поверхности и задаётся ЯВНО:
+   justify-content:inherit тут не работает — контейнеры (.lyrics-content,
+   .lq-content) не флексы, и точки уезжали влево при центрированном тексте. */
+.lyrics-intro{display:flex;align-items:center;gap:calc(var(--lyr-dot,7px) * 1.1);margin:0;padding:6px 0;cursor:default;user-select:none;justify-content:center}
+.lyrics-intro .lyrics-dot{width:var(--lyr-dot,7px);height:var(--lyr-dot,7px);border-radius:50%;background:currentColor;opacity:.22;transform:scale(.8);transition:opacity .45s ease,transform .45s ease}
+.lyrics-intro .lyrics-dot.on{opacity:1;transform:scale(1)}
+.lyrics-intro.lyr-active{color:var(--text);animation:lyrIntroPulse 1.9s ease-in-out infinite}
+/* Вступление кончилось — точки уходят в фон, как прошедшая строка. */
+.lyrics-intro.lyr-past{color:rgba(var(--ovl-rgb),.15);animation:none}
+.lyrics-intro.lyr-past .lyrics-dot{opacity:.5;transform:scale(.8)}
 /* ===== LYRICS IN QUEUE ===== */
 .lq-content::-webkit-scrollbar{display:none}
-.lq-content .lyrics-line{font-size:16px;line-height:1.75;color:rgba(255,255,255,.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
-.lq-content .lyrics-line.lyr-past{color:rgba(255,255,255,.15)}
-.lq-content .lyrics-line.lyr-upcoming{color:rgba(255,255,255,.45)}
-.lq-content .lyrics-line.lyr-active{color:#fff;font-size:19px;font-weight:700;cursor:default}
-.lq-content .lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.6);font-size:16px}
-.lq-content .lyrics-status{color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:20px 10px;line-height:1.6}
+.lq-content .lyrics-line{font-size:16px;line-height:1.75;color:rgba(var(--ovl-rgb),.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
+.lq-content .lyrics-line.lyr-past{color:rgba(var(--ovl-rgb),.15)}
+.lq-content .lyrics-line.lyr-upcoming{color:rgba(var(--ovl-rgb),.45)}
+.lq-content .lyrics-line.lyr-active{color:var(--text);font-size:19px;font-weight:700;cursor:default}
+.lq-content .lyrics-line.lyr-plain{cursor:default;color:rgba(var(--ovl-rgb),.6);font-size:16px}
+.lq-content .lyrics-status{color:rgba(var(--ovl-rgb),.25);font-size:12px;text-align:center;padding:20px 10px;line-height:1.6}
+/* В глобальной боковой панели (очередь/текст) строки выравниваем по левому краю:
+   панель узкая, и центрированный текст «плавает» от строки к строке.
+   Кегль крупнее базового 16/19 — панель шире блока на странице плеера.
+   Блок текста на странице плеера (#lyricsQueueBlock) остаётся как был. */
+/* Отступ между строками — вертикальный padding, а не line-height: внутри одной
+   длинной (перенесённой) строки интерлиньяж остаётся плотным, а соседние строки
+   расходятся. --grp-lyr-gap — ручка для подгонки. */
+#grpLyricsContent{--grp-lyr-gap:9px}
+#grpLyricsContent .lyrics-line{text-align:left;font-size:20px;padding:var(--grp-lyr-gap) 0}
+#grpLyricsContent .lyrics-intro{padding:var(--grp-lyr-gap) 0}
+#grpLyricsContent .lyrics-intro{justify-content:flex-start}
+#grpLyricsContent .lyrics-line.lyr-plain{font-size:20px}
+#grpLyricsContent .lyrics-line.lyr-active{font-size:24px}
+/* ===== ОФОРМЛЕНИЕ ТЕКСТА (на поверхность: .lyr-fill-* + .lyr-fx-* на контейнере)
+   Две независимые оси: ЗАЛИВКА (чем меряем прогресс по строке — строка / слово /
+   буква / градиент внутри слова) и ЭФФЕКТ (как единица появляется — сразу /
+   мягко / со свечением). Комбинируются любые.
+   Все правила красят ТОЛЬКО активную строку: у прошедших/будущих цвет задаёт
+   .lyr-past/.lyr-upcoming, поэтому оставшиеся на них .kw-on/--kwp безвредны и
+   LyricsView их не подчищает каждый кадр.
+   --lyr-on / --lyr-off — «спето» и «ещё нет»; поверхность может переопределить
+   (фуллскрин светит белым поверх обложки).
+   Классы вешает useLyricsFill: .kw-on — единица спета, .kw-cur — поётся сейчас;
+   --kwp (0..1) — заполнение внутри единицы (нужно только заливке wipe). */
+.lyrics-content,.lq-content,.bp-lyr-scroll{--lyr-on:var(--text);--lyr-off:rgba(var(--ovl-rgb),.32)}
+#bigPicOverlay .bp-lyr-scroll{--lyr-on:#fff}
+.lyrics-line .kw{display:inline}
+/* — word / letter: единица переключает цвет в свой момент — */
+.lyr-fill-word .lyrics-line.lyr-active .kw,
+.lyr-fill-letter .lyrics-line.lyr-active .kw{color:var(--lyr-off);transition:color .14s ease}
+.lyr-fill-word .lyrics-line.lyr-active .kw.kw-on,
+.lyr-fill-letter .lyrics-line.lyr-active .kw.kw-on{color:var(--lyr-on)}
+/* — wipe: градиент шириной в две ширины слова, сдвигаемый прогрессом. При p=0
+   виден правый («ещё не спето») край, при p=1 — левый. Полоса перехода 3% —
+   на резком стыке видна ступенька по субпикселям. background-clip:text требует
+   прозрачной заливки текста (и потому не дружит с text-shadow — свечение здесь
+   рисуется drop-shadow'ом, см. ниже). */
+.lyr-fill-wipe .lyrics-line.lyr-active .kw{
+  background-image:linear-gradient(90deg,var(--lyr-on) 0 48.5%,var(--lyr-off) 51.5% 100%);
+  background-size:200% 100%;background-repeat:no-repeat;
+  background-position:calc(100% - var(--kwp,0) * 100%) 0;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent}
+.lyr-fill-wipe .lyrics-line.lyr-active .kw.kw-on{--kwp:1}
+/* ===== ЭФФЕКТ =====
+   — мягко: единица втекает непрозрачностью и расфокусировкой (цветом её красит
+     заливка, поэтому здесь только opacity/filter — оси не дерутся). */
+.lyr-fx-fade .lyrics-line.lyr-active .kw{opacity:.5;filter:blur(1.4px);
+  transition:opacity .42s ease,filter .42s ease}
+.lyr-fx-fade .lyrics-line.lyr-active .kw.kw-on{opacity:1;filter:blur(0)}
+/* Заливка «по строкам» — единиц нет, мягко появляется вся строка целиком.
+   Без fill-mode: конечный кадр совпадает с обычным состоянием строки, а
+   `forwards`/`both` тут только оставили бы лишний filter (он ломает
+   backdrop-filter родителя — см. фуллскрин). */
+.lyr-fx-fade.lyr-fill-line .lyrics-line.lyr-active{animation:lyrFxFade .5s ease}
+@keyframes lyrFxFade{from{opacity:.35;filter:blur(2px)}to{opacity:1;filter:blur(0)}}
+/* — свечение: горит текущая единица (у заливки «по строкам» — вся строка).
+     drop-shadow, а не text-shadow: последний не рисуется поверх
+     background-clip:text, т.е. пропал бы у плавной заливки. */
+.lyr-fx-glow .lyrics-line.lyr-active .kw.kw-cur,
+.lyr-fx-glow.lyr-fill-line .lyrics-line.lyr-active{
+  filter:drop-shadow(0 0 7px color-mix(in srgb,var(--accent) 60%,transparent))}
+.lyr-fx-glow .lyrics-line.lyr-active .kw{transition:filter .3s ease}
+/* — пружина: текущая единица вспухает и с отдачей садится назад. Единственный
+     эффект с движением (заливкам оно запрещено). transform не вызывает
+     перекомпоновку, поэтому соседние слова не разъезжаются; inline-block нужен
+     самому transform, а origin по низу держит базовую линию на месте.
+     Амплитуда — ручка --lyr-spring. Без fill-mode: последний кадр и есть
+     обычное состояние. */
+.lyr-fx-spring .lyrics-line.lyr-active .kw{display:inline-block;transform-origin:center bottom}
+.lyr-fx-spring .lyrics-line.lyr-active .kw.kw-cur,
+.lyr-fx-spring.lyr-fill-line .lyrics-line.lyr-active{
+  transform-origin:center bottom;animation:lyrFxSpring .42s cubic-bezier(.22,1,.36,1)}
+@keyframes lyrFxSpring{
+  0%{transform:scale(1)}
+  32%{transform:scale(var(--lyr-spring,1.09))}
+  64%{transform:scale(calc(1 - (var(--lyr-spring,1.09) - 1) * .18))}
+  100%{transform:scale(1)}}
 /* lyrics queue block inherits queue sizing rules */
 #playerContent:not(.queue-right):not(.queue-left) #lyricsQueueBlock{flex:1 1 0;min-height:0}
 #playerContent.queue-right #lyricsQueueBlock,
@@ -47,9 +134,26 @@
 #bloom-dl-popup,#bloom-src-popup{position:absolute;z-index:100000;width:fit-content;transform-origin:top left}
 #bloom-dl-popup.open,#bloom-src-popup.open{animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #bloom-dl-popup.closing,#bloom-src-popup.closing{animation:libMenuOut .14s ease-in forwards}
-.bloom-dl-inner{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(255,255,255,.1));border-radius:12px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:190px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+.bloom-dl-inner{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(var(--ovl-rgb),.1));border-radius:12px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:190px;box-shadow:none}
 .bloom-dl-inner button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;background:none;border:none;border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;text-align:left;white-space:nowrap;font-family:var(--font);transition:background .12s}
-.bloom-dl-inner button:hover{background:var(--hover,rgba(255,255,255,.07))}
+.bloom-dl-inner button:hover{background:var(--hover,rgba(var(--ovl-rgb),.07))}
 .bloom-dl-inner button:disabled{opacity:.35;cursor:default;pointer-events:none}
+/* Столбик выбора площадки (плеер + поиск): только иконки, без подписей.
+   Рамка слабее обычного попапа — --ovl-line (та же плёнка, что регулируется
+   настройкой толщины рамок), т.к. столбик узкий и тёмная обводка его «режет».
+   Активная площадка отделена .bloom-srcp-div и стоит со стороны анкера.
+   Геометрия параметрическая: размер пункта и его скругление наследуются от
+   КНОПКИ-АНКЕРА своей страницы (попап открывается прямо из неё, поэтому форма
+   должна совпадать). Рамка попапа — концентрическая: радиус пункта + паддинг. */
+.bloom-srcp{--srcp-btn:38px;--srcp-r:10px;--srcp-pad:5px;--srcp-div:4px;
+  min-width:0;width:fit-content;padding:var(--srcp-pad);gap:4px;border-color:var(--ovl-line);
+  border-radius:calc(var(--srcp-r) + var(--srcp-pad))}
+.bloom-srcp button{width:var(--srcp-btn);height:var(--srcp-btn);padding:0;justify-content:center;border-radius:var(--srcp-r)}
+.bloom-srcp button[aria-current]:hover{background:none}
+.bloom-srcp-div{height:1px;flex:none;background:var(--ovl-line);margin:2px var(--srcp-div)}
+/* Плеер: анкер — .cc (40×40, calc(--radius*.7)). */
+.bloom-srcp.srcp-cc{--srcp-btn:40px;--srcp-r:calc(var(--radius)*.7)}
+/* Поиск: анкер — круглый #ymSrcBtn (34×34, 50%) → пункты-кружки, столбик-пилюля. */
+.bloom-srcp.srcp-round{--srcp-btn:34px;--srcp-r:50%;--srcp-div:9px;border-radius:999px}
 .qp-list{overflow-y:auto;flex:1;padding:5px;scrollbar-width:none}
 .qp-list::-webkit-scrollbar{display:none}

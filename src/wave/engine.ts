@@ -50,7 +50,7 @@ export function waveLabel(mode: WaveMode): string {
 // Преобразовать ScRawTrack в виртуальный Track — точно такой же по форме,
 // как тот, что создаёт SC-поиск в _scPlayPanelQueue. Иначе UI считает гостя
 // «не таким как из поиска» и часть действий ломается.
-function scRawToTrack(raw: ScRawTrack): Track {
+export function scRawToTrack(raw: ScRawTrack): Track {
   const dur = host.fmtDur(raw.duration ?? 0);
   const pm = (raw as unknown as { publisher_metadata?: { explicit?: boolean; publisher?: string; album_title?: string; artist?: string }; label_name?: string }).publisher_metadata;
   const labelName = (raw as unknown as { label_name?: string }).label_name;
@@ -257,7 +257,11 @@ export function enqueueBatch(batch: Candidate[]): number {
 let startInFlight = false;
 
 // Стартовый запуск волны.
-export async function startWave(mode: WaveMode, seeds: string[]): Promise<boolean> {
+// `opts.first` — id трека, который должен зазвучать ПЕРВЫМ (клик по обложке в
+// кольце «Моей волны»: играет выбранный трек, а дальше идёт волна по нему).
+// Батч состоит из похожих, самого сида в нём обычно нет — поэтому вставляем его
+// в голову очереди ДО loadPlay, иначе трек сначала бы перебился чужим.
+export async function startWave(mode: WaveMode, seeds: string[], opts?: { first?: string }): Promise<boolean> {
   if (!seeds.length) return false;
   if (startInFlight) return false;
   startInFlight = true;
@@ -279,6 +283,14 @@ export async function startWave(mode: WaveMode, seeds: string[]): Promise<boolea
     enqueueBatch(batch);
 
     if (!host.queue.length) { session.endSession(); return false; }
+    const first = opts?.first;
+    if (first && host.trackById(first)) {
+      const i = host.queue.indexOf(first);
+      if (i >= 0) host.queue = [first, ...host.queue.slice(0, i), ...host.queue.slice(i + 1)];
+      else host.queue = [first, ...host.queue];
+      host.qIdx = 0;
+      host.renderQueue();
+    }
     host.curSource = { type: WAVE_SOURCE_TYPE, label: waveLabel(mode) };
     // Выключаем shuffle — волна сама выбирает порядок.
     host.shuffle = false;

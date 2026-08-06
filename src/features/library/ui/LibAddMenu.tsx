@@ -11,7 +11,7 @@ import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import { toast } from '@shared/ui'
 import { PlCover } from './PlCover'
-import { ScLogo, YmLogo, YtmLogo, SpLogo, providerBrandColor } from '@entities/track'
+import { ScLogo, YmLogo, YtmLogo, providerBrandColor } from '@entities/track'
 import { Ico } from '@shared/ui/icons/solar'
 import { useSettingsStore } from '@features/settings'
 import { folderAdd, importPlaylistFile } from '../api'
@@ -40,8 +40,6 @@ const ProviderLogo = ({ provider }: { provider: LinkProvider }) => {
       <YmLogo size={15} />
     ) : provider === 'ytmusic' ? (
       <YtmLogo size={16} />
-    ) : provider === 'spotify' ? (
-      <SpLogo size={15} />
     ) : (
       <ScLogo size={16} />
     )

@@ -168,7 +168,14 @@ export const ymProvider: MusicProvider = {
       source: 'yandex',
       avatar: e.cover || null,
     }
-    return { artist, topTracks, tracks, albums, playlists: [] }
+    return {
+      artist,
+      topTracks,
+      tracks,
+      albums,
+      playlists: [],
+      similarArtists: (e.similarArtists ?? []).map(toArtist),
+    }
   },
 
   async getCharts(): Promise<Track[]> {
@@ -194,6 +201,8 @@ export const ymProvider: MusicProvider = {
       title: e.title || i18nT('ym.fallback.album'),
       cover: e.cover || null,
       ownerName: e.subtitle,
+      ownerAvatar: e.ownerAvatar || null,
+      year: e.year || undefined,
       trackCount: tracks.length,
       source: 'yandex',
       sourceUrl: `https://music.yandex.ru/album/${m[1]}`,
@@ -213,6 +222,7 @@ export const ymProvider: MusicProvider = {
       title: e.title || i18nT('ym.fallback.playlist'),
       cover: e.cover || null,
       ownerName: e.subtitle,
+      ownerAvatar: e.ownerAvatar || null,
       trackCount: tracks.length,
       source: 'yandex',
       sourceUrl: uuid

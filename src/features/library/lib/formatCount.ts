@@ -3,6 +3,17 @@ import { useI18nStore } from '@shared/i18n'
 /** Текущая локаль (нереактивно — для строко-форматирующих хелперов). */
 const loc = (): string => useI18nStore.getState().locale
 
+/**
+ * Подпись со счётчиком треков для карточек коллекций — либо пусто, если
+ * счётчика нет.
+ *
+ * «Неизвестно» и «ноль треков» — разные вещи: YouTube Music не отдаёт счётчик
+ * альбомам и чужим плейлистам, и `?? 0` рисовал «0 тр.» у альбома с четырнадцатью
+ * треками. Вызывающий склеивает результат через `.filter(Boolean).join(' · ')`.
+ */
+export const tracksCountLabel = (n?: number | null): string =>
+  n == null ? '' : tracksLabel(n)
+
 /** Склонение «N треков / трека / трек» (ru) либо «N track(s)» (en). */
 export const tracksLabel = (n: number): string => {
   if (loc() !== 'ru') return `${n} ${n === 1 ? 'track' : 'tracks'}`

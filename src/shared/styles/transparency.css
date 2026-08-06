@@ -20,6 +20,15 @@ body.glass-mode #grpLyricsBlock {
   -webkit-backdrop-filter: var(--glass-filter) !important;
 }
 
+/* Панель окна с включённой настройкой «Фон панели» (body.titlebar-bg) — тоже
+   внешний контейнер: в стекле её плашка (var(--block-color) из
+   soundcloud-system.css) стала бы единственным сплошным пятном над обоями. */
+body.glass-mode.titlebar-bg #winTitlebar {
+  background: var(--glass-block-bg) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  -webkit-backdrop-filter: var(--glass-filter) !important;
+}
+
 /* Очередь в глобальной правой панели — внешний контейнер (в легаси был отдельный
    #grpQueueBlock). В bloom GRP переиспользует тот же QueueBlock (#playerQueueBlock),
    поэтому стекло вешаем ТОЛЬКО на копию внутри #globalRightPanel; копия на странице
@@ -51,12 +60,18 @@ body.glass-mode #mainEl > .page {
 body.glass-mode.detail-open #mainEl > .page {
   opacity: 0 !important;
 }
+/* Возврат на вкладку, где вид уже был открыт: он проявляется через page-in
+   (с opacity .55), поэтому страницу под ним гасим МГНОВЕННО и во всех режимах —
+   иначе она просвечивает сквозь кадры анимации. Класс ставит DetailView вместе с
+   detail-open (в useLayoutEffect — до первого кадра показа). При обычном открытии
+   класса нет: там вид «въезжает» поверх ещё видимой страницы, так и задумано. */
+body.detail-instant #mainEl > .page {
+  opacity: 0 !important;
+  transition: none;
+}
 
 /* ── Внутренние блоки: прозрачны, родительское стекло просвечивает ─────────── */
 body.glass-mode .sp-detail-view,
-body.glass-mode .player-section,
-body.glass-mode #playerQueueBlock,
-body.glass-mode #lyricsQueueBlock,
 body.glass-mode #playerContent > .sl-bottom,
 body.glass-mode .lib-block,
 body.glass-mode .lib-block-search,
@@ -86,6 +101,42 @@ body.glass-mode .sp-am-album,
 body.glass-mode .sp-am-tracks-grid,
 body.glass-mode .sp-am-track-card {
   background: transparent !important;
+}
+
+/* Страница плеера — исключение из «внутренние блоки прозрачны». В полный
+   transparent карточка плеера и очередь переставали читаться как блоки на
+   обоях (оставались одни рамки, а очередь вдобавок мутнела своим инлайновым
+   blur(12px) — единственный видимый слой). Даём им плёнку --pl-film поверх
+   стекла .main: блок видно, обои по-прежнему просвечивают. Регулятор — в
+   root.css (там же --pl-film-ctrl для боксов управления).
+   Специфичность: (1 id + 1 class) — перебивает `#playerQueueBlock` из
+   overrides-main.css, но уступает `#globalRightPanel #playerQueueBlock` выше
+   (GRP остаётся полноценным стеклом) и `#bigPicOverlay #playerQueueBlock`
+   (в BigPicture очередь остаётся полностью прозрачной). */
+body.glass-mode .player-section,
+body.glass-mode #playerQueueBlock,
+body.glass-mode #lyricsQueueBlock {
+  background: color-mix(in srgb, var(--block-color, #0a0a0a) var(--pl-film), transparent) !important;
+}
+/* Пилюли управления — тот же цвет темы, только плотнее. ТОЛЬКО в стекле: вне
+   режима прозрачности --pl-ctrl-bg остаётся transparent (root.css) и плеер
+   выглядит ровно как раньше. Фоллбек #0a0a0a: сам
+   --block-color ставит JS (themeStore.applyToRoot), до первого прохода его нет,
+   а color-mix без цвета — невалидное значение (фон схлопнулся бы в никуда). */
+body.glass-mode {
+  --pl-ctrl-bg: color-mix(in srgb, var(--block-color, #0a0a0a) var(--pl-film-ctrl), transparent);
+}
+
+/* И убираем инлайновый blur(12px) очереди (QueueBlock.tsx/LyricsQueueBlock.tsx)
+   у копии на СТРАНИЦЕ плеера: он накладывал второй слой размытия поверх стекла
+   .main, из-за чего очередь выглядела мутнее и светлее соседней карточки плеера
+   (у .player-section своего блюра нет). Теперь оба блока — одна плёнка над
+   одним стеклом. Копия в #globalRightPanel не тронута: там очередь — ВНЕШНИЙ
+   контейнер и стекло ей положено (правило выше). */
+body.glass-mode #playerContent #playerQueueBlock,
+body.glass-mode #playerContent #lyricsQueueBlock {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* Визуализатор в стандартном плеере следует настройке прозрачности — в стекле
@@ -132,6 +183,7 @@ body.glass-overlays .sp-dd-menu,
 body.glass-overlays .sp-hist,
 body.glass-overlays .bloom-dl-inner,
 body.glass-overlays .hcc-info-pop,
+body.glass-overlays .lib-jump,
 body.glass-overlays .tp-pop,
 body.glass-overlays .modal,
 body.glass-overlays .logs-modal,
@@ -147,7 +199,7 @@ body.glass-overlays .spanel,
 body.glass-overlays .settings-modal,
 body.glass-overlays #settingsOverlay .settings-modal,
 body.glass-overlays .ti-modal,
-body.glass-overlays #tiDescPopup,
+body.glass-overlays .desc-popup,
 body.glass-overlays .media-lib-modal,
 body.glass-overlays .sc-modal,
 body.glass-overlays .acc-edit-panel {
@@ -192,8 +244,8 @@ body.glass-overlays .media-lib-overlay {
    Не полный transparent (иначе карточки «пропадают»), а лёгкая матовая подложка —
    читаемо и явно прозрачно; бордеры карточек остаются (var(--border)). */
 body.glass-overlays #settingsOverlay {
-  --card-solid: rgba(255, 255, 255, 0.05) !important;
-  --card: rgba(255, 255, 255, 0.05) !important;
+  --card-solid: rgba(var(--ovl-rgb), 0.05) !important;
+  --card: rgba(var(--ovl-rgb), 0.05) !important;
 }
 /* Правая контент-панель настроек (#smContent) имеет СВОЙ непрозрачный фон
    (overrides-main.css) — гасим, чтобы стекло модалки просвечивало, как левая

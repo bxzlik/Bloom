@@ -10,7 +10,6 @@ import { Ico } from '@shared/ui/icons/solar'
 const PLATFORM_BADGE: Record<string, string> = {
   soundcloud: '/logop/soundcloud.png',
   ytmusic: '/logop/ytmusic.png',
-  spotify: '/logop/spotify.png',
   yandex: '/logop/yandex.png',
 }
 
@@ -330,7 +329,7 @@ export const DiscordSection = () => {
                 />
               ) : (
                 <div className="drpc-preview-cover-ph">
-                  <Ico name="note" width={24} height={24} style={{ color: 'rgba(255,255,255,.3)' }} />
+                  <Ico name="note" width={24} height={24} style={{ color: 'rgba(var(--ovl-rgb),.3)' }} />
                 </div>
               )}
               {smallMode !== 'off' && (

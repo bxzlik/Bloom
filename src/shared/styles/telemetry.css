@@ -23,7 +23,7 @@
   stroke-width: 4;
 }
 .tele-gauge-track {
-  stroke: rgba(255, 255, 255, 0.12);
+  stroke: rgba(var(--ovl-rgb), 0.12);
 }
 .tele-gauge-fill {
   stroke: var(--accent);
@@ -61,8 +61,8 @@
   gap: 12px;
   margin: 16px 0 10px;
   padding: 13px 2px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(var(--ovl-rgb), 0.03);
+  border-bottom: 1px solid rgba(var(--ovl-rgb), 0.03);
 }
 .tele-data-head-title {
   font-size: 10px;
@@ -145,7 +145,7 @@
   gap: 6px;
   font-size: 12px;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(var(--ovl-rgb), 0.04);
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) * 0.5);
   padding: 5px 10px;
@@ -153,7 +153,7 @@
   transition: 0.15s;
 }
 .tele-ttl-btn:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(var(--ovl-rgb), 0.2);
   background: var(--hover);
 }
 .tele-ttl-btn svg {
@@ -166,16 +166,16 @@
   z-index: 50;
   min-width: 150px;
   background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-lift));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(var(--ovl-rgb), 0.1);
   border-radius: 10px;
   padding: 4px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
 }
 .tele-ttl-opt {
   text-align: left;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text);
   background: none;
   border: none;

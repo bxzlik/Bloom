@@ -3,12 +3,13 @@ import { createPortal } from 'react-dom'
 import waveApi, { getWaveSource, setWaveSource } from '@/wave'
 import { useYmAuthStore } from '@features/yandex'
 import { usePlayerStore } from '@features/player/model/store'
-import { extractCoverHsl, useThemeStore } from '@features/settings'
+import { extractCoverHsl, useIsLightTheme, useThemeStore, useUiPrefsStore } from '@features/settings'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { ScLogo, YmLogo, providerBrandColor } from '@entities/track'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { DislikesModal } from './DislikesModal'
+import { WaveRing } from './WaveRing'
 
 /**
  * Палитра свечения «Моей волны» как CSS-переменные. Все три орба красятся в
@@ -21,6 +22,10 @@ type Hsl = { h: number; s: number; l: number }
  * Один тон → ОДИН цвет пламени на все три орба. Объём даёт не разница оттенков,
  * а разная прозрачность стопов в CSS, поэтому шар читается как единый цвет.
  * Ахроматичный тон (белый/серый) не выдумываем — свечение нейтральное.
+ *
+ * В светлой теме огонь зеркалится: цвет уходит темнее и насыщеннее, а круги в
+ * CSS смешиваются `multiply` вместо `screen` (см. home.css) — иначе ядро всегда
+ * выбеливается и шар пропадает на светлом фоне.
  */
 const hexToHsl = (hex: string): Hsl => {
   let x = (hex || '').trim().replace('#', '')
@@ -45,18 +50,24 @@ const hexToHsl = (hex: string): Hsl => {
   return { h, s, l }
 }
 
-const paletteFromHsl = ({ h, s, l }: Hsl): WavePalette => {
+const paletteFromHsl = ({ h, s, l }: Hsl, light: boolean): WavePalette => {
   const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v))
-  if (s < 0.08) return WHITE_PALETTE
-  const S = Math.round(clamp(s * 100, 30, 85))
+  if (s < 0.08) return light ? DIM_PALETTE : WHITE_PALETTE
+  const S = Math.round(light ? clamp(s * 100, 40, 80) : clamp(s * 100, 30, 85))
   const H = (((h % 360) + 360) % 360)
-  const L = Math.round(clamp(l * 100 + 6, 46, 66))
+  // Светлая тема: три круга перемножаются, поэтому стоп-цвет ДЕРЖИМ светлее
+  // конечного результата — L 55..70% на слой даёт ядро примерно L 17..34%.
+  const L = Math.round(light ? clamp(l * 100 + 8, 55, 70) : clamp(l * 100 + 6, 46, 66))
   const color = `hsl(${H} ${S}% ${L}%)`
   return { '--wave-1': color, '--wave-2': color, '--wave-3': color }
 }
 
+const solid = (color: string): WavePalette => ({ '--wave-1': color, '--wave-2': color, '--wave-3': color })
+
 /** Ахроматичный акцент (белый/серый) → белое свечение, тон не выдумываем. */
-const WHITE_PALETTE: WavePalette = { '--wave-1': '#fff', '--wave-2': '#fff', '--wave-3': '#fff' }
+const WHITE_PALETTE: WavePalette = solid('#fff')
+/** То же в светлой теме: белым по белому не видно — берём средне-серый. */
+const DIM_PALETTE: WavePalette = solid('#a8a8a8')
 
 /**
  * Площадки-источники «Моей волны» для попапа настройки. `provider` — ключ для
@@ -121,16 +132,20 @@ const WaveAura = memo(function WaveAura() {
 
 /**
  * Карточка «Моя волна» на главной (#homeWaveCard / .home-wave-bar).
- *: прозрачный бар с двумя анимированными волнами-линиями,
- * большая кнопка play (запуск персональной волны) и заголовок.
+ *
+ * Два вида (`uiPrefs.waveView`, «Настройки → Страницы → Главная»), общая
+ * начинка — кнопка запуска, заголовок, «Настроить»:
+ * - `fire` — турбулентный фаербол во весь блок (WaveAura);
+ * - `ring` — кольцо обложек-сидов вокруг кнопки (WaveRing), клик по обложке
+ *   запускает её трек и продолжает волной по нему.
+ * Новый вид = ветка здесь + класс `.hwb-view-*` в home.css + опция в PagesSection.
  *
  * Переключатель источника SC/Яндекс показывается только при
  * логине в Яндекс: SC → движок Bloom (stations/related), Яндекс → нативный rotor.
- *
- * Отложено (зависит от немигрированных фич): аватары сидов.
  */
 export const WaveCard = () => {
   const t = useT()
+  const view = useUiPrefsStore((s) => s.waveView)
   const [loading, setLoading] = useState(false)
   const [dislikesOpen, setDislikesOpen] = useState(false)
   // Координаты открытого попапа (fixed) или null = закрыт. Попап рендерится
@@ -147,21 +162,23 @@ export const WaveCard = () => {
   // Цвет свечения: по умолчанию — акцент темы, при играющем треке — тон обложки.
   const artwork = usePlayerStore((s) => s.artwork)
   const accent = useThemeStore((s) => s.accent)
-  const [palette, setPalette] = useState<WavePalette>(() => paletteFromHsl(hexToHsl(accent)))
+  // В светлой теме тот же тон берётся темнее/насыщеннее — см. paletteFromHsl.
+  const light = useIsLightTheme()
+  const [palette, setPalette] = useState<WavePalette>(() => paletteFromHsl(hexToHsl(accent), light))
   useEffect(() => {
-    const fallback = paletteFromHsl(hexToHsl(accent))
+    const fallback = paletteFromHsl(hexToHsl(accent), light)
     if (!artwork) {
       setPalette(fallback)
       return
     }
     let cancelled = false
     void extractCoverHsl(artwork).then((hsl) => {
-      if (!cancelled) setPalette(hsl ? paletteFromHsl(hsl) : fallback)
+      if (!cancelled) setPalette(hsl ? paletteFromHsl(hsl, light) : fallback)
     })
     return () => {
       cancelled = true
     }
-  }, [artwork, accent])
+  }, [artwork, accent, light])
 
   usePopupOpenAnimation(menuRef, menuPos)
 
@@ -202,36 +219,58 @@ export const WaveCard = () => {
     }
   }
 
-  return (
-    <div className="home-wave-bar" id="homeWaveCard" style={palette as CSSProperties}>
-      <WaveAura />
-      <div className="hwb-hero">
-        <div className="hwb-hero-main">
-          <button
-            className={`hwb-play${loading ? ' is-loading' : ''}`}
-            id="homeWavePlayBtn"
-            onClick={start}
-            aria-label={t('wave.start')}
-          >
-            <Ico name="play" width={56} height={56} />
-            <div className="hwb-spinner" aria-hidden="true" />
-          </button>
-          <div className="hwb-title">{t('wave.title')}</div>
-        </div>
+  // Общая начинка обоих видов. В «кольце» она лежит в центре кольца (герой
+  // спозиционирован по центру .hwb-stage), в «огне» — по центру блока.
+  const hero = (
+    <div className="hwb-hero">
+      <div className="hwb-hero-main">
         <button
-          ref={tuneBtnRef}
-          className="hwb-tune"
-          onClick={(e) => {
-            e.stopPropagation()
-            toggleMenu()
-          }}
-          aria-haspopup="menu"
-          aria-expanded={menuPos !== null}
+          className={`hwb-play${loading ? ' is-loading' : ''}`}
+          id="homeWavePlayBtn"
+          onClick={start}
+          aria-label={t('wave.start')}
         >
-          <Ico name="tuning" width={14} height={14} />
-          <span>{t('wave.tune')}</span>
+          {/* В кольце кнопка — залитый кружок, глифу нужен bold и меньший размер. */}
+          {view === 'ring' ? (
+            <Ico name="play" variant="bold" width={28} height={28} />
+          ) : (
+            <Ico name="play" width={56} height={56} />
+          )}
+          <div className="hwb-spinner" aria-hidden="true" />
         </button>
+        <div className="hwb-title">{t('wave.title')}</div>
       </div>
+      <button
+        ref={tuneBtnRef}
+        className="hwb-tune"
+        onClick={(e) => {
+          e.stopPropagation()
+          toggleMenu()
+        }}
+        aria-haspopup="menu"
+        aria-expanded={menuPos !== null}
+      >
+        <Ico name="tuning" width={14} height={14} />
+        <span>{t('wave.tune')}</span>
+      </button>
+    </div>
+  )
+
+  return (
+    <div className={`home-wave-bar hwb-view-${view}`} id="homeWaveCard" style={palette as CSSProperties}>
+      {view === 'ring' ? (
+        <div className="hwb-stage">
+          {/* Кольцо показывает обложки ВЫБРАННОЙ площадки — смена источника
+              в «Настроить» перезагружает его (effSource → prop). */}
+          <WaveRing source={effSource} />
+          {hero}
+        </div>
+      ) : (
+        <>
+          <WaveAura />
+          {hero}
+        </>
+      )}
       <DislikesModal open={dislikesOpen} onClose={() => setDislikesOpen(false)} />
       {menuPos &&
         createPortal(

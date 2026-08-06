@@ -1,4 +1,116 @@
 {
+  "2.0.0": {
+    "title": { "ru": "Что нового в 2.0.0", "en": "What's new in 2.0.0" },
+    "date": "2026-08-06",
+    "pages": [
+      {
+        "title": { "ru": "Большая визуальная переработка", "en": "A big visual overhaul" },
+        "body": {
+          "ru": "- Обновлён почти весь интерфейс: плеер, библиотека, поиск, настройки, модалки, онбординг и уведомления\n- Переработаны отступы, скругления, рамки и ховеры — всё приведено к единой системе\n- Аккуратнее ведут себя блоки в режиме прозрачности: плеер и очередь больше не «растворяются» на обоях",
+          "en": "- Almost the entire interface has been reworked: player, library, search, settings, modals, onboarding and notifications\n- Spacing, corners, borders and hovers were redone and brought into one consistent system\n- Blocks behave better in transparency mode: the player and the queue no longer dissolve into the wallpaper"
+        }
+      },
+      {
+        "title": { "ru": "Светлая тема", "en": "Light theme" },
+        "body": {
+          "ru": "- Светлая тема теперь полноценный режим оформления, а не просто другая палитра\n- Полупрозрачные слои, иконки и рамки сами подстраиваются под светлый фон — работает и для ваших кастомных светлых тем\n- Обновлён набор готовых тем",
+          "en": "- The light theme is now a full display mode, not just a different palette\n- Translucent layers, icons and borders adapt to a light background — this also works for your own custom light themes\n- The set of built-in themes has been refreshed"
+        }
+      },
+      {
+        "title": { "ru": "Новый вид поиска", "en": "New search view" },
+        "body": {
+          "ru": "- Появился всплывающий поиск: строка ввода поверх текущей страницы с недавними запросами и живыми подсказками\n- Открывается по Ctrl+T на любой странице, Enter уводит на страницу поиска с полной выдачей\n- Вид поиска переключается в Настройки → Страницы: «Страница» или «Всплывающий»",
+          "en": "- Added a popup search: an input over the current page with recent searches and live suggestions\n- Opens with Ctrl+T on any page; Enter takes you to the search page with full results\n- The search view is switched in Settings → Pages: \"Page\" or \"Popup\""
+        }
+      },
+      {
+        "title": { "ru": "Обновлённые настройки", "en": "Updated settings" },
+        "body": {
+          "ru": "- Секции настроек переработаны и разложены по группам: «Основное», «Оформление» и «Интеграции»\n- Новая секция «Страницы» — всё про главную, поиск и библиотеку в одном месте\n- Поиск по настройкам ищет не только по названиям вкладок, но и по подписям настроек внутри\n- У подключённых интеграций появился зелёный индикатор прямо в списке",
+          "en": "- Settings sections were reworked and split into groups: \"General\", \"Appearance\" and \"Integrations\"\n- New \"Pages\" section — home, search and library settings in one place\n- Settings search now looks inside sections, not just at tab names\n- Connected integrations now show a green indicator right in the list"
+        }
+      },
+      {
+        "title": { "ru": "Главная под себя", "en": "Home your way" },
+        "body": {
+          "ru": "- Главную теперь можно настраивать: любую секцию — «Моя волна», «Продолжить», любимые, историю, новинки, чарты, недавние и плейлисты — можно скрыть\n- Выключенная секция пропадает со страницы целиком и возвращается одним кликом\n- Всё в Настройки → Страницы → Главная",
+          "en": "- The home page is now configurable: any section — My Wave, Continue, favorites, history, new releases, charts, recents and playlists — can be hidden\n- A disabled section disappears from the page entirely and comes back with one click\n- All of it lives in Settings → Pages → Home"
+        }
+      },
+      {
+        "title": { "ru": "Новый вид «Моей волны»", "en": "A new look for My Wave" },
+        "body": {
+          "ru": "- У блока волны на главной появился второй вид — «Кольцо»: обложки, на которых строится волна, кружат вокруг кнопки запуска\n- Клик по обложке включает её трек и продолжает волну по нему\n- Прежний «Огонь» никуда не делся — вид переключается в Настройки → Страницы → Главная",
+          "en": "- The wave block on the home page got a second look — \"Ring\": the covers the wave is built from orbit around the play button\n- Clicking a cover starts that track and continues the wave from it\n- The old \"Fire\" look is still there — switch between them in Settings → Pages → Home"
+        }
+      },
+      {
+        "title": { "ru": "Итоги: неделя, месяц и год", "en": "Wrapped: week, month and year" },
+        "body": {
+          "ru": "- Появились «Итоги» — ваша статистика прослушиваний в виде листаемых историй\n- Топ-треки и артисты, время прослушивания, площадки и находки периода\n- Итоги недели, месяца и года; показываются по расписанию, а в настройках можно включить показ в любой день",
+          "en": "- Added \"Wrapped\" — your listening stats as swipeable stories\n- Top tracks and artists, listening time, sources and the discoveries of the period\n- Weekly, monthly and yearly recaps; they appear on schedule, and in settings you can turn on showing them any day"
+        }
+      },
+      {
+        "title": { "ru": "Оформление текста песни", "en": "Lyrics styling" },
+        "body": {
+          "ru": "- Текст песни стал точнее и плавнее — подсветка идёт ровно за музыкой\n- Появился выбор оформления: заливка по строкам, словам, буквам или плавная, плюс эффект — мягко, свечение или пружина\n- Настраивается отдельно для плеера, боковой панели и полноэкранного режима",
+          "en": "- Lyrics are more precise and smoother — the highlight now follows the music exactly\n- Added styling options: fill by line, word, letter or smooth, plus an effect — soft, glow or bounce\n- Configured separately for the player, the side panel and the full-screen view"
+        }
+      },
+      {
+        "title": { "ru": "Полноэкранный режим", "en": "Full-screen view" },
+        "body": {
+          "ru": "- Переработан полноэкранный режим: обложка крупнее и точнее центрируется, подписи стали спокойнее\n- Обновлены текст песни, очередь и эквалайзер",
+          "en": "- The full-screen view was redesigned: the artwork is bigger and better centered, the captions are calmer\n- Lyrics, the queue and the equalizer were refreshed as well"
+        }
+      },
+      {
+        "title": { "ru": "Анимация смены трека", "en": "Track change animation" },
+        "body": {
+          "ru": "- Появилась анимация смены трека — обложка и подписи плавно сменяют друг друга\n- Настраивается отдельно для плеера, полноэкранного режима и миниплеера",
+          "en": "- Added a track change animation — artwork and captions now smoothly replace each other\n- Configured separately for the player, the full-screen view and the mini player"
+        }
+      },
+      {
+        "title": { "ru": "YouTube Music", "en": "YouTube Music" },
+        "body": {
+          "ru": "- Улучшена работа с YouTube Music: поиск, импорт и воспроизведение стали стабильнее",
+          "en": "- Improved YouTube Music support: search, import and playback are more reliable"
+        }
+      },
+      {
+        "title": { "ru": "Похожие исполнители", "en": "Similar artists" },
+        "icons": ["soundcloud", "yandex", "ytmusic"],
+        "body": {
+          "ru": "- На страницах артистов появился блок «Похожие исполнители»\n- Работает для SoundCloud, Яндекс Музыки и YouTube Music\n- Удобный способ уйти вглубь по любимому жанру, не выходя из приложения",
+          "en": "- Artist pages now have a \"Similar artists\" block\n- Works for SoundCloud, Yandex Music and YouTube Music\n- An easy way to dig deeper into a genre without leaving the app"
+        }
+      },
+      {
+        "title": { "ru": "Перенос плейлистов на другую площадку", "en": "Move playlists to another source" },
+        "body": {
+          "ru": "- Любой плейлист можно перенести на другую площадку — треки ищутся там автоматически\n- Спорные совпадения не подставляются молча: вы сами выбираете нужный вариант, а трек можно оставить как есть или пропустить\n- Оригинал не меняется — создаётся новый плейлист",
+          "en": "- Any playlist can be moved to another source — its tracks are matched there automatically\n- Ambiguous matches aren't picked silently: you choose the right one, or keep the original track as is, or skip it\n- The original playlist stays untouched — a new one is created"
+        }
+      },
+      {
+        "title": { "ru": "Скорость воспроизведения", "en": "Playback speed" },
+        "body": {
+          "ru": "- Переработан пикер скорости в плеере: пресеты, плавная полоса с засечками и тумблер «Nightcore»",
+          "en": "- Reworked the speed picker in the player: presets, a smooth slider with ticks and a \"Nightcore\" toggle"
+        }
+      },
+      {
+        "title": { "ru": "И по мелочам", "en": "Small things" },
+        "body": {
+          "ru": "- В плейлистах появилась кнопка «Перейти к играющему треку» — один клик, и список прокручен к тому, что играет сейчас\n- Кнопки управления в панели задач Windows получили новые иконки\n- Аккуратнее выглядят карточки интеграций, бейджи площадок и страницы артистов/альбомов\n- Множество мелких правок читаемости и контраста",
+          "en": "- Playlists got a \"Jump to the playing track\" button — one click and the list scrolls to what's playing right now\n- The Windows taskbar controls got new icons\n- Integration cards, source badges and artist/album pages look tidier\n- Many small readability and contrast fixes"
+        }
+      }
+    ]
+  },
   "1.8.4": {
     "title": { "ru": "Что нового в 1.8.4", "en": "What's new in 1.8.4" },
     "date": "2026-07-22",

@@ -8,8 +8,12 @@ export interface Playlist {
   cover?: string | null
   trackCount?: number
   ownerName?: string
-  /** Источник: 'local' | 'yandex' | 'soundcloud' | 'ytmusic' | 'spotify' | 'wave' (виртуальный). */
-  source?: 'local' | 'yandex' | 'soundcloud' | 'ytmusic' | 'spotify' | 'wave'
+  /** Аватарка владельца/артиста (кружок рядом с именем в hero). */
+  ownerAvatar?: string | null
+  /** Год выпуска (у альбомов; у плейлистов чаще пусто). */
+  year?: string
+  /** Источник: 'local' | 'yandex' | 'soundcloud' | 'ytmusic' | 'wave' (виртуальный). */
+  source?: 'local' | 'yandex' | 'soundcloud' | 'ytmusic' | 'wave'
   /** URL/permalink для повторной загрузки из источника (SC «Обновить треки»). */
   sourceUrl?: string | null
   /** ISO-дата создания/обновления. */

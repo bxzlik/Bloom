@@ -4,7 +4,7 @@ import { host } from "./host";
 import { t as i18nT } from "@shared/i18n";
 import * as session from "./session";
 import { startWave, maybeRefill, WAVE_SOURCE_TYPE, waveLabel, prefetchUpcoming } from "./engine";
-import { pickPersonalSeeds, pickTrackSeeds, pickQueueSeeds, scIdOf } from "./seeds";
+import { pickPersonalSeeds, pickTrackSeeds, pickQueueSeeds, pickDisplaySeeds, scIdOf } from "./seeds";
 import { dispatch, onPlayStart } from "./feedback";
 import { resetWaveSourceCache } from "./sources";
 import * as ymWave from "./yandex";
@@ -20,6 +20,10 @@ export function getWaveSource(): "sc" | "ym" {
 export function setWaveSource(s: "sc" | "ym"): void {
   try { localStorage.setItem(WAVE_SOURCE_KEY, s === "ym" ? "ym" : "sc"); } catch { /* ignore */ }
 }
+
+// Витрина волны (вид «Кольцо» на главной): обложки площадки + фолбэк по библиотеке.
+export { fetchWaveFaces, resetWaveFaces, type WaveFace } from "./faces";
+export { pickDisplaySeeds };
 
 async function waveStartPersonal(): Promise<boolean> {
   // «Моя волна» от Яндекса (rotor) — отдельный драйвер; SC-движок не задействуем.
@@ -39,14 +43,19 @@ async function waveStartPersonal(): Promise<boolean> {
   return ok;
 }
 
-async function waveStartByTrack(trackId: string): Promise<boolean> {
+// `opts.seedFirst` — начать волну С САМОГО сида (клик по обложке в кольце «Моей
+// волны»: сначала играет выбранный трек, дальше — подобранные к нему). По
+// умолчанию выключено: пункт «Волна по треку» в меню трека как и раньше сразу
+// уходит в похожие.
+async function waveStartByTrack(trackId: string, opts?: { seedFirst?: boolean }): Promise<boolean> {
   const t = host.trackById(trackId);
   if (!t) { host.toast(i18nT("wave.toast.noSeed"), "error"); return false; }
+  const first = opts?.seedFirst ? trackId : undefined;
 
   // Яндекс-трек → нативный rotor (`track:<id>`), а не SC-движок.
   if (t._ym && t.ymTrackId) {
     if (session.isActive()) session.endSession();
-    return ymWave.startByTrack(t.ymTrackId);
+    return ymWave.startByTrack(t.ymTrackId, first);
   }
 
   resetWaveSourceCache();
@@ -56,7 +65,7 @@ async function waveStartByTrack(trackId: string): Promise<boolean> {
     host.toast(i18nT("wave.toast.scOnly"), "warn");
     return false;
   }
-  const ok = await startWave("track", seeds);
+  const ok = await startWave("track", seeds, { first });
   if (!ok) host.toast(i18nT("wave.toast.noSimilar"), "error");
   return ok;
 }

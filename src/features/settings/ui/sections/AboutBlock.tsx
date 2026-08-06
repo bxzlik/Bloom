@@ -68,8 +68,8 @@ export const AboutBlock = () => {
                   width: 26,
                   height: 26,
                   borderRadius: '50%',
-                  border: '3px solid rgba(255,255,255,.18)',
-                  borderTopColor: '#fff',
+                  border: '3px solid rgba(var(--ovl-rgb),.18)',
+                  borderTopColor: 'var(--text)',
                   animation: 'bloom-spin .8s linear infinite',
                 }}
               />
@@ -83,7 +83,7 @@ export const AboutBlock = () => {
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700 }}>Bloom</div>
-            <div style={{ marginTop: 3, fontSize: 12.5, fontWeight: 500, color: 'var(--text2)' }}>
+            <div style={{ marginTop: 3, fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>
               {t('settings.about.version')} <span style={{ color: 'var(--muted)' }}>v</span>{version || '—'}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6 }}>
@@ -152,7 +152,7 @@ export const AboutBlock = () => {
               marginTop: 8,
               height: 6,
               borderRadius: 4,
-              background: 'rgba(255,255,255,.08)',
+              background: 'rgba(var(--ovl-rgb),.08)',
               overflow: 'hidden',
             }}
           >

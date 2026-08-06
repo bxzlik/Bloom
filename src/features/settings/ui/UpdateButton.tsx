@@ -17,6 +17,18 @@ import { Ico } from '@shared/ui/icons/solar'
  */
 const AUTO_MS = 3600
 
+/**
+ * Markdown-тело страницы → короткая строка для превью в попапе: пункты списка
+ * склеиваем через « · », разметку (списки, ссылки, эмфазис) снимаем.
+ */
+const plainPreview = (md: string): string =>
+  md
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .split('\n')
+    .map((l) => l.replace(/^\s*[-*+]\s+/, '').replace(/[*_`#>]/g, '').trim())
+    .filter(Boolean)
+    .join(' · ')
+
 export const UpdateButton = () => {
   const t = useT()
   useLocale()
@@ -116,12 +128,19 @@ export const UpdateButton = () => {
             </div>
           )}
 
-          {/* Описание текущей страницы (или версия как фолбэк) */}
-          <div className="tbu-desc">
-            {notesLoading && pages.length === 0
-              ? t('update.downloading')
-              : cur?.title || cur?.body || t('update.available')}
-          </div>
+          {/* Заголовок страницы (по центру, акцентно) + мини-описание под ним */}
+          {notesLoading && pages.length === 0 ? (
+            <div className="tbu-desc">{t('update.downloading')}</div>
+          ) : (
+            <>
+              {cur?.title && <div className="tbu-ptitle">{cur.title}</div>}
+              {(cur?.body || !cur?.title) && (
+                <div className="tbu-desc">
+                  {cur?.body ? plainPreview(cur.body) : t('update.available')}
+                </div>
+              )}
+            </>
+          )}
 
           {/* Точки-индикаторы — под текстом */}
           {multi && (

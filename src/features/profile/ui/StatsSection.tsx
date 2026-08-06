@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useLibStore, useHistoryStore, useActivityStore, useUsageStore } from '@features/library'
 import { playTrack } from '@features/player'
-import { trackRegistry, type Track, ScLogo, YmLogo, YtmLogo, SpLogo, HddLogo, providerBrandColor } from '@entities/track'
+import { trackRegistry, type Track, ScLogo, YmLogo, YtmLogo, HddLogo, providerBrandColor } from '@entities/track'
 import { toast } from '@shared/ui'
 import { parseDur, fmtDurLong } from '../lib/formatStats'
 import { useArtistAvatars } from '../lib/useArtistAvatars'
 import { useAchievementsStore } from '../model/achievementsStore'
+import { clearPlayLog } from '@features/wrapped/model/playLog'
 import { useT, useLocale, t as tt } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
@@ -25,7 +26,7 @@ const findTrack = (id: string, libTracks: Track[]): Track | undefined =>
   libTracks.find((t) => t.id === id) ?? trackRegistry.get(id)
 
 /**
- * Площадка трека по ПРЕФИКСУ его id (`sc_`/`ym_`/`ytm_`/`sp_`, иначе локальный).
+ * Площадка трека по ПРЕФИКСУ его id (`sc_`/`ym_`/`ytm_`, иначе локальный).
  * Берём из id, а не из флагов `_sc/_ym` объекта Track, чтобы разбивка считалась
  * и для треков, которых уже нет в реестре/библиотеке (после перезапуска треки
  * площадок живут только в памяти). Иначе в «где слушали чаще» оставался только
@@ -34,16 +35,14 @@ const findTrack = (id: string, libTracks: Track[]): Track | undefined =>
 const sourceFromId = (id: string): string =>
   id.startsWith('ytm_') ? 'ytmusic'
     : id.startsWith('ym_') ? 'yandex'
-      : id.startsWith('sp_') ? 'spotify'
-        : id.startsWith('sc_') ? 'soundcloud'
-          : 'local'
+      : id.startsWith('sc_') ? 'soundcloud'
+        : 'local'
 
 /** Метки + лого источников. local-метка локализуется (см. stats.localFiles). */
 const SOURCE_META: Record<string, { label: string; Logo: React.ComponentType<{ size: number }> }> = {
   soundcloud: { label: 'SoundCloud', Logo: ScLogo },
   yandex: { label: 'Yandex Music', Logo: YmLogo },
   ytmusic: { label: 'YouTube Music', Logo: YtmLogo },
-  spotify: { label: 'Spotify', Logo: SpLogo },
   local: { label: '', Logo: HddLogo }, // label берётся из i18n в рендере
 }
 
@@ -210,6 +209,8 @@ export const StatsSection = () => {
     useActivityStore.getState().clear()
     useUsageStore.getState().clear()
     useAchievementsStore.getState().clear()
+    // Журнал «Итогов» — часть той же статистики, чистим вместе с остальным.
+    void clearPlayLog()
     toast(t('stats.cleared'))
   }
 

@@ -262,21 +262,21 @@ export const EqPanel = ({
       <svg ref={svgRef} className="eq-curve" viewBox={`0 0 ${W} ${CURVE_H}`} width="100%" height={CURVE_H}>
         <defs>
           <linearGradient id="eqFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+            <stop offset="0%" stopColor="rgba(var(--ovl-rgb),0.18)" />
+            <stop offset="100%" stopColor="rgba(var(--ovl-rgb),0)" />
           </linearGradient>
         </defs>
         {/* нулевая линия */}
-        <line x1={PAD_X} y1={centerY} x2={PAD_X + innerW} y2={centerY} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+        <line x1={PAD_X} y1={centerY} x2={PAD_X + innerW} y2={centerY} stroke="rgba(var(--ovl-rgb),0.08)" strokeWidth={1} />
         <polygon points={areaPts} fill="url(#eqFill)" />
-        <polyline points={linePts} fill="none" stroke="#fff" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <polyline points={linePts} fill="none" stroke="var(--text)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {xs.map((x, i) => (
           <circle
             key={i}
             cx={x}
             cy={ys[i]}
             r={6}
-            fill="#fff"
+            fill="var(--text)"
             style={{ cursor: 'ns-resize' }}
             onPointerDown={onPointerDown(i)}
           />

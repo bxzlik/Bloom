@@ -68,6 +68,11 @@ export interface ArtistPageData {
   playlists: Playlist[]
   /** Репосты артиста (вкладка «Репосты»); пусто/undefined у провайдеров без них. */
   reposts?: RepostItem[]
+  /**
+   * Похожие исполнители (секция «Похожие» внизу страницы). Пусто/undefined у
+   * провайдеров, которые их не отдают.
+   */
+  similarArtists?: Artist[]
   /** Непрозрачный курсор следующей страницы треков (null/undefined — больше нет). */
   tracksCursor?: string | null
   /** Непрозрачный курсор следующей страницы репостов. */

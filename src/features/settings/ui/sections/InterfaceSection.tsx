@@ -1,14 +1,22 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
-import { useThemeStore, THEME_PRESETS, type ThemePreset } from '../../model/themeStore'
+import { useThemeStore, THEME_PRESETS, themePreview, type ThemePreset } from '../../model/themeStore'
 import { AUTO_ACCENT_L_MAX, AUTO_ACCENT_L_MIN } from '../../lib/coverAccent'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
+import { useGrpStore } from '@features/player/model/grpStore'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useTransparencyStore } from '../../model/transparencyStore'
 import { openColorPicker } from '../../model/colorPickerStore'
 import { toast } from '@shared/ui'
-import { useT, useI18nStore, useLocale, LOCALES, type TFunc } from '@shared/i18n'
+import {
+  useT,
+  useI18nStore,
+  useLocale,
+  LOCALES,
+  type TFunc,
+  type TranslationKey,
+} from '@shared/i18n'
 import {
   FONT_CATS,
   FONT_CAT_LABELS,
@@ -16,7 +24,7 @@ import {
   catOfFont,
   type FontCat,
 } from '../../lib/fonts'
-import { Ico } from '@shared/ui/icons/solar'
+import { Ico, type IconName } from '@shared/ui/icons/solar'
 
 /**
  * Раздел «Интерфейс» (`#ssec-interface`). Перенесена РАБОЧАЯ часть:
@@ -27,8 +35,8 @@ import { Ico } from '@shared/ui/icons/solar'
  * + скругление углов (radius).
  * + прозрачность/стекло (trMode/blockOpacity/glassStr/glassBlur, transparencyStore).
  *
- * Настройки библиотеки (вид/плотность/колонки) вынесены в отдельную вкладку
- * «Библиотека» (LibrarySection).
+ * Настройки библиотеки (вид/плотность/колонки) вынесены во вкладку «Библиотека»
+ * раздела «Страницы» (PagesSection → LibraryCards).
  */
 
 /** Флаги языков */
@@ -56,7 +64,116 @@ const FLAGS: Record<string, React.ReactNode> = {
   ),
 }
 
+/** Вкладки раздела: сам интерфейс и всё про боковые панели. */
+type IfaceTab = 'interface' | 'panels'
+
+const TABS: { id: IfaceTab; labelKey: TranslationKey; icon: IconName }[] = [
+  { id: 'interface', labelKey: 'settings.interface.title', icon: 'palette' },
+  { id: 'panels', labelKey: 'settings.interface.cat.panels', icon: 'sidebar' },
+]
+
 export const InterfaceSection = () => {
+  const t = useT()
+  const reset = useUiPrefsStore((s) => s.reset)
+  const [tab, setTab] = useState<IfaceTab>('interface')
+
+  return (
+    <div className="s-section active" id="ssec-interface">
+      <div className="s-section-head">
+        <div className="s-section-title">
+          <Ico name="sidebar" width={15} height={15} />{' '}
+          {t('settings.interface.title')}
+        </div>
+        <button className="s-section-reset" onClick={() => reset()}>
+          <Ico name="refresh" width={10} height={10} />{' '}
+          {t('common.reset')}
+        </button>
+      </div>
+
+      {/* Переключатель групп — полоса вкладок над карточками раздела. */}
+      <div className="s-ptabs">
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            className={`s-ptab${tab === tb.id ? ' active' : ''}`}
+            onClick={() => setTab(tb.id)}
+          >
+            <Ico name={tb.icon} width={14} height={14} />
+            {t(tb.labelKey)}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'interface' ? <InterfaceCards /> : <PanelsCards />}
+    </div>
+  )
+}
+
+/**
+ * Вкладка «Боковые панели»: сторона выезжающих drawer'ов (общая) + панель
+ * очереди/текста в плеере — с какой стороны выезжает и можно ли тянуть ширину.
+ * Последние две переехали сюда из раздела «Плеер»: настройка про панель, а не
+ * про плеер. Обе живут в ui-префах/grpStore, поэтому «Сбросить» этого раздела
+ * трогает только `grpResizeLock`, сторона панели (grpStore) переживает сброс.
+ */
+const PanelsCards = () => {
+  const t = useT()
+  const p = useUiPrefsStore()
+  const grpSide = useGrpStore((s) => s.side)
+  const setGrpSide = useGrpStore((s) => s.setSide)
+
+  return (
+    <>
+      <div className="sc sc-keep">
+        <div className="sc-title">{t('settings.interface.drawerSide.title')}</div>
+        <div className="sc-desc">{t('settings.interface.drawerSide.desc')}</div>
+        <div className="s-opt-row">
+          <OptBtn active={p.drawerSide === 'left'} onClick={() => p.set('drawerSide', 'left')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="9" height="18" rx="1" fill="currentColor" fillOpacity=".22" /><path d="M20 8.5 16.5 12l3.5 3.5" /></svg>
+            {t('settings.interface.drawerSide.left')}
+          </OptBtn>
+          <OptBtn active={p.drawerSide === 'right'} onClick={() => p.set('drawerSide', 'right')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="12" y="3" width="9" height="18" rx="1" fill="currentColor" fillOpacity=".22" /><path d="M4 8.5 7.5 12 4 15.5" /></svg>
+            {t('settings.interface.drawerSide.right')}
+          </OptBtn>
+        </div>
+      </div>
+
+      <div className="sc sc-keep">
+        <div className="sc-title">{t('settings.view.grpSide')}</div>
+        <div className="sc-desc">{t('settings.view.grpSide.desc')}</div>
+        <div className="s-opt-row">
+          {/* Иконки те же, что у «Выезжающих панелей» выше: залитая половина —
+              сама панель, шеврон — с какой стороны она выезжает. */}
+          <OptBtn active={grpSide === 'left'} onClick={() => setGrpSide('left')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="9" height="18" rx="1" fill="currentColor" fillOpacity=".22" /><path d="M20 8.5 16.5 12l3.5 3.5" /></svg>
+            {t('settings.view.grpSide.left')}
+          </OptBtn>
+          <OptBtn active={grpSide === 'right'} onClick={() => setGrpSide('right')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="12" y="3" width="9" height="18" rx="1" fill="currentColor" fillOpacity=".22" /><path d="M4 8.5 7.5 12 4 15.5" /></svg>
+            {t('settings.view.grpSide.right')}
+          </OptBtn>
+        </div>
+      </div>
+
+      <div className="sc">
+        <div className="sr">
+          <div>
+            <div className="sl2">{t('settings.view.grpLock.title')}</div>
+            <div className="ssub">{t('settings.view.grpLock.sub')}</div>
+          </div>
+          <Toggle
+            checked={p.grpResizeLock}
+            onChange={(v) => p.set('grpResizeLock', v)}
+          />
+        </div>
+      </div>
+    </>
+  )
+}
+
+/** Вкладка «Интерфейс»: язык, тема, прозрачность, масштаб, шрифт, углы. */
+const InterfaceCards = () => {
   const t = useT()
   const locale = useLocale()
   const setLocale = useI18nStore((s) => s.setLocale)
@@ -106,18 +223,7 @@ export const InterfaceSection = () => {
   }
 
   return (
-    <div className="s-section active" id="ssec-interface">
-      <div className="s-section-head">
-        <div className="s-section-title">
-          <Ico name="sidebar" width={15} height={15} />{' '}
-          {t('settings.interface.title')}
-        </div>
-        <button className="s-section-reset" onClick={() => p.reset()}>
-          <Ico name="refresh" width={10} height={10} />{' '}
-          {t('common.reset')}
-        </button>
-      </div>
-
+    <>
       <div className="s-cat-label">{t('settings.interface.cat.language')}</div>
       <div className="s-lang-grid">
         {LOCALES.map((l) => (
@@ -277,13 +383,18 @@ export const InterfaceSection = () => {
           />
         </div>
       </div>
-
-    </div>
+    </>
   )
 }
 
+const OptBtn = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
+  <button className={`s-opt-btn ${active ? 'bta' : 'btg'}`} onClick={onClick}>
+    {children}
+  </button>
+)
+
 const GlassSlider = ({ label, valLabel, min, max, value, onChange }: { label: string; valLabel: string; min: number; max: number; value: number; onChange: (v: number) => void }) => (
-  <div style={{ background: 'rgba(255,255,255,.05)', borderRadius: 'calc(var(--radius)*0.7)', padding: 12 }}>
+  <div style={{ background: 'rgba(var(--ovl-rgb),.05)', borderRadius: 'calc(var(--radius)*0.7)', padding: 12 }}>
     <div className="s-slider-col-head">
       <span className="s-slider-col-lbl">{label}</span>
       <span className="s-slider-col-val">{valLabel}</span>
@@ -392,8 +503,11 @@ const hslToHex = (h: number, s: number, l: number): string => {
 
 /**
  * Пикер темы (как на референсе): компактная строка с текущей темой + кнопка «+».
- * Строка раскрывает грид пресетов; «+» открывает поповер создания темы
- * (название + 3 цвета + «Случайные цвета» / «Сохранить»).
+ *
+ * Строка РАСКРЫВАЕТ грид пресетов прямо в карточке (аккордеон, а не поповер):
+ * список живёт в потоке и толкает «Авто акцент» вниз — так его не перекрывает
+ * соседний контент и не нужен портал с пересчётом позиции при скролле.
+ * «+» остался поповером: форма создания короткая и всплывает поверх.
  */
 const ThemePicker = ({
   customThemes,
@@ -413,50 +527,60 @@ const ThemePicker = ({
   t: TFunc
 }) => {
   const [mode, setMode] = useState<'none' | 'list' | 'create'>('none')
-  const currentBtnRef = useRef<HTMLButtonElement>(null)
   const addBtnRef = useRef<HTMLButtonElement>(null)
+  const listOpen = mode === 'list'
 
   const allThemes = [...THEME_PRESETS, ...customThemes]
   const current = allThemes.find((t) => t.id === activeId)
   const currentName = current?.name ?? t('theme.ownName')
-  const currentPreview = current?.preview ?? { bg: liveColors.bg, card: liveColors.blockColor, accent: liveColors.accent }
+  // Нет активного пресета (ручные пикеры) — показываем живые цвета.
+  const currentColors: ThemeColors = current
+    ? { bg: current.bg, blockColor: current.blockColor, accent: current.accent }
+    : liveColors
 
   return (
     <div className="tp">
-      <button ref={currentBtnRef} className={`tp-current${mode === 'list' ? ' open' : ''}`} onClick={() => setMode((m) => (m === 'list' ? 'none' : 'list'))}>
-        <Dots preview={currentPreview} />
-        <span className="tp-current-name">{currentName}</span>
-        <Ico name="arrowDown" className="tp-chev" width={14} height={14} />
-      </button>
-      <button ref={addBtnRef} className={`tp-add${mode === 'create' ? ' open' : ''}`} onClick={() => setMode((m) => (m === 'create' ? 'none' : 'create'))}>
-        <Ico name="add" width={16} height={16} />
-      </button>
+      <div className="tp-head">
+        <button className={`tp-current${listOpen ? ' open' : ''}`} onClick={() => setMode((m) => (m === 'list' ? 'none' : 'list'))}>
+          <Dots colors={currentColors} />
+          <span className="tp-current-name">{currentName}</span>
+          <Ico name="arrowDown" className="tp-chev" width={14} height={14} />
+        </button>
+        <button ref={addBtnRef} className={`tp-add${mode === 'create' ? ' open' : ''}`} onClick={() => setMode((m) => (m === 'create' ? 'none' : 'create'))}>
+          <Ico name="add" width={16} height={16} />
+        </button>
+      </div>
 
-      {mode === 'list' && (
-        <TpPopover anchorRef={currentBtnRef} width={300} className="tp-list" onClose={() => setMode('none')}>
-          <div className="theme-section-label">{t('theme.builtin')}</div>
-          <div className="tp-grid">
-            {THEME_PRESETS.map((th) => (
-              <TpCard key={th.id} t={th} active={th.id === activeId} onApply={(id) => { onApply(id); setMode('none') }} />
-            ))}
+      {/* Аккордеон: grid-template-rows 0fr→1fr анимирует высоту без замера JS.
+          Внутренний .tp-panel-in обязателен — на нём overflow:hidden, а весь
+          отступ лежит ещё глубже, иначе он «просвечивал» бы в закрытом виде. */}
+      <div className={`tp-panel${listOpen ? ' open' : ''}`} aria-hidden={!listOpen}>
+        <div className="tp-panel-in">
+          <div className="tp-list-inner" inert={!listOpen}>
+            <div className="tp-grid">
+              {THEME_PRESETS.map((th) => (
+                <TpCard key={th.id} t={th} active={th.id === activeId} onApply={onApply} />
+              ))}
+            </div>
+            {/* Секции без подписей: встроенные и свои разделяет только тонкая линия. */}
+            {customThemes.length > 0 && (
+              <>
+                <div className="tp-sep" />
+                <div className="tp-grid">
+                  {customThemes.map((th) => (
+                    <TpCard key={th.id} t={th} active={th.id === activeId} onApply={onApply} onDelete={onDelete} />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-          {customThemes.length > 0 && (
-            <>
-              <div className="theme-section-label" style={{ marginTop: 12 }}>{t('theme.mine')}</div>
-              <div className="tp-grid">
-                {customThemes.map((th) => (
-                  <TpCard key={th.id} t={th} active={th.id === activeId} onApply={(id) => { onApply(id); setMode('none') }} onDelete={onDelete} />
-                ))}
-              </div>
-            </>
-          )}
-        </TpPopover>
-      )}
+        </div>
+      </div>
 
       {mode === 'create' && (
         <TpPopover anchorRef={addBtnRef} width={280} className="tp-creator" onClose={() => setMode('none')}>
           <ThemeCreator
-            initial={currentPreview}
+            initial={currentColors}
             onCreate={(name, colors) => { onCreate(name, colors); setMode('none') }}
             t={t}
           />
@@ -539,14 +663,17 @@ const TpPopover = ({
   )
 }
 
-/** Три кружка-превью палитры (фон / карточка / акцент). */
-const Dots = ({ preview }: { preview: { bg: string; card: string; accent: string } }) => (
-  <span className="tp-dots">
-    <span className="tp-dot" style={{ background: preview.bg }} />
-    <span className="tp-dot" style={{ background: preview.card }} />
-    <span className="tp-dot" style={{ background: preview.accent }} />
-  </span>
-)
+/** Три кружка-превью темы (поверхность / блок под наведением / акцент). */
+const Dots = ({ colors }: { colors: ThemeColors }) => {
+  const p = themePreview(colors)
+  return (
+    <span className="tp-dots">
+      <span className="tp-dot" style={{ background: p.bg }} />
+      <span className="tp-dot" style={{ background: p.card }} />
+      <span className="tp-dot" style={{ background: p.accent }} />
+    </span>
+  )
+}
 
 const TpCard = ({
   t,
@@ -558,22 +685,29 @@ const TpCard = ({
   active: boolean
   onApply: (id: string) => void
   onDelete?: (id: string) => void
-}) => (
-  <button className={`tp-card${active ? ' active' : ''}`} onClick={() => onApply(t.id)}>
-    {onDelete && t.custom && (
-      <span
-        className="tp-card-del"
-        role="button"
-        onClick={(e) => { e.stopPropagation(); onDelete(t.id) }}
-      >
-        ✕
-      </span>
-    )}
-    <Dots preview={t.preview} />
-    <span className="tp-card-name">{t.name}</span>
-    {active && <Ico name="check" className="tp-card-check" width={13} height={13} />}
-  </button>
-)
+}) => {
+  const deletable = !!onDelete && !!t.custom
+  return (
+    <button className={`tp-card${active ? ' active' : ''}${deletable ? ' deletable' : ''}`} onClick={() => onApply(t.id)}>
+      <Dots colors={t} />
+      <span className="tp-card-name">{t.name}</span>
+      {(active || deletable) && (
+        <span className="tp-card-slot">
+          {active && <Ico name="check" className="tp-card-check" width={13} height={13} />}
+          {deletable && (
+            <span
+              className="tp-card-del"
+              role="button"
+              onClick={(e) => { e.stopPropagation(); onDelete!(t.id) }}
+            >
+              <Ico name="close" width={13} height={13} />
+            </span>
+          )}
+        </span>
+      )}
+    </button>
+  )
+}
 
 /** Поповер создания темы: название + 3 цвета + случайные/сохранить. */
 const ThemeCreator = ({
@@ -581,16 +715,12 @@ const ThemeCreator = ({
   onCreate,
   t,
 }: {
-  initial: { bg: string; card: string; accent: string }
+  initial: ThemeColors
   onCreate: (name: string, colors: ThemeColors) => void
   t: TFunc
 }) => {
   const [name, setName] = useState('')
-  const [colors, setColors] = useState<ThemeColors>({
-    bg: initial.bg,
-    blockColor: initial.card,
-    accent: initial.accent,
-  })
+  const [colors, setColors] = useState<ThemeColors>(initial)
 
   const slots: { key: keyof ThemeColors; label: string }[] = [
     { key: 'bg', label: t('theme.slot.bg') },

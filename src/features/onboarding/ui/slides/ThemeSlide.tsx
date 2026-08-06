@@ -1,4 +1,4 @@
-import { THEME_PRESETS, useThemeStore } from '@features/settings'
+import { THEME_PRESETS, themePreview, useThemeStore } from '@features/settings'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
@@ -28,23 +28,26 @@ export const ThemeSlide = ({ active, onPick }: Props) => {
       <div className="ob-sub">{t('onb.theme.sub')}</div>
 
       <div className="ob-theme-grid">
-        {THEME_PRESETS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={`ob-theme-card${p.id === active ? ' active' : ''}`}
-            style={{ ['--ob-accent' as string]: p.preview.accent }}
-            onClick={() => onPick(p.id)}
-          >
-            <div className="ob-tc-preview" style={{ background: p.preview.bg }}>
-              <div className="ob-tc-bar" style={{ background: p.preview.card }} />
-              <div className="ob-tc-bar" style={{ background: p.preview.card }} />
-              <div className="ob-tc-bar" style={{ background: p.preview.card }} />
-              <div className="ob-tc-dot" style={{ background: p.preview.accent }} />
-            </div>
-            <div className="ob-tc-name">{p.name}</div>
-          </button>
-        ))}
+        {THEME_PRESETS.map((p) => {
+          const pv = themePreview(p)
+          return (
+            <button
+              key={p.id}
+              type="button"
+              className={`ob-theme-card${p.id === active ? ' active' : ''}`}
+              style={{ ['--ob-accent' as string]: pv.accent }}
+              onClick={() => onPick(p.id)}
+            >
+              <div className="ob-tc-preview" style={{ background: pv.bg }}>
+                <div className="ob-tc-bar" style={{ background: pv.card }} />
+                <div className="ob-tc-bar" style={{ background: pv.card }} />
+                <div className="ob-tc-bar" style={{ background: pv.card }} />
+                <div className="ob-tc-dot" style={{ background: pv.accent }} />
+              </div>
+              <div className="ob-tc-name">{p.name}</div>
+            </button>
+          )
+        })}
       </div>
 
       <div className="ob-switch-row">

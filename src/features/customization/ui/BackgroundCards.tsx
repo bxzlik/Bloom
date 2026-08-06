@@ -1,14 +1,17 @@
 import { useCustomizationStore } from '../model/customizationStore'
 import { useT } from '@shared/i18n'
-import { Ico } from '@shared/ui/icons/solar'
 
 /**
- * Раздел «Фон» (`ssec-background`) — параметры фонового слоя `#bgl`:
- * «обложка трека как фон» + размытие + затемнение + сброс. Картинка фона
- * выбирается в разделе «Кастомизация» (контекст Фон); движок — в
+ * Карточки вкладки «Фон» раздела «Кастомизация» — параметры фонового слоя
+ * `#bgl`: «обложка трека как фон» + размытие + затемнение. Картинка фона
+ * выбирается на вкладке «Кастомизация» (контекст Фон); движок — в
  * customizationStore (общий с Кастомизацией).
+ *
+ * Раньше это был отдельный раздел сайдбара настроек (`ssec-background`);
+ * сброс (`resetBg`) живёт в шапке «Кастомизации» и показывается только на этой
+ * вкладке.
  */
-export const BackgroundSection = () => {
+export const BackgroundCards = () => {
   const t = useT()
   const coverAsBg = useCustomizationStore((s) => s.coverAsBg)
   const bgBlur = useCustomizationStore((s) => s.bgBlur)
@@ -16,21 +19,9 @@ export const BackgroundSection = () => {
   const setCoverAsBg = useCustomizationStore((s) => s.setCoverAsBg)
   const setBgBlur = useCustomizationStore((s) => s.setBgBlur)
   const setBgDim = useCustomizationStore((s) => s.setBgDim)
-  const resetBg = useCustomizationStore((s) => s.resetBg)
 
   return (
-    <div className="s-section active" id="ssec-background">
-      <div className="s-section-head">
-        <div className="s-section-title">
-          <Ico name="gallery" width={15} height={15} />{' '}
-          {t('settings.nav.background')}
-        </div>
-        <button className="s-section-reset" onClick={resetBg}>
-          <Ico name="refresh" width={10} height={10} />{' '}
-          {t('common.reset')}
-        </button>
-      </div>
-
+    <>
       <div className="sc">
         <div className="sr">
           <div>
@@ -59,6 +50,6 @@ export const BackgroundSection = () => {
         </div>
         <input type="range" className="srange-full" min={0} max={100} value={bgDim} onChange={(e) => setBgDim(Number(e.target.value))} />
       </div>
-    </div>
+    </>
   )
 }

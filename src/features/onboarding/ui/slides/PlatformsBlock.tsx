@@ -1,18 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ScLogo, YtmLogo, SpLogo, YmLogo, providerBrandColor } from '@entities/track'
+import { ScLogo, YtmLogo, YmLogo, providerBrandColor } from '@entities/track'
 import { getManualClientId, setManualClientId, checkConnection } from '@features/soundcloud'
-import { useSpAuthStore } from '@features/spotify'
 import { useYmAuthStore } from '@features/yandex'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
- * Блок «Площадки» на слайде «Подключи музыку» — аккордеон из четырёх строк.
+ * Блок «Площадки» на слайде «Подключи музыку» — аккордеон из трёх строк.
  *
  * Флоу у каждой площадки свой и здесь он настоящий, а не заглушка:
  *  • SoundCloud — ручной `client_id` в localStorage (или авто-подбор «Проверить»);
  *  • YouTube Music — авторизации не требует, строка не раскрывается;
- *  • Spotify — client_id + client_secret, проверяются обменом на токен в Rust;
  *  • Яндекс.Музыка — OAuth device-flow: код + открытие страницы + поллинг.
  *
  * Раскрыта максимум одна строка: в карточке 460px иначе не хватает высоты.
@@ -20,14 +18,12 @@ import { Ico } from '@shared/ui/icons/solar'
  * подключённое здесь видно там и наоборот.
  */
 
-type PlatId = 'sc' | 'ytm' | 'sp' | 'ym'
+type PlatId = 'sc' | 'ytm' | 'ym'
 
 export const PlatformsBlock = () => {
   const t = useT()
   const [open, setOpen] = useState<PlatId | null>(null)
 
-  const spEnabled = useSpAuthStore((s) => s.enabled)
-  const spRefresh = useSpAuthStore((s) => s.refresh)
   const ymAuthed = useYmAuthStore((s) => s.authed)
   const ymRefresh = useYmAuthStore((s) => s.refresh)
   const ymCancel = useYmAuthStore((s) => s.cancelAuth)
@@ -37,10 +33,9 @@ export const PlatformsBlock = () => {
   // Статусы площадок живут в Rust/localStorage — подтянуть при открытии слайда.
   // Поллинг Яндекса обрываем при уходе со слайда (как это делает секция настроек).
   useEffect(() => {
-    void spRefresh()
     void ymRefresh()
     return () => ymCancel()
-  }, [spRefresh, ymRefresh, ymCancel])
+  }, [ymRefresh, ymCancel])
 
   const toggle = (id: PlatId) => setOpen((cur) => (cur === id ? null : id))
 
@@ -68,18 +63,6 @@ export const PlatformsBlock = () => {
         connected={ymAuthed}
       >
         <YmForm />
-      </Row>
-
-      <Row
-        id="sp"
-        open={open === 'sp'}
-        onToggle={toggle}
-        logo={<SpLogo size={17} />}
-        tint={providerBrandColor('spotify')}
-        name="Spotify"
-        connected={spEnabled}
-      >
-        <SpForm />
       </Row>
 
       <Row
@@ -188,58 +171,6 @@ const ScForm = ({ onSaved }: { onSaved: (v: boolean) => void }) => {
         <button className="ob-plat-btn" onClick={() => void check()} disabled={checking}>
           {t('onb.plat.autoCheck')}
         </button>
-      </div>
-      <StatusLine status={status} />
-    </>
-  )
-}
-
-// ── Spotify: client_id + client_secret ──
-
-const SpForm = () => {
-  const t = useT()
-  const checking = useSpAuthStore((s) => s.checking)
-  const status = useSpAuthStore((s) => s.status)
-  const enabled = useSpAuthStore((s) => s.enabled)
-  const saveAndCheck = useSpAuthStore((s) => s.saveAndCheck)
-  const clear = useSpAuthStore((s) => s.clear)
-
-  // Поля живут в сторе, а не в локальном state: `refresh()` подтягивает
-  // сохранённые creds асинхронно и уже после монтирования этой формы —
-  // локальная копия так и осталась бы пустой.
-  const id = useSpAuthStore((s) => s.clientId)
-  const secret = useSpAuthStore((s) => s.clientSecret)
-  const setFields = useSpAuthStore((s) => s.setFields)
-
-  const save = () => void saveAndCheck(id, secret)
-
-  return (
-    <>
-      <input
-        className="ob-plat-inp"
-        value={id}
-        onChange={(e) => setFields(e.target.value, secret)}
-        placeholder="client_id"
-        spellCheck={false}
-      />
-      <input
-        className="ob-plat-inp"
-        type="password"
-        value={secret}
-        onChange={(e) => setFields(id, e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && save()}
-        placeholder="client_secret"
-        spellCheck={false}
-      />
-      <div className="ob-plat-actions">
-        <button className="ob-plat-btn primary" onClick={save} disabled={checking}>
-          {t('settings.sp.saveCheck')}
-        </button>
-        {enabled && (
-          <button className="ob-plat-btn" onClick={() => void clear()}>
-            {t('settings.sp.clear')}
-          </button>
-        )}
       </div>
       <StatusLine status={status} />
     </>

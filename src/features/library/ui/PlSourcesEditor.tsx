@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useT } from '@shared/i18n'
 import { toast } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
-import { ScLogo, YmLogo, YtmLogo, SpLogo, providerBrandColor } from '@entities/track'
+import { ScLogo, YmLogo, YtmLogo, providerBrandColor } from '@entities/track'
 import type { PlSourceRef } from '../model'
 import {
   resolveCollectionUrl,
@@ -18,8 +18,6 @@ const SrcLogo = ({ provider }: { provider: LinkProvider | null }) => {
       <YmLogo size={15} />
     ) : provider === 'ytmusic' ? (
       <YtmLogo size={16} />
-    ) : provider === 'spotify' ? (
-      <SpLogo size={15} />
     ) : (
       <ScLogo size={16} />
     )

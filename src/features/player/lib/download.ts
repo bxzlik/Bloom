@@ -17,6 +17,7 @@ import { t as i18nT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { apiFetch, type ScMedia } from '@features/soundcloud'
 import { ymStreamUrl } from '@features/yandex/api/ymClient'
+import { ytmStreamUrl } from '@features/ytmusic/api/ytmClient'
 import { bridgeMatch } from '@features/providers'
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
@@ -86,23 +87,29 @@ const resolveYmDownloadable = async (t: Track): Promise<Downloadable> => {
 }
 
 /**
- * Бридж-площадки (YTM/Spotify): прямой стрим недоступен, поэтому качаем
- * SC-двойник — находим совпадение на SoundCloud → его progressive mp3.
+ * YTM: нативный `player`-стрим (m4a с googlevideo — расширение Rust определит
+ * по байтам через `audio_ext`). Если YouTube трек не отдаёт (гео-блок и т.п.) —
+ * падаем на SC-двойник, как раньше.
  */
-const resolveBridgeDownloadable = async (t: Track): Promise<Downloadable> => {
-  const sc = await bridgeMatch(t)
-  if (!sc) throw new Error(i18nT('toast.trackNotOnSrc', { label: 'SoundCloud' }))
-  return resolveScDownloadable(sc)
+const resolveYtmDownloadable = async (t: Track): Promise<Downloadable> => {
+  if (!t.ytmVideoId) throw new Error(i18nT('search.err.noStream'))
+  try {
+    return { url: await ytmStreamUrl(t.ytmVideoId), referer: null }
+  } catch {
+    const sc = await bridgeMatch(t)
+    if (!sc) throw new Error(i18nT('toast.trackNotOnSrc', { label: 'SoundCloud' }))
+    return resolveScDownloadable(sc)
+  }
 }
 
-/** Является ли трек скачиваемым (трек сетевой площадки: SC/YM/YTM/Spotify). */
-export const isDownloadable = (t: Track): boolean => !!(t._sc || t._ym || t._ytm || t._sp)
+/** Является ли трек скачиваемым (трек сетевой площадки: SC/YM/YTM). */
+export const isDownloadable = (t: Track): boolean => !!(t._sc || t._ym || t._ytm)
 
-/** Резолв ссылки для трека площадки (SC/YM/YTM/Spotify). Бросает, если не качается. */
+/** Резолв ссылки для трека площадки (SC/YM/YTM). Бросает, если не качается. */
 export const resolveDownloadable = (t: Track): Promise<Downloadable> => {
   if (t._sc) return resolveScDownloadable(t)
   if (t._ym) return resolveYmDownloadable(t)
-  if (t._ytm || t._sp) return resolveBridgeDownloadable(t)
+  if (t._ytm) return resolveYtmDownloadable(t)
   return Promise.reject(new Error(i18nT('toast.dlUnavailable')))
 }
 
@@ -114,9 +121,8 @@ export const downloadTrack = async (t: Track | null): Promise<void> => {
   await ensureListener()
 
   // Треки площадок (SC/YM/YTM): резолвим прямой CDN-URL → Rust HttpClient
-  // (виртуальный origin WebView2 → 403 на CORS, поэтому качает Rust). YTM качает
-  // SC-двойник (прямой стрим YouTube заблокирован — см. resolveYtmDownloadable).
-  if (t._sc || t._ym || t._ytm || t._sp) {
+  // (виртуальный origin WebView2 → 403 на CORS, поэтому качает Rust).
+  if (t._sc || t._ym || t._ytm) {
     _ctx = { kind: 'track', name: t.name }
     toast(i18nT('toast.dlGettingLink'))
     try {
@@ -179,7 +185,7 @@ export const downloadCover = async (
  * трека (подписанные CDN-URL живут минуты), затем `download_to_dir` пишет файл.
  */
 export const downloadPlaylistTracks = async (name: string, tracks: Track[]): Promise<void> => {
-  const platform = tracks.filter((t) => t._sc || t._ym || t._ytm || t._sp)
+  const platform = tracks.filter((t) => t._sc || t._ym || t._ytm)
   if (!platform.length) {
     toast(i18nT('toast.plDlNoTracks'))
     return

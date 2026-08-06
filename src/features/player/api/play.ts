@@ -7,6 +7,9 @@ import { t as i18nT } from '@shared/i18n'
 import { requestLyrics, useLyricsStore } from '@features/lyrics'
 import waveApi from '@/wave'
 import { smartShuffleWeight } from '@/db/history'
+// Глубокий импорт (не через barrel) — barrel фичи тянет её UI, а тот импортирует
+// плеер: получился бы цикл.
+import { logPlay } from '@features/wrapped/model/playLog'
 import { getProvider } from '@features/providers'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore, type PlaySource } from '../model/queueStore'
@@ -14,6 +17,7 @@ import { saveVolumePrefs } from '../model/volumePrefs'
 import { audioEngine } from '../lib/audioEngine'
 import { resolvePlayableUrl } from '../lib/sourceResolvers'
 import { setPendingResumeSeek } from '../lib/resume'
+import { commitSwapDir, markSwapDir } from '../lib/trackSwapDir'
 
 /**
  * Найти Track по id для воспроизведения. Источник правды для локальных/загруженных
@@ -48,7 +52,7 @@ const pushNowPlaying = (opts?: { positionOverride?: number }): void => {
   const q = useQueueStore.getState()
   // Площадка текущего трека — для бейджа на обложке мини-плеера/трея.
   const cur = q.curId ? findTrack(q.curId) : undefined
-  const source = cur?._ym ? 'yandex' : cur?._ytm ? 'ytmusic' : cur?._sp ? 'spotify' : cur?._sc ? 'soundcloud' : null
+  const source = cur?._ym ? 'yandex' : cur?._ytm ? 'ytmusic' : cur?._sc ? 'soundcloud' : null
   void invoke('now_playing', {
     title: p.title,
     artist: p.artist,
@@ -141,6 +145,10 @@ export const creditPlay = (id: string): void => {
   _playCredited = true
   useHistoryStore.getState().add(id) // _histAdd
   useActivityStore.getState().add() // _activityAdd
+  // Журнал «Итогов»: поток событий с таймстампами (история хранит по одной
+  // записи на трек и не годится для разбивки по неделям/месяцам). Не ждём —
+  // сбой записи не должен мешать воспроизведению.
+  void logPlay(id, findTrack(id))
   // Обложку кладём в переживающий рестарт кеш: история хранит только id, а
   // trackRegistry живёт в памяти — иначе коллаж «История» на главной после
   // перезапуска не из чего собрать.
@@ -218,6 +226,12 @@ export const loadPlay = async (id: string): Promise<void> => {
       trackUrl: t.scPermalink || t.url || null,
       artistUrl: t.artistPermalink || null,
     })
+
+    // Направление анимации смены трека фиксируем ровно здесь: это единственная
+    // точка, где показ реально переключается, и все три поверхности (плеер, бар,
+    // фуллскрин) должны поехать в одну сторону.
+    const q = useQueueStore.getState()
+    commitSwapDir(q.queue, q.qIdx)
 
     useQueueStore.getState().setCurId(id)
 
@@ -415,6 +429,9 @@ export const toggleMuteMain = (): void => {
 export const nextTr = (): void => {
   const { queue, qIdx, repeat } = useQueueStore.getState()
   if (!queue.length) return
+  // Явно: при закольцовке (последний → первый) сравнение индексов в
+  // commitSwapDir дало бы «назад».
+  markSwapDir(1)
   // Явный «далее» всегда переключает на следующий трек, даже при repeat-one:
   // повтор того же трека — поведение для авто-перехода на `ended` (см.
   // useMainPlayerBridge), а не для кнопки. Иначе «далее» залипал на текущем.
@@ -436,6 +453,7 @@ export const prevTr = (): void => {
     audioEngine.seekTo(0)
     return
   }
+  markSwapDir(-1)
   const prev = (qIdx - 1 + queue.length) % queue.length
   useQueueStore.getState().setQIdx(prev)
   void loadPlay(queue[prev]!)
@@ -471,7 +489,7 @@ export const playFromCurrentQueue = (id: string): void => {
 
 /** id провайдера трека ('soundcloud' | 'yandex' | 'ytmusic' | 'local') для UI бейджа-кнопки. */
 export const trackProviderId = (t: Track | null | undefined): string =>
-  t?._ym ? 'yandex' : t?._ytm ? 'ytmusic' : t?._sp ? 'spotify' : t?._sc ? 'soundcloud' : 'local'
+  t?._ym ? 'yandex' : t?._ytm ? 'ytmusic' : t?._sc ? 'soundcloud' : 'local'
 
 /**
  * Нормализация строки для сравнения названий/артистов между площадками:
