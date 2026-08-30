@@ -35,7 +35,7 @@ export const GlobalRightPanel = () => {
     <div id="globalRightPanel" className={visible ? 'grp-visible' : ''}>
       <div id="grpInner">
         <GrpResizer />
-        {mode === 'queue' ? <QueueBlock similarIcon /> : <GrpLyrics active={visible} />}
+        {mode === 'queue' ? <QueueBlock /> : <GrpLyrics active={visible} />}
       </div>
     </div>
   )

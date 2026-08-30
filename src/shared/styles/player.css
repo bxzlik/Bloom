@@ -113,7 +113,7 @@
 /* In left/right mode: hide horizontal vol slider */
 .app.playerbar-left .ps-vol .vol-sl,.app.playerbar-right .ps-vol .vol-sl{display:none!important}
 /* SIDEBAR-TOP + PLAYERBAR LEFT/RIGHT: col becomes absolute, main-wrap gets margin */
-.app.sidebar-top.playerbar-left #miniPlayerCol,.app.sidebar-top.playerbar-right #miniPlayerColRight{position:absolute;top:68px;bottom:var(--app-pad);width:72px;height:auto;z-index:2}
+.app.sidebar-top.playerbar-left #miniPlayerCol,.app.sidebar-top.playerbar-right #miniPlayerColRight{position:absolute;top:74px;bottom:var(--app-pad);width:72px;height:auto;z-index:2}
 .app.sidebar-top.playerbar-left #miniPlayerCol{left:var(--app-pad)}
 .app.sidebar-top.playerbar-right #miniPlayerColRight{right:var(--app-pad)}
 .app.sidebar-top.playerbar-left.mp-col-visible .main-wrap{margin-left:80px}

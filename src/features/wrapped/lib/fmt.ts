@@ -8,7 +8,11 @@ import { t, type TranslationKey } from '@shared/i18n'
  * используется — в en-словаре она совпадает с many).
  */
 
-export type PluralNoun = 'plays' | 'tracks' | 'artists' | 'days' | 'hours' | 'minutes'
+/**
+ * `times` («7 раз») — короткая форма для тесных мест: под именем артиста и в
+ * строках топа полное «прослушиваний» съедает строку и ломает вёрстку.
+ */
+export type PluralNoun = 'plays' | 'tracks' | 'artists' | 'days' | 'hours' | 'minutes' | 'times'
 
 const ruForm = (n: number): 'one' | 'few' | 'many' => {
   const mod10 = n % 10
@@ -40,6 +44,22 @@ export const fmtListenTime = (locale: string, sec: number): string => {
   if (!h) return plural(locale, m, 'minutes')
   if (!m) return plural(locale, h, 'hours')
   return `${plural(locale, h, 'hours')} ${plural(locale, m, 'minutes')}`
+}
+
+/**
+ * То же время, но разобранное на части — модалке нужны отдельные ОГРОМНЫЕ
+ * числа с мелкой подписью («2» + «часов»), а не готовая строка.
+ * Пустой массив = меньше минуты (слайд сам покажет `wrapped.time.lessThanMin`).
+ */
+export const splitListenTime = (locale: string, sec: number): { n: number; word: string }[] => {
+  const totalMin = Math.round(sec / 60)
+  if (totalMin < 1) return []
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  const out: { n: number; word: string }[] = []
+  if (h) out.push({ n: h, word: pluralWord(locale, h, 'hours') })
+  if (m || !h) out.push({ n: m, word: pluralWord(locale, m, 'minutes') })
+  return out
 }
 
 /** «14:00 — 15:00» для любимого часа. */

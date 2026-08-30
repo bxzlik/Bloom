@@ -264,7 +264,7 @@ export const PlAutoDrawer = () => {
                         {pl.cover ? (
                           <img src={pl.cover} alt="" />
                         ) : (
-                          <PlCover trs={pl.trs} seed={pl.id} />
+                          <PlCover trs={pl.trs} />
                         )}
                       </div>
                       <div className="mpl-item-info">

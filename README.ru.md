@@ -8,7 +8,7 @@
 
 Десктопный плеер: локальная медиатека, Yandex Music, SoundCloud и YouTube Music в одном приложении
 
-[**🌐 Сайт**](https://bloom-site-x.vercel.app/) · [**📦 Релизы**](https://github.com/bxzlik/Bloom/releases)
+[**🌐 Сайт**](https://bloom-site-x.vercel.app/) · [**📱 Мобайл**](https://github.com/bxzlik/Bloom-Mobile) · [**📦 Релизы**](https://github.com/bxzlik/Bloom/releases)
 
 [English](README.md) · **Русский**
 

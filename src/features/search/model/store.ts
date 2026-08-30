@@ -244,8 +244,9 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   setSource: (s) => {
     save(SRC_KEY, s)
     set({ source: s })
-    // Повторить поиск при активном запросе.
-    const q = get().query.trim()
+    // Повторить ПОСЛЕДНИЙ ОТПРАВЛЕННЫЙ запрос (не то, что сейчас в поле: поиск
+    // идёт только по Enter, недонабранный текст перезапускать нельзя).
+    const q = get().submitted.trim()
     if (q) void get().runSearch(q)
   },
   setTab: (t) => set({ tab: t }),
@@ -255,7 +256,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   setGenreFilter: (g) => set({ genreFilter: g }),
   setSortOrder: (o) => {
     set({ sortOrder: o })
-    const q = get().query.trim()
+    const q = get().submitted.trim()
     if (q) void get().runSearch(q) // sort требует перезапрос API
   },
 

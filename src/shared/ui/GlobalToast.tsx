@@ -5,8 +5,9 @@ import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Глобальный toast main-окна — `showToast`/`#toast`:
- * сверху по центру (`#toast` CSS в shared/styles/search-misc.css), плашка цвета
- * карточки с иконкой-видом и полосой обратного отсчёта, 2000мс (5000мс с
+ * сверху по центру (`#toast` CSS в shared/styles/search-misc.css), капсула
+ * поверхности оверлея со значком вида и КОЛЬЦОМ обратного отсчёта вокруг него
+ * (вид перенесён с телефона, `bloom_toast.dart`), 2000мс (5000мс с
  * действием-undo).
  *
  * Один `<GlobalToast/>` в App + императивный `toast()` — зовётся откуда угодно
@@ -86,22 +87,29 @@ export const GlobalToast = () => {
       id="toast"
       className={`toast-${kind}${action && visible ? ' has-action' : ''}${visible ? ' show' : ''}`}
     >
-      <span className="toast-ico">{KIND_ICON[kind]}</span>
+      <span className="toast-badge">
+        {/* Кольцо обратного отсчёта вокруг значка — перезапускается через key={seq}. */}
+        <svg key={seq} className="toast-ring" viewBox="0 0 32 32" aria-hidden>
+          <circle className="trk" cx="16" cy="16" r="14.9" />
+          <circle className="arc" cx="16" cy="16" r="14.9" style={{ animationDuration: `${dur}ms` }} />
+        </svg>
+        <span className="toast-ico">{KIND_ICON[kind]}</span>
+      </span>
       <span className="toast-text">{text}</span>
       {action && (
         <button className="toast-undo" onClick={onUndo}>
           {action.label || t('common.undo')}
         </button>
       )}
-      {/* Полоса обратного отсчёта — перезапускается через key={seq}. */}
-      <i key={seq} className="toast-bar" style={{ animationDuration: `${dur}ms` }} />
     </div>
   )
 }
 
+/* Круг значка стал 25px (внутри бейджа 32px с кольцом) — глифы под него. У
+   «успеха» галочка чуть крупнее: она голая, без собственной обводки. */
 const KIND_ICON: Record<ToastKind, React.ReactNode> = {
-  info: <Ico name="info" width={17} height={17} />,
+  info: <Ico name="info" width={16} height={16} />,
   success: <Ico name="check" width={17} height={17} />,
-  warn: <Ico name="danger" width={17} height={17} />,
-  error: <Ico name="dangerCircle" width={17} height={17} />,
+  warn: <Ico name="danger" width={16} height={16} />,
+  error: <Ico name="dangerCircle" width={16} height={16} />,
 }

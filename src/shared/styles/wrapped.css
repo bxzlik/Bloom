@@ -1,241 +1,499 @@
-/* ===== ИТОГИ (недели / месяца / года) =====
-   Точка входа — пункт «Итоги» в сайдбаре (.sni-wrapped),
-   сама история — полноэкранный оверлей .wr-root.
+/* ===== ИТОГИ (месяца / года) =====
+   Входов в итоги три, и все они живут в профиле:
+     • .acc-entry-wr — карточка статистики, подменённая входом в итоги месяца
+       (раз в месяц, до первого просмотра);
+     • .wry         — плашка «Итоги года», только 21–31 декабря;
+     • кнопка «Итоги месяца» в футере панели статистики (.stats-tool-btn.accent).
+   Сами итоги — модалка .wrm-back / .wrm в конце файла. */
 
-   Цвет берётся от акцента темы: базовый градиент крутится по hue на
-   --wr-hue (React ставит его по индексу слайда, шаг HUE_STEP в
-   WrappedStories.tsx), поэтому слайды разноцветные, но родные теме. */
+/* ── Плашка «Итоги года» ─────────────────────────────────────────────── */
+/* Оформлена как соседние карточки профиля (.acc-entry): прозрачная, с одной
+   волосяной рамкой — своей заливки у неё НЕТ. Единственное украшение — тонкая
+   дуга во всю ширину, по которой бежит блик.
 
-/* ── Пункт «Итоги» в сайдбаре ────────────────────────────────────────── */
-/* Обычная вкладка `.sni` (стили в base.css), плюс акцентная точка «не смотрел»
-   и лёгкое свечение иконки, чтобы пункт читался как событие, а не как раздел. */
+   Дуга нарисована ДВАЖДЫ: тусклая основа и яркий дубль поверх, обрезанный
+   подвижной маской. Так блик едет строго по линии — градиентом внутри SVG
+   этого чисто на CSS не сделать (стопы градиента и x1/x2 не анимируются).
 
-/* Иконка — обычного цвета вкладок (не акцент): пункт не должен выглядеть
-   «всегда активным». Единственная акцентная деталь — точка «не просмотрено». */
-.sni-wrapped{position:relative}
+   Цвета — токенами (--text / --ovl-rgb): карточка лежит на поверхности темы,
+   значит в светлой теме обязана перевернуться.
 
-/* Точка-индикатор: в режиме «Иконки» — на углу иконки, в «С подписями» — в
-   конце строки (сайдбар в этом режиме получает класс на .app, см. base.css). */
-.sni-dot{
-  position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;
-  background:var(--accent);box-shadow:0 0 0 2px var(--bg);pointer-events:none;
+   Ручки: --wry-h (высота), --wry-line-op (яркость основы), --wry-shine-ms
+   (период пробега блика), --wry-shine-w (ширина окна маски). */
+
+.wry{
+  --wry-h:88px;
+  --wry-line-op:.16;
+  --wry-shine-ms:4.2s;
+  --wry-shine-w:16%;
+  --wry-flow-ms:9s;
+  --wry-sway-ms:7s;
+  position:relative;display:block;width:100%;flex-shrink:0;height:var(--wry-h);
+  padding:0;border-radius:var(--radius);border:1px solid var(--ovl-line);
+  overflow:hidden;cursor:pointer;text-align:left;
+  background:transparent;color:var(--text);font-family:var(--font);
 }
-.app.sidebar-full .sni-dot{top:50%;right:12px;transform:translateY(-50%)}
 
-/* ── Полноэкранная история ───────────────────────────────────────────── */
+/* Волна. Она именно ТЕЧЁТ, а не пульсирует на месте, и это определяет всю
+   конструкцию: путь нарисован ВДВОЕ шире карточки (viewBox 2400 при видимой
+   ширине 1200) и содержит ровно два одинаковых периода, а анимация просто
+   двигает его влево на 50% — то есть на целый период. Кадр «до» и кадр «после»
+   совпадают пиксель в пиксель, поэтому шва на стыке нет.
 
-/* Оверлей кроет всё окно, но тайтлбар поднимается НАД ним (body.wrapped-open
-   ниже) — окно остаётся перетаскиваемым, кнопки окна на месте, а метка страницы
-   на время показа становится «Итоги» (см. TitleBar). */
-.wr-root{
-  position:fixed;inset:0;z-index:99998;overflow:hidden;
-  display:flex;flex-direction:column;align-items:center;
-  animation:wrIn .26s cubic-bezier(.22,.61,.36,1);
-  --wr-hue:0deg;
+   Прошлая попытка морфила `d` между кадрами и выглядела как дыхание: гребень
+   стоял на одном x и только ходил вверх-вниз. Бегущую волну морфингом не
+   сделать — нужен именно сдвиг. Заодно отпала зависимость от CSS-свойства `d`,
+   которое поддерживает лишь свежий Chromium.
+
+   Стыки сегментов гладкие по построению: у синусоиды из кубик контрольные
+   точки соседних половин симметричны относительно узла (400,29 ↔ 800,71 вокруг
+   600,50), поэтому излома в местах склейки быть не может.
+
+   preserveAspectRatio="none" растягивает путь на любую ширину, а
+   non-scaling-stroke не даёт растяжению раздуть толщину линии. */
+.wry-line{position:absolute;inset:0;z-index:0;pointer-events:none;animation:wrySway var(--wry-sway-ms) ease-in-out infinite}
+.wry-line svg{
+  width:200%;height:100%;display:block;
+  animation:wryFlow var(--wry-flow-ms) linear infinite;
 }
-.wr-root.closing{animation:wrOut .2s ease forwards}
-@keyframes wrIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
-/* Пока история открыта — тайтлбар выше оверлея (его обычный z-index 1001). */
+.wry-line path{
+  fill:none;stroke:rgba(var(--ovl-rgb),var(--wry-line-op));stroke-width:1.5;
+  vector-effect:non-scaling-stroke;
+}
+
+/* Блик, бегущий по волне. Это ВТОРАЯ копия того же пути, ярче, обрезанная
+   подвижной маской: так подсветка едет строго по линии, повторяя её изгибы.
+   Градиентом внутри SVG так не сделать — стопы градиента и x1/x2 из CSS не
+   анимируются. Маска живёт на слое-обёртке (ширина карточки), а волна под ней
+   независимо течёт своим translateX. */
+.wry-shine{
+  position:absolute;inset:0;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--wry-shine-w),transparent calc(var(--wry-shine-w) * 2));
+  mask-image:linear-gradient(90deg,transparent 0,#000 var(--wry-shine-w),transparent calc(var(--wry-shine-w) * 2));
+  -webkit-mask-size:300% 100%;mask-size:300% 100%;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  animation:wryShine var(--wry-shine-ms) linear infinite;
+}
+/* Та же специфичность, что у .wry-line path, — перебивает порядком в файле. */
+.wry-shine path{stroke:var(--text);stroke-width:1.8}
+@keyframes wryShine{
+  from{-webkit-mask-position:-100% 0;mask-position:-100% 0}
+  to{-webkit-mask-position:200% 0;mask-position:200% 0}
+}
+/* Ровно один период — поэтому цикл незаметен. */
+@keyframes wryFlow{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+/* Медленный вертикальный дрейф поверх течения: периоды не кратны, и волна не
+   выглядит заведённой по метроному. */
+@keyframes wrySway{
+  0%,100%{transform:translateY(-4px)}
+  50%{transform:translateY(5px)}
+}
+/* Движение здесь — украшение: с «уменьшить движение» волна просто стоит, а
+   блик остаётся ровной подсветкой без пробега. */
+@media (prefers-reduced-motion:reduce){
+  .wry-line,.wry-line svg,.wry-shine{animation:none}
+  .wry-shine{opacity:.35;-webkit-mask-image:none;mask-image:none}
+}
+
+.wry-in{position:relative;z-index:1;height:100%;display:flex;align-items:center;gap:13px;padding:0 16px 0 20px}
+
+.wry-txt{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.wry-head{display:flex;align-items:center;gap:9px;min-width:0}
+/* Кегль тот же, что у подменённой карточки месяца (.acc-wr-title) — два входа
+   в итоги обязаны выглядеть одинаково весомо. */
+.wry-title{font-size:22px;font-weight:800;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Метка «Новое» гаснет после первого просмотра. */
+.wry-new{
+  flex-shrink:0;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;background:var(--text);color:var(--block-color);
+}
+.wry-sub{font-size:13px;color:rgba(var(--ovl-rgb),.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Обложки года. Без нахлёста: карточка прозрачная, и «вырезающая» рамка под
+   каждой обложкой не имеет цвета, с которым могла бы совпасть. */
+.wry-covers{display:flex;flex-shrink:0;align-items:center;gap:3px}
+.wry-covers img{width:34px;height:34px;border-radius:8px;object-fit:cover;display:block}
+
+/* Единственное цветное пятно на прозрачной карточке — залито акцентом.
+   Стрелки внутри нет: капсула и так читается кнопкой. */
+.wry-cta{
+  flex-shrink:0;display:flex;align-items:center;margin-left:4px;
+  padding:9px 18px;border-radius:999px;
+  background:var(--accent);border:none;
+  font-size:13px;font-weight:700;color:var(--accent-text);
+  transition:background .15s;
+}
+.wry:hover .wry-cta{background:var(--accent-hover)}
+
+/* Узкое окно: обложки — роскошь, капсула остаётся. */
+@media (max-width:760px){
+  .wry-covers{display:none}
+}
+
+/* ── Подменённая карточка статистики (итоги месяца) ──────────────────── */
+/* Форма и оформление — те же, что у .acc-entry: прозрачная карточка с одной
+   рамкой, чтобы ряд входов читался единым. От статистики её отличают только
+   заголовок, метка «Новое» и капсула «Смотреть». Возвращается к статистике
+   сразу после первого просмотра (см. ProfileEntryCards). */
+
+.acc-entry-wr{position:relative;overflow:hidden}
+.acc-wr-txt{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.acc-wr-title{display:flex;align-items:center;gap:9px;font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1}
+.acc-wr-new{
+  flex-shrink:0;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;background:var(--text);color:var(--block-color);
+}
+.acc-wr-sub{font-size:13px;color:rgba(var(--ovl-rgb),.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc-wr-cta{
+  flex-shrink:0;display:flex;align-items:center;
+  padding:9px 18px;border-radius:999px;
+  background:var(--accent);border:none;
+  font-size:13px;font-weight:700;color:var(--accent-text);transition:background .15s;
+}
+.acc-entry-wr:hover .acc-wr-cta{background:var(--accent-hover)}
+
+/* ── Модалка «Итогов» ────────────────────────────────────────────────── */
+/* Не фуллскрин, а панель ~496px по центру окна: страница остаётся видна за
+   затемнением. Панель непрозрачная и скруглённая, залита ЦВЕТОМ БЛОКОВ темы
+   (--block-color, как у остальных модалок) — своего фона у неё нет, иначе она
+   светится ярче интерфейса. Единственный цвет — клякса (.wrm-blob): ровный
+   круг под контентом, обрезанный краем панели.
+
+   Текст и плёнки — токенами (--text / --ovl-rgb), а не белым: панель лежит на
+   поверхности темы, а не на обложке, поэтому в светлой теме всё обязано
+   переворачиваться (см. правила светлой темы).
+
+   Тайтлбар поднимается НАД оверлеем (body.wrapped-open ниже) — окно остаётся
+   перетаскиваемым и кнопки окна на месте. Метку страницы модалка НЕ меняет,
+   крестика выхода у неё нет: закрывают Esc, клик мимо панели или кнопка
+   «Закрыть» на последнем слайде.
+
+   Ручки: --wrm-w (ширина панели), --wrm-h (минимальная высота тела),
+   --wrm-pad (внутренние поля), --wrm-r (скругление), --wrm-blob-d / -x / -y /
+   -op (размер, положение и плотность круга), --wrm-num-size (кегль огромных
+   чисел), --wrm-cta-h (сколько зоны листания не доходят до кнопки). */
+
+.wrm-back{
+  position:fixed;inset:0;z-index:99998;
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(var(--tb-h,32px) + 18px) 16px 26px;
+  overflow-y:auto;overscroll-behavior:contain;
+  background:rgba(0,0,0,.62);
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+  animation:wrmFade .2s ease;
+}
+.wrm-back.closing{animation:wrmFadeOut .18s ease forwards}
+@keyframes wrmFade{from{opacity:0}to{opacity:1}}
+@keyframes wrmFadeOut{to{opacity:0}}
+/* Пока модалка открыта — тайтлбар выше оверлея (его обычный z-index 1001). */
 body.wrapped-open #winTitlebar{z-index:99999}
-@keyframes wrOut{to{opacity:0;transform:scale(.98)}}
 
-/* Фон: акцентный градиент, уезжающий по hue от слайда к слайду. */
-.wr-bg{
-  position:absolute;inset:0;z-index:0;
-  background:
-    radial-gradient(120% 80% at 15% 0%, rgba(var(--accent-rgb),.55) 0%, transparent 60%),
-    radial-gradient(100% 70% at 100% 100%, rgba(var(--accent-rgb),.35) 0%, transparent 55%),
-    linear-gradient(160deg,#141414 0%,#080808 100%);
-  filter:hue-rotate(var(--wr-hue)) saturate(1.15);
-  transition:filter .6s ease;
+.wrm{
+  --wrm-w:496px;
+  --wrm-h:330px;
+  --wrm-pad:26px;
+  --wrm-r:26px;
+  --wrm-cta-h:56px;
+  position:relative;width:min(var(--wrm-w),100%);margin:auto;
+  display:flex;flex-direction:column;
+  color:var(--text);font-family:var(--font);
+  animation:wrmUp .3s cubic-bezier(.22,.61,.36,1);
 }
-/* Коллаж обложек топ-треков — размытый, поверх градиента. */
-.wr-backdrop{position:absolute;inset:0;z-index:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;opacity:.22;filter:blur(60px) saturate(1.5);transform:scale(1.2);pointer-events:none}
-.wr-backdrop img{width:100%;height:100%;object-fit:cover;min-width:0;min-height:0}
+@keyframes wrmUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.wrm-back.closing .wrm{animation:wrmDown .18s ease forwards}
+@keyframes wrmDown{to{opacity:0;transform:translateY(8px) scale(.98)}}
 
-.wr-top{position:relative;z-index:4;width:100%;max-width:760px;padding:calc(var(--tb-h,32px) + 10px) 16px 0}
-.wr-bars{display:flex;gap:4px;height:3px}
-.wr-bar{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.22);overflow:hidden}
-.wr-bar.done{background:rgba(255,255,255,.75)}
-.wr-bar-fill{display:block;height:100%;width:0;border-radius:2px;background:#fff;animation:wrBar linear forwards}
-@keyframes wrBar{from{width:0}to{width:100%}}
-
-/* Выход — в самом углу окна, сразу под панелью (стиль .bp-top-btn). */
-.wr-close{
-  position:absolute;top:calc(var(--tb-h,32px) + 12px);right:14px;z-index:6;
-  width:33px;height:33px;border-radius:50%;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  color:#9b9b9b;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background .15s,color .15s,border-color .15s;outline:none;-webkit-appearance:none;
+/* Сама панель. overflow:hidden обрезает круг по её скруглению — на референсе он
+   именно упирается в край панели, а не выходит за него. */
+.wrm-card{
+  position:relative;width:100%;
+  display:flex;flex-direction:column;
+  padding:var(--wrm-pad);
+  background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));
+  border-radius:var(--wrm-r);border:1px solid rgba(var(--ovl-rgb),.07);
+  box-shadow:0 40px 100px rgba(0,0,0,.6);
+  overflow:hidden;isolation:isolate;
 }
-.wr-close:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.18);color:#e8e8e8}
-.wr-close:active{background:rgba(255,255,255,.16)}
-.wr-close:focus{outline:none}
 
-/* Зоны листания (как в сторис: левая треть — назад, правая — вперёд). */
-.wr-zone{position:absolute;top:0;bottom:0;z-index:3;border:none;background:transparent;cursor:pointer;padding:0}
-.wr-zone-l{left:0;width:28%}
-.wr-zone-r{right:0;width:38%}
-/* На постере зоны узкие — иначе они перекрывают кнопку сохранения. */
-.wr-root[data-slide='share'] .wr-zone{width:12%}
+/* Круг за контентом. Именно КРУГ, без размытия: цвет ставит React
+   (--wrm-blob-rgb) — доминанта обложки слайда или бренд площадки; положение и
+   размер — правила [data-slide] ниже, поэтому от слайда к слайду он уезжает. */
+.wrm-blob{
+  position:absolute;z-index:-1;pointer-events:none;
+  width:var(--wrm-blob-d,340px);height:var(--wrm-blob-d,340px);border-radius:50%;
+  left:var(--wrm-blob-x,-10%);top:var(--wrm-blob-y,6%);
+  background:rgb(var(--wrm-blob-rgb,var(--accent-rgb)));
+  opacity:var(--wrm-blob-op,.3);
+  transition:left .55s cubic-bezier(.22,.61,.36,1),top .55s cubic-bezier(.22,.61,.36,1),
+             width .55s cubic-bezier(.22,.61,.36,1),height .55s cubic-bezier(.22,.61,.36,1),
+             opacity .4s ease;
+}
+.wrm[data-slide='intro'] .wrm-blob{--wrm-blob-x:-12%;--wrm-blob-y:0}
+.wrm[data-slide='time'] .wrm-blob{--wrm-blob-x:-4%;--wrm-blob-y:10%}
+.wrm[data-slide='counts'] .wrm-blob{--wrm-blob-x:16%;--wrm-blob-y:4%}
+.wrm[data-slide='tracks'] .wrm-blob{--wrm-blob-x:-8%;--wrm-blob-y:18%;--wrm-blob-d:320px}
+.wrm[data-slide='artists'] .wrm-blob{--wrm-blob-x:10%;--wrm-blob-y:4%}
+.wrm[data-slide='sources'] .wrm-blob{--wrm-blob-x:18%;--wrm-blob-y:12%;--wrm-blob-d:360px}
+.wrm[data-slide='discover'] .wrm-blob{--wrm-blob-x:-16%;--wrm-blob-y:8%}
+.wrm[data-slide='habits'] .wrm-blob{--wrm-blob-x:12%;--wrm-blob-y:0}
+.wrm[data-slide='share'] .wrm-blob{--wrm-blob-x:4%;--wrm-blob-y:6%;--wrm-blob-op:.22}
 
-.wr-stage{position:relative;z-index:2;flex:1;width:100%;max-width:760px;min-height:0;display:flex;align-items:center;padding:0 clamp(20px,6vw,64px) 6vh}
+/* Полоски прогресса — они же навигация по слайдам: каждая полоска кликабельна.
+   Сама полоска 4px, но ::before растягивает область попадания вверх и вниз —
+   иначе в неё надо целиться пикселем. */
+.wrm-bars{position:relative;z-index:1;display:flex;gap:6px;height:4px;flex-shrink:0;margin-bottom:24px}
+.wrm-bar{
+  position:relative;flex:1;height:4px;padding:0;border:none;-webkit-appearance:none;
+  border-radius:999px;background:rgba(var(--ovl-rgb),.18);overflow:visible;
+  cursor:pointer;transition:background .15s;outline:none;
+}
+.wrm-bar::before{content:'';position:absolute;inset:-9px -3px}
+.wrm-bar:hover{background:rgba(var(--ovl-rgb),.36)}
+.wrm-bar.done,.wrm-bar.done:hover{background:var(--text)}
+.wrm-bar-fill{display:block;height:100%;width:0;border-radius:999px;background:var(--text);animation:wrmBar linear forwards}
+@keyframes wrmBar{from{width:0}to{width:100%}}
 
-.wr-slide{width:100%;display:flex;flex-direction:column;gap:10px;min-height:0}
-.wr-slide-center{align-items:flex-start;justify-content:center}
-.wr-slide-intro{justify-content:center}
+/* Зоны листания (как в сторис: левая часть — назад, правая — вперёд).
+   Под контентом по z-index, чтобы не перехватывать клики по кнопкам слайда;
+   снизу не доходят до кнопки «Далее». */
+.wrm-zone{position:absolute;top:0;bottom:var(--wrm-cta-h);z-index:0;border:none;background:transparent;cursor:pointer;padding:0}
+.wrm-zone-l{left:0;width:32%}
+.wrm-zone-r{right:0;width:40%}
+
+/* Высоту тела ставит React (замер слайда) — иначе панель прыгала бы рывком при
+   каждой смене слайда. Отсюда же overflow:hidden: пока высота едет, «лишний»
+   контент не должен вылезать за панель. */
+.wrm-body{
+  position:relative;z-index:1;overflow:hidden;
+  transition:height .34s cubic-bezier(.22,.61,.36,1);
+}
+/* pointer-events:none у тела — клик «сквозь» текст попадает в зоны листания;
+   интерактивным элементам слайдов реакцию возвращаем точечно. */
+.wrm-fit{display:flex;flex-direction:column;min-height:var(--wrm-h);pointer-events:none}
+/* .hit — кликабельные блоки, которые НЕ кнопки: внутри них живут свои ссылки
+   (артист под треком), а кнопка в кнопке — невалидная разметка. */
+.wrm-fit button,.wrm-fit a,.wrm-fit .hit{pointer-events:auto}
+
+.wrm-slide{flex:1;display:flex;flex-direction:column;gap:9px;min-width:0}
+/* Блок «заголовок + числа» стоит по центру панели целиком: раньше числа
+   прижимались к низу через margin-top:auto и над ними зияла дыра. */
+.wrm-slide-split{justify-content:center}
+.wrm-slide-c{align-items:center;text-align:center;justify-content:center}
+.wrm-slide-intro{justify-content:center}
+.wrm-slide-share{align-items:center;justify-content:center;gap:16px}
 
 /* Появление элементов слайда (стаггер задаётся инлайновым animation-delay). */
-.wr-in{animation:wrUp .5s cubic-bezier(.22,.61,.36,1) backwards}
-@keyframes wrUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.wrm-in{animation:wrmRise .45s cubic-bezier(.22,.61,.36,1) backwards}
+@keyframes wrmRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
-.wr-kicker{font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.55)}
-.wr-title{font-size:clamp(24px,4.2vw,38px);font-weight:900;line-height:1.08;color:#fff;letter-spacing:-.5px}
-.wr-title-xl{font-size:clamp(30px,6vw,56px)}
-.wr-huge{font-size:clamp(34px,7vw,64px);font-weight:900;line-height:1.02;color:#fff;letter-spacing:-1px}
-.wr-sub{font-size:14px;color:rgba(255,255,255,.65)}
-.wr-note{font-size:13px;color:rgba(255,255,255,.5)}
-.wr-joke{
-  margin-top:6px;font-size:13px;color:rgba(255,255,255,.75);
-  background:rgba(255,255,255,.08);border-radius:12px;padding:9px 13px;align-self:flex-start;max-width:min(100%,460px)
+/* ── Типографика ─────────────────────────────────────────────────────── */
+
+.wrm-kicker{font-size:11.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:rgba(var(--ovl-rgb),.5)}
+.wrm-h1{font-size:36px;font-weight:800;line-height:1.06;letter-spacing:-1.1px;color:var(--text)}
+.wrm-h2{font-size:24px;font-weight:800;line-height:1.15;letter-spacing:-.6px;color:var(--text)}
+.wrm-sub{font-size:13.5px;color:rgba(var(--ovl-rgb),.55);line-height:1.4}
+.wrm-note{font-size:12.5px;color:rgba(var(--ovl-rgb),.4)}
+/* Итоговая приписка под списком («3 артиста всего») — отбита от карточки. */
+.wrm-slide-c .wrm-note{margin-top:16px}
+.wrm-joke{
+  margin-top:6px;font-size:13px;color:rgba(var(--ovl-rgb),.7);line-height:1.4;
+  background:rgba(var(--ovl-rgb),.06);border-radius:12px;padding:9px 13px;align-self:flex-start;
 }
 
-/* Плитки чисел */
-.wr-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:6px}
-.wr-tile{background:rgba(255,255,255,.09);border-radius:16px;padding:14px 14px 12px;min-width:0}
-.wr-tile-n{font-size:clamp(20px,3.4vw,30px);font-weight:900;color:#fff;line-height:1.1}
-.wr-tile-l{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* Списки топов */
-.wr-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;overflow:hidden}
-.wr-row{display:flex;align-items:center;gap:12px;min-width:0}
-.wr-row-n{width:18px;font-size:15px;font-weight:900;color:rgba(255,255,255,.45);flex-shrink:0;text-align:center}
-.wr-row-cov{width:46px;height:46px;border-radius:10px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4)}
-.wr-row-cov-round{border-radius:50%}
-.wr-row-cov img{width:100%;height:100%;object-fit:cover}
-.wr-row-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-.wr-row-name{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wr-row-sub{font-size:12px;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wr-row-val{font-size:12px;color:rgba(255,255,255,.55);flex-shrink:0;white-space:nowrap}
-/* Первая строка топа — крупнее, это «номер один». */
-.wr-row:first-child .wr-row-cov{width:64px;height:64px}
-.wr-row:first-child .wr-row-name{font-size:18px}
-
-/* Площадки */
-.wr-src-list{display:flex;flex-direction:column;gap:12px;margin-top:10px}
-.wr-src-head{display:flex;align-items:center;gap:8px}
-.wr-src-logo{display:flex;flex-shrink:0}
-.wr-src-name{font-size:14px;font-weight:700;color:#fff}
-.wr-src-pct{margin-left:auto;font-size:13px;font-weight:800;color:#fff}
-.wr-src-bar{height:7px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;margin-top:6px}
-.wr-src-bar i{display:block;height:100%;border-radius:4px;animation:wrBarGrow .7s cubic-bezier(.22,.61,.36,1) backwards}
-@keyframes wrBarGrow{from{width:0!important}}
-.wr-src-meta{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px}
-
-/* Открытия */
-.wr-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.wr-chip{display:flex;align-items:center;gap:8px;padding:7px 14px 7px 7px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;font-size:14px;font-weight:600}
-.wr-chip-ava{width:26px;height:26px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.wr-chip-ava img{width:100%;height:100%;object-fit:cover}
-
-/* Привычки */
-.wr-hours{display:flex;align-items:flex-end;gap:3px;height:92px;margin-top:14px}
-.wr-hours i{flex:1;background:rgba(255,255,255,.28);border-radius:3px 3px 2px 2px;transition:height .3s}
-.wr-hours i.peak{background:#fff}
-.wr-hours-axis{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.4);margin-top:6px}
-.wr-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
-.wr-fact{background:rgba(255,255,255,.09);border-radius:14px;padding:11px 13px;min-width:0}
-.wr-fact-l{font-size:11px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px}
-.wr-fact-v{font-size:15px;font-weight:800;color:#fff;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* Выбор периода — колонки-постеры во всю высоту окна.
-   Колонка = мозаика обложек периода на весь фон + плёнка + название, даты и
-   чипы-цифры внизу. Заголовка над ними нет: название экрана в тайтлбаре.
-
-   Ширина колонки ФИКСИРОВАННАЯ (--wr-pc-w) — когда доступен один период,
-   колонка не растягивается, а просто стоит по центру.
-
-   Ручки: --wr-pc-w (ширина колонки), --wr-pc-gap (зазор), --wr-pc-r (скругление),
-   --wr-pc-top (отступ сверху, под тайтлбаром), --wr-pc-pad (внутренний отступ
-   текста). */
-.wr-root[data-stage='pick'] .wr-stage{
-  max-width:none;align-items:stretch;
-  padding:var(--wr-pc-top,26px) clamp(16px,3vw,44px) clamp(16px,2.4vh,26px);
+/* Огромное число с мелкой подписью сбоку — главный приём модалки. */
+.wrm-nums{margin-top:18px;display:flex;flex-direction:column;gap:2px}
+.wrm-nums.sm{--wrm-num-size:52px}
+.wrm-nums-foot{margin-top:12px}
+.wrm-num{display:flex;align-items:baseline;gap:12px;min-width:0}
+.wrm-num b{
+  font-size:var(--wrm-num-size,80px);font-weight:800;line-height:.98;
+  letter-spacing:-.05em;color:var(--text);font-variant-numeric:tabular-nums;
 }
-.wr-slide-pick{height:100%;gap:0}
-.wr-pick-list{
-  --wr-pc-w:clamp(200px,25vw,480px);
-  --wr-pc-gap:clamp(12px,1.4vw,24px);
-  display:flex;flex-direction:row;align-items:stretch;justify-content:center;
-  gap:var(--wr-pc-gap);width:100%;height:100%;margin:0;min-height:0;
-}
-.wr-pick-card{
-  position:relative;display:block;
-  flex:0 0 var(--wr-pc-w);width:var(--wr-pc-w);max-width:100%;height:100%;
-  padding:0;overflow:hidden;
-  /* Заливка — цвет фона приложения, а не серая плашка. */
-  background:#0d0d0d;border:1px solid rgba(255,255,255,.07);
-  border-radius:var(--wr-pc-r,24px);cursor:pointer;color:#fff;text-align:left;
-  transition:border-color .18s;
-}
-.wr-pick-card:hover{border-color:rgba(255,255,255,.16)}
+.wrm-num i{font-style:normal;font-size:13.5px;font-weight:600;color:rgba(var(--ovl-rgb),.55)}
 
-.wr-pick-art{
-  position:absolute;inset:0;z-index:0;
-  display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
-  background:rgba(255,255,255,.06);color:rgba(255,255,255,.35);
-  place-items:center;overflow:hidden;
+/* ── Герои слайдов ───────────────────────────────────────────────────── */
+
+/* Трек №1: крупная обложка слева, число повторов и подписи справа.
+   Тени у обложки и аватара НЕТ намеренно: они лежат на цветном круге, и мягкое
+   тёмное пятно под ними читалось как грязь, а не как объём. */
+.wrm-hero{
+  display:flex;align-items:flex-start;gap:18px;min-width:0;margin-top:6px;
+  width:100%;padding:0;border:none;background:none;color:inherit;font:inherit;text-align:left;
 }
-.wr-pick-art.one{grid-template-columns:1fr;grid-template-rows:1fr}
-.wr-pick-art img{width:100%;height:100%;min-width:0;min-height:0;object-fit:cover;display:block;transition:scale .5s cubic-bezier(.22,.61,.36,1)}
-.wr-pick-card:hover .wr-pick-art img{scale:1.05}
-
-/* Плёнка: снизу почти чёрное (текст читается на любой обложке), сверху лёгкий
-   акцентный тинт — колонка родная теме. */
-.wr-pick-veil{
-  position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:
-    linear-gradient(180deg,rgba(0,0,0,.50) 0%,rgba(0,0,0,.10) 24%,rgba(0,0,0,.62) 64%,rgba(0,0,0,.93) 100%),
-    linear-gradient(180deg,rgba(var(--accent-rgb),.30) 0%,rgba(var(--accent-rgb),0) 52%);
-  transition:opacity .18s;
+/* Обложка героя чуть завалена — как фотокарточка, брошенная на панель
+   (ручка --wrm-cov-tilt). Наклон съедает ~13px по габариту, но панель даёт
+   26px внутренних полей, так что за край он не вылезает. */
+.wrm-hero-cov{
+  width:188px;height:188px;border-radius:13px;overflow:hidden;flex-shrink:0;
+  background:rgba(var(--ovl-rgb),.07);display:flex;align-items:center;justify-content:center;
+  color:rgba(var(--ovl-rgb),.3);
+  transform:rotate(var(--wrm-cov-tilt,-4deg));
 }
-.wr-pick-card:hover .wr-pick-veil{opacity:.84}
+.wrm-hero-cov img{width:100%;height:100%;object-fit:cover;display:block}
+/* Число прижато к верху обложки, название и артист — сразу под ним. */
+.wrm-hero-txt{flex:1;min-width:0;display:flex;flex-direction:column;padding-top:10px}
+.wrm-hero-txt .wrm-num{--wrm-num-size:66px;gap:9px}
 
-.wr-pick-body{
-  position:absolute;left:0;right:0;bottom:0;z-index:2;
-  display:flex;flex-direction:column;min-width:0;padding:var(--wr-pc-pad,clamp(16px,1.6vw,26px));
+/* Артист / площадка №1: колонка по центру. */
+.wrm-hero-c{
+  display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;max-width:100%;
+  width:100%;padding:0;border:none;background:none;color:inherit;font:inherit;
 }
-.wr-pick-name{font-size:clamp(20px,1.7vw,30px);font-weight:900;line-height:1.12;letter-spacing:-.4px}
-.wr-pick-dates{font-size:13px;color:rgba(255,255,255,.68);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wr-pick-stats{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.wr-pick-stats b{
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:12px;font-weight:600;color:rgba(255,255,255,.82);
-  background:rgba(255,255,255,.12);border-radius:999px;padding:4px 9px;
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+.wrm-hero-ava{
+  width:104px;height:104px;border-radius:50%;overflow:hidden;margin-bottom:14px;
+  background:rgba(var(--ovl-rgb),.08);display:flex;align-items:center;justify-content:center;
+  color:rgba(var(--ovl-rgb),.35);
 }
-.wr-pick-stats b svg{opacity:.75}
+.wrm-hero-ava img{width:100%;height:100%;object-fit:cover;display:block}
+.wrm-hero-c .wrm-num{--wrm-num-size:60px;justify-content:center}
+.wrm-src-mark{display:flex;margin-bottom:10px}
 
+/* Артист №1 — самый крупный герой из всех: аватар больше, имя во всю ширину
+   панели (на референсе это главный объект экрана, а не подпись к аватару). */
+.wrm-hero-c.artist .wrm-hero-ava{width:134px;height:134px;margin-bottom:13px}
+.wrm-hero-c.artist .wrm-hero-name{font-size:clamp(23px,3.2vw,34px);letter-spacing:-1.2px;line-height:1.08}
+.wrm-hero-c.artist .wrm-hero-sub{margin-top:4px}
+/* Карточка со вторыми местами идёт сразу за героем — лишний воздух между ними
+   разваливал экран на два несвязанных блока. */
+.wrm-hero-c.artist + .wrm-list{margin-top:12px}
 
-/* Постер */
-.wr-slide-share{align-items:center;justify-content:center;gap:14px}
-.wr-share-card{width:min(300px,46vh);aspect-ratio:3/4;border-radius:18px;overflow:hidden;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;box-shadow:0 24px 60px rgba(0,0,0,.45)}
-.wr-share-card img{width:100%;height:100%;object-fit:contain;display:block}
-.wr-share-spin{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:wrSpin .8s linear infinite}
-@keyframes wrSpin{to{transform:rotate(360deg)}}
-.wr-share-actions{display:flex;gap:10px}
-.wr-btn{display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:999px;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
-.wr-btn:hover{background:rgba(255,255,255,.24)}
-.wr-btn-primary{background:#fff;color:#111}
-.wr-btn-primary:hover{background:rgba(255,255,255,.86)}
-.wr-btn:disabled{opacity:.5;cursor:default}
+.wrm-hero-name{
+  margin-top:12px;font-size:20px;font-weight:800;letter-spacing:-.5px;color:var(--text);line-height:1.16;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.wrm-hero-c .wrm-hero-name{margin-top:0}
+.wrm-hero-sub{margin-top:3px;font-size:13px;color:rgba(var(--ovl-rgb),.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 
-/* Узкое окно: меньше отступы, плитки в две колонки. */
-@media (max-width:620px){
-  .wr-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .wr-stage{padding:0 18px 4vh}
-  /* Три фиксированные колонки в узкое окно не влезают — листаем вбок. */
-  .wr-pick-list{--wr-pc-w:min(62vw,240px);justify-content:flex-start;overflow-x:auto;scrollbar-width:none}
-  .wr-pick-list::-webkit-scrollbar{display:none}
+/* ── Список «остальных» (топ со 2-го места) ──────────────────────────── */
+
+.wrm-list{
+  width:100%;margin-top:18px;padding:6px;
+  background:rgba(var(--ovl-rgb),.05);border-radius:18px;
+  display:flex;flex-direction:column;
+}
+/* Список треков: без подложки (строки лежат прямо на круге), обложка крупнее,
+   номера места нет — строка дышит. Отрицательные поля у строки возвращают
+   обложку на одну вертикаль с обложкой героя, а подсветке по наведению дают
+   зайти в поля панели. */
+.wrm-list.wide{background:none;padding:0;margin-top:16px}
+.wrm-list.wide .wrm-row{padding:8px;margin:0 -8px;width:calc(100% + 16px);gap:13px}
+.wrm-list.wide .wrm-row-cov{width:46px;height:46px;border-radius:10px}
+.wrm-list.wide .wrm-row-name{font-size:14px}
+.wrm-list.wide .wrm-row-sub{font-size:12px}
+.wrm-row{
+  display:flex;align-items:center;gap:11px;padding:7px 9px;min-width:0;
+  width:100%;border:none;background:none;color:inherit;font:inherit;text-align:left;
+  border-radius:12px;
+}
+/* Кликабельные строки: трек — играет, артист — открывает свою страницу. */
+.wrm-row.hit{cursor:pointer;transition:background .14s;outline:none}
+.wrm-row.hit:hover{background:rgba(var(--ovl-rgb),.07)}
+/* У треков подложки под наведением нет: список лежит прямо на круге, и плашка
+   на нём читалась заплаткой. Отклик даёт название, а не фон. */
+.wrm-list.wide .wrm-row.hit:hover{background:none}
+.wrm-list.wide .wrm-row.hit:hover .wrm-row-cov{opacity:.82;transition:opacity .14s}
+
+/* Имя артиста внутри кликабельной строки — своя ссылка. */
+.wrm-a{cursor:pointer;transition:color .12s}
+.wrm-a:hover{color:var(--text);text-decoration:underline}
+.wrm-a-sep{pointer-events:none}
+/* Герой-трек и герой-артист кликабельны целиком. */
+.wrm-hero.hit,.wrm-hero-c.hit{cursor:pointer}
+.wrm-hero.hit:hover .wrm-hero-cov,.wrm-hero-c.hit:hover .wrm-hero-ava{opacity:.86;transition:opacity .14s}
+.wrm-hero-c.hit:hover .wrm-hero-name{text-decoration:underline}
+.wrm-row-n{width:20px;flex-shrink:0;font-size:11.5px;font-weight:700;color:rgba(var(--ovl-rgb),.32);font-variant-numeric:tabular-nums}
+.wrm-row-cov{
+  width:38px;height:38px;border-radius:9px;overflow:hidden;flex-shrink:0;
+  background:rgba(var(--ovl-rgb),.09);display:flex;align-items:center;justify-content:center;color:rgba(var(--ovl-rgb),.35);
+}
+.wrm-row-cov.round{border-radius:50%}
+.wrm-row-cov img{width:100%;height:100%;object-fit:cover;display:block}
+.wrm-row-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.wrm-row-name{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrm-row-sub{font-size:11.5px;color:rgba(var(--ovl-rgb),.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrm-row-val{flex-shrink:0;font-size:12px;color:rgba(var(--ovl-rgb),.5);white-space:nowrap}
+/* Счётчик трека — голое число, поэтому чуть плотнее и с табличными цифрами. */
+.wrm-row-val.num{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;padding-right:4px}
+
+/* ── Площадки ────────────────────────────────────────────────────────── */
+
+.wrm-srcs{width:100%;margin-top:16px;display:flex;flex-direction:column;gap:11px}
+.wrm-src-head{display:flex;align-items:center;gap:8px}
+.wrm-src-logo{display:flex;flex-shrink:0}
+.wrm-src-name{font-size:13px;font-weight:600;color:rgba(var(--ovl-rgb),.85)}
+.wrm-src-pct{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--text)}
+.wrm-src-bar{height:5px;border-radius:3px;background:rgba(var(--ovl-rgb),.12);overflow:hidden;margin-top:6px}
+.wrm-src-bar i{display:block;height:100%;border-radius:3px;animation:wrmGrow .7s cubic-bezier(.22,.61,.36,1) backwards}
+@keyframes wrmGrow{from{width:0!important}}
+
+/* ── Открытия ────────────────────────────────────────────────────────── */
+
+.wrm-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+.wrm-chip{
+  display:flex;align-items:center;gap:7px;padding:6px 13px 6px 6px;border-radius:999px;
+  border:none;background:rgba(var(--ovl-rgb),.08);color:var(--text);
+  font-family:var(--font);font-size:13px;font-weight:600;
+  cursor:pointer;transition:background .14s;
+}
+.wrm-chip:hover{background:rgba(var(--ovl-rgb),.15)}
+.wrm-chip-ava{width:24px;height:24px;border-radius:50%;overflow:hidden;background:rgba(var(--ovl-rgb),.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wrm-chip-ava img{width:100%;height:100%;object-fit:cover}
+
+/* ── Привычки ────────────────────────────────────────────────────────── */
+
+.wrm-hours{display:flex;align-items:flex-end;gap:2px;height:70px;margin-top:16px}
+.wrm-hours i{flex:1;background:rgba(var(--ovl-rgb),.22);border-radius:2px}
+.wrm-hours i.peak{background:var(--text)}
+.wrm-axis{display:flex;justify-content:space-between;font-size:10.5px;color:rgba(var(--ovl-rgb),.35);margin-top:5px}
+.wrm-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.wrm-fact{background:rgba(var(--ovl-rgb),.05);border-radius:13px;padding:10px 12px;min-width:0}
+.wrm-fact-l{font-size:10.5px;color:rgba(var(--ovl-rgb),.5);text-transform:uppercase;letter-spacing:.5px}
+.wrm-fact-v{font-size:14px;font-weight:700;color:var(--text);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Постер ──────────────────────────────────────────────────────────── */
+
+/* Тени у постера нет — как и у обложек в героях слайдов: он лежит на цветном
+   круге, и мягкое тёмное пятно под ним читается грязью, а не объёмом. */
+.wrm-poster{
+  width:min(226px,58%);aspect-ratio:3/4;border-radius:16px;overflow:hidden;
+  background:rgba(var(--ovl-rgb),.06);display:flex;align-items:center;justify-content:center;
+}
+.wrm-poster img{width:100%;height:100%;object-fit:contain;display:block}
+.wrm-spin{width:24px;height:24px;border-radius:50%;border:2px solid rgba(var(--ovl-rgb),.2);border-top-color:var(--text);animation:wrmSpin .8s linear infinite}
+@keyframes wrmSpin{to{transform:rotate(360deg)}}
+/* На постере зоны листания узкие — иначе они лезут под кнопку сохранения. */
+.wrm[data-slide='share'] .wrm-zone{width:10%}
+
+/* ── Кнопки ──────────────────────────────────────────────────────────── */
+
+/* Кнопка живёт внутри панели, под контентом. --wrm-cta-h = её высота + отступ:
+   на столько же зоны листания не доходят до низа. */
+.wrm-cta{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0;margin-top:22px}
+.wrm-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:34px;padding:0 20px;border-radius:999px;border:none;
+  background:var(--text);color:var(--block-color);
+  font-family:var(--font);font-size:13px;font-weight:700;
+  cursor:pointer;transition:background .15s,transform .12s,opacity .15s;
+}
+.wrm-btn:hover{background:color-mix(in srgb,var(--text),var(--block-color) 16%)}
+.wrm-btn:active{transform:scale(.97)}
+.wrm-btn.ghost{background:rgba(var(--ovl-rgb),.1);color:var(--text)}
+.wrm-btn.ghost:hover{background:rgba(var(--ovl-rgb),.18)}
+.wrm-btn:disabled{opacity:.45;cursor:default;transform:none}
+
+/* ── Узкое окно ──────────────────────────────────────────────────────── */
+
+@media (max-width:560px){
+  .wrm{--wrm-w:100%;--wrm-h:300px;--wrm-pad:20px;--wrm-r:22px}
+  .wrm-h1{font-size:30px}
+  .wrm-num{--wrm-num-size:64px}
+  /* Обложка героя-трека рядом с числом уже не помещается — ставим её сверху. */
+  .wrm-hero{flex-direction:column;gap:14px}
+  .wrm-hero-cov{width:140px;height:140px}
+  .wrm-hero-txt{padding-top:0}
+  .wrm-hero-c.artist .wrm-hero-ava{width:112px;height:112px;margin-bottom:18px}
 }

@@ -2,15 +2,14 @@ import { useEffect, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useDetailTop } from '@features/search'
 import { useOnboardingStore } from '@features/onboarding/model/onboardingStore'
-import { useWrappedUiStore } from '@features/wrapped'
 import { useUiPrefsStore, UpdateButton } from '@features/settings'
 import { useNavStore, type PageId } from './navigationStore'
 import { NotifBell } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useT, useLocale, t as tt } from '@shared/i18n'
 
-/** Ключ метки тайтлбара: страница, открытая детальная сущность ИЛИ «Итоги». */
-type LabelKey = PageId | 'artist' | 'album' | 'playlist' | 'wrapped'
+/** Ключ метки тайтлбара: страница или открытая детальная сущность. */
+type LabelKey = PageId | 'artist' | 'album' | 'playlist'
 
 /**
  * Кастомный titlebar (`#winTitlebar`).
@@ -27,9 +26,6 @@ export const TitleBar = () => {
   const detailKind = useDetailTop()?.kind ?? null
   // Онбординг перекрывает всё окно — метка «Главная» под ним читается как баг.
   const onboarding = useOnboardingStore((s) => !s.done)
-  // История «Итогов» — оверлей поверх текущей страницы: метка на время показа
-  // становится «Итоги» (иначе в тайтлбаре висела бы «Главная»).
-  const wrappedOpen = useWrappedUiStore((s) => s.open)
   const titlebarLabel = useUiPrefsStore((s) => s.titlebarLabel)
   const tbLogo = useUiPrefsStore((s) => s.tbLogo)
   const tbVersion = useUiPrefsStore((s) => s.tbVersion)
@@ -62,7 +58,7 @@ export const TitleBar = () => {
 
   // Детальный вид — глобальный оверлей (может быть открыт на любой странице),
   // поэтому метка артиста/альбома/плейлиста показывается независимо от page.
-  const key: LabelKey = wrappedOpen ? 'wrapped' : (detailKind ?? page)
+  const key: LabelKey = detailKind ?? page
   const label = pageLabel(key)
   const Icon = pageIcon(key)
 
@@ -148,8 +144,6 @@ const pageLabel = (key: LabelKey): string => {
       return tt('search.kind.album')
     case 'playlist':
       return tt('search.kind.playlist')
-    case 'wrapped':
-      return tt('wrapped.title')
   }
 }
 
@@ -171,8 +165,6 @@ const pageIcon = (key: LabelKey) => {
       return AlbumIcon
     case 'playlist':
       return PlaylistIcon
-    case 'wrapped':
-      return WrappedIcon
   }
 }
 
@@ -185,4 +177,3 @@ const AccountIcon = () => <Ico name="user" variant="bold" className="wtc-icon" /
 const ArtistIcon = () => <Ico name="user" variant="bold" className="wtc-icon" />
 const AlbumIcon = () => <Ico name="vinyl" variant="bold" className="wtc-icon" />
 const PlaylistIcon = () => <Ico name="list" variant="bold" className="wtc-icon" />
-const WrappedIcon = () => <Ico name="award" className="wtc-icon" />

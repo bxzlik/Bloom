@@ -12,13 +12,13 @@ input,textarea{user-select:text;-webkit-user-select:text}
 /* Внешний отступ окна и зазор между блоками — единые ручки для всего шелла. */
 /* --sb-w — фактическая ширина сайдбара (её же гасит авто-скрытие отступом);
    в режиме «С подписями» она подменяется на --sb-w-full. */
-:root{--app-pad:8px;--app-gap:8px;--page-pad:12px;--sb-w:62px;--sb-w-full:190px;--grp-w:320px}
+:root{--app-pad:8px;--app-gap:8px;--page-pad:12px;--sb-w:70px;--sb-w-full:190px;--grp-w:320px}
 .app{display:flex;position:relative;z-index:1;background:transparent;padding:var(--app-pad);gap:var(--app-gap);width:100%;flex:1;box-sizing:border-box;transition:height .15s;align-items:stretch;overflow:hidden}
 .sidebar{width:var(--sb-w);flex-shrink:0;border:1px solid var(--ovl-line);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:0;backdrop-filter:blur(12px)}
 .sb-logo{width:34px;height:34px;border-radius:calc(var(--radius) * 0.6);background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:var(--accent-text);flex-shrink:0;}
 .sb-sep{width:28px;height:1px;background:rgba(var(--ovl-rgb),.07);margin:8px 0;flex-shrink:0}.sidebar>.sb-sep{display:none}
 .sb-nav{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%}
-.sni{width:42px;height:42px;border-radius:calc(var(--radius) * 0.75);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--icon-fg-sb);transition:background .12s,color .12s,transform .08s;position:relative;will-change:transform}
+.sni{width:46px;height:46px;border-radius:calc(var(--radius) * 0.75);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--icon-fg-sb);transition:background .12s,color .12s,transform .08s;position:relative;will-change:transform}
 .sni:hover{color:var(--text)}
 .sni:active{transform:scale(.94)}
 .sni.active{color:var(--accent)}
@@ -26,11 +26,11 @@ input,textarea{user-select:text;-webkit-user-select:text}
 
 /* ===== SIDEBAR POSITION: TOP ===== */
 .app.sidebar-top{flex-direction:column}
-.app.sidebar-top .sidebar{width:auto;height:52px;flex-direction:row;padding:0 12px;border-radius:var(--radius);flex-shrink:0;align-items:center;gap:0;position:relative}
+.app.sidebar-top .sidebar{width:auto;height:58px;flex-direction:row;padding:0 12px;border-radius:var(--radius);flex-shrink:0;align-items:center;gap:0;position:relative}
 .app.sidebar-top .sb-logo{flex-shrink:0;margin-right:8px}
 .app.sidebar-top .sb-sep{width:1px;height:24px;margin:0 6px;flex-shrink:0}
 .app.sidebar-top .sb-nav{flex-direction:row;position:absolute;left:50%;transform:translateX(-50%);justify-content:center;align-items:center;gap:2px;height:100%;width:auto;flex:none}
-.app.sidebar-top .sni{width:40px;height:40px}
+.app.sidebar-top .sni{width:44px;height:44px}
 .app.sidebar-top .sb-bot{flex-direction:row;padding-top:0;border-top:none;padding-left:8px;border-left:none;width:auto;margin-top:0;margin-left:auto;height:100%;align-items:center;gap:2px}
 .app.sidebar-top .main-wrap{flex:1;display:flex;flex-direction:column;gap:var(--app-gap);min-width:0;overflow:hidden}
 
@@ -53,7 +53,7 @@ input,textarea{user-select:text;-webkit-user-select:text}
 /* Сайдбар вынимается из потока (absolute) → .main-wrap занимает всю ширину; капсула
    висит поверх, как плавающий мини-плеер (см. player.css .app.mp-floating). Внутренняя
    раскладка — content-sized (как compact): sb-nav не растягивается, разделители видны. */
-.app.sidebar-floating .sidebar{position:absolute;z-index:40;left:var(--app-pad);top:50%;transform:translateY(-50%);width:auto;height:auto;padding:10px 6px;border-radius:999px;background:rgba(var(--ovl-rgb),.04);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 8px 32px rgba(0,0,0,.45)}
+.app.sidebar-floating .sidebar{position:absolute;z-index:40;left:var(--app-pad);top:50%;transform:translateY(-50%);width:auto;height:auto;padding:10px 6px;border-radius:999px;background:rgba(var(--ovl-rgb),.04);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .app.sidebar-floating .sb-nav{flex:none}
 .app.sidebar-floating .sb-bot{margin-top:0;padding-top:0}
 .app.sidebar-floating .sidebar>.sb-sep{display:block}
@@ -73,7 +73,7 @@ input,textarea{user-select:text;-webkit-user-select:text}
    Ручки: --sb-w-full (ширина), высота строки 40px, --sb-ico-slot (колонка иконки). */
 .sni-lbl{display:none}
 .sni-ico{display:contents}
-.app.sidebar-full{--sb-w:var(--sb-w-full);--sb-ico-slot:22px}
+.app.sidebar-full{--sb-w:var(--sb-w-full);--sb-ico-slot:24px}
 /* Растяжка строк на всю ширину — ТОЛЬКО для вертикального сайдбара. В позиции
    «Сверху» те же селекторы имеют равную специфичность с `.app.sidebar-top ...`,
    но стоят ниже по файлу, поэтому без :not() они перебивали align-items:center и
@@ -85,7 +85,7 @@ input,textarea{user-select:text;-webkit-user-select:text}
 /* Иконки разного размера (19/18/аватар) выравниваем по общей колонке — иначе
    подписи «плывут» по горизонтали. */
 .app.sidebar-full .sni-ico{display:flex;align-items:center;justify-content:center;flex:0 0 var(--sb-ico-slot)}
-.app.sidebar-full .sb-avatar{width:var(--sb-ico-slot);height:var(--sb-ico-slot);border-width:1.5px}
+.app.sidebar-full .sb-avatar{width:var(--sb-ico-slot);height:var(--sb-ico-slot)}
 /* Цвет НЕ задаём — подпись наследует его у `.sni` и подсвечивается ровно так же,
    как иконка (hover → --text, active → --accent). Фона у строки нет: в иконочном
    режиме его тоже нет, подсветка только цветом. */
@@ -99,7 +99,7 @@ input,textarea{user-select:text;-webkit-user-select:text}
    Центрирование по высоте прописано явно — страховка от будущих правил full-режима. */
 .app.sidebar-full.sidebar-top .sidebar{padding:0 10px;align-items:center}
 .app.sidebar-full.sidebar-top .sb-nav,.app.sidebar-full.sidebar-top .sb-bot{align-items:center}
-.app.sidebar-full.sidebar-top .sni{width:auto;height:36px;gap:8px;padding:0 10px;flex-shrink:0}
+.app.sidebar-full.sidebar-top .sni{width:auto;height:40px;gap:8px;padding:0 10px;flex-shrink:0}
 .app.sidebar-full.sidebar-top .sni-ico{flex:0 0 auto}
 .app.sidebar-full.sidebar-top .sb-sep{width:1px;margin:0 6px}
 .app.sidebar-floating.sidebar-full.sidebar-top .sidebar{padding:6px 8px}
@@ -160,9 +160,15 @@ body.grp-resizing #globalRightPanel,body.grp-resizing #grpInner{transition:none 
 .app.sidebar-autohide.sidebar-floating .sidebar:hover{transform:translate(0, -50%)}
 .app.sidebar-autohide.sidebar-floating.sidebar-top .sb-edge-trigger:hover ~ .sidebar,
 .app.sidebar-autohide.sidebar-floating.sidebar-top .sidebar:hover{transform:translate(-50%, 0)}
-.sb-avatar{width:32px;height:32px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border:2px solid transparent;overflow:hidden;transition:.15s}
-.sni.active .sb-avatar{border-color:var(--accent)}
+.sb-avatar{width:32px;height:32px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border:none;overflow:hidden;transition:.15s}
 .sb-avatar img{width:100%;height:100%;object-fit:cover}
+/* Заглушка пустой обложки (shared/ui/EmptyCover.tsx): сплошная подложка +
+   приглушённый знак bloom. Знак — маска по /logo.png (как .win-icon), чтобы
+   перекрашиваться под тему: в светлой белая звезда по белому исчезла бы. */
+.cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--cover-empty);border-radius:inherit;overflow:hidden}
+/* Доля от площадки (34%, как на телефоне), но не мельче 10px: в меню и попапах
+   обложка бывает 22px, и там 34% превращались в невидимую точку. */
+.cover-empty-mark{width:34%;height:34%;min-width:10px;min-height:10px;flex-shrink:0;background-color:var(--text);opacity:.2;-webkit-mask:url('/logo.png') center/contain no-repeat;mask:url('/logo.png') center/contain no-repeat}
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;border-radius:var(--radius);border:1px solid var(--ovl-line);backdrop-filter:blur(12px);position:relative}
 #miniPlayer{backdrop-filter:blur(12px)}
 /* Скруглённый вид бара (pill) — инлайн border-radius иначе перебивает. */
@@ -199,4 +205,11 @@ body.play-flat #miniPlayer .cc-play:hover{background:none!important;color:var(--
 #grpInner{width:var(--grp-w);height:100%;display:flex;flex-direction:column;position:relative;}
 #mainContentRow{transition:gap .3s cubic-bezier(.32,.72,0,1)}
 #mainContentRow.has-grp-panel{gap:var(--app-gap)}
-.app.grp-side-left #mainContentRow{flex-direction:row-reverse!important}
+.app.grp-side-left #mainContentRow{flex-direction:row-reverse!important}/* ===== HOVER-MARQUEE КАРТОЧЕК (useCardMarquee) =====
+   `.mqh` — карточка-хост (ховер по ней запускает прокрутку), `.mq` — клип
+   подписи, `.mq-in` — бегунок внутри. Клип обязан быть однострочным: свойства
+   ниже дублируют то, что и так стоит у слотов (.hc-name, .sp-tc-name, …), но
+   страхуют подписи без своего ellipsis (.hpc-sub). Раскладку (размер шрифта,
+   выравнивание, отступы) по-прежнему задаёт класс слота. */
+.mq{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.mq>.mq-in{display:inline}

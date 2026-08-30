@@ -44,6 +44,14 @@ export interface QueueState {
    * запуском трека (`loadPlay`) / перемоткой / сменой очереди.
    */
   queueEnded: boolean
+  /**
+   * Очередь восстановлена из резюма после перезапуска, но стрим ещё НЕ загружен:
+   * трек и очередь видны в плеере, `<audio>` пуст, автовоспроизведения нет.
+   * Первый «плей» в этом состоянии (кнопка / медиа-клавиша / трей) означает
+   * «загрузить трек и продолжить с сохранённой позиции» — см. `togglePlay`.
+   * Снимается любым реальным запуском трека (`loadPlay`) и сменой очереди.
+   */
+  armed: boolean
   /** Массив track id'ов (в порядке воспроизведения). */
   queue: string[]
   /** Индекс в queue. -1 если очередь пуста. */
@@ -72,6 +80,8 @@ export interface QueueState {
   setLoadingId: (id: string | null) => void
   /** Выставить/снять «очередь доиграла до конца». */
   setQueueEnded: (v: boolean) => void
+  /** Выставить/снять «сессия восстановлена, стрим не загружен». */
+  setArmed: (v: boolean) => void
 
   /**
    * Прокрутить режим перемешки: off → обычный → умный → off, реорганизуя очередь.
@@ -116,6 +126,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   curId: null,
   loadingId: null,
   queueEnded: false,
+  armed: false,
   queue: [],
   qIdx: -1,
   source: null,
@@ -125,11 +136,12 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   _origQueue: null,
 
   setQueue: (queue, qIdx, source) =>
-    set({ queue, qIdx, source, _origQueue: null, queueEnded: false }),
+    set({ queue, qIdx, source, _origQueue: null, queueEnded: false, armed: false }),
   setQIdx: (qIdx) => set({ qIdx }),
   setCurId: (id) => set({ curId: id }),
   setLoadingId: (id) => set({ loadingId: id }),
   setQueueEnded: (v) => set({ queueEnded: v }),
+  setArmed: (v) => set({ armed: v }),
 
   cycleShuffle: (weightFn) => {
     const { shuffle, smartShuffle, queue, qIdx, _origQueue, curId } = get()

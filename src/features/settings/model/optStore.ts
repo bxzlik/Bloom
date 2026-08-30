@@ -14,7 +14,6 @@ import { create } from 'zustand'
  */
 
 export type OptMode = 'unfocus' | 'minimized'
-export type BlurQuality = 'low' | 'medium' | 'high'
 
 export interface OptEffects {
   bg: boolean
@@ -36,8 +35,6 @@ const defaultEffects = (): OptEffects => ({
 
 export interface OptState {
   unfocusSimplify: boolean
-  unfocusBlurQuality: BlurQuality
-  unfocusBlurStrength: number
   minimizedSmart: boolean
   effects: { unfocus: OptEffects; minimized: OptEffects }
   /** Runtime-флаг: визуализатор приостановлен оптимизацией (читает VizBlock). НЕ persist. */
@@ -48,8 +45,6 @@ export interface OptState {
   frozenViz: string | null
 
   setUnfocusSimplify: (v: boolean) => void
-  setUnfocusBlurQuality: (v: BlurQuality) => void
-  setUnfocusBlurStrength: (v: number) => void
   setMinimizedSmart: (v: boolean) => void
   /** Переключить карточку эффекта (covers циклит 1↔2, остальные boolean). */
   toggleEffect: (mode: OptMode, effect: keyof OptEffects) => void
@@ -62,16 +57,12 @@ const LS_KEY = 'bloom_opt'
 
 interface Persisted {
   unfocusSimplify: boolean
-  unfocusBlurQuality: BlurQuality
-  unfocusBlurStrength: number
   minimizedSmart: boolean
   effects: { unfocus: OptEffects; minimized: OptEffects }
 }
 
 const DEFAULTS: Persisted = {
   unfocusSimplify: true,
-  unfocusBlurQuality: 'low',
-  unfocusBlurStrength: 4,
   minimizedSmart: true,
   effects: { unfocus: defaultEffects(), minimized: defaultEffects() },
 }
@@ -95,8 +86,6 @@ const load = (): Persisted => {
     const p = JSON.parse(localStorage.getItem(LS_KEY) || '{}')
     return {
       unfocusSimplify: p.unfocusSimplify !== false,
-      unfocusBlurQuality: ['low', 'medium', 'high'].includes(p.unfocusBlurQuality) ? p.unfocusBlurQuality : 'low',
-      unfocusBlurStrength: typeof p.unfocusBlurStrength === 'number' ? p.unfocusBlurStrength : 4,
       minimizedSmart: p.minimizedSmart !== false,
       effects: {
         unfocus: mergeEffects(p.effects?.unfocus),
@@ -121,8 +110,6 @@ export const useOptStore = create<OptState>((set, get) => {
     const s = get()
     save({
       unfocusSimplify: s.unfocusSimplify,
-      unfocusBlurQuality: s.unfocusBlurQuality,
-      unfocusBlurStrength: s.unfocusBlurStrength,
       minimizedSmart: s.minimizedSmart,
       effects: s.effects,
     })
@@ -133,8 +120,6 @@ export const useOptStore = create<OptState>((set, get) => {
     frozenCover: null,
     frozenViz: null,
     setUnfocusSimplify: (v) => { set({ unfocusSimplify: v }); persist() },
-    setUnfocusBlurQuality: (v) => { set({ unfocusBlurQuality: v }); persist() },
-    setUnfocusBlurStrength: (v) => { set({ unfocusBlurStrength: v }); persist() },
     setMinimizedSmart: (v) => { set({ minimizedSmart: v }); persist() },
     toggleEffect: (mode, effect) =>
       set((s) => {
@@ -146,8 +131,6 @@ export const useOptStore = create<OptState>((set, get) => {
         const effects = { ...s.effects, [mode]: next }
         save({
           unfocusSimplify: s.unfocusSimplify,
-          unfocusBlurQuality: s.unfocusBlurQuality,
-          unfocusBlurStrength: s.unfocusBlurStrength,
           minimizedSmart: s.minimizedSmart,
           effects,
         })

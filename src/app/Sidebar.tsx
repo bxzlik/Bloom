@@ -7,14 +7,13 @@ import { SidebarAvatar, useProfileStore } from '@features/profile'
 import { openMiniplayer, closeMiniplayer } from '@features/player'
 import { useUiPrefsStore } from '@features/settings'
 import { useSearchOverlayStore } from '@features/search'
-import { WrappedNavItem } from '@features/wrapped'
 import { useNavStore, type PageId } from './navigationStore'
 
 /**
  * Sidebar блока `.sidebar#sidebarEl`.
  * Иконки и SVG-разметка скопированы без изменений.
  *
- * Структура: [home, (итоги)] | sep | [player, lib, search] | sep | [mp-toggle, settings, account]
+ * Структура: [home] | sep | [player, lib, search] | sep | [mp-toggle, settings, account]
  *
  * Подписи (`.sni-lbl`) рендерятся всегда, показывает их только CSS в режиме
  * `sidebarView: 'full'` (`.app.sidebar-full`, см. base.css) — так переключение
@@ -51,23 +50,20 @@ export const Sidebar = () => {
   return (
     <div className="sidebar" id="sidebarEl">
       <Sni p="home" icon="home" label={t('nav.home')} active={page === 'home'} onClick={() => goNav('home')} />
-      {/* «Итоги» — сезонный пункт рядом с «Главной»: сам решает, показываться ли
-          (расписание + наличие данных). */}
-      <WrappedNavItem />
 
       <div className="sb-sep" />
 
       <div className="sb-nav">
         <Sni p="player" icon="play" label={t('nav.player')} active={page === 'player'} onClick={() => goNav('player')} />
         <Sni p="lib" icon="library" label={t('nav.library')} active={page === 'lib'} onClick={() => goNav('lib')} />
-        <Sni p="search" icon="search" iconSize={18} label={t('nav.search')} active={page === 'search'} onClick={onSearchClick} />
+        <Sni p="search" icon="search" iconSize={20} label={t('nav.search')} active={page === 'search'} onClick={onSearchClick} />
       </div>
 
       <div className="sb-sep" />
 
       <div className="sb-bot">
         <div className="sni" id="floatPlayerToggleBtn" onClick={toggleMini} style={navFloatBtn ? (miniOpen ? { color: 'var(--accent)' } : undefined) : { display: 'none' }}>
-          <span className="sni-ico"><Ico name="pip" variant={miniOpen ? 'bold' : 'linear'} width={17} height={17} /></span>
+          <span className="sni-ico"><Ico name="pip" variant={miniOpen ? 'bold' : 'linear'} width={19} height={19} /></span>
           <span className="sni-lbl">{t('nav.mini')}</span>
         </div>
         <Sni p="settings" icon="settings" label={t('nav.settings')} active={false} onClick={openSettings} />
@@ -83,7 +79,7 @@ const Sni = ({
   p,
   active,
   icon,
-  iconSize = 19,
+  iconSize = 21,
   label,
   onClick,
   children,

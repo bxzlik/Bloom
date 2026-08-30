@@ -2,28 +2,34 @@
 .lib-hero-desc{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.45;opacity:.8;max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ctx{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius) * 0.9);padding:5px;z-index:100000;min-width:195px;box-shadow:none;display:none}
 .ctx.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
-.ci{padding:7px 10px;font-size:13px;cursor:pointer;border-radius:calc(var(--radius) * 0.5);display:flex;align-items:center;gap:8px;color:var(--text);transition:background .1s,box-shadow .1s}
-.ci:hover{background:var(--hover)}
-.ci-icon{width:22px;height:22px;border-radius:5px;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .1s}
-.ci-icon svg{width:14px;height:14px}
-.ci.red{color:#e03030}
-.ci.red:hover{background:rgba(224,48,48,.08)}
-/* Активный пункт (включённый режим): подсветка фоном всей кнопки. */
-.ci.ci-active{background:rgba(var(--accent-rgb,255,255,255),.13);color:var(--accent)}
-.ci.ci-active:hover{background:rgba(var(--accent-rgb,255,255,255),.18)}
+/* Пункт меню. Плоский: НИКАКОЙ подложки на ховере — как в референсе (Яндекс),
+   отклик даёт только осветление текста/иконки (--ovl .78 → 1). Высоту строки
+   диктует бокс иконки, поэтому он и есть главная ручка компактности:
+   18px + 2*5px паддинга = 28px на пункт (было 22 + 2*7 = 36). */
+.ci{padding:5px 10px;font-size:13px;cursor:pointer;border-radius:calc(var(--radius) * 0.5);display:flex;align-items:center;gap:10px;color:rgba(var(--ovl-rgb),.78);transition:color .1s}
+.ci:hover{color:var(--text)}
+.ci-icon{width:18px;height:18px;border-radius:5px;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:inherit;transition:color .1s}
+.ci-icon svg{width:15px;height:15px}
+.ci.red{color:rgba(224,48,48,.82)}
+.ci.red:hover{color:#e03030}
+/* Активный пункт (включённый режим) — тоже без плашки: только акцентный цвет. */
+.ci.ci-active{background:transparent;color:var(--accent)}
+.ci.ci-active:hover{background:transparent;color:var(--accent)}
 .ci.ci-active .ci-icon{color:var(--accent)}
 /* Строка плейлиста в попапе «Добавить в …»: крупная обложка + две строки
    текста (название / счётчик треков). Галочка — голая, без кружка. */
-.ci.ci-pl{padding:5px 8px;gap:10px}
-.ci.ci-pl .ci-icon{width:30px;height:30px;border-radius:calc(var(--radius) * 0.4)}
+.ci.ci-pl{padding:4px 8px;gap:10px}
+.ci.ci-pl .ci-icon{width:28px;height:28px;border-radius:calc(var(--radius) * 0.4)}
 .ci-pl-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.25}
 .ci-pl-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ci-pl-sub{font-size:11px;color:var(--text2);opacity:.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Отметка «трек уже здесь» — только галочка справа: без плашки на всю строку
    и без кружка вокруг самой галочки (в отличие от обычного `.ci-active`). */
-.ci.ci-pl.ci-active{background:transparent;color:var(--text)}
-.ci.ci-pl.ci-active:hover{background:var(--hover)}
-.cx-sep{height:1px;background:var(--border);margin:4px 3px;opacity:.65}
+.ci.ci-pl.ci-active{background:transparent;color:rgba(var(--ovl-rgb),.78)}
+.ci.ci-pl.ci-active:hover{background:transparent;color:var(--text)}
+/* Разделитель групп в меню. --ovl-line2 (а не жёсткий --border): следует
+   настройке прозрачности рамок и плёнке светлой темы, как и остальные линии. */
+.cx-sep{height:1px;background:var(--ovl-line2);margin:3px}
 .cx-label{padding:4px 10px 2px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);opacity:.55;pointer-events:none}
 .ctx--peek{display:block!important;visibility:hidden!important;pointer-events:none!important;animation:none!important}
 #cxPlFlyout{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius) * 0.9);padding:5px;z-index:100000;min-width:185px;max-width:240px;box-shadow:none;display:none;max-height:320px;overflow-y:auto}
@@ -32,40 +38,62 @@
    иначе названию остаётся ~80px. Только для попапа с `.ci-pl`. */
 #cxPlFlyout:has(.ci-pl){min-width:218px;max-width:260px}
 .pl-popup.open{animation:ctxIn .15s cubic-bezier(.34,1.25,.64,1)}
-#cxadd.flyout-open{background:var(--hover)}
-#toast{position:fixed;top:48px;left:50%;transform:translate(-50%,-14px);background:var(--card-solid,var(--card));border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 16px 11px;font-size:12px;color:var(--text);z-index:9500;transition:opacity .28s cubic-bezier(.34,1.25,.64,1),transform .28s cubic-bezier(.34,1.25,.64,1);pointer-events:none;opacity:0;display:flex;align-items:center;gap:10px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.45),0 4px 14px rgba(0,0,0,.3)}
-#toast.show{opacity:1;transform:translate(-50%,0)}
-#toast.has-action{pointer-events:auto}
-#toast .toast-ico{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:26px;height:26px;border-radius:50%;color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
-#toast.toast-success .toast-ico{color:#2fbf6c;background:color-mix(in srgb,#2fbf6c 16%,transparent)}
-#toast.toast-warn .toast-ico{color:#e0a52e;background:color-mix(in srgb,#e0a52e 16%,transparent)}
-#toast.toast-error .toast-ico{color:#e0494a;background:color-mix(in srgb,#e0494a 16%,transparent)}
-#toast .toast-text{line-height:1.35}
-#toast .toast-undo{background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:0;font-family:var(--font);white-space:nowrap}
-#toast .toast-undo:hover{text-decoration:underline}
-#toast .toast-bar{position:absolute;left:0;bottom:0;height:2.5px;width:100%;transform-origin:left;background:var(--accent);border-radius:2px;animation:toastBar linear forwards}
-#toast.toast-success .toast-bar{background:#2fbf6c}
-#toast.toast-warn .toast-bar{background:#e0a52e}
-#toast.toast-error .toast-bar{background:#e0494a}
-@keyframes toastBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
-/* Тост прогресса скачивания — сверху по центру, в стиле #toast. Когда он висит,
-   эфемерный #toast уезжает ниже (body.dl-toast), чтобы не перекрывались. */
-#dltoast{position:fixed;top:48px;left:50%;transform:translateX(-50%);width:330px;max-width:calc(100vw - 32px);background:var(--card-solid,var(--card));border:1.5px solid var(--border);border-radius:var(--radius);padding:11px 14px 12px;z-index:9600;box-shadow:0 14px 40px rgba(0,0,0,.45),0 4px 14px rgba(0,0,0,.3);animation:dlToastIn .28s cubic-bezier(.34,1.25,.64,1)}
-#dltoast .dlt-row{display:flex;align-items:center;gap:10px}
-#dltoast .dlt-ico{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:28px;height:28px;border-radius:50%;color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
-#dltoast.is-done .dlt-ico{color:#2fbf6c;background:color-mix(in srgb,#2fbf6c 16%,transparent)}
+/* Пункт с открытым флайаутом — как и ховер, без подложки: только полный цвет. */
+#cxadd.flyout-open{color:var(--text)}
+/* ===== ТОСТЫ =====
+   Вид перенесён с телефона (`bloom-phone/lib/shared/ui/bloom_toast.dart`):
+   не карточка, а КАПСУЛА поверхности всплывающего оверлея (та же, что у меню —
+   `--block-color` + `--ov-lift`, значит и стекло `body.glass-overlays` ложится
+   на неё), значок вида в круге, а обратный отсчёт — КОЛЬЦО вокруг значка, а не
+   полоса по низу. Полоса осталась только за прогрессом долгой работы
+   (#dltoast), где показывает долю, а не время.
+   Место — по-прежнему сверху по центру (на телефоне снизу, там свои бары).
+   --tk — цвет вида: от него и значок, и кольцо, и полоса. */
+#toast{--tk:var(--accent);position:fixed;top:48px;left:50%;transform:translate(-50%,-10px) scale(.94);transform-origin:top center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--ovl-line2);border-radius:999px;padding:6px 18px 6px 6px;font-size:13px;color:var(--text);z-index:9500;transition:opacity .3s cubic-bezier(.34,1.4,.64,1),transform .3s cubic-bezier(.34,1.4,.64,1);pointer-events:none;opacity:0;display:flex;align-items:center;gap:10px;max-width:min(460px,calc(100vw - 48px));box-shadow:none}
+#toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+#toast.toast-success{--tk:#2fbf6c}
+#toast.toast-warn{--tk:#e0a52e}
+#toast.toast-error{--tk:#e0494a}
+/* С кнопкой правый край поджимается: пилюля сама держит отступ от дуги. */
+#toast.has-action{pointer-events:auto;padding-right:6px}
+#toast .toast-badge{position:relative;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+#toast .toast-ico{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;color:var(--tk);background:color-mix(in srgb,var(--tk) 16%,transparent)}
+/* Кольцо отсчёта: дорожка + дуга, утекающая по часовой за время жизни тоста.
+   rotate(-90deg) — чтобы дуга начиналась с 12 часов, а не с 3. */
+#toast .toast-ring{position:absolute;inset:0;transform:rotate(-90deg)}
+#toast .toast-ring circle{fill:none;stroke-width:2.2;stroke-linecap:round}
+#toast .toast-ring .trk{stroke:color-mix(in srgb,var(--tk) 14%,transparent)}
+#toast .toast-ring .arc{stroke:var(--tk);stroke-dasharray:93.6;animation:toastRing linear forwards}
+@keyframes toastRing{from{stroke-dashoffset:0}to{stroke-dashoffset:93.6}}
+/* Не больше трёх строк (как на телефоне): длинный текст обрезается, а не
+   растит капсулу в столбик. */
+#toast .toast-text{line-height:1.35;font-weight:500;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+/* Кнопка — пилюля, а не голый текст: у капсулы правый край скруглён, и текст
+   без подложки жался бы к дуге. */
+#toast .toast-undo{flex-shrink:0;background:color-mix(in srgb,var(--accent) 14%,transparent);border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:6px 13px;border-radius:999px;font-family:var(--font);white-space:nowrap;transition:background .14s}
+#toast .toast-undo:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
+/* Тост прогресса скачивания — та же капсула, но со значком-вертушкой вместо
+   вида и полосой ДОЛИ по низу. Когда он висит, эфемерный #toast уезжает ниже
+   (body.dl-toast), чтобы не перекрывались. */
+/* Ширина фиксированная, а не по содержимому (в отличие от #toast): в подписи
+   меняется имя текущего трека, и капсула прыгала бы на каждом треке. */
+#dltoast{--tk:var(--accent);position:fixed;top:48px;left:50%;transform:translateX(-50%);width:352px;max-width:calc(100vw - 48px);box-sizing:border-box;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--ovl-line2);border-radius:999px;padding:6px 8px 10px 6px;z-index:9600;box-shadow:none;display:flex;align-items:center;gap:10px;transform-origin:top center;animation:dlToastIn .3s cubic-bezier(.34,1.4,.64,1)}
+#dltoast.is-done{--tk:#2fbf6c}
+#dltoast .dlt-badge{position:relative;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+#dltoast .dlt-ico{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;color:var(--tk);background:color-mix(in srgb,var(--tk) 16%,transparent)}
+#dltoast .dlt-spin{width:15px;height:15px;border:2px solid color-mix(in srgb,var(--tk) 22%,transparent);border-top-color:var(--tk);border-radius:50%;animation:bloom-spin .75s linear infinite}
 #dltoast .dlt-body{min-width:0;flex:1}
-#dltoast .dlt-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dltoast .dlt-title{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #dltoast .dlt-sub{font-size:12px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#dltoast .dlt-close{flex-shrink:0;background:none;border:none;color:var(--text2);cursor:pointer;padding:3px;line-height:0;opacity:.7;border-radius:6px;transition:background .12s,opacity .12s}
-#dltoast .dlt-close:hover{opacity:1;background:var(--hover)}
-#dltoast .dlt-progress{display:flex;align-items:center;gap:9px;margin-top:10px}
-#dltoast .dlt-track{flex:1;height:6px;border-radius:4px;background:rgba(var(--ovl-rgb),.08);overflow:hidden}
-#dltoast .dlt-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .25s ease}
-#dltoast.is-done .dlt-fill{background:#2fbf6c}
 #dltoast .dlt-count{font-size:11px;color:var(--text2);flex-shrink:0;font-variant-numeric:tabular-nums}
-body.dl-toast #toast{top:120px}
-@keyframes dlToastIn{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
+#dltoast .dlt-close{flex-shrink:0;background:none;border:none;color:var(--text2);cursor:pointer;width:26px;height:26px;display:flex;align-items:center;justify-content:center;opacity:.7;border-radius:50%;transition:background .12s,opacity .12s}
+#dltoast .dlt-close:hover{opacity:1;background:var(--hover)}
+/* Полоса доли — по низу капсулы с отступами от краёв: низ сужен скруглением,
+   во всю ширину полоса обрезалась бы дугой. */
+#dltoast .dlt-track{position:absolute;left:18px;right:18px;bottom:5px;height:3px;border-radius:3px;background:color-mix(in srgb,var(--tk) 14%,transparent);overflow:hidden}
+#dltoast .dlt-fill{height:100%;background:var(--tk);border-radius:3px;transition:width .25s ease}
+body.dl-toast #toast{top:112px}
+@keyframes dlToastIn{from{opacity:0;transform:translate(-50%,-10px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 .sbox{display:flex;align-items:center;gap:5px;background:var(--card-solid,var(--card));border:1px solid var(--border);border-radius:var(--radius);padding:5px 11px;transition:border-color .15s}
 .sbox input{background:none;border:none;outline:none;color:var(--text);font-size:12px;width:110px;font-family:var(--font)}
 .sbox:focus-within{border-color:var(--border-focus)}
@@ -78,12 +106,12 @@ body.dl-toast #toast{top:120px}
 .lib-search input::placeholder{color:var(--muted)}
 
 /* ===== CONTEXT MENU PREVIEW ===== */
-#cxPreview{position:relative;overflow:hidden;padding:10px 12px 11px;display:none;align-items:center;gap:10px;pointer-events:none;margin:0 0 4px;border-radius:calc(var(--radius) * 0.7)}
+#cxPreview{position:relative;overflow:hidden;padding:8px 11px 9px;display:none;align-items:center;gap:10px;pointer-events:none;margin:0 0 3px;border-radius:calc(var(--radius) * 0.7)}
 /* Размытая обложка фоном шапки + затемняющий градиент поверх для читаемости. */
 #cxPreview::before{content:'';position:absolute;inset:0;z-index:0;background-image:var(--cx-cover,none);background-size:cover;background-position:center;filter:blur(20px) saturate(1.4) brightness(.6);transform:scale(1.5)}
 #cxPreview::after{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.6))}
 #cxPreview>*{position:relative;z-index:1}
-#cxPreviewCov{width:46px;height:46px;border-radius:calc(var(--radius)*0.65);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+#cxPreviewCov{width:38px;height:38px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 #cxPreviewCov img{width:100%;height:100%;object-fit:cover}
 #cxPreviewName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 #cxPreviewArtist{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;text-shadow:0 1px 2px rgba(0,0,0,.6)}

@@ -1,5 +1,5 @@
-export * from './discSvg'
 export * from './formatStats'
 export * from './useArtistAvatars'
+export * from './useProfileStats'
 export * from './readFileAsDataURL'
 export * from './buildProfileCard'

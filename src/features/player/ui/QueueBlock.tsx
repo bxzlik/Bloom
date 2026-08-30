@@ -44,13 +44,8 @@ import { AddPopup } from './AddPopup'
 /**
  * @param headerExtra  доп. контролы в правой группе шапки (напр. кнопка смены
  *   стороны в глобальной правой панели). На странице плеера не передаётся.
- * @param similarIcon  в узкой боковой панели «Похожие» рисуем компактной иконкой
- *   (без текста), на странице плеера — пилюлей с подписью.
  */
-const QueueBlockImpl = ({
-  headerExtra,
-  similarIcon,
-}: { headerExtra?: ReactNode; similarIcon?: boolean } = {}) => {
+const QueueBlockImpl = ({ headerExtra }: { headerExtra?: ReactNode } = {}) => {
   const t = useT()
   const queue = useQueueStore((s) => s.queue)
   const curId = useQueueStore((s) => s.curId)
@@ -216,7 +211,6 @@ const QueueBlockImpl = ({
         canClear={queue.length > 1}
         onClear={clearExceptCurrent}
         headerExtra={headerExtra}
-        similarIcon={similarIcon}
       />
 
       <div
@@ -320,6 +314,25 @@ export const QueueBlock = memo(QueueBlockImpl)
 /** Потолок ширины пилюли источника (#qpSourcePill), px. Дальше — ellipsis + marquee. */
 const QP_PILL_MAX = 260
 
+/**
+ * Кнопки в правой группе шапки очереди (очистить / «Похожие») — голые иконки:
+ * без рамки и подложки, реагируют только цветом. Так шапка не спорит с пилюлей
+ * источника слева, которая единственная остаётся в рамке.
+ */
+const QP_HEAD_BTN: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 28,
+  height: 28,
+  padding: 0,
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  transition: '.15s',
+  flexShrink: 0,
+}
+
 const sourceLabel = (s: PlaySource, t: TFunc): string => {
   if (!s) return '—'
   switch (s.kind) {
@@ -408,13 +421,13 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
         </div>
       )
     case 'playlist': {
-      // Плейлист без cover — мозаика из обложек треков очереди (или винил-фолбэк
-      // внутри PlaylistCover, если обложек нет).
+      // Плейлист без cover — мозаика из обложек треков очереди (или пустая
+      // обложка внутри PlaylistCover, если обложек нет).
       const byId = new Map(allTracks.map((t) => [t.id, t]))
       const covers = queue.map((id) => (byId.get(id) ?? trackRegistry.get(id))?.cover)
       return (
         <div id="qpSourceIcon" style={box}>
-          <PlaylistCover covers={covers} seed={source.id} />
+          <PlaylistCover covers={covers} />
         </div>
       )
     }
@@ -445,7 +458,6 @@ const QueueHeader = ({
   canClear,
   onClear,
   headerExtra,
-  similarIcon,
 }: {
   source: PlaySource
   count: number
@@ -453,7 +465,6 @@ const QueueHeader = ({
   canClear: boolean
   onClear: () => void
   headerExtra?: ReactNode
-  similarIcon?: boolean
 }) => {
   const t = useT()
   return (
@@ -506,7 +517,7 @@ const QueueHeader = ({
             padding: '0 6px',
             height: 18,
             flexShrink: 0,
-            color: 'var(--text2)',
+            color: 'var(--text)',
             border: '1px solid var(--ovl-line)',
             borderRadius: 20,
           }}
@@ -522,7 +533,7 @@ const QueueHeader = ({
           alignItems: 'center',
           fontSize: 10,
           fontWeight: 700,
-          color: 'var(--text2)',
+          color: 'var(--text)',
           padding: '0 6px',
           height: 18,
           flexShrink: 0,
@@ -537,78 +548,45 @@ const QueueHeader = ({
       {canClear && (
         <button
           id="clearQueueBtn"
+          type="button"
+          aria-label={t('player.aria.clearQueue')}
           onClick={onClear}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 28,
-            height: 28,
-            borderRadius: 'calc(var(--radius) * 0.6)',
-            background: 'transparent',
-            border: '1px solid var(--ovl-line)',
-            color: 'var(--icon-fg)',
-            cursor: 'pointer',
-            transition: '.15s',
-            flexShrink: 0,
-          }}
+          style={{ ...QP_HEAD_BTN, color: 'var(--icon-fg)' }}
           onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(224,48,48,.15)'
-            e.currentTarget.style.borderColor = 'rgba(224,48,48,.4)'
             e.currentTarget.style.color = '#e03030'
           }}
           onMouseOut={(e) => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.borderColor = 'var(--ovl-line)'
             e.currentTarget.style.color = 'var(--icon-fg)'
           }}
         >
-          <Ico name="trash" width={13} height={13} />
+          <Ico name="trash" width={16} height={16} />
         </button>
       )}
-      {count > 0 && <SimilarButton icon={similarIcon} />}
+      {count > 0 && <SimilarButton />}
       {headerExtra}
     </div>
   </div>
   )
 }
 
-/** «Похожие на очередь» (волна). icon=true — компактная иконка (узкая панель). */
-const SimilarButton = ({ icon }: { icon?: boolean }) => {
+/** «Похожие на очередь» (волна) — голая иконка везде: и в панели, и на странице плеера. */
+const SimilarButton = () => {
   const t = useT()
-  const eq = <Ico name="wave" variant="bold" width={12} height={12} />
-  const base: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 'calc(var(--radius) * 0.6)',
-    background: 'transparent',
-    border: '1px solid var(--ovl-line)',
-    color: 'var(--icon-fg)',
-    cursor: 'pointer',
-    transition: '.15s',
-    flexShrink: 0,
-    fontFamily: 'var(--font)',
-  }
-  const style: React.CSSProperties = icon
-    ? { ...base, width: 28, height: 28 }
-    : { ...base, gap: 6, padding: '0 12px', height: 28, fontSize: 11, fontWeight: 600 }
   return (
     <button
       id="qpSimilarBtn"
+      type="button"
+      aria-label={t('player.similar')}
       onClick={() => void waveApi.startByQueue()}
-      style={style}
+      style={{ ...QP_HEAD_BTN, color: 'var(--icon-fg)' }}
       onMouseOver={(e) => {
         e.currentTarget.style.color = 'var(--text)'
-        e.currentTarget.style.borderColor = 'rgba(var(--ovl-rgb),.3)'
       }}
       onMouseOut={(e) => {
         e.currentTarget.style.color = 'var(--icon-fg)'
-        e.currentTarget.style.borderColor = 'var(--ovl-line)'
       }}
     >
-      {eq}
-      {!icon && t('player.similar')}
+      <Ico name="wave" variant="bold" width={16} height={16} />
     </button>
   )
 }

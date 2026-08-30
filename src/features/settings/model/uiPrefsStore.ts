@@ -132,14 +132,6 @@ export interface UiPrefs {
   /** Название текущей вкладки по центру тайтлбара (`#winTitleCenter`). */
   titlebarLabel: boolean
   navFloatBtn: boolean
-  /** Пункт «Итоги» (недели/месяца/года) в сайдбаре. */
-  wrappedShow: boolean
-  /**
-   * Показывать пункт «Итогов» вне расписания (обычно он появляется только по
-   * понедельникам / 1-го числа / в декабре). Ось для проверки и для тех, кому
-   * хочется смотреть итоги когда угодно.
-   */
-  wrappedAlways: boolean
   // ── Элементы тайтлбара (что показывать на панели окна) ──
   /** Логотип Bloom слева (`.win-icon`). */
   tbLogo: boolean
@@ -189,7 +181,7 @@ export const SM_NAV_W_DEFAULT = 185
  * SB_EXPAND_AT включается `full`, тянем обратно → на SB_COLLAPSE_AT возвращается
  * `icons`. Разные пороги не дают режиму дребезжать на границе.
  */
-export const SB_ICONS_W = 62
+export const SB_ICONS_W = 70
 export const SB_FULL_W_MIN = 140
 export const SB_FULL_W_MAX = 340
 export const SB_FULL_W_DEFAULT = 190
@@ -226,8 +218,6 @@ const DEFAULTS: UiPrefs = {
   homeHistory: true,
   homeNew: true,
   homeCharts: true,
-  wrappedShow: true,
-  wrappedAlways: false,
   homeRecent: true,
   homePlaylists: true,
   drawerSide: 'right',
@@ -293,10 +283,6 @@ const load = (): UiPrefs => {
       homeHistory: p.homeHistory !== false,
       homeNew: p.homeNew !== false,
       homeCharts: p.homeCharts !== false,
-      // Миграция: пока «Итоги» жили на главной, флаги назывались
-      // homeWrapped/homeWrappedAlways — иначе включённый тумблер терялся.
-      wrappedShow: (p.wrappedShow ?? p.homeWrapped) !== false,
-      wrappedAlways: !!(p.wrappedAlways ?? p.homeWrappedAlways),
       homeRecent: p.homeRecent !== false,
       homePlaylists: p.homePlaylists !== false,
       drawerSide: p.drawerSide === 'left' ? 'left' : 'right',
@@ -389,8 +375,6 @@ const persist = (s: UiPrefs): void => {
         homeHistory: s.homeHistory,
         homeNew: s.homeNew,
         homeCharts: s.homeCharts,
-        wrappedShow: s.wrappedShow,
-        wrappedAlways: s.wrappedAlways,
         homeRecent: s.homeRecent,
         homePlaylists: s.homePlaylists,
         drawerSide: s.drawerSide,

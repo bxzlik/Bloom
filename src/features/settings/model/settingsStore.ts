@@ -19,6 +19,7 @@ import { invoke } from '@shared/tauri'
 
 const DEFAULTS: AppSettings = {
   minimize_to_tray: false,
+  restore_queue: true,
   autoplay: false,
   discord_rpc: false,
   change_titlebar: false,
@@ -44,6 +45,14 @@ export interface SettingsState extends AppSettings {
   /** Windows-автозапуск (registry). null = ещё не подтянули. */
   autostart: boolean | null
   setMinimizeToTray: (v: boolean) => Promise<void>
+  /**
+   * Восстанавливать сессию при запуске. Выключение снимает и `autoplay` — он
+   * вложен в эту настройку и поднятым в конфиге остаться не должен. Тот же
+   * инвариант держит Rust (`set_restore_queue`), здесь он повторён ради
+   * мгновенного UI.
+   */
+  setRestoreQueue: (v: boolean) => Promise<void>
+  /** Автовоспроизведение: «восстановив, сразу продолжить». `restore_queue` не трогает. */
   setAutoplay: (v: boolean) => Promise<void>
   setChangeTitlebar: (v: boolean) => Promise<void>
   setChangeTrayCover: (v: boolean) => Promise<void>
@@ -91,6 +100,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setMinimizeToTray: async (v) => {
     set({ minimize_to_tray: v })
     await wrap('setminimize_to_tray', () => invoke('setminimize_to_tray', { enabled: v }))
+  },
+  setRestoreQueue: async (v) => {
+    set(v ? { restore_queue: true } : { restore_queue: false, autoplay: false })
+    await wrap('set_restore_queue', () => invoke('set_restore_queue', { enabled: v }))
   },
   setAutoplay: async (v) => {
     set({ autoplay: v })

@@ -242,7 +242,7 @@ export const AddFromLibModal = ({ open, onClose, playlistId }: AddFromLibModalPr
         <div className="mpl-hero">
           <div className="mpl-cstack" style={{ width: 56, height: 56 }}>
             <div className="mpl-cov" style={{ width: 56, height: 56, top: 0, left: 0 }}>
-              {cover ? <img src={cover} alt="" /> : <PlCover trs={playlist?.trs ?? []} seed={actId ?? ''} />}
+              {cover ? <img src={cover} alt="" /> : <PlCover trs={playlist?.trs ?? []} />}
             </div>
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>

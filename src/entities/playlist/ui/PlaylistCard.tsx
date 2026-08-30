@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { cn } from '@shared/lib/cn'
+import { CardMarquee } from '@shared/ui'
 import { t } from '@shared/i18n'
 import { TrackCover } from '@entities/track'
 import type { Playlist } from '../model/types'
@@ -22,7 +23,7 @@ export const PlaylistCard = ({
   <div
     onClick={(e) => onClick?.(playlist, e)}
     className={cn(
-      'group flex flex-col gap-2 select-none cursor-pointer',
+      'group mqh flex flex-col gap-2 select-none cursor-pointer',
       'rounded-xl p-2 hover:bg-(--color-surface) transition-colors duration-100',
       className,
     )}
@@ -37,11 +38,11 @@ export const PlaylistCard = ({
       )}
     </div>
     <div className="min-w-0">
-      <div className="truncate text-sm font-medium">{playlist.title}</div>
-      <div className="truncate text-xs text-(--color-text-muted)">
+      <CardMarquee className="truncate text-sm font-medium">{playlist.title}</CardMarquee>
+      <CardMarquee className="truncate text-xs text-(--color-text-muted)">
         {playlist.ownerName ??
           (playlist.trackCount !== undefined ? t('entities.playlist.trackCount', { n: playlist.trackCount }) : '')}
-      </div>
+      </CardMarquee>
     </div>
   </div>
 )

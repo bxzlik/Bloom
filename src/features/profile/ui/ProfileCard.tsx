@@ -1,57 +1,36 @@
 import type { CSSProperties } from 'react'
-import { usePlayerStore } from '@features/player'
 import { toast } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { useProfileStore } from '../model/profileStore'
 import { Ico } from '@shared/ui/icons/solar'
-import { DiscAvatar } from './DiscAvatar'
+import { EmptyAvatar } from './EmptyAvatar'
 
 /**
  * Карточка профиля на странице аккаунта. `#page-account`
  * profile card: баннер (цвет/градиент или картинка) +
- * аватар (винил-диск или картинка) + ник (клик→копировать) + строка «слушает
- * сейчас» + бокс био/статуса + кнопки Поделиться / Изменить.
+ * аватар (картинка или заглушка) + ник (клик→копировать) + бокс био/статуса +
+ * кнопки Поделиться / Изменить.
  */
 
-const ShareIcon = () => <Ico name="share" width={10} height={10} />
+const ShareIcon = () => <Ico name="share" width={18} height={18} />
 
-const EditIcon = () => <Ico name="edit" width={10} height={10} />
+const EditIcon = () => <Ico name="edit" width={18} height={18} />
 
+/** Иконка-действие на баннере: нейтральный белый, ярче при наведении. */
 const btnStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 6,
-  padding: '6px 13px',
+  justifyContent: 'center',
+  width: 32,
+  height: 32,
+  padding: 0,
   borderRadius: 'calc(var(--radius)*0.55)',
-  background: 'var(--accent)',
+  background: 'none',
   border: 'none',
-  color: 'var(--accent-text)',
+  color: '#fff',
+  opacity: 0.55,
   cursor: 'pointer',
-  fontSize: 12,
-  fontWeight: 700,
-  fontFamily: 'var(--font)',
   transition: 'opacity .15s',
-}
-
-const NowPlaying = () => {
-  const t = useT()
-  const playing = usePlayerStore((s) => s.playing)
-  const title = usePlayerStore((s) => s.title)
-  const artist = usePlayerStore((s) => s.artist)
-  if (!playing || !title) return null
-  return (
-    <div className="acc-since" id="accNowPlaying" style={{ color: 'rgba(255,255,255,.65)' }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-          <span style={{ width: 3, height: 8, background: 'var(--accent)', borderRadius: 2, animation: 'npBar 0.8s ease-in-out infinite alternate' }} />
-          <span style={{ width: 3, height: 12, background: 'var(--accent)', borderRadius: 2, animation: 'npBar 0.8s ease-in-out infinite alternate 0.2s' }} />
-          <span style={{ width: 3, height: 6, background: 'var(--accent)', borderRadius: 2, animation: 'npBar 0.8s ease-in-out infinite alternate 0.4s' }} />
-        </span>
-        <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('profile.nowPlaying')}</span> {title}
-        {artist ? ` — ${artist}` : ''}
-      </span>
-    </div>
-  )
 }
 
 export const ProfileCard = () => {
@@ -62,12 +41,6 @@ export const ProfileCard = () => {
     p.bannerColorMode === 'gradient'
       ? `linear-gradient(${p.bannerAngle}deg,${p.bannerColor} 0%,${p.bannerColor2} 100%)`
       : p.bannerColor
-
-  // Рамка аватара _applyAvaBorderColor: accent → дефолт CSS
-  // (border var(--accent)); custom → заданный цвет; off → ширина 0.
-  const avaStyle: CSSProperties = {}
-  if (p.avaBorderMode === 'custom' && p.avaBorderColor) avaStyle.borderColor = p.avaBorderColor
-  if (p.avaBorderMode === 'off') avaStyle.borderWidth = 0
 
   const hasBioBox = !!(p.bio.trim() || p.status.trim())
 
@@ -91,11 +64,11 @@ export const ProfileCard = () => {
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 16px', zIndex: 2 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             {p.avatar ? (
-              <div className="acc-ava" id="accAvaBig" style={avaStyle}>
+              <div className="acc-ava" id="accAvaBig">
                 <img src={p.avatar} alt="" />
               </div>
             ) : (
-              <DiscAvatar idx={p.discIdx} color={p.discColor} className="acc-ava" style={avaStyle} />
+              <EmptyAvatar className="acc-ava" />
             )}
             <div>
               <div
@@ -107,7 +80,6 @@ export const ProfileCard = () => {
               >
                 {p.name}
               </div>
-              <NowPlaying />
               {hasBioBox && (
                 <div className="acc-bio-box" style={{ display: 'block' }}>
                   {p.bio.trim() && <div className="acc-bio-box-text">{p.bio}</div>}
@@ -118,23 +90,25 @@ export const ProfileCard = () => {
           </div>
         </div>
 
-        {/* Кнопки внизу справа */}
-        <div style={{ position: 'absolute', bottom: 14, right: 16, zIndex: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* Иконки-действия вверху справа */}
+        <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
           <button
             style={btnStyle}
+            aria-label={t('lib.ctx.share')}
             onClick={p.openShare}
-            onMouseOver={(e) => (e.currentTarget.style.opacity = '.85')}
-            onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
+            onMouseOver={(e) => (e.currentTarget.style.opacity = '1')}
+            onMouseOut={(e) => (e.currentTarget.style.opacity = '.55')}
           >
-            <ShareIcon /> {t('lib.ctx.share')}
+            <ShareIcon />
           </button>
           <button
             style={btnStyle}
+            aria-label={t('common.edit')}
             onClick={p.openEdit}
-            onMouseOver={(e) => (e.currentTarget.style.opacity = '.85')}
-            onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
+            onMouseOver={(e) => (e.currentTarget.style.opacity = '1')}
+            onMouseOut={(e) => (e.currentTarget.style.opacity = '.55')}
           >
-            <EditIcon /> {t('common.edit')}
+            <EditIcon />
           </button>
         </div>
       </div>

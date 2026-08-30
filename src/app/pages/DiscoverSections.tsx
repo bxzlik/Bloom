@@ -9,6 +9,7 @@ import { useUiPrefsStore } from '@features/settings'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, YmLogo, providerBrandColor, type Track } from '@entities/track'
 import type { Playlist } from '@entities/playlist'
+import { CardMarquee } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -223,7 +224,7 @@ const DiscoverBlock = ({
       {data.kind === 'tracks' ? (
         <div className="home-cards">
           {data.tracks.map((tr) => (
-            <div className="home-card" key={tr.id} onClick={() => playSingleTrack(tr.id)} onContextMenu={(e) => onTrackCtx(e, tr)}>
+            <div className="home-card mqh" key={tr.id} onClick={() => playSingleTrack(tr.id)} onContextMenu={(e) => onTrackCtx(e, tr)}>
               <div className="hc-cover">
                 {tr.cover ? <img src={tr.cover} alt="" /> : <Ico name="note" width={24} height={24} />}
                 <CoverSourceBadge track={tr} size={24} />
@@ -234,8 +235,8 @@ const DiscoverBlock = ({
                 </div>
                 <PlayStateOverlay trackId={tr.id} size="card" />
               </div>
-              <div className="hc-name">{tr.name}</div>
-              <div className="hc-artist">
+              <CardMarquee className="hc-name">{tr.name}</CardMarquee>
+              <CardMarquee className="hc-artist">
                 <ArtistLinks
                   artist={tr.artist}
                   scId={tr.artistScId}
@@ -243,14 +244,14 @@ const DiscoverBlock = ({
                   artistId={tr.artistId}
                   provider={tr.artistProvider}
                 />
-              </div>
+              </CardMarquee>
             </div>
           ))}
         </div>
       ) : (
         <div className="home-cards">
           {data.albums.map((a) => (
-            <div className="home-card" key={a.id} onClick={() => openAlbum(selected, a)}>
+            <div className="home-card mqh" key={a.id} onClick={() => openAlbum(selected, a)}>
               <div className="hc-cover">
                 {a.cover ? <img src={a.cover} alt="" /> : <Ico name="note" width={24} height={24} />}
                 <CoverProviderBadge provider={a.source} size={24} />
@@ -261,8 +262,8 @@ const DiscoverBlock = ({
                   </div>
                 </div>
               </div>
-              <div className="hc-name">{a.title}</div>
-              <div className="hc-artist">{a.ownerName}</div>
+              <CardMarquee className="hc-name">{a.title}</CardMarquee>
+              <CardMarquee className="hc-artist">{a.ownerName}</CardMarquee>
             </div>
           ))}
         </div>

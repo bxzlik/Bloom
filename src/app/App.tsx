@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useThemeSettings, useTrackRowMarquee, useTauriEvent } from '@shared/hooks'
+import { useThemeSettings, useTrackRowMarquee, useCardMarquee, useTauriEvent } from '@shared/hooks'
 import { initLocaleAttr, t as tFn } from '@shared/i18n'
 import { TitleBar } from './TitleBar'
 import { Sidebar } from './Sidebar'
@@ -102,6 +102,7 @@ export const App = () => {
   useLastfmBridge()
   useAudioEffects()
   useTrackRowMarquee()
+  useCardMarquee()
   useUpdateBootstrap()
   useAchievementsWatcher()
 

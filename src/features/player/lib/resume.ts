@@ -2,11 +2,22 @@ import { useLibStore, useFavStore, usePlaylistStore } from '@features/library'
 import { trackRegistry, type Track } from '@entities/track'
 import { t as i18nT } from '@shared/i18n'
 import { useQueueStore, type PlaySource } from '../model/queueStore'
+import { usePlayerStore } from '../model/store'
 import { audioEngine } from './audioEngine'
 
 /** Резолв трека: библиотека → реестр площадок. */
 const findTrack = (id: string): Track | undefined =>
   useLibStore.getState().tracks.find((t) => t.id === id) ?? trackRegistry.get(id)
+
+/** "m:ss" / "h:mm:ss" → секунды. 0, если не парсится. */
+const parseDur = (dur: string | undefined): number => {
+  if (!dur) return 0
+  const parts = dur.split(':').map((s) => parseInt(s, 10))
+  if (parts.some((n) => Number.isNaN(n))) return 0
+  if (parts.length === 2) return parts[0]! * 60 + parts[1]!
+  if (parts.length === 3) return parts[0]! * 3600 + parts[1]! * 60 + parts[2]!
+  return 0
+}
 
 /**
  * Сохранение/восстановление позиции воспроизведения («Продолжить»).
@@ -40,6 +51,11 @@ export interface ResumeData {
    *  только в реестре в памяти). Без них после рестарта очередь-альбом из поиска
    *  теряет все треки, кроме текущего, — реестр очищается при закрытии приложения. */
   tracks?: Track[]
+  /** Режимы очереди на момент сохранения. Опциональны: старые резюмы (и снимок,
+   *  который пишет движок «Волны») их не содержат — тогда остаются дефолты. */
+  shuffle?: boolean
+  smartShuffle?: boolean
+  repeat?: 0 | 1 | 2
 }
 
 const toLegacySource = (s: PlaySource): LegacySource => {
@@ -89,6 +105,14 @@ export const legacySourceLabel = (s: LegacySource | undefined): string => {
   }
 }
 
+/**
+ * Резюм, из которого поднята текущая `armed`-сессия (см. `restoreSession`).
+ * Нужен двум местам:
+ *  • `saveResume` — не перетирать исходные savedAt/state, пока ничего не играло;
+ *  • карточка «Продолжить» — показывает «N минут назад» вместо «На паузе».
+ */
+let _boot: ResumeData | null = null
+
 export const loadResume = (): ResumeData | null => {
   try {
     const r = JSON.parse(localStorage.getItem(KEY) || '{}')
@@ -100,8 +124,17 @@ export const loadResume = (): ResumeData | null => {
 
 /** Сохранить текущее состояние плеера. Вызывается из бриджа (throttled + на pause/play). */
 export const saveResume = (state?: string): void => {
-  const { curId, queue, qIdx, source } = useQueueStore.getState()
-  if (!curId || !audioEngine.duration) return
+  const { curId, queue, qIdx, source, shuffle, smartShuffle, repeat, armed } =
+    useQueueStore.getState()
+  if (!curId) return
+  // Восстановленная, но ещё не запущенная сессия (`armed`): движок пуст, поэтому
+  // длительность/позицию берём из стора. Метку времени и state оставляем
+  // исходные — иначе после второго перезапуска карточка «Продолжить» показала бы
+  // «Только что» вместо реального «N дней назад».
+  const ps = usePlayerStore.getState()
+  const dur = armed ? ps.duration : audioEngine.duration
+  if (!dur) return
+  const pos = armed ? ps.position : audioEngine.currentTime
   try {
     const t = findTrack(curId)
     // Снимки треков очереди, которых нет в библиотеке (треки площадок живут
@@ -119,15 +152,20 @@ export const saveResume = (state?: string): void => {
     }
     const data: ResumeData = {
       id: curId,
-      pos: audioEngine.currentTime,
+      pos,
       source: toLegacySource(source),
       queue,
       qIdx,
-      savedAt: Date.now(),
-      state: state || (audioEngine.paused ? 'paused' : 'playing'),
+      savedAt: armed ? _boot?.savedAt ?? Date.now() : Date.now(),
+      state: armed
+        ? _boot?.state ?? 'paused'
+        : state || (audioEngine.paused ? 'paused' : 'playing'),
       // url протух — обнуляем; остальное (cover/name/scMedia) нужно для рестарта.
       track: t ? { ...t, url: null } : undefined,
       tracks: tracks.length ? tracks : undefined,
+      shuffle,
+      smartShuffle,
+      repeat,
     }
     localStorage.setItem(KEY, JSON.stringify(data))
   } catch {
@@ -135,16 +173,24 @@ export const saveResume = (state?: string): void => {
   }
 }
 
-// Позиция, на которую надо перемотать после загрузки метаданных следующего трека.
-// Консьюмится в useMainPlayerBridge (onLoadedMeta).
-let _pendingSeek: number | null = null
-export const setPendingResumeSeek = (pos: number): void => {
-  _pendingSeek = pos > 2 ? pos : null
+/**
+ * Позиция, на которую надо перемотать после загрузки метаданных трека.
+ * Консьюмится в useMainPlayerBridge (onLoadedMeta).
+ *
+ * Привязана к id: между постановкой и загрузкой пользователь может уйти на
+ * другой трек (далее/назад, запуск плейлиста из библиотеки), и без проверки
+ * перемотка применилась бы к нему — трек начинался бы с чужой позиции.
+ */
+let _pendingSeek: { id: string; pos: number } | null = null
+export const setPendingResumeSeek = (pos: number, trackId: string | null): void => {
+  _pendingSeek = pos > 2 && trackId ? { id: trackId, pos } : null
 }
-export const consumePendingResumeSeek = (): number | null => {
+/** Забрать отложенную перемотку, если она относится к загруженному треку. */
+export const consumePendingResumeSeek = (trackId: string | null): number | null => {
   const p = _pendingSeek
+  if (!p) return null
   _pendingSeek = null
-  return p
+  return trackId && p.id === trackId ? p.pos : null
 }
 
 /** Реконструировать очередь по источнику, если в резюме её нет (старые данные). */
@@ -186,6 +232,72 @@ export const restoreResumeQueue = (r: ResumeData): string | null => {
   // Одиночный трек: обложку для пилюли подставляем из трека (в legacy её нет).
   if (source?.kind === 'single') source.cover = findTrack(r.id)?.cover ?? null
   useQueueStore.getState().setQueue(queue, qIdx, source)
-  setPendingResumeSeek(r.pos || 0)
+  // Режимы очереди (в старых резюмах их нет — тогда оставляем текущие).
+  if (typeof r.shuffle === 'boolean') {
+    useQueueStore.setState({ shuffle: r.shuffle, smartShuffle: !!r.smartShuffle })
+    usePlayerStore.setState({ shuffle: r.shuffle, smartShuffle: !!r.smartShuffle })
+  }
+  if (r.repeat === 0 || r.repeat === 1 || r.repeat === 2) {
+    useQueueStore.setState({ repeat: r.repeat })
+    usePlayerStore.setState({ repeat: r.repeat })
+  }
+  setPendingResumeSeek(r.pos || 0, r.id)
   return r.id
+}
+
+// ── Восстановление сессии при старте приложения ────────────────────────────
+
+/** Резюм восстановленной сессии, пока она не запущена. null — сессия уже живая. */
+export const armedResume = (): ResumeData | null =>
+  useQueueStore.getState().armed ? _boot : null
+
+/**
+ * Восстановить прошлую сессию при запуске приложения: очередь, текущий трек,
+ * источник, режимы перемешки/повтора и позиция в треке возвращаются в плеер —
+ * но воспроизведение НЕ стартует. `<audio>` остаётся пустым, очередь помечается
+ * `armed`; первый «плей» подхватит трек с сохранённой позиции (см. `togglePlay`
+ * / `loadPlay`). Сама функция не играет никогда — за «Автовоспроизведение»
+ * отвечает вызывающая сторона (bridge дёргает `togglePlay` после успеха).
+ *
+ * Возвращает true, если сессия восстановлена (caller пушит состояние в Rust).
+ */
+export const restoreSession = (): boolean => {
+  // Уже что-то играет (hot-reload / повторный вызов) — не трогаем живую сессию.
+  if (useQueueStore.getState().curId) return false
+  const r = loadResume()
+  if (!r?.id) return false
+  // Трек должен резолвиться (снимок в резюме или библиотека) — иначе показывать
+  // в плеере нечего. Проверяем ДО restoreResumeQueue, чтобы не оставить
+  // наполовину восстановленную очередь без текущего трека: в этом случае
+  // отработает старая карточка «Продолжить» (она дождётся загрузки библиотеки).
+  const t = r.track ?? findTrack(r.id)
+  if (!t) return false
+  const id = restoreResumeQueue(r)
+  if (!id) return false
+  // Флаг поднимаем ДО показа трека: подписчики сторов (Last.fm, «Волна») должны
+  // видеть «это восстановление, а не запуск» уже в тот момент, когда появляются
+  // curId и позиция, — иначе они засчитали бы прослушивание, которого не было.
+  useQueueStore.getState().setArmed(true)
+  _boot = r
+
+  // «В библиотеку» показываем, только если трека там точно не было на момент
+  // сохранения (в `tracks` попадают лишь ВНЕбиблиотечные треки очереди):
+  // libStore на этот момент может быть ещё не догружен из IDB.
+  const wasOutsideLib = !!r.tracks?.some((x) => x.id === id)
+  usePlayerStore.setState({
+    title: t.name || '',
+    artist: t.artist || '',
+    artwork: t.cover ?? null,
+    playing: false,
+    position: r.pos || 0,
+    duration: parseDur(t.dur),
+    fav: useFavStore.getState().favs.has(id),
+    canAddToLib: wasOutsideLib && !useLibStore.getState().tracks.some((x) => x.id === id),
+    trackUrl: t.scPermalink || t.url || null,
+    artistUrl: t.artistPermalink || null,
+  })
+  useQueueStore.getState().setCurId(id)
+  // Текст песни намеренно не запрашиваем: пока ничего не играет, он не нужен —
+  // запрос уйдёт из commitDisplay при первом реальном запуске трека.
+  return true
 }

@@ -1,4 +1,24 @@
 {
+  "2.0.1": {
+    "title": { "ru": "Что нового в 2.0.1", "en": "What's new in 2.0.1" },
+    "date": "2026-08-31",
+    "pages": [
+      {
+        "title": { "ru": "Итоги", "en": "Wrapped" },
+        "body": {
+          "ru": "- Обновлены «Итоги»",
+          "en": "- Wrapped has been updated"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
   "2.0.0": {
     "title": { "ru": "Что нового в 2.0.0", "en": "What's new in 2.0.0" },
     "date": "2026-08-06",

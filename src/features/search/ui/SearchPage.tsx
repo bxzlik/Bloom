@@ -15,10 +15,10 @@ import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { placeSrcPopup } from '@shared/lib/srcPopupPos'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
-import { playSingleTrack, AddPopup, PlayStateOverlay, addToQueue, playNextInQueue } from '@features/player'
+import { playSingleTrack, AddPopup, PlayStateOverlay } from '@features/player'
 import { getAllProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
-import { ExpandDesc, toast, WindowedRows } from '@shared/ui'
+import { CardMarquee, ExpandDesc, toast, WindowedRows } from '@shared/ui'
 import { useT, useLocale, t as tt, type TranslationKey } from '@shared/i18n'
 import {
   TrackCtxMenu,
@@ -31,7 +31,7 @@ import {
 } from '@features/library'
 import { useNavStore } from '@app/navigationStore'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
-import { useSearchStore, looksLikeUrl, type SearchTab, type RecentItem } from '../model/store'
+import { useSearchStore, type SearchTab, type RecentItem } from '../model/store'
 import { useDetailOpen } from '../model/detailStore'
 import {
   openArtistFromSearch,
@@ -80,7 +80,7 @@ const TrackCard = ({
   onPlay: () => void
   onCtxMenu: (e: ReactMouseEvent<HTMLDivElement>, track: Track) => void
 }) => (
-  <div className="sp-track-card" onClick={onPlay} onContextMenu={(e) => onCtxMenu(e, track)}>
+  <div className="sp-track-card mqh" onClick={onPlay} onContextMenu={(e) => onCtxMenu(e, track)}>
     <div className="sp-tc-cover">
       <Cover src={track.cover} placeholder={<PhTrack />} />
       <CoverSourceBadge track={track} size={26} />
@@ -88,10 +88,10 @@ const TrackCard = ({
       <PlayStateOverlay trackId={track.id} size="card" />
     </div>
     <div className="sp-tc-info">
-      <div className="sp-tc-name">{track.name}</div>
-      <div className="sp-tc-artist">
+      <CardMarquee className="sp-tc-name">{track.name}</CardMarquee>
+      <CardMarquee className="sp-tc-artist">
         <ArtistLinks artist={track.artist} scId={track.artistScId} permalink={track.artistPermalink} artistId={track.artistId} provider={track.artistProvider} />
-      </div>
+      </CardMarquee>
     </div>
   </div>
 )
@@ -110,38 +110,38 @@ const ArtistCard = ({ artist, onOpen }: { artist: Artist; onOpen: () => void }) 
   const t = useT()
   const followers = fmtFollowers(artist.followers)
   return (
-  <div className="sp-artist-card" onClick={onOpen} style={{ cursor: 'pointer' }}>
+  <div className="sp-artist-card mqh" onClick={onOpen} style={{ cursor: 'pointer' }}>
     {/* Плёнка со стрелкой прямо на круглой аватарке — как у плейлистов/альбомов
         (фон-подложку карточки на hover не рисуем). */}
     <div className="sp-ac-av">
       <Cover src={artist.avatar} placeholder={<PhArtist />} />
       <OpenBadge />
     </div>
-    <div className="sp-ac-name">{artist.name}</div>
+    <CardMarquee className="sp-ac-name">{artist.name}</CardMarquee>
     {/* Подзаголовок — число подписчиков; если площадка его не отдала, остаётся «Артист». */}
-    <div className="sp-ac-sub">
+    <CardMarquee className="sp-ac-sub">
       {followers ? t('search.followers', { n: followers }) : t('search.kind.artist')}
-    </div>
+    </CardMarquee>
   </div>
   )
 }
 
 const PlaylistCard = ({ playlist, onOpen }: { playlist: Playlist; onOpen: () => void }) => (
-  <div className="sp-track-card" onClick={onOpen} style={{ cursor: 'pointer' }}>
+  <div className="sp-track-card mqh" onClick={onOpen} style={{ cursor: 'pointer' }}>
     <div className="sp-tc-cover">
       <Cover src={playlist.cover} placeholder={<PhTrack />} />
       <CoverProviderBadge provider={playlist.source} size={26} />
       <OpenBadge />
     </div>
     <div className="sp-tc-info">
-      <div className="sp-tc-name">{playlist.title}</div>
-      <div className="sp-tc-artist">
+      <CardMarquee className="sp-tc-name">{playlist.title}</CardMarquee>
+      <CardMarquee className="sp-tc-artist">
         {/* «{владелец} · {год} · N тр.» — год есть у альбомов, счётчик не у всех
             площадок (YTM не даёт его альбомам) — тогда сегмент опускаем. */}
         {[playlist.ownerName, playlist.year, tracksCountLabel(playlist.trackCount)]
           .filter(Boolean)
           .join(' · ')}
-      </div>
+      </CardMarquee>
     </div>
   </div>
 )
@@ -185,28 +185,6 @@ const TrackListRow = ({
         </div>
       </div>
       <div className="trac">
-        <button
-          className="ib"
-          type="button"
-          aria-label={tr('lib.ctx.playNext')}
-          onClick={(e) => {
-            e.stopPropagation()
-            playNextInQueue(track.id)
-          }}
-        >
-          <Ico name="playNext" width={13} height={13} />
-        </button>
-        <button
-          className="ib"
-          type="button"
-          aria-label={tr('lib.ctx.toQueue')}
-          onClick={(e) => {
-            e.stopPropagation()
-            addToQueue(track.id)
-          }}
-        >
-          <Ico name="addQueue" width={14} height={14} />
-        </button>
         <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label={tr('player.aria.favAdd')}>
           <Ico name="heart" variant={isFav ? 'bold' : 'linear'} width={13} height={13} />
         </button>
@@ -812,29 +790,6 @@ const SearchSkeleton = ({ tab }: { tab: SearchTab }) => {
   )
 }
 
-/* ── Топ-результат: крупная карточка лучшего совпадения (таб «Все») ── */
-type TopPick = { kind: 'artist'; artist: Artist } | { kind: 'track'; track: Track }
-
-const TopResultCard = ({ pick, onOpen }: { pick: TopPick; onOpen: () => void }) => {
-  const t = useT()
-  const isArtist = pick.kind === 'artist'
-  const cover = isArtist ? pick.artist.avatar : pick.track.cover
-  const name = isArtist ? pick.artist.name : pick.track.name
-  const sub = isArtist ? null : pick.track.artist
-  return (
-    <div className="sp-top-card" onClick={onOpen}>
-      <span className="sp-top-kind">{t(isArtist ? 'search.kind.artist' : 'search.kind.track')}</span>
-      <div className={cn('sp-top-cover', isArtist && 'round')}>
-        <Cover src={cover} placeholder={isArtist ? <PhArtist /> : <PhTrack />} />
-      </div>
-      <div className="sp-top-text">
-        <div className="sp-top-name">{name}</div>
-        {sub && <div className="sp-top-sub">{sub}</div>}
-      </div>
-    </div>
-  )
-}
-
 export interface SearchPageProps {
   active: boolean
 }
@@ -994,27 +949,15 @@ export const SearchPage = ({ active }: SearchPageProps) => {
     setAddTrack(track)
   }
 
-  // Debounce live-поиска по вводу; Enter — сразу.
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  useEffect(() => () => clearTimeout(timer.current), [])
-
+  // Live-поиска по вводу НЕТ: набор текста ничего не запрашивает, запрос уходит
+  // только по Enter (runSearch сам определяет URL и резолвит ссылку в карточку).
   const onChange = (v: string) => {
     setQuery(v)
-    clearTimeout(timer.current)
-    if (!v.trim()) {
-      clear()
-      return
-    }
-    // Ссылка резолвится дольше (delay 800), текст — 350. Обе ветки
-    // через runSearch: он сам определяет URL и резолвит в карточку.
-    const delay = looksLikeUrl(v.trim()) ? 800 : 350
-    timer.current = setTimeout(() => void runSearch(v), delay)
+    // Поле опустошили — сбрасываем выдачу и возвращаем стартовый вид.
+    if (!v.trim()) clear()
   }
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      clearTimeout(timer.current)
-      void runSearch()
-    }
+    if (e.key === 'Enter') void runSearch()
   }
 
   // scPlaySearchResult/_scPlayStream: клик по
@@ -1059,8 +1002,9 @@ export const SearchPage = ({ active }: SearchPageProps) => {
       .map((g) => ({ id: g, label: g })),
   ]
 
-  // Что показываем в теле.
-  const hasQuery = query.trim().length > 0
+  // Что показываем в теле — по ОТПРАВЛЕННОМУ запросу, а не по тексту в поле:
+  // пока не нажали Enter, набор текста не двигает вёрстку и не гасит выдачу.
+  const hasQuery = submitted.trim().length > 0
   // Пустой старт (нет запроса и профиля) → строка поиска по центру; история — в
   // выпадающем списке под строкой. Появился запрос → строка уезжает наверх.
   const centered = !hasQuery && !profile
@@ -1074,7 +1018,8 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   ]
     .sort((a, b) => b.ts - a.ts)
     .slice(0, 12)
-  const showHistory = focused && !hasQuery && !detailOpen && mergedRecents.length > 0
+  // История прячется, как только в поле что-то набрали (даже до Enter).
+  const showHistory = focused && !query.trim() && !detailOpen && mergedRecents.length > 0
   // Фильтрация секций по активному табу.
   const showTracks = (tab === 'all' || tab === 'tracks') && filteredTracks.length > 0
   const showArtists = (tab === 'all' || tab === 'artists') && artists.length > 0
@@ -1082,23 +1027,6 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const showAlbums = (tab === 'all' || tab === 'albums') && albums.length > 0
   // Мета-фильтры показываем когда видим треки (таб «Все»/«Треки» и они есть).
   const showMeta = showResults && (tab === 'all' || tab === 'tracks') && tracks.length > 0
-  // Топ-результат (таб «Все»): что точнее совпало с запросом — имя артиста или
-  // название трека. Артист выигрывает при равенстве (как в Spotify).
-  const topPick: TopPick | null = (() => {
-    const q = submitted.trim().toLowerCase()
-    const bestArtist = artists[0]
-    const bestTrack = filteredTracks[0]
-    const score = (name?: string) => {
-      if (!name) return -1
-      const n = name.toLowerCase()
-      return n === q ? 3 : n.startsWith(q) ? 2 : n.includes(q) ? 1 : 0
-    }
-    if (bestArtist && score(bestArtist.name) >= score(bestTrack?.name)) return { kind: 'artist', artist: bestArtist }
-    if (bestTrack) return { kind: 'track', track: bestTrack }
-    if (bestArtist) return { kind: 'artist', artist: bestArtist }
-    return null
-  })()
-  const showTop = showResults && tab === 'all' && topPick !== null
   // Раскладка по табу: 'tracks' → вертикальный список; одиночные арт/пл/альб → wrap;
   // 'all' → горизонтальные ряды (.sp-filter-list / .sp-filter-wrap).
   const layoutClass =
@@ -1211,34 +1139,6 @@ export const SearchPage = ({ active }: SearchPageProps) => {
 
             {showResults && (
               <>
-                {showTop && topPick && (
-                  <div className="sc-uni-section" data-sp-section="top">
-                    <div className="sp-sec-title">{t('search.topResult')}</div>
-                    <div className="sp-top">
-                      <TopResultCard
-                        pick={topPick}
-                        onOpen={() =>
-                          topPick.kind === 'artist'
-                            ? openArtist(topPick.artist)
-                            : playTrackFromSearch(topPick.track)
-                        }
-                      />
-                      {filteredTracks.length > 0 && (
-                        <div className="sp-top-list">
-                          {filteredTracks.slice(0, 4).map((tr) => (
-                            <TrackListRow
-                              key={tr.id}
-                              track={tr}
-                              onPlay={() => playTrackFromSearch(tr)}
-                              onCtxMenu={(e) => onCtxMenu(e, tr)}
-                              onAddClick={(e) => onAddTrack(e, tr)}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
                 {showTracks && (
                   <div className="sc-uni-section" data-sp-section="tracks">
                     <div className="sp-sec-title">{t('search.tab.tracks')}</div>

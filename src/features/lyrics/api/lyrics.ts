@@ -1,7 +1,6 @@
 import { invoke } from '@shared/tauri'
 import type { Track } from '@entities/track'
 import { useLyricsStore } from '../model/lyricsStore'
-import { useGeniusStore } from '../model/geniusStore'
 
 /** "m:ss" / "h:mm:ss" → секунды. 0 если не парсится. */
 const parseDur = (dur: string | undefined): number => {
@@ -23,13 +22,11 @@ const parseDur = (dur: string | undefined): number => {
 export const requestLyrics = (track: Track, durSec?: number): void => {
   const requestId = useLyricsStore.getState().beginRequest()
   const duration = durSec && durSec > 0 ? Math.round(durSec) : parseDur(track.dur)
-  const geniusToken = useGeniusStore.getState().token || undefined
   void invoke('lyrics_request', {
     artist: track.artist || '',
     title: track.name || '',
     duration,
     localPath: track._localPath || undefined,
-    geniusToken, // fallback-провайдер текстов (поле в «API-ключи»)
     requestId: String(requestId),
   }).catch((e) => {
     console.warn('[lyrics] request failed', e)

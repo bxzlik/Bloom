@@ -226,7 +226,7 @@ export const ConvertModal = () => {
         {/* ── Шапка: обложка исходного плейлиста + имя копии ───────────── */}
         <div className="mpl-hero">
           <div className="cvt-hero-cov">
-            {pl.cover ? <img src={pl.cover} alt="" /> : <PlCover trs={pl.trs} seed={pl.id} />}
+            {pl.cover ? <img src={pl.cover} alt="" /> : <PlCover trs={pl.trs} />}
             {target && (
               <span className="cvt-hero-badge" style={{ color: logoColor(target) }}>
                 {providerLogo(target, 13)}

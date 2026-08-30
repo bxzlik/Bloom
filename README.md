@@ -8,7 +8,7 @@
 
 A desktop player: local library, Yandex Music, SoundCloud, YouTube Music in a single app
 
-[**🌐 Website**](https://bloom-site-x.vercel.app/) · [**📦 Releases**](https://github.com/bxzlik/Bloom/releases)
+[**🌐 Website**](https://bloom-site-x.vercel.app/) · [**📱 Mobile**](https://github.com/bxzlik/Bloom-Mobile) · [**📦 Releases**](https://github.com/bxzlik/Bloom/releases)
 
 **English** · [Русский](README.ru.md)
 

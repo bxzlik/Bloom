@@ -19,10 +19,18 @@ export const useLastfmBridge = () => {
   // Смена трека → onTrackStart.
   useEffect(() => {
     let prevId = useQueueStore.getState().curId
+    let prevArmed = useQueueStore.getState().armed
     const unsub = useQueueStore.subscribe((s) => {
-      if (s.curId === prevId) return
+      // «Трек пошёл» — это либо смена curId, либо снятие `armed`: восстановленная
+      // после перезапуска сессия ставит curId ЗАРАНЕЕ, ничего не играя, и её
+      // реальный старт виден только по сброшенному флагу (иначе Last.fm никогда
+      // не узнал бы о первом треке после запуска).
+      const started = s.curId !== prevId || (prevArmed && !s.armed)
       prevId = s.curId
-      if (!s.curId) return
+      prevArmed = s.armed
+      if (!started || !s.curId) return
+      // Пока сессия только восстановлена — «now playing» слать нечего.
+      if (s.armed) return
       const t = trackRegistry.get(s.curId) ?? useLibStore.getState().tracks.find((x) => x.id === s.curId)
       if (!t) return
       useLastfmStore.getState().onTrackStart(t.artist || '', t.name || '', t.album || '')
@@ -34,6 +42,9 @@ export const useLastfmBridge = () => {
   useEffect(() => {
     const unsub = usePlayerStore.subscribe((s, prev) => {
       if (s.position === prev.position) return
+      // Восстановленная сессия: позиция выставлена из резюма (и двигается только
+      // перемоткой) — это не прослушивание, засчитывать его нельзя.
+      if (useQueueStore.getState().armed) return
       useLastfmStore.getState().onProgress(s.position, s.duration)
     })
     return unsub

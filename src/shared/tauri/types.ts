@@ -13,6 +13,9 @@ export type LocalImportMode = 'inPlace' | 'copy'
 
 export interface AppSettings {
   minimize_to_tray: boolean
+  /** Вернуть при запуске трек, очередь и позицию прошлой сессии — на паузе. */
+  restore_queue: boolean
+  /** Восстановить прошлую сессию при запуске и сразу продолжить. */
   autoplay: boolean
   discord_rpc: boolean
   change_titlebar: boolean

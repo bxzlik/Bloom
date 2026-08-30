@@ -1,4 +1,4 @@
-//! Получение текстов песен: local tag → LRCLIB → Genius, с L1 in-memory и
+//! Получение текстов песен: local tag → LRCLIB, с L1 in-memory и
 //! L2 disk-кешем в `%LocalAppData%\com.bloom.app\lyrics\*.json`.
 
 use std::collections::HashMap;
@@ -26,7 +26,7 @@ pub struct LyricsResult {
     pub found: bool,
     pub plain: String,
     pub synced: String,
-    pub source: String, // "lrclib" | "genius" | "local_tag" | "none" | "user_edit"
+    pub source: String, // "lrclib" | "local_tag" | "none" | "user_edit"
 }
 
 impl LyricsResult {
@@ -157,12 +157,6 @@ static RX_LRC_TAG: Lazy<Regex> = Lazy::new(|| Regex::new(r"\[\d+:\d+\.\d+\]").un
 static RX_LRC_DETECT: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\[\d{1,2}:\d{2}\.\d{2,3}\]").unwrap());
 
-static RX_EMBED_TAIL: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m)\d*Embed$").unwrap());
-static RX_YOU_MIGHT_ALSO: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)You might also like").unwrap());
-static RX_TRIPLE_NL: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n{3,}").unwrap());
-static RX_BR: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)<br\s*/?>").unwrap());
-static RX_HTML_TAG: Lazy<Regex> = Lazy::new(|| Regex::new(r"<[^>]+>").unwrap());
-
 // ---------------- HTTP-клиенты ----------------
 fn http_client() -> reqwest::Client {
     reqwest::Client::builder()
@@ -172,33 +166,18 @@ fn http_client() -> reqwest::Client {
         .expect("build http client")
 }
 
-fn genius_client() -> reqwest::Client {
-    reqwest::Client::builder()
-        .timeout(Duration::from_secs(20))
-        .user_agent("Bloom/1.0 (github.com/bloom)")
-        .build()
-        .expect("build genius http client")
-}
-
 // ---------------- Основной метод ----------------
 pub async fn fetch(
     artist: &str,
     title: &str,
     duration_sec: Option<u32>,
     local_path: Option<&str>,
-    genius_token: Option<&str>,
 ) -> LyricsResult {
     if title.trim().is_empty() {
         return LyricsResult::not_found();
     }
 
-    let has_token = genius_token.map(|t| !t.is_empty()).unwrap_or(false);
-    let key = format!(
-        "{}::{}::{}",
-        artist.to_lowercase(),
-        title.to_lowercase(),
-        if has_token { "g" } else { "0" }
-    );
+    let key = format!("{}::{}", artist.to_lowercase(), title.to_lowercase());
 
     // L1 cache
     {
@@ -258,23 +237,7 @@ pub async fn fetch(
         return r;
     }
 
-    // 3. Genius
-    if has_token {
-        let r = fetch_genius(artist, title, genius_token.unwrap()).await;
-        if r.found {
-            write_disk_cache(artist, title, &r);
-            CACHE.lock().insert(
-                key.clone(),
-                CacheEntry {
-                    result: r.clone(),
-                    cached_at: now,
-                },
-            );
-            return r;
-        }
-    }
-
-    // 4. Split "Artist - Title"
+    // 3. Split "Artist - Title"
     if let Some(idx) = title.find(" - ") {
         let alt_artist = title[..idx].trim();
         let alt_title = title[idx + 3..].trim();
@@ -293,20 +256,6 @@ pub async fn fetch(
                     },
                 );
                 return r;
-            }
-            if has_token {
-                let r = fetch_genius(alt_artist, alt_title, genius_token.unwrap()).await;
-                if r.found {
-                    write_disk_cache(artist, title, &r);
-                    CACHE.lock().insert(
-                        key.clone(),
-                        CacheEntry {
-                            result: r.clone(),
-                            cached_at: now,
-                        },
-                    );
-                    return r;
-                }
             }
         }
     }
@@ -330,7 +279,6 @@ pub fn dispatch_request(
     title: String,
     duration: f64,
     local_path: Option<String>,
-    genius_token: Option<String>,
 ) {
     tauri::async_runtime::spawn(async move {
         let duration_sec = if duration > 0.0 {
@@ -338,14 +286,7 @@ pub fn dispatch_request(
         } else {
             None
         };
-        let result = fetch(
-            &artist,
-            &title,
-            duration_sec,
-            local_path.as_deref(),
-            genius_token.as_deref(),
-        )
-        .await;
+        let result = fetch(&artist, &title, duration_sec, local_path.as_deref()).await;
 
         events::emit_lyrics(
             &app,
@@ -535,324 +476,6 @@ fn parse_lrclib_item(item: &serde_json::Value, source: &str) -> LyricsResult {
         synced,
         source: source.into(),
     }
-}
-
-// ---------------- 3. Genius ----------------
-async fn fetch_genius(artist: &str, title: &str, token: &str) -> LyricsResult {
-    let clean_title = normalize_for_search(title);
-    let clean_artist = normalize_for_search(artist);
-    let primary_art = primary_artist(&clean_artist);
-
-    let r = search_genius_and_score(&clean_artist, &clean_title, title, artist, token).await;
-    if r.found {
-        return r;
-    }
-
-    if !primary_art.is_empty() && !primary_art.eq_ignore_ascii_case(&clean_artist) {
-        let r = search_genius_and_score(&primary_art, &clean_title, title, artist, token).await;
-        if r.found {
-            return r;
-        }
-    }
-
-    if !clean_artist.is_empty() {
-        let r = search_genius_and_score("", &clean_title, title, artist, token).await;
-        if r.found {
-            return r;
-        }
-    }
-
-    LyricsResult::not_found()
-}
-
-async fn search_genius_and_score(
-    query_artist: &str,
-    query_title: &str,
-    orig_title: &str,
-    orig_artist: &str,
-    token: &str,
-) -> LyricsResult {
-    let client = genius_client();
-    let q_raw = if query_artist.is_empty() {
-        query_title.to_string()
-    } else {
-        format!("{query_artist} {query_title}")
-    };
-    let url = format!(
-        "https://api.genius.com/search?q={}&per_page=10",
-        urlencoding::encode(&q_raw)
-    );
-
-    let resp = match client
-        .get(&url)
-        .bearer_auth(token)
-        .header("User-Agent", "Bloom/1.0")
-        .send()
-        .await
-    {
-        Ok(r) => r,
-        Err(e) => {
-            tracing::warn!("LyricsService.Genius: request failed: {e}");
-            return LyricsResult::not_found();
-        }
-    };
-
-    tracing::info!(
-        "LyricsService.Genius: search status {} q='{query_artist} {query_title}'",
-        resp.status()
-    );
-    if !resp.status().is_success() {
-        return LyricsResult::not_found();
-    }
-
-    let json: serde_json::Value = match resp.json().await {
-        Ok(v) => v,
-        Err(_) => return LyricsResult::not_found(),
-    };
-
-    let hits = match json.pointer("/response/hits").and_then(|v| v.as_array()) {
-        Some(h) if !h.is_empty() => h,
-        _ => return LyricsResult::not_found(),
-    };
-
-    let mut best_url: Option<String> = None;
-    let mut best_score = 0i32;
-
-    for hit in hits {
-        if hit.get("type").and_then(|v| v.as_str()) != Some("song") {
-            continue;
-        }
-        let result = match hit.get("result") {
-            Some(r) => r,
-            None => continue,
-        };
-        let hit_title = result.get("title").and_then(|v| v.as_str()).unwrap_or("");
-        let url = result.get("url").and_then(|v| v.as_str()).unwrap_or("");
-        let hit_artist = result
-            .pointer("/primary_artist/name")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
-        if url.is_empty() {
-            continue;
-        }
-        let s1 = score_hit(hit_title, hit_artist, orig_title, orig_artist);
-        let s2 = score_hit(hit_title, hit_artist, query_title, query_artist);
-        let s = s1.max(s2);
-        tracing::info!("LyricsService.Genius: hit '{hit_artist} - {hit_title}' score={s}");
-        if s > best_score {
-            best_score = s;
-            best_url = Some(url.to_string());
-        }
-    }
-
-    if best_score < 30 {
-        return LyricsResult::not_found();
-    }
-    match best_url {
-        Some(u) => {
-            tracing::info!("LyricsService.Genius: best score={best_score}");
-            scrape_genius_page(&u).await
-        }
-        None => LyricsResult::not_found(),
-    }
-}
-
-async fn scrape_genius_page(page_url: &str) -> LyricsResult {
-    let client = genius_client();
-    let resp = match client
-        .get(page_url)
-        .header(
-            "User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
-        )
-        .send()
-        .await
-    {
-        Ok(r) => r,
-        Err(e) => {
-            tracing::warn!("LyricsService.Genius: page request failed: {e}");
-            return LyricsResult::not_found();
-        }
-    };
-    tracing::info!("LyricsService.Genius: page status {}", resp.status());
-    if !resp.status().is_success() {
-        return LyricsResult::not_found();
-    }
-
-    let html = match resp.text().await {
-        Ok(h) => h,
-        Err(_) => return LyricsResult::not_found(),
-    };
-
-    let raw = extract_genius_lyrics(&html);
-    let lyrics = clean_genius_lyrics(&raw);
-    if lyrics.trim().is_empty() {
-        return LyricsResult::not_found();
-    }
-
-    LyricsResult {
-        found: true,
-        plain: lyrics,
-        synced: String::new(),
-        source: "genius".into(),
-    }
-}
-
-fn clean_genius_lyrics(raw: &str) -> String {
-    if raw.is_empty() {
-        return String::new();
-    }
-    let s = RX_EMBED_TAIL.replace_all(raw, "");
-    let s = RX_YOU_MIGHT_ALSO.replace_all(&s, "");
-    let s = RX_TRIPLE_NL.replace_all(&s, "\n\n");
-    s.trim().to_string()
-}
-
-fn extract_genius_lyrics(html: &str) -> String {
-    let markers = [
-        "data-lyrics-container=\"true\"",
-        "data-lyrics-container='true'",
-        "class=\"Lyrics__Container",
-        "class=\"Lyrics-sc-",
-        "class=\"lyrics\"",
-    ];
-
-    let lower = html.to_ascii_lowercase();
-
-    for marker in markers {
-        let mlower = marker.to_ascii_lowercase();
-        let mut out = String::new();
-        let mut search_from = 0;
-
-        while let Some(start) = find_substring(&lower, &mlower, search_from) {
-            let tag_end = match html[start..].find('>') {
-                Some(i) => start + i + 1,
-                None => break,
-            };
-
-            let mut depth = 1i32;
-            let mut pos = tag_end;
-            let mut block_end: Option<usize> = None;
-            let mut consumed = false;
-
-            while pos < html.len() && depth > 0 {
-                let open_next = find_substring(&lower, "<div", pos);
-                let close_next = find_substring(&lower, "</div", pos);
-                let close_next = match close_next {
-                    Some(c) => c,
-                    None => break,
-                };
-                if let Some(o) = open_next {
-                    if o < close_next {
-                        depth += 1;
-                        pos = o + 4;
-                        continue;
-                    }
-                }
-                depth -= 1;
-                if depth == 0 {
-                    block_end = Some(close_next);
-                    search_from = close_next + 6;
-                    consumed = true;
-                    break;
-                } else {
-                    pos = close_next + 5;
-                }
-            }
-
-            match block_end {
-                Some(end) => {
-                    let block = &html[tag_end..end];
-                    let s = RX_BR.replace_all(block, "\n");
-                    let s = RX_HTML_TAG.replace_all(&s, "");
-                    let s = html_escape::decode_html_entities(&s).trim().to_string();
-                    if !s.is_empty() {
-                        out.push_str(&s);
-                        out.push('\n');
-                    }
-                }
-                None => break,
-            }
-
-            if !consumed {
-                break;
-            }
-        }
-
-        let result = out.trim().to_string();
-        if !result.is_empty() {
-            tracing::info!("LyricsService.Genius: extracted via marker '{marker}'");
-            return result;
-        }
-    }
-
-    tracing::info!("LyricsService.Genius: no HTML containers, trying JSON extraction");
-    extract_genius_from_json(html)
-}
-
-fn find_substring(hay_lower: &str, needle_lower: &str, from: usize) -> Option<usize> {
-    if from >= hay_lower.len() {
-        return None;
-    }
-    hay_lower[from..].find(needle_lower).map(|i| i + from)
-}
-
-fn extract_genius_from_json(html: &str) -> String {
-    // Паттерн 1: "body":{"plain":"..."}
-    if let Some(m) = Regex::new(r#"(?s)"body"\s*:\s*\{[^}]*"plain"\s*:\s*"((?:[^"\\]|\\.)*)""#)
-        .ok()
-        .and_then(|r| r.captures(html))
-    {
-        let raw = clean_genius_lyrics(&unescape_json(&m[1]));
-        if !raw.trim().is_empty() {
-            return raw;
-        }
-    }
-    if let Some(m) = Regex::new(r#"(?s)"lyrics_text"\s*:\s*"((?:[^"\\]|\\.)*)""#)
-        .ok()
-        .and_then(|r| r.captures(html))
-    {
-        let raw = clean_genius_lyrics(&unescape_json(&m[1]));
-        if !raw.trim().is_empty() {
-            return raw;
-        }
-    }
-    if let Some(m) = Regex::new(r#"(?s)"html"\s*:\s*"((?:[^"\\]|\\.)*)""#)
-        .ok()
-        .and_then(|r| r.captures(html))
-    {
-        if m[1].len() > 50 {
-            let raw = unescape_json(&m[1]);
-            let raw = RX_BR.replace_all(&raw, "\n");
-            let raw = RX_HTML_TAG.replace_all(&raw, "");
-            let raw = html_escape::decode_html_entities(&raw).trim().to_string();
-            let raw = clean_genius_lyrics(&raw);
-            if !raw.trim().is_empty() {
-                return raw;
-            }
-        }
-    }
-    if let Some(m) = Regex::new(
-        r#"(?s)"lyricsData"[^{]*\{[^}]*"body"[^{]*\{[^}]*"plain"\s*:\s*"((?:[^"\\]|\\.)*)""#,
-    )
-    .ok()
-    .and_then(|r| r.captures(html))
-    {
-        let raw = clean_genius_lyrics(&unescape_json(&m[1]));
-        if !raw.trim().is_empty() {
-            return raw;
-        }
-    }
-    String::new()
-}
-
-fn unescape_json(s: &str) -> String {
-    s.replace("\\n", "\n")
-        .replace("\\\"", "\"")
-        .replace("\\\\", "\\")
-        .replace("\\/", "/")
-        .trim()
-        .to_string()
 }
 
 // ---------------- Нормализация и скоринг ----------------

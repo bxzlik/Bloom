@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { cn } from '@shared/lib/cn'
+import { CardMarquee } from '@shared/ui'
 import type { Track } from '../model/types'
 import { TrackCover } from './TrackCover'
 
@@ -27,7 +28,7 @@ export const TrackCard = ({
     <div
       onClick={(e) => onClick?.(track, e)}
       className={cn(
-        'group flex flex-col gap-2 select-none cursor-pointer',
+        'group mqh flex flex-col gap-2 select-none cursor-pointer',
         'rounded-xl p-2 hover:bg-(--color-surface) transition-colors duration-100',
         className,
       )}
@@ -42,8 +43,8 @@ export const TrackCard = ({
         )}
       </div>
       <div className="min-w-0">
-        <div className="truncate text-sm font-medium">{track.name}</div>
-        <div className="truncate text-xs text-(--color-text-muted)">{track.artist}</div>
+        <CardMarquee className="truncate text-sm font-medium">{track.name}</CardMarquee>
+        <CardMarquee className="truncate text-xs text-(--color-text-muted)">{track.artist}</CardMarquee>
       </div>
     </div>
   )

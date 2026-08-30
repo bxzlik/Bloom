@@ -234,6 +234,8 @@ export const loadPlay = async (id: string): Promise<void> => {
     commitSwapDir(q.queue, q.qIdx)
 
     useQueueStore.getState().setCurId(id)
+    // Стрим пошёл — «восстановленная, но не запущенная» сессия закончилась.
+    if (useQueueStore.getState().armed) useQueueStore.getState().setArmed(false)
 
     // Запрос текста песни — хука updUI.
     requestLyrics(t)
@@ -339,8 +341,15 @@ export const playShuffledFromSource = (
 }
 
 export const togglePlay = (): void => {
-  const { curId, queueEnded } = useQueueStore.getState()
+  const { curId, queueEnded, armed } = useQueueStore.getState()
   if (!curId) return
+  // Сессия восстановлена после перезапуска, но стрим ещё не грузили: «плей»
+  // означает «загрузить трек и продолжить с сохранённой позиции» (её подхватит
+  // pendingResumeSeek в bridge на loadedmetadata).
+  if (armed) {
+    void loadPlay(curId)
+    return
+  }
   // Очередь доиграла до конца — «плей» означает «начать заново» (то же, что
   // делает кнопка транспорта в этом состоянии). Иначе play на закончившемся
   // <audio> ничего бы не сыграл.
@@ -370,16 +379,37 @@ export const restartQueue = (): void => {
  * и вызывал «дёрганье»/рывки ползунка. Финальный пуш делает `seek()` на отпускании.
  */
 export const seekLive = (sec: number): void => {
+  // Восстановленная сессия: аудио ещё не загружено — двигаем только показанную
+  // позицию и точку, с которой начнём при первом «плей».
+  if (seekArmed(sec)) return
   audioEngine.seekTo(sec)
   usePlayerStore.getState().setPosition(audioEngine.currentTime)
   clearQueueEnded()
 }
 
 export const seek = (sec: number): void => {
+  if (seekArmed(sec)) {
+    pushNowPlaying()
+    return
+  }
   audioEngine.seekTo(sec)
   usePlayerStore.getState().setPosition(audioEngine.currentTime)
   clearQueueEnded()
   pushNowPlaying()
+}
+
+/**
+ * Перемотка в восстановленной (`armed`) сессии: `<audio>` пуст, seekTo был бы
+ * no-op'ом — вместо этого переносим отложенную позицию старта и показ.
+ * Возвращает true, если перемотка обработана здесь.
+ */
+const seekArmed = (sec: number): boolean => {
+  const { armed, curId } = useQueueStore.getState()
+  if (!armed) return false
+  const pos = Math.max(0, sec)
+  setPendingResumeSeek(pos, curId)
+  usePlayerStore.getState().setPosition(pos)
+  return true
 }
 
 /**
@@ -584,7 +614,7 @@ export const switchPlatform = async (providerId: string): Promise<void> => {
     useQueueStore.setState({ queue: nq })
   }
 
-  if (posBefore > 2) setPendingResumeSeek(posBefore)
+  if (posBefore > 2) setPendingResumeSeek(posBefore, match.id)
   await loadPlay(match.id)
   toast(i18nT('toast.srcNow', { label: provider.label }))
 }
@@ -679,7 +709,7 @@ export const removeFromQueue = (id: string): void => {
   if (idx < 0) return
   if (queue.length <= 1) {
     // Последний трек — очищаем очередь полностью, плеер сбрасываем.
-    useQueueStore.setState({ queue: [], qIdx: -1, curId: null, queueEnded: false })
+    useQueueStore.setState({ queue: [], qIdx: -1, curId: null, queueEnded: false, armed: false })
     audioEngine.stop()
     usePlayerStore.setState({
       title: '',

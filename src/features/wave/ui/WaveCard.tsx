@@ -1,4 +1,13 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement } from 'react'
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+  type ReactElement,
+} from 'react'
 import { createPortal } from 'react-dom'
 import waveApi, { getWaveSource, setWaveSource } from '@/wave'
 import { useYmAuthStore } from '@features/yandex'
@@ -134,27 +143,30 @@ const WaveAura = memo(function WaveAura() {
  * Карточка «Моя волна» на главной (#homeWaveCard / .home-wave-bar).
  *
  * Два вида (`uiPrefs.waveView`, «Настройки → Страницы → Главная»), общая
- * начинка — кнопка запуска, заголовок, «Настроить»:
+ * начинка — кнопка запуска и заголовок:
  * - `fire` — турбулентный фаербол во весь блок (WaveAura);
  * - `ring` — кольцо обложек-сидов вокруг кнопки (WaveRing), клик по обложке
  *   запускает её трек и продолжает волной по нему.
  * Новый вид = ветка здесь + класс `.hwb-view-*` в home.css + опция в PagesSection.
  *
- * Переключатель источника SC/Яндекс показывается только при
- * логине в Яндекс: SC → движок Bloom (stations/related), Яндекс → нативный rotor.
+ * Настройка волны (источник + дизлайки) — по ПКМ в любом месте блока: отдельной
+ * кнопки «Настроить» нет. Переключатель источника SC/Яндекс показывается только
+ * при логине в Яндекс: SC → движок Bloom (stations/related), Яндекс → нативный rotor.
  */
 export const WaveCard = () => {
   const t = useT()
   const view = useUiPrefsStore((s) => s.waveView)
   const [loading, setLoading] = useState(false)
   const [dislikesOpen, setDislikesOpen] = useState(false)
-  // Координаты открытого попапа (fixed) или null = закрыт. Попап рендерится
+  // Координаты правого клика (fixed) или null = закрыт. Попап рендерится
   // порталом в body — иначе его перекрывают блоки главной ниже (он заперт в
-  // стек-контексте .hwb-hero, z-index:2). `cx` — центр кнопки по X (попап
-  // центрируется под ней через translateX(-50%) на внешней обёртке).
-  const [menuPos, setMenuPos] = useState<{ top: number; cx: number } | null>(null)
-  const tuneBtnRef = useRef<HTMLButtonElement>(null)
+  // стек-контексте .hwb-hero, z-index:2). `clamped` — те же координаты после
+  // подгонки под окно (замер по факту рендера, см. ниже); пока его нет, меню
+  // держим невидимым, чтобы не мигнуло за краем экрана.
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
+  const [clamped, setClamped] = useState<{ x: number; y: number } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
   const ymAuthed = useYmAuthStore((s) => s.authed)
   const [source, setSource] = useState<'sc' | 'ym'>(getWaveSource())
   // Разлогинились → источник 'ym' уже не валиден, показываем как 'sc'.
@@ -180,27 +192,50 @@ export const WaveCard = () => {
     }
   }, [artwork, accent, light])
 
-  usePopupOpenAnimation(menuRef, menuPos)
+  usePopupOpenAnimation(menuRef, clamped)
 
-  const toggleMenu = () => {
-    if (menuPos) {
-      setMenuPos(null)
-      return
-    }
-    const r = tuneBtnRef.current?.getBoundingClientRect()
-    if (!r) return
-    setMenuPos({ top: r.bottom + 8, cx: r.left + r.width / 2 })
+  // ПКМ по любому месту блока волны (кнопка запуска и обложки кольца — тоже:
+  // событие всплывает до корня) вместо прежней кнопки «Настроить».
+  // ГОЧА: попап и модалка дизлайков — порталы в body, но события React всплывают
+  // по ДЕРЕВУ, а не по DOM, так что ПКМ внутри них тоже дошёл бы сюда. Отсекаем
+  // по фактическому DOM-контейнеру карточки.
+  const openMenu = (e: ReactMouseEvent) => {
+    if (!rootRef.current?.contains(e.target as Node)) return
+    e.preventDefault()
+    e.stopPropagation()
+    setClamped(null)
+    setMenuPos({ x: e.clientX, y: e.clientY })
   }
+
+  const closeMenu = () => {
+    setMenuPos(null)
+    setClamped(null)
+  }
+
+  // Удерживаем меню в пределах окна (как у прочих контекстных меню).
+  useLayoutEffect(() => {
+    if (!menuPos || !menuRef.current) return
+    const m = menuRef.current
+    let x = menuPos.x
+    let y = menuPos.y
+    if (x + m.offsetWidth > window.innerWidth - 8) x = window.innerWidth - m.offsetWidth - 8
+    if (y + m.offsetHeight > window.innerHeight - 8) y = window.innerHeight - m.offsetHeight - 8
+    setClamped({ x: Math.max(8, x), y: Math.max(8, y) })
+  }, [menuPos])
 
   // Закрытие при ресайзе/скролле — координаты fixed-попапа становятся неверными.
   useLayoutEffect(() => {
     if (!menuPos) return
-    const close = () => setMenuPos(null)
-    window.addEventListener('resize', close)
-    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', closeMenu)
+    window.addEventListener('scroll', closeMenu, true)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMenu()
+    }
+    window.addEventListener('keydown', onKey)
     return () => {
-      window.removeEventListener('resize', close)
-      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', closeMenu)
+      window.removeEventListener('scroll', closeMenu, true)
+      window.removeEventListener('keydown', onKey)
     }
   }, [menuPos])
 
@@ -240,28 +275,21 @@ export const WaveCard = () => {
         </button>
         <div className="hwb-title">{t('wave.title')}</div>
       </div>
-      <button
-        ref={tuneBtnRef}
-        className="hwb-tune"
-        onClick={(e) => {
-          e.stopPropagation()
-          toggleMenu()
-        }}
-        aria-haspopup="menu"
-        aria-expanded={menuPos !== null}
-      >
-        <Ico name="tuning" width={14} height={14} />
-        <span>{t('wave.tune')}</span>
-      </button>
     </div>
   )
 
   return (
-    <div className={`home-wave-bar hwb-view-${view}`} id="homeWaveCard" style={palette as CSSProperties}>
+    <div
+      ref={rootRef}
+      className={`home-wave-bar hwb-view-${view}`}
+      id="homeWaveCard"
+      style={palette as CSSProperties}
+      onContextMenu={openMenu}
+    >
       {view === 'ring' ? (
         <div className="hwb-stage">
           {/* Кольцо показывает обложки ВЫБРАННОЙ площадки — смена источника
-              в «Настроить» перезагружает его (effSource → prop). */}
+              по ПКМ перезагружает его (effSource → prop). */}
           <WaveRing source={effSource} />
           {hero}
         </div>
@@ -275,24 +303,29 @@ export const WaveCard = () => {
       {menuPos &&
         createPortal(
           <>
-            {/* клик мимо — закрыть */}
+            {/* клик мимо (в т.ч. правый) — закрыть */}
             <div
-              onClick={() => setMenuPos(null)}
+              onClick={closeMenu}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                closeMenu()
+              }}
               style={{ position: 'fixed', inset: 0, zIndex: 8000 }}
             />
-            {/* Внешняя обёртка центрирует попап под кнопкой (translateX(-50%)).
-                Анимация масштаба живёт на внутреннем menuRef, чтобы WAAPI не
-                затирал этот перенос. */}
             <div
+              ref={menuRef}
+              role="menu"
+              className="wave-menu"
               style={{
                 position: 'fixed',
-                top: menuPos.top,
-                left: menuPos.cx,
+                left: (clamped ?? menuPos).x,
+                top: (clamped ?? menuPos).y,
                 zIndex: 8001,
-                transform: 'translateX(-50%)',
+                // До замера координаты ещё «сырые» — прячем, чтобы меню не
+                // мигнуло за краем окна.
+                visibility: clamped ? 'visible' : 'hidden',
               }}
             >
-            <div ref={menuRef} role="menu" className="wave-menu">
               {ymAuthed && (
                 <div role="radiogroup" aria-label={t('wave.pickSource')} className="wave-src-row">
                   {WAVE_SOURCES.map((s) => (
@@ -321,14 +354,13 @@ export const WaveCard = () => {
                 className="wave-dislikes"
                 onClick={(e) => {
                   e.stopPropagation()
-                  setMenuPos(null)
+                  closeMenu()
                   setDislikesOpen(true)
                 }}
               >
                 <Ico name="dislike" width={16} height={16} />
                 <span>{t('wave.dislikes')}</span>
               </button>
-            </div>
             </div>
           </>,
           document.body,

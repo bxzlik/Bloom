@@ -13,9 +13,9 @@ import { dictionaries, ru, type TranslationKey } from './dict'
 
 export type Locale = 'ru' | 'en'
 
-export const LOCALES: { id: Locale; labelKey: TranslationKey; code: string }[] = [
-  { id: 'en', labelKey: 'settings.interface.language.en', code: 'EN' },
-  { id: 'ru', labelKey: 'settings.interface.language.ru', code: 'RU' },
+export const LOCALES: { id: Locale; labelKey: TranslationKey }[] = [
+  { id: 'en', labelKey: 'settings.interface.language.en' },
+  { id: 'ru', labelKey: 'settings.interface.language.ru' },
 ]
 
 const LS_KEY = 'bloom_locale'

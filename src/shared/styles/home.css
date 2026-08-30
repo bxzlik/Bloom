@@ -69,19 +69,11 @@ body.bars-hidden .home-wave-bar .hwb-fire-g,
    «тёмный остров», поэтому текст и кнопка остаются белыми, а не var(--text). */
 :root.theme-light .home-wave-bar .hwb-title,
 :root.theme-light .home-wave-bar .hwb-play{color:#fff}
-/* Капсула без подложки — только контур блока (--ovl-line): сквозь неё виден
-   огонь. Читаемость на светлом огне держит тень текста, а не заливка. */
-.home-wave-bar .hwb-tune{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 15px;border-radius:min(16px,calc(var(--radius)*.9));background:none;border:1px solid var(--ovl-line);color:#fff;cursor:pointer;transition:.15s;font-family:var(--font);font-size:13px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.55);box-shadow:none}
-.home-wave-bar .hwb-tune:hover{background:rgba(var(--ovl-rgb),.07);border-color:rgba(var(--ovl-rgb),var(--wb2))}
-/* Тот же «тёмный остров»: в светлой теме --ovl-line чёрная и на ядре фаербола
-   пропадает — на нём контур белый, той же плотности --wb. */
-:root.theme-light .home-wave-bar .hwb-tune{border-color:rgba(255,255,255,var(--wb))}
-:root.theme-light .home-wave-bar .hwb-tune:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,var(--wb2))}
 
 /* ===== MY WAVE — ВИД «КОЛЬЦО» =====
    Второй вид блока (uiPrefs.waveView='ring', см. WaveCard/WaveRing): обложки
-   сидов по эллипсу вокруг кнопки запуска, герой (кнопка + заголовок +
-   «Настроить») — в центре кольца.
+   сидов по эллипсу вокруг кнопки запуска, герой (кнопка + заголовок) — в
+   центре кольца.
 
    Ручки вида: слоты (смещение/размер/форма/период качания) — в RING_SLOTS
    (WaveRing.tsx), здесь — только масштаб и оформление. Все размеры — БЕЗРАЗМЕРНЫЕ
@@ -126,8 +118,8 @@ body.bars-hidden .hwr-slot,
 /* Волна с этого трека уже стартует — держим оверлей и мигаем. */
 .hwr-tile.is-busy .hwr-tile-ovl{opacity:1;animation:hwrBusy 1s ease-in-out infinite}
 
-/* Герой по центру кольца. До нижней плитки ~120px дизайн-бокса — заголовок и
-   «Настроить» помещаются, не задевая обложки. */
+/* Герой по центру кольца. До нижней плитки ~120px дизайн-бокса — кнопка и
+   заголовок помещаются, не задевая обложки. */
 .hwb-view-ring .hwb-hero{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;gap:calc(11 * var(--hwr-k))}
 .hwb-view-ring .hwb-hero-main{flex-direction:column;gap:calc(11 * var(--hwr-k))}
 /* Кнопка — залитый кружок АКЦЕНТОМ (а не «голая» иконка, как у фаербола);
@@ -140,18 +132,18 @@ body.bars-hidden .hwr-slot,
 .hwb-view-ring .hwb-play:active{transform:scale(.94)}
 .hwb-view-ring .hwb-play .hwb-spinner{width:calc(60 * var(--hwr-k));height:calc(60 * var(--hwr-k));margin:calc(-30 * var(--hwr-k)) 0 0 calc(-30 * var(--hwr-k));border-color:rgba(var(--ovl-rgb),.25);border-top-color:var(--accent-text)}
 .hwb-view-ring .hwb-title{font-size:calc(23 * var(--hwr-k));font-weight:800;letter-spacing:-.4px;text-shadow:none}
-.hwb-view-ring .hwb-tune{height:calc(30 * var(--hwr-k));padding:0 calc(14 * var(--hwr-k));font-size:calc(12 * var(--hwr-k));box-shadow:none;text-shadow:none}
 /* В кольце герой лежит на ФОНЕ СТРАНИЦЫ, а не на тёмном ядре фаербола, —
    правило «тёмного острова» (белый текст в светлой теме) здесь не действует. */
 :root.theme-light .home-wave-bar.hwb-view-ring .hwb-title{color:var(--text)}
 :root.theme-light .home-wave-bar.hwb-view-ring .hwb-play{color:var(--accent-text)}
 
 /* ===== WAVE TUNE POPUP =====
-   Попап кнопки «Настроить» (портал в body, см. WaveCard). Площадки — ряд
+   Попап настройки волны: открывается по ПКМ в зоне блока, у курсора (портал
+   в body, см. WaveCard). Площадки — ряд
    чипов без подложки: у выбранной прозрачно-серый кружок, а лого красится
    БРЕНДОВЫМ цветом площадки (приходит инлайном через --src-fg); невыбранные —
    приглушённо-серые. Анимации нажатия нет — только смена цвета/фона. */
-.wave-menu{display:flex;flex-direction:column;gap:9px;min-width:214px;padding:10px;box-sizing:border-box;transform-origin:top center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*.7);box-shadow:none}
+.wave-menu{display:flex;flex-direction:column;gap:9px;min-width:214px;padding:10px;box-sizing:border-box;transform-origin:top left;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*.7);box-shadow:none}
 .wave-src-row{display:flex;align-items:center;justify-content:center;gap:4px;background:none}
 .wave-src{width:38px;height:38px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:50%;background:none;color:var(--text2);opacity:.55;cursor:pointer;transition:background .18s ease,color .18s ease,opacity .18s ease}
 .wave-src:hover{opacity:.9;background:rgba(var(--ovl-rgb),.05)}

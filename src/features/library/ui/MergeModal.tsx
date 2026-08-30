@@ -16,7 +16,7 @@ import { Ico } from '@shared/ui/icons/solar'
  */
 
 const PlCov = ({ pl }: { pl: Playlist }) =>
-  pl.cover ? <img src={pl.cover} alt="" /> : <PlCover trs={pl.trs} seed={pl.id} />
+  pl.cover ? <img src={pl.cover} alt="" /> : <PlCover trs={pl.trs} />
 
 export const MergeModal = () => {
   const t = useT()

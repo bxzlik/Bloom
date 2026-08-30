@@ -6,7 +6,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { ArtistLinks, type Track } from '@entities/track'
+import { ArtistLinks, providerBrandColor, type Track } from '@entities/track'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import {
   addToQueue,
@@ -14,6 +14,7 @@ import {
   removeFromQueue,
   useQueueStore,
   downloadTrack,
+  downloadCover,
   trackProviderId,
   switchTrackPlatform,
   providerLogo,
@@ -59,7 +60,9 @@ export const TrackCtxMenu = ({
   const t = useT()
   const menuRef = useRef<HTMLDivElement>(null)
   const flyoutRef = useRef<HTMLDivElement>(null)
+  const flyout2Ref = useRef<HTMLDivElement>(null)
   const addItemRef = useRef<HTMLDivElement>(null)
+  const moreItemRef = useRef<HTMLDivElement>(null)
   const srcItemRef = useRef<HTMLDivElement>(null)
   const dlItemRef = useRef<HTMLDivElement>(null)
   const isFav = useFavStore((s) => (track ? s.favs.has(track.id) : false))
@@ -84,21 +87,26 @@ export const TrackCtxMenu = ({
   closeRef.current = onClose
 
   const [clampedPos, setClampedPos] = useState<{ x: number; y: number } | null>(null)
-  // Какое подменю-флайаут открыто: 'pl' (в плейлист), 'src' (сменить площадку)
-  // или 'dl' (скачать / слушать офлайн).
-  const [sub, setSub] = useState<null | 'pl' | 'src' | 'dl'>(null)
+  // Какое подменю-флайаут открыто: 'pl' (в плейлист), 'dl' (скачать / офлайн)
+  // или 'more' («Ещё» — редкие пункты + смена площадки).
+  const [sub, setSub] = useState<null | 'pl' | 'dl' | 'more'>(null)
   const [flyoutPos, setFlyoutPos] = useState<{ left: number; top: number } | null>(null)
+  // Второй уровень: подменю «Сменить площадку» ВНУТРИ флайаута «Ещё».
+  const [sub2, setSub2] = useState<null | 'src'>(null)
+  const [flyout2Pos, setFlyout2Pos] = useState<{ left: number; top: number } | null>(null)
   const hideTimer = useRef<number | null>(null)
 
   // Плавная open-анимация через WAAPI (вместо ctxIn с overshoot+translateY).
   usePopupOpenAnimation(menuRef, clampedPos)
   usePopupOpenAnimation(flyoutRef, flyoutPos)
+  usePopupOpenAnimation(flyout2Ref, flyout2Pos)
 
   // Сбрасываем flyout при закрытии меню — иначе state переживает
   // unmount-через-null и при следующем открытии flyout всплывает сам.
   useEffect(() => {
     if (!pos) {
       setSub(null)
+      setSub2(null)
       if (hideTimer.current !== null) {
         window.clearTimeout(hideTimer.current)
         hideTimer.current = null
@@ -113,13 +121,23 @@ export const TrackCtxMenu = ({
       hideTimer.current = null
     }
   }
-  const openSub = (which: 'pl' | 'src' | 'dl') => {
+  const openSub = (which: 'pl' | 'dl' | 'more') => {
     cancelHide()
     setSub(which)
+    setSub2(null)
   }
+  // Закрывает ОБА уровня: уводя мышь с любого из них, пользователь уходит из
+  // всей ветки, и оставлять висеть второй уровень было бы мусором на экране.
   const scheduleHide = () => {
     cancelHide()
-    hideTimer.current = window.setTimeout(() => setSub(null), 180)
+    hideTimer.current = window.setTimeout(() => {
+      setSub(null)
+      setSub2(null)
+    }, 180)
+  }
+  const openSub2 = () => {
+    cancelHide()
+    setSub2('src')
   }
 
   // Auto-clamp основного меню чтобы не вылезало за viewport.
@@ -144,7 +162,7 @@ export const TrackCtxMenu = ({
 
   // Позиционирование flyout: справа от пункта-якоря, при недостатке места — слева.
   const anchorEl =
-    sub === 'src' ? srcItemRef.current : sub === 'dl' ? dlItemRef.current : addItemRef.current
+    sub === 'more' ? moreItemRef.current : sub === 'dl' ? dlItemRef.current : addItemRef.current
   useLayoutEffect(() => {
     if (!sub || !anchorEl || !flyoutRef.current) {
       setFlyoutPos(null)
@@ -163,6 +181,27 @@ export const TrackCtxMenu = ({
     setFlyoutPos({ left, top })
   }, [sub, anchorEl])
 
+  // То же для второго уровня — якорь живёт ВНУТРИ первого флайаута, поэтому
+  // считаем после его позиционирования (flyoutPos в deps).
+  const anchor2El = sub2 ? srcItemRef.current : null
+  useLayoutEffect(() => {
+    if (!sub2 || !anchor2El || !flyout2Ref.current) {
+      setFlyout2Pos(null)
+      return
+    }
+    const ar = anchor2El.getBoundingClientRect()
+    const fw = flyout2Ref.current.offsetWidth
+    const fh = flyout2Ref.current.offsetHeight
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    let left = ar.right + 4
+    let top = ar.top - 4
+    if (left + fw > vw - 8) left = ar.left - fw - 4
+    if (top + fh > vh - 8) top = vh - fh - 8
+    if (top < 8) top = 8
+    setFlyout2Pos({ left, top })
+  }, [sub2, anchor2El, flyoutPos])
+
   // Close on click outside / Escape.
   useEffect(() => {
     if (!pos) return
@@ -170,6 +209,7 @@ export const TrackCtxMenu = ({
       const t = e.target as Node
       if (menuRef.current?.contains(t)) return
       if (flyoutRef.current?.contains(t)) return
+      if (flyout2Ref.current?.contains(t)) return
       onClose()
     }
     const onKey = (e: KeyboardEvent) => {
@@ -228,7 +268,6 @@ export const TrackCtxMenu = ({
   const curProv = trackProviderId(track)
   const netProviders = getProviders().filter((p) => p.id !== 'local')
   const canSwitchSrc = inLib && curProv !== 'local' && netProviders.some((p) => p.id !== curProv)
-  const hasTools = hasShare || hasWave || hasDl || canSwitchSrc
 
   const onAddEnter = () => openSub('pl')
   const onAddLeave = () => scheduleHide()
@@ -344,32 +383,8 @@ export const TrackCtxMenu = ({
           <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
         </div>
 
-        {/* ── Действия площадок: поделиться / волна / скачать ── */}
-        {hasTools && <div className="cx-sep" />}
-
-        {/* cxshare — «Поделиться», только для треков с SC-данными. */}
-        {hasShare && (
-          <div
-            className="ci"
-            id="cxshare"
-            onClick={() => {
-              openShare({
-                type: 'track',
-                id: track.scId != null ? String(track.scId) : '',
-                title: track.name,
-                artist: track.artist,
-                permalink: track.scPermalink ?? null,
-                cover: track.cover ?? null,
-              })
-              onClose()
-            }}
-          >
-            <span className="ci-icon">
-              <Ico name="share" width={11} height={11} />
-            </span>{' '}
-            {t('lib.ctx.share')}
-          </div>
-        )}
+        {/* ── Действия площадок: волна / скачать ── */}
+        {(hasWave || hasDl) && <div className="cx-sep" />}
 
         {/* cxwave — «Волна по треку»: SC-треки (движок Bloom) и Яндекс (rotor track:<id>) */}
         {hasWave && (
@@ -385,28 +400,6 @@ export const TrackCtxMenu = ({
               <Ico name="wave" variant="bold" width={13} height={13} />
             </span>{' '}
             {t('lib.ctx.waveByTrack')}
-          </div>
-        )}
-
-        {/* cxsrc — «Сменить площадку»: flyout с иконками площадок, выбор ищет трек
-            там и ПЕРСИСТЕНТНО заменяет им библиотечную запись (switchTrackPlatform). */}
-        {canSwitchSrc && (
-          <div
-            ref={srcItemRef}
-            className="ci"
-            id="cxsrc"
-            onMouseEnter={() => openSub('src')}
-            onMouseLeave={onAddLeave}
-            onClick={(e) => {
-              e.stopPropagation()
-              openSub('src')
-            }}
-          >
-            <span className="ci-icon">
-              {providerLogo(curProv, 13) ?? <Ico name="note" width={11} height={11} />}
-            </span>{' '}
-            {t('lib.ctx.switchSrc')}
-            <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
           </div>
         )}
 
@@ -434,35 +427,25 @@ export const TrackCtxMenu = ({
 
         <div className="cx-sep" />
 
-        {/* ── Метаданные: теги / инфо ── */}
-        {inLib && onEditTags && (
+        {/* cxmore — «Ещё» → флайаут с редкими пунктами: поделиться, теги, инфо и
+            смена площадки. Вынесены из основного списка, чтобы меню не росло в
+            простыню: в один клик остаются только частые действия. */}
         <div
+          ref={moreItemRef}
           className="ci"
-          id="cxedit"
-          onClick={() => {
-            if (onEditTags && track) onEditTags(track)
-            onClose()
+          id="cxmore"
+          onMouseEnter={() => openSub('more')}
+          onMouseLeave={onAddLeave}
+          onClick={(e) => {
+            e.stopPropagation()
+            openSub('more')
           }}
         >
           <span className="ci-icon">
-            <Ico name="edit" width={13} height={13} />
+            <Ico name="kebab" width={13} height={13} />
           </span>{' '}
-          {t('lib.ctx.editTags')}
-        </div>
-        )}
-
-        <div
-          className="ci"
-          id="cxinfo"
-          onClick={() => {
-            openTrackInfo(track)
-            onClose()
-          }}
-        >
-          <span className="ci-icon">
-            <Ico name="info" width={11} height={11} />
-          </span>{' '}
-          {t('lib.ctx.trackInfo')}
+          {t('common.more')}
+          <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
         </div>
 
         {(inCurrentPl || isInQueue || isDeletable) && <div className="cx-sep" />}
@@ -594,7 +577,7 @@ export const TrackCtxMenu = ({
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       ) : (
-                        <PlCover trs={pl.trs} seed={pl.id} />
+                        <PlCover trs={pl.trs} />
                       )}
                     </span>{' '}
                     <span className="ci-pl-txt">
@@ -625,33 +608,86 @@ export const TrackCtxMenu = ({
           </>
           )}
 
-          {/* ── Подменю «Сменить площадку»: иконка+название каждой сетевой
-              площадки; текущая помечена галочкой, остальные ищут+заменяют. ── */}
-          {sub === 'src' &&
-            netProviders.map((p) => {
-              const active = p.id === curProv
-              return (
+          {/* ── Подменю «Ещё»: редкие пункты. «Сменить площадку» — своя строка
+              с флайаутом второго уровня (см. #cxSrcFlyout ниже). ── */}
+          {sub === 'more' && (
+            <>
+              {hasShare && (
                 <div
-                  key={p.id}
-                  className={active ? 'ci ci-active' : 'ci'}
+                  className="ci"
+                  onMouseEnter={() => setSub2(null)}
                   onClick={() => {
-                    if (active) return
+                    openShare({
+                      type: 'track',
+                      id: track.scId != null ? String(track.scId) : '',
+                      title: track.name,
+                      artist: track.artist,
+                      permalink: track.scPermalink ?? null,
+                      cover: track.cover ?? null,
+                    })
                     onClose()
-                    void switchTrackPlatform(track, p.id)
                   }}
                 >
-                  <span className="ci-icon" style={{ background: 'transparent' }}>
-                    {providerLogo(p.id, 15)}
+                  <span className="ci-icon">
+                    <Ico name="share" width={12} height={12} />
                   </span>{' '}
-                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {p.label}
-                  </span>
-                  {active && (
-                    <Ico name="check" width={13} height={13} style={{ flexShrink: 0, color: 'var(--accent)' }} />
-                  )}
+                  {t('lib.ctx.share')}
                 </div>
-              )
-            })}
+              )}
+
+              {/* «Сменить площадку» — как и было раньше: одна строка со стрелкой,
+                  список площадок открывается сбоку (второй уровень). */}
+              {canSwitchSrc && (
+                <div
+                  ref={srcItemRef}
+                  className="ci"
+                  onMouseEnter={openSub2}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openSub2()
+                  }}
+                >
+                  {/* Лого монохромное (currentColor) — красим в бренд площадки, как в
+                      ConvertModal/LibAddMenu/PlSourcesEditor. */}
+                  <span className="ci-icon" style={{ color: providerBrandColor(curProv) }}>
+                    {providerLogo(curProv, 13) ?? <Ico name="note" width={11} height={11} />}
+                  </span>{' '}
+                  {t('lib.ctx.switchSrc')}
+                  <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
+                </div>
+              )}
+
+              {inLib && onEditTags && (
+                <div
+                  className="ci"
+                  onMouseEnter={() => setSub2(null)}
+                  onClick={() => {
+                    onEditTags(track)
+                    onClose()
+                  }}
+                >
+                  <span className="ci-icon">
+                    <Ico name="edit" width={13} height={13} />
+                  </span>{' '}
+                  {t('lib.ctx.editTags')}
+                </div>
+              )}
+
+              <div
+                className="ci"
+                onMouseEnter={() => setSub2(null)}
+                onClick={() => {
+                  openTrackInfo(track)
+                  onClose()
+                }}
+              >
+                <span className="ci-icon">
+                  <Ico name="info" width={12} height={12} />
+                </span>{' '}
+                {t('lib.ctx.trackInfo')}
+              </div>
+            </>
+          )}
 
           {/* ── Подменю «Скачать»: скачать файл на диск / слушать офлайн (тоггл). ── */}
           {sub === 'dl' && (
@@ -668,6 +704,22 @@ export const TrackCtxMenu = ({
                 </span>{' '}
                 {t('player.dl.track')}
               </div>
+              {/* Обложка — как в попапе кнопки скачивания в плеере (DlMenu).
+                  Прячем без обложки: downloadCover на пустом src молча выходит. */}
+              {!!track.cover && (
+                <div
+                  className="ci"
+                  onClick={() => {
+                    onClose()
+                    void downloadCover(track, null)
+                  }}
+                >
+                  <span className="ci-icon">
+                    <Ico name="gallery" width={13} height={13} />
+                  </span>{' '}
+                  {t('player.dl.cover')}
+                </div>
+              )}
               <div
                 className="ci"
                 onClick={() => {
@@ -682,6 +734,52 @@ export const TrackCtxMenu = ({
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Второй уровень: список площадок справа от «Сменить площадку» внутри
+          флайаута «Ещё». Текущая помечена галочкой, остальные ищут трек там и
+          ПЕРСИСТЕНТНО заменяют им библиотечную запись (switchTrackPlatform). */}
+      {sub === 'more' && sub2 === 'src' && (
+        <div
+          ref={flyout2Ref}
+          id="cxPlFlyout"
+          onMouseEnter={cancelHide}
+          onMouseLeave={scheduleHide}
+          style={{
+            display: 'block',
+            left: flyout2Pos?.left ?? -9999,
+            top: flyout2Pos?.top ?? -9999,
+            visibility: flyout2Pos ? 'visible' : 'hidden',
+          }}
+        >
+          {netProviders.map((p) => {
+            const active = p.id === curProv
+            return (
+              <div
+                key={p.id}
+                className={active ? 'ci ci-active' : 'ci'}
+                onClick={() => {
+                  if (active) return
+                  onClose()
+                  void switchTrackPlatform(track, p.id)
+                }}
+              >
+                <span
+                  className="ci-icon"
+                  style={{ background: 'transparent', color: providerBrandColor(p.id) }}
+                >
+                  {providerLogo(p.id, 15)}
+                </span>{' '}
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {p.label}
+                </span>
+                {active && (
+                  <Ico name="check" width={13} height={13} style={{ flexShrink: 0, color: 'var(--accent)' }} />
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </>,

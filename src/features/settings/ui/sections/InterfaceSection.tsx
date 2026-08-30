@@ -232,7 +232,6 @@ const InterfaceCards = () => {
             className={`s-lang-card${locale === l.id ? ' active' : ''}`}
             onClick={() => setLocale(l.id)}
           >
-            {locale === l.id && <span className="s-lang-badge">{l.code}</span>}
             <span className="s-lang-flag">{FLAGS[l.id]}</span>
             <span className="s-lang-name">{t(l.labelKey)}</span>
           </button>

@@ -83,6 +83,23 @@ pub fn getautostart(app: AppHandle) -> Result<bool, String> {
     Ok(autostart::is_enabled(&app))
 }
 
+/// Восстановление сессии при запуске. Выключение снимает и `autoplay`: он
+/// вложен в эту настройку (в UI его строка при выключенном восстановлении
+/// вообще не показывается), и поднятым в конфиге остаться не должен — иначе
+/// возврат восстановления дал бы играющий с порога плеер.
+#[tauri::command]
+pub fn set_restore_queue(enabled: bool) -> Result<(), String> {
+    let mut s = config::load_app_settings().map_err(|e| e.to_string())?;
+    s.restore_queue = enabled;
+    if !enabled {
+        s.autoplay = false;
+    }
+    config::save_app_settings(&s).map_err(|e| e.to_string())
+}
+
+/// Автовоспроизведение — надстройка над восстановлением: «и сразу продолжить».
+/// Само по себе ничего не восстанавливает и `restore_queue` не трогает; без
+/// него не читается вовсе (см. восстановление сессии в `useMainPlayerBridge`).
 #[tauri::command]
 pub fn setautoplay(enabled: bool) -> Result<(), String> {
     let mut s = config::load_app_settings().map_err(|e| e.to_string())?;
@@ -1420,10 +1437,9 @@ pub fn lyrics_request(
     title: String,
     duration: f64,
     local_path: Option<String>,
-    genius_token: Option<String>,
     request_id: String,
 ) -> Result<(), String> {
-    lyrics_service::dispatch_request(app, request_id, artist, title, duration, local_path, genius_token);
+    lyrics_service::dispatch_request(app, request_id, artist, title, duration, local_path);
     Ok(())
 }
 
@@ -1462,11 +1478,6 @@ pub fn set_lyrics_cache(enabled: bool) -> Result<(), String> {
     let mut s = config::load_app_settings().map_err(|e| e.to_string())?;
     s.lyrics_disk_cache = enabled;
     config::save_app_settings(&s).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn genius_token(_token: String) -> Result<(), String> {
-    Ok(())
 }
 
 #[tauri::command]

@@ -81,10 +81,9 @@
 ### Lyrics → features/lyrics/api
 | Команда | Аргументы | Возврат |
 |---|---|---|
-| `lyrics_request` | artist, title, duration, local_path?, genius_token?, request_id | `()` |
+| `lyrics_request` | artist, title, duration, local_path?, request_id | `()` |
 | `lyrics_cache_clear` | — | `()` |
 | `set_lyrics_cache` | `enabled: bool` | `()` |
-| `genius_token` | `token: string` | `()` (заглушка) |
 
 ### Playlist export/import → features/library/api
 | Команда | Аргументы | Возврат |

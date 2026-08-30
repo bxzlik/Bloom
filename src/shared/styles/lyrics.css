@@ -134,9 +134,13 @@
 #bloom-dl-popup,#bloom-src-popup{position:absolute;z-index:100000;width:fit-content;transform-origin:top left}
 #bloom-dl-popup.open,#bloom-src-popup.open{animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
 #bloom-dl-popup.closing,#bloom-src-popup.closing{animation:libMenuOut .14s ease-in forwards}
-.bloom-dl-inner{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--border,rgba(var(--ovl-rgb),.1));border-radius:12px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:190px;box-shadow:none}
-.bloom-dl-inner button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;background:none;border:none;border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;text-align:left;white-space:nowrap;font-family:var(--font);transition:background .12s}
-.bloom-dl-inner button:hover{background:var(--hover,rgba(var(--ovl-rgb),.07))}
+/* Геометрия и отклик — те же, что у `.ctx`/`.ci` (см. search-misc.css): плоские
+   пункты 28px без подложки на ховере, только осветление текста. Попап живёт в
+   ряду транспорта, но это такое же меню, и выбиваться из общего вида ему незачем. */
+.bloom-dl-inner{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius) * 0.9);padding:5px;display:flex;flex-direction:column;gap:0;min-width:190px;box-shadow:none}
+.bloom-dl-inner button{display:flex;align-items:center;gap:10px;width:100%;padding:5px 10px;background:none;border:none;border-radius:calc(var(--radius) * 0.5);color:rgba(var(--ovl-rgb),.78);font-size:13px;line-height:18px;cursor:pointer;text-align:left;white-space:nowrap;font-family:var(--font);transition:color .1s}
+.bloom-dl-inner button:hover{color:var(--text)}
+.bloom-dl-inner button svg{flex-shrink:0}
 .bloom-dl-inner button:disabled{opacity:.35;cursor:default;pointer-events:none}
 /* Столбик выбора площадки (плеер + поиск): только иконки, без подписей.
    Рамка слабее обычного попапа — --ovl-line (та же плёнка, что регулируется
@@ -149,6 +153,9 @@
   min-width:0;width:fit-content;padding:var(--srcp-pad);gap:4px;border-color:var(--ovl-line);
   border-radius:calc(var(--srcp-r) + var(--srcp-pad))}
 .bloom-srcp button{width:var(--srcp-btn);height:var(--srcp-btn);padding:0;justify-content:center;border-radius:var(--srcp-r)}
+/* Исключение из плоского правила: пункты БЕЗ подписей — осветлять там нечего
+   (лого в фирменных цветах), поэтому отклик даёт подложка под иконкой. */
+.bloom-srcp button:hover{background:rgba(var(--ovl-rgb),.07)}
 .bloom-srcp button[aria-current]:hover{background:none}
 .bloom-srcp-div{height:1px;flex:none;background:var(--ovl-line);margin:2px var(--srcp-div)}
 /* Плеер: анкер — .cc (40×40, calc(--radius*.7)). */

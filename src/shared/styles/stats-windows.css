@@ -1,40 +1,12 @@
-/* ===== STATS PAGE ===== */
-.stats-page{overflow-y:auto;padding:20px 24px 32px;display:flex;flex-direction:column;gap:16px}
-.stats-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.stat-hero-card{background:transparent;border:1px solid var(--ovl-line);border-radius:var(--radius);padding:16px 18px;display:flex;flex-direction:column;gap:6px;transition:.2s}
-.stat-hero-card:hover{border-color:rgba(var(--accent-rgb),.35)}
-.shc-icon{width:32px;height:32px;border-radius:calc(var(--radius)*.6);background:rgba(var(--accent-rgb),.12);display:flex;align-items:center;justify-content:center;color:var(--accent);margin-bottom:2px;transition:.2s}
-.stat-hero-card:hover .shc-icon{background:rgba(var(--accent-rgb),.22)}
-.shc-val{font-size:22px;font-weight:800;letter-spacing:-.5px;min-height:28px;display:flex;align-items:flex-end}
-.shc-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
-
-/* «В среднем за день» — три метрики в ряд с разделителями (перенос из модалки) */
-.stats-daily{display:flex;gap:0}
-.sd-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border-right:1px solid var(--ovl-line)}
-.sd-item:last-child{border-right:none}
-.sd-num{font-size:22px;font-weight:800;letter-spacing:-.5px}
-.sd-sub{font-size:10px;color:var(--muted)}
-
-.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.stats-card{background:transparent;border:1px solid var(--ovl-line);border-radius:var(--radius);padding:16px 18px;transition:border-color .2s}
-.stats-card:hover{border-color:rgba(var(--accent-rgb),.35)}
-.stats-card-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.stats-card-title.has-actions{justify-content:space-between}
-.stats-card-title.has-actions .sct-left{display:flex;align-items:center;gap:6px}
+/* ===== STATS (шторка профиля) =====
+   Страничных блоков (hero-плитки, «в среднем за день», сетка карточек) больше
+   нет: статистика уехала в боковую шторку со своей раскладкой (`.pstat-*` ниже).
+   Здесь осталось то, что шторка переиспользует: переключатель периода, график
+   активности с теплокартой и разбивка по площадкам. */
 .act-period-switcher{display:flex;gap:2px}
 .act-period-btn{background:none;border:none;color:var(--muted);font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;cursor:pointer;transition:.15s;text-transform:uppercase;letter-spacing:.4px}
 .act-period-btn.active{background:rgba(var(--accent-rgb),.15);color:var(--accent)}
 .act-period-btn:hover:not(.active){color:var(--text)}
-.top-track-item{display:flex;align-items:center;gap:10px;padding:5px 6px;border-bottom:1px solid rgba(var(--ovl-rgb),.04);border-radius:6px;transition:background .15s}
-.top-track-item:hover{background:rgba(var(--ovl-rgb),.04)}
-.top-track-item:last-child{border-bottom:none}
-.top-track-num{font-size:11px;font-weight:800;color:var(--muted);width:16px;flex-shrink:0;text-align:center}
-.top-track-cov{width:32px;height:32px;border-radius:calc(var(--radius)*.45);background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.top-track-cov img{width:100%;height:100%;object-fit:cover}
-.top-track-info{flex:1;min-width:0}
-.top-track-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top-track-artist{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top-track-plays{font-size:11px;color:var(--muted);flex-shrink:0}
 .activity-chart{display:flex;align-items:flex-end;gap:4px;height:52px;margin-top:8px}
 .activity-chart.heatmap-mode{display:block;align-items:stretch;height:auto}
 .act-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -53,30 +25,18 @@
 .ahm-cell.future{opacity:.25;pointer-events:none}
 .act-heatmap-legend{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:8px;font-size:10px;color:var(--muted)}
 .act-heatmap-legend .ahm-cell{width:9px;height:9px;aspect-ratio:auto;flex-shrink:0}
-.top-artist-item{display:flex;align-items:center;gap:10px;padding:6px;border-bottom:1px solid rgba(var(--ovl-rgb),.04);border-radius:6px;transition:background .15s}
-.top-artist-item:hover{background:rgba(var(--ovl-rgb),.04)}
-.top-artist-item:last-child{border-bottom:none}
-.top-artist-ava{width:26px;height:26px;border-radius:50%;background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.top-artist-ava img{width:100%;height:100%;object-fit:cover}
-.top-artist-name{flex:1;min-width:0;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top-artist-count{font-size:11px;color:var(--muted);flex-shrink:0}
 
 /* Страница профиля скроллится, но полосу прокрутки прячем (как home/library). */
 .account-scroll{scrollbar-width:none}
 .account-scroll::-webkit-scrollbar{display:none;width:0;height:0}
 
-/* ===== STATS HEADER (заголовок-сворачивание + действия) ===== */
-.stats-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.stats-title{display:inline-flex;align-items:center;gap:8px;padding:4px 2px;color:var(--text);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px}
-.stats-title svg{color:var(--accent)}
-.stats-title-btn{display:inline-flex;align-items:center;gap:7px;background:none;border:none;cursor:pointer;padding:4px 2px;color:var(--text);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;transition:color .15s}
-.stats-title-btn:hover{color:var(--accent)}
-.stats-chevron{color:var(--muted);transition:transform .2s,color .15s;flex-shrink:0}
-.stats-title-btn:hover .stats-chevron{color:var(--accent)}
-.stats-title-btn.collapsed .stats-chevron{transform:rotate(-90deg)}
-.stats-toolbar{display:flex;justify-content:flex-end;gap:8px}
+/* Кнопки действий статистики («Скопировать» / «Очистить») — футер шторки. */
 .stats-tool-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius)*.55);color:var(--text2);font-size:12px;font-weight:600;padding:6px 11px;cursor:pointer;transition:.15s}
 .stats-tool-btn:hover{color:var(--text);border-color:rgba(var(--accent-rgb),.45);background:rgba(var(--accent-rgb),.08)}
+/* Постоянный вход в итоги месяца — единственная «положительная» кнопка футера,
+   поэтому она с акцентной рамкой, а не нейтральная как «Скопировать». */
+.stats-tool-btn.accent{color:var(--text);border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.1)}
+.stats-tool-btn.accent:hover{border-color:rgba(var(--accent-rgb),.65);background:rgba(var(--accent-rgb),.18)}
 .stats-tool-btn.danger:hover{color:#ff6b6b;border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.1)}
 .stats-tool-btn.danger.confirm{color:#ff6b6b;border-color:rgba(255,107,107,.6);background:rgba(255,107,107,.14)}
 
@@ -129,20 +89,75 @@
 .sc-key{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px;background:var(--bg2);border:1px solid var(--border);border-bottom:2px solid rgba(var(--ovl-rgb),.13);border-radius:5px;font-size:11px;font-weight:700;color:var(--text);min-width:28px;font-family:monospace;white-space:nowrap}
 .sc-plus{font-size:10px;color:var(--muted)}
 
-/* ===== ACCOUNT TABS (Статистика / Достижения) ===== */
-.acc-tabs{display:flex;gap:6px;padding:4px;background:transparent;border:1px solid var(--ovl-line);border-radius:var(--radius);flex-shrink:0}
-.acc-tab{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 14px;background:transparent;border:none;border-radius:calc(var(--radius)*.7);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
-.acc-tab:hover{color:var(--text)}
-.acc-tab.active{background:var(--accent);color:var(--accent-text)}
-.acc-tab.active svg{color:var(--accent-text)}
+/* ===== ACCOUNT ENTRY CARDS (входы в шторки статистики / достижений) ===== */
+/* Вид мобильный (`_EntryCard` из bloom-phone): слева крупное число со значком,
+   справа второе число, у края — плитка 56. Подсветки на наведении нет —
+   карточка выглядит одинаково всегда. */
+.acc-entries{display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.acc-entry{display:flex;align-items:center;gap:8px;width:100%;padding:16px 16px 16px 20px;background:transparent;border:1px solid var(--ovl-line);border-radius:var(--radius);color:var(--text);font-family:var(--font);text-align:left;cursor:pointer}
+.acc-entry-val{font-size:30px;font-weight:800;letter-spacing:-.6px;line-height:1}
+/* --icon-fg-sb, а не --muted: карточка прозрачная, и на светлой обложке
+   штриховая иконка на #555 исчезала. */
+.acc-entry-ico{color:var(--icon-fg-sb);flex-shrink:0}
+.acc-entry-side{margin-left:auto;font-size:20px;font-weight:800;letter-spacing:-.3px;white-space:nowrap}
+.acc-entry-tile{width:56px;height:56px;margin-left:14px;border-radius:calc(var(--radius)*.6);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(var(--ovl-rgb),.05)}
+.acc-entry-medal{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);background:rgba(var(--ovl-rgb),.04)}
+/* Плитка горит золотом, только когда взят хоть один уровень. */
+.acc-entry-medal.on{color:#ffd24a;background:rgba(255,210,74,.16)}
+
+/* ===== PROFILE SIDE PANELS (шторки «Статистика» / «Достижения») ===== */
+/* Каркас — общий `.spanel` (modals.css). Шапки нет: ни заголовка, ни крестика —
+   закрывают кликом по фону или Esc. Здесь только тело и футер. */
+.ppnl-badge{font-size:12px;font-weight:700;color:var(--text2);border:1px solid var(--ovl-line);padding:3px 10px;border-radius:999px}
+/* Полосу прокрутки прячем — как на странице профиля и главной. */
+.ppnl-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:18px 0 8px;scrollbar-width:none}
+.ppnl-body::-webkit-scrollbar{display:none;width:0;height:0}
+.ppnl-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid rgba(var(--ovl-rgb),.09);flex-shrink:0}
+.ppnl-foot .stats-tool-btn{flex:1;justify-content:center;padding:10px 11px}
+
+/* Разделы шторки статистики: крупный заголовок без плашки, содержимое под ним
+   прямо на фоне панели (как в мобильной `stats_sheet`). */
+.pstat-sec{padding:0 16px;margin-bottom:18px}
+.pstat-sec.bleed{padding:0}
+.pstat-sec-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.pstat-sec.bleed .pstat-sec-head{padding:0 16px}
+.pstat-sec-title{flex:1;min-width:0;font-size:15px;font-weight:800;letter-spacing:-.2px;color:var(--text)}
+.pstat-empty{font-size:12px;color:var(--muted);padding:2px 0}
+
+/* Лента любимых исполнителей: листается вбок от края до края. */
+.pstat-strip{display:flex;gap:10px;overflow-x:auto;padding:0 16px 2px;scrollbar-width:none}
+.pstat-strip::-webkit-scrollbar{display:none;height:0}
+.pstat-artist{width:78px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:4px 0;cursor:pointer}
+.pstat-artist-ava{width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--hover);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.pstat-artist-ava img{width:100%;height:100%;object-fit:cover}
+.pstat-artist-name{max-width:100%;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstat-artist-plays{font-size:11px;color:var(--muted);margin-top:-6px}
+
+/* Топ треков */
+.pstat-track{display:flex;align-items:center;gap:10px;padding:6px;cursor:pointer}
+.pstat-track-cov{width:42px;height:42px;border-radius:calc(var(--radius)*.45);background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.pstat-track-cov img{width:100%;height:100%;object-fit:cover}
+.pstat-track-info{flex:1;min-width:0}
+.pstat-track-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstat-track-artist{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstat-track-plays{font-size:11px;color:var(--muted);flex-shrink:0}
+
+/* «Обзор» — сетка цифр с тонкими линиями между рядами. Единственный блок со
+   своей подложкой: без неё ряды разъезжались бы по фону шторки. */
+.pstat-ov{background:rgba(var(--ovl-rgb),.04);border:1px solid var(--ovl-line);border-radius:var(--radius);padding:14px}
+.pstat-ov-row{display:flex}
+.pstat-ov-row+.pstat-ov-row{margin-top:10px;padding-top:10px;border-top:1px solid var(--ovl-line)}
+.pstat-ov-cell{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.pstat-ov-val{max-width:100%;font-size:20px;font-weight:800;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstat-ov-lbl{max-width:100%;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Достижения в шторке — те же карточки, но в одну колонку. */
+.pach-count{display:flex;justify-content:flex-end;padding:0 16px 10px}
+.pach-list{display:flex;flex-direction:column;gap:10px;padding:0 16px}
 
 /* ===== ACHIEVEMENTS ===== */
-.ach-page{display:flex;flex-direction:column;gap:14px;flex-shrink:0}
-.ach-summary{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text)}
-.ach-summary svg{color:var(--accent)}
-.ach-summary-count{margin-left:auto;font-size:12px;font-weight:700;letter-spacing:0;color:var(--text2);background:transparent;border:1px solid var(--ovl-line);padding:3px 10px;border-radius:999px;text-transform:none}
-.ach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-@media (max-width:720px){.ach-grid{grid-template-columns:1fr}}
+/* Карточка достижения. Живёт в шторке профиля (`.pach-list`, одна колонка);
+   счётчик взятых уровней — плашка `.ppnl-badge` в её шапке. */
 .ach-card{display:flex;gap:12px;padding:13px 14px;background:transparent;border:1px solid var(--ovl-line);border-radius:var(--radius);transition:opacity .2s,border-color .2s}
 .ach-card:not(.on){opacity:.5}
 .ach-card:hover{border-color:rgba(var(--accent-rgb),.35)}

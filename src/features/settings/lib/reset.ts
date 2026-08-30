@@ -52,6 +52,9 @@ const resetAppSettings = async (): Promise<void> => {
   await Promise.allSettled([
     st.setMinimizeToTray(false),
     st.setAutoplay(false),
+    // Дефолт восстановления очереди — включено (см. config.rs). От порядка не
+    // зависит: setAutoplay(false) снимает только autoplay и restore_queue не трогает.
+    st.setRestoreQueue(true),
     st.setChangeTitlebar(false),
     st.setChangeTrayCover(false),
     st.setDiscordRpc(false),

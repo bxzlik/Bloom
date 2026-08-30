@@ -23,7 +23,7 @@
 .plctx-sep{height:1px;background:var(--border);margin:4px 3px;opacity:.65}
 #plMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:8000;min-width:210px;box-shadow:none;display:none}
 #plMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
-#plMenuHeader{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:10px 12px 11px;margin:0 0 4px;border-radius:calc(var(--radius)*0.7);pointer-events:none}
+#plMenuHeader{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:8px 11px 9px;margin:0 0 3px;border-radius:calc(var(--radius)*0.7);pointer-events:none}
 /* Размытая обложка фоном шапки + затемняющий градиент поверх для читаемости. */
 #plMenuHeader::before{content:'';position:absolute;inset:0;z-index:0;background-image:var(--cx-cover,none);background-size:cover;background-position:center;filter:blur(20px) saturate(1.4) brightness(.6);transform:scale(1.5)}
 #plMenuHeader::after{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.6))}
@@ -37,19 +37,33 @@
 #plMenuHeader.sys-fav #plMenuHeaderCov svg{color:var(--sys-fav-ico)}
 #plMenuHeader.sys-hist #plMenuHeaderCov svg{color:var(--sys-hist-ico)}
 #plMenuHeader[class*="sys-"] #plMenuHeaderCov{box-shadow:0 2px 10px rgba(0,0,0,.5),inset 0 0 0 1px rgba(var(--ovl-rgb),.14)}
-#plMenuHeaderCov{width:46px;height:46px;border-radius:calc(var(--radius)*0.65);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+#plMenuHeaderCov{width:38px;height:38px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 #plMenuHeaderCov img{width:100%;height:100%;object-fit:cover}
 #plMenuHeaderName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 #plMenuHeaderSub{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-.ci.sort-active .ci-icon{background:rgba(var(--accent-rgb,255,255,255),.18)!important;color:var(--accent)}
+/* Верхняя строка меню плейлиста: одна пилюля с широкой «Воспроизвести» и
+   секцией перемешивания справа (собственных рамок у секций нет, они отделены
+   вертикальной линией). Рамка — --ovl-line/--ovl-line2, т.е. следует настройке
+   «прозрачность рамок» (borderAlpha → --wb/--wb2), как у .tr и блоков. */
+.plmenu-playrow{display:flex;align-items:stretch;margin:2px 0 3px;border:1px solid var(--ovl-line);border-radius:999px;overflow:hidden;transition:border-color .12s}
+.plmenu-playrow:hover{border-color:var(--ovl-line2)}
+.plmenu-play,.plmenu-shuffle{display:flex;align-items:center;justify-content:center;gap:7px;height:30px;padding:0 12px;border:0;background:transparent;color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
+.plmenu-play{flex:1;min-width:0}
+.plmenu-play span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Разделитель — псевдоэлемент, а не border-left: линия короче пилюли и не
+   упирается в её верх/низ. */
+.plmenu-shuffle{position:relative;width:36px;padding:0;flex-shrink:0;color:var(--text2)}
+.plmenu-shuffle::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:1px;background:var(--ovl-line2)}
+.plmenu-play:hover,.plmenu-shuffle:hover{background:rgba(var(--ovl-rgb),.06);color:var(--text)}
+.ci.sort-active .ci-icon{background:transparent!important;color:var(--accent)}
 .ci.sort-active{color:var(--accent)}
 #plMenuPage1,#plMenuPage2{animation-fill-mode:forwards}
 #plMenuPage2{display:none}
 #plMenuPage2.active{display:block;animation:plPageIn .15s ease}
-.pl-menu-back{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 10px;border-top:1px solid var(--border);margin-top:4px;font-size:12px;color:var(--text2);cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:background .1s,color .1s}
-.pl-menu-back:hover{background:var(--hover);color:var(--text)}
+.pl-menu-back{display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;border-top:1px solid var(--ovl-line2);margin-top:3px;font-size:12px;color:var(--text2);cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:color .1s}
+.pl-menu-back:hover{color:var(--text)}
 .pl-sort-group{margin-bottom:2px}
-/* position:relative — точка отсчёта для плавающей пилюли «Сейчас играет»
+/* position:relative — точка отсчёта для плавающей кнопки «Сейчас играет»
    (.lib-jump): она висит НАД трек-листом, а не внутри его скролла. */
 .lib-content{position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;margin:var(--page-pad) var(--page-pad) var(--page-pad) 10px;gap:10px}
 .lib-content-head{position:relative;padding:16px;flex-shrink:0;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75)}
@@ -93,8 +107,7 @@
 .lib-hero-icon{width:110px;height:110px;border-radius:calc(var(--radius) * 0.85);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
 .lib-hero-icon.off-icon{background:var(--sys-all-tint)}
 .lib-hero-icon.fav-icon{background:var(--sys-fav-tint)}
-.lib-hero-icon.folder-icon{background:var(--folder-tint)}
-.lib-hero-name{font-size:20px;font-weight:800}
+.lib-hero-icon.folder-icon{background:var(--folder-tint)}.lib-hero-name{font-size:20px;font-weight:800}
 .lib-hero-sub{font-size:11px;color:var(--text2);margin-top:2px}
 /* Inline-редактирование плейлиста прямо в шапке (вместо модалки). */
 /* Смена веток шапки (просмотр ↔ редактор) ремоунтит эти узлы — мягкий fade.
@@ -161,23 +174,32 @@
    ремоунтят — там анимация не дёргается). */
 .lib-tracklist{flex:1;overflow-y:auto;padding:8px 12px 80px;scrollbar-width:none;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);animation:bloom-fade-in .22s ease}
 .lib-tracklist::-webkit-scrollbar{display:none}
-/* ── Пилюля «Сейчас играет» (LibTracklist) ────────────────────────────────
-   Всплывает над низом трек-листа, когда играющий трек уехал далеко за край
-   видимой области; клик возвращает скролл к нему. Стрелка показывает
-   направление (трек выше/ниже). Поверхность и скругление — как у всплывающих
-   меню: color-mix(block-color + ov-lift), radius из настроек (без тени, как
-   #plMenu/.ctx), поэтому пилюля попадает и в стекло оверлеев. */
-.lib-jump{position:absolute;left:50%;bottom:16px;z-index:6;display:flex;align-items:center;gap:9px;max-width:min(340px,calc(100% - 60px));padding:5px 12px 5px 5px;border-radius:calc(var(--radius)*.9);border:1px solid rgba(var(--ovl-rgb),.09);background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));color:var(--text);font-family:var(--font);cursor:pointer;box-shadow:none;transform:translateX(-50%);animation:libJumpIn .2s ease;transition:border-color .15s ease}
+/* ── Кнопка «Сейчас играет» (LibTracklist) ────────────────────────────────
+   Круг с обложкой играющего трека в правом нижнем углу трек-листа. Всплывает,
+   когда трек уехал далеко за край видимой области; клик возвращает скролл к
+   нему. Обложка залита на весь круг, поверх — затемнение с эквалайзером (он
+   же говорит, играет трек или на паузе), в углу бейдж со стрелкой: трек выше
+   или ниже. Поверхность бейджа и подложки — как у всплывающих меню:
+   color-mix(block-color + ov-lift), без тени, поэтому круг попадает и в
+   стекло оверлеев.
+   Ручки: --lib-jump-size — диаметр, --lib-jump-badge — размер бейджа. */
+.lib-jump{--lib-jump-size:44px;--lib-jump-badge:18px;position:absolute;right:16px;bottom:16px;z-index:6;width:var(--lib-jump-size);height:var(--lib-jump-size);padding:0;border-radius:50%;border:1px solid rgba(var(--ovl-rgb),.09);background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));color:var(--text);font-family:var(--font);cursor:pointer;box-shadow:none;animation:libJumpIn .2s ease;transition:border-color .15s ease}
 .lib-jump:hover{border-color:rgba(var(--ovl-rgb),.22)}
-.lib-jump>svg{flex-shrink:0;color:var(--text2)}
-.lib-jump:hover>svg{color:var(--text)}
-.lib-jump-cov{position:relative;width:32px;height:32px;border-radius:calc(var(--radius)*.5);overflow:hidden;flex-shrink:0;background:var(--hover);display:flex;align-items:center;justify-content:center}
-.lib-jump-cov img{width:100%;height:100%;object-fit:cover}
-.lib-jump-eq{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
-.lib-jump-txt{display:flex;flex-direction:column;gap:1px;min-width:0;text-align:left}
-.lib-jump-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lib-jump-art{font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@keyframes libJumpIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.lib-jump-cov{position:absolute;inset:0;border-radius:50%;overflow:hidden;background:var(--hover);display:flex;align-items:center;justify-content:center}
+/* На hover зумится ОБЛОЖКА ВНУТРИ круга, а не сам круг: если трансформ повесить
+   на .lib-jump, Chromium пересчитывает клип (border-radius + overflow:hidden)
+   по прямоугольнику — круг «квадратится» и края срезаются. Тот же приём, что у
+   .preset-card в settings.css. */
+.lib-jump-cov img{width:100%;height:100%;object-fit:cover;transition:transform .18s ease}
+.lib-jump:hover .lib-jump-cov img{transform:scale(1.08)}
+.lib-jump-eq{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
+/* Бейдж со стрелкой свисает за край круга — поэтому у .lib-jump нет
+   overflow:hidden, обложку режет по кругу сам .lib-jump-cov. */
+.lib-jump-badge{position:absolute;right:-3px;bottom:-3px;width:var(--lib-jump-badge);height:var(--lib-jump-badge);border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.09);color:var(--text2);transition:color .15s ease}
+.lib-jump:hover .lib-jump-badge{color:var(--text)}
+/* Только сдвиг и прозрачность, без scale: масштабировать сам круг нельзя —
+   см. комментарий у .lib-jump-cov img. */
+@keyframes libJumpIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 /* Индикатор прокрутки на нижней границе шапки (LibScrollbar): тонкая линия +
    акцентный бегунок, отражающий позицию вертикального скролла `.lib-tracklist`.
    Absolute — вне потока, на раскладку не влияет; появляется только когда список
@@ -377,4 +399,8 @@ body.win-lib-wide .tr-album,body.win-lib-wide .tr-date{display:block}
 .bars span:nth-child(2){animation-delay:.2s;height:12px}
 .bars span:nth-child(3){animation-delay:.4s;height:6px}
 body.audio-paused .bars span{animation-play-state:paused;opacity:.5}
-body.bars-hidden .tr-playing-overlay .bars span{animation-play-state:paused!important}
+/* Оптимизация «Визуализаторы» (optEngine, fx.visualizers) — гасит анимацию ВСЕХ
+   эквалайзеров: строки трек-листа, очередь, поиск, оверлей обложки и кнопка
+   «Сейчас играет». Правило раньше било только по .tr-playing-overlay, поэтому
+   остальные бары продолжали крутиться при выключённом визуализаторе. */
+body.bars-hidden .bars span{animation-play-state:paused!important}

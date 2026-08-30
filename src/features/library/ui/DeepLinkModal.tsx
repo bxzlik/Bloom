@@ -174,7 +174,7 @@ export const DeepLinkModal = () => {
                       {pl.cover ? (
                         <img src={pl.cover} alt="" />
                       ) : (
-                        <PlCover trs={pl.trs} seed={pl.id} />
+                        <PlCover trs={pl.trs} />
                       )}
                     </div>
                     <span className="dlink-pl-item-name">{pl.name}</span>

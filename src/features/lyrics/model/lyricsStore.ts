@@ -8,7 +8,6 @@ import { parseLrc, stripLrc, type LrcLine } from '../lib/parseLrc'
 const SOURCE_LABELS: Record<string, string> = {
   'lrclib/exact': 'LRCLIB',
   'lrclib/search': 'LRCLIB',
-  genius: 'Genius',
   none: '',
 }
 

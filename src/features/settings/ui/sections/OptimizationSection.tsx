@@ -5,8 +5,7 @@ import { Ico } from '@shared/ui/icons/solar'
 /**
  * Раздел «Эффективность» (`ssec-unfocus` + `ssec-minimized`) —
  * объединён в одну вкладку (по макету): сверху под-заголовок «АНФОКУС» и его блок
- * (упрощение графики +
- * качество/сила размытия + грид эффектов), ниже под-заголовок «СВЁРНУТОЕ
+ * (упрощение графики + грид эффектов), ниже под-заголовок «СВЁРНУТОЕ
  * СОСТОЯНИЕ» (умное высвобождение + свой грид). Грид из 6 карточек-эффектов
  * (Динамический фон / Фон-GIF / Обложки / Визуализаторы / Размытие / Прокрутка
  * текста) — клик переключает, активен он или деградируется. Движок — optEngine.
@@ -14,11 +13,7 @@ import { Ico } from '@shared/ui/icons/solar'
 export const OptimizationSection = () => {
   const t = useT()
   const simplify = useOptStore((s) => s.unfocusSimplify)
-  const quality = useOptStore((s) => s.unfocusBlurQuality)
-  const strength = useOptStore((s) => s.unfocusBlurStrength)
   const setSimplify = useOptStore((s) => s.setUnfocusSimplify)
-  const setQuality = useOptStore((s) => s.setUnfocusBlurQuality)
-  const setStrength = useOptStore((s) => s.setUnfocusBlurStrength)
   const smart = useOptStore((s) => s.minimizedSmart)
   const setSmart = useOptStore((s) => s.setMinimizedSmart)
 
@@ -41,33 +36,6 @@ export const OptimizationSection = () => {
             <div className="ssub">{t('settings.efficiency.simplify.sub')}</div>
           </div>
           <Toggle checked={simplify} onChange={setSimplify} />
-        </div>
-      </div>
-
-      <div className="sc">
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.efficiency.blurQuality')}</div>
-            <div className="ssub">{t('settings.efficiency.blurQuality.sub')}</div>
-          </div>
-          <select className="ssel" value={quality} onChange={(e) => setQuality(e.target.value as typeof quality)}>
-            <option value="low">{t('settings.efficiency.blurQuality.low')}</option>
-            <option value="medium">{t('settings.efficiency.blurQuality.medium')}</option>
-            <option value="high">{t('settings.efficiency.blurQuality.high')}</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="sc">
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.efficiency.blurStrength')}</div>
-            <div className="ssub">{t('settings.efficiency.blurStrength.sub')}</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="range" className="srange" min={0} max={20} value={strength} onChange={(e) => setStrength(Number(e.target.value))} />
-            <span className="ssub" style={{ minWidth: 28, textAlign: 'right' }}>{strength}px</span>
-          </div>
         </div>
       </div>
 

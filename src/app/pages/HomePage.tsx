@@ -24,6 +24,7 @@ import {
   playSingleTrack,
   loadPlay,
   loadResume,
+  armedResume,
   restoreResumeQueue,
   legacySourceLabel,
   PlayStateOverlay,
@@ -32,7 +33,7 @@ import {
 import { seek, seekLive } from '@features/player/api/play'
 import { extractAccentFromCover, useUiPrefsStore } from '@features/settings'
 import { trackRegistry, coverCache, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
-import { PlaylistCover } from '@shared/ui'
+import { CardMarquee, PlaylistCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '../navigationStore'
 import { DiscoverSections } from './DiscoverSections'
@@ -261,11 +262,15 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
   const libTracks = useLibStore((s) => s.tracks)
   const favs = useFavStore((s) => s.favs)
   const goNav = useNavStore((s) => s.goNav)
+  // Сессия восстановлена после перезапуска и ещё не запускалась: трек уже в
+  // плеере (ветка ниже), но подпись должна остаться «N минут назад», а не «На паузе».
+  const armed = useQueueStore((s) => s.armed)
 
   // Живой трек этой сессии — показываем из плеера; play/pause + переход.
   if (curId) {
     const liveTrack = findTrack(curId, libTracks)
     const li = srcIconKindLive(source)
+    const boot = armed ? armedResume() : null
     return (
       <ContinueView
         cover={artwork}
@@ -277,7 +282,13 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
         pos={position}
         dur={duration}
         playing={playing}
-        stateText={playing ? tr('home.nowPlaying') : tr('home.paused')}
+        stateText={
+          boot
+            ? resumeStateLabel(boot.state, boot.savedAt)
+            : playing
+              ? tr('home.nowPlaying')
+              : tr('home.paused')
+        }
         stateActive={playing}
         isFav={favs.has(curId)}
         onToggleFav={() => useFavStore.getState().toggleFav(curId)}
@@ -761,7 +772,7 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
       <div className="home-cards" id="homeRecentCards">
         {recent.map((t) => (
           <div
-            className="home-card"
+            className="home-card mqh"
             key={t.id}
             onClick={() => playSingleTrack(t.id)}
             onContextMenu={(e) => onTrackCtx(e, t)}
@@ -776,10 +787,10 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
               </div>
               <PlayStateOverlay trackId={t.id} size="card" />
             </div>
-            <div className="hc-name">{t.name}</div>
-            <div className="hc-artist">
+            <CardMarquee className="hc-name">{t.name}</CardMarquee>
+            <CardMarquee className="hc-artist">
               <ArtistLinks artist={t.artist} scId={t.artistScId} permalink={t.artistPermalink} artistId={t.artistId} provider={t.artistProvider} />
-            </div>
+            </CardMarquee>
           </div>
         ))}
       </div>
@@ -811,9 +822,9 @@ const PlaylistsSection = ({
       <div className="home-section-hdr">{t('search.tab.playlists')}</div>
       <div className="home-pl-grid" id="homePlGrid">
         {playlists.map((pl) => (
-          <div className="home-pl-card" key={pl.id} onClick={() => openPl(pl.id)} onContextMenu={(e) => onPlCtx(e, pl)}>
+          <div className="home-pl-card mqh" key={pl.id} onClick={() => openPl(pl.id)} onContextMenu={(e) => onPlCtx(e, pl)}>
             <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
-              {pl.cover ? <img src={pl.cover} alt="" /> : <PlaylistCover covers={pl.trs.map((id) => (libById.get(id) ?? trackRegistry.get(id))?.cover)} seed={pl.id} />}
+              {pl.cover ? <img src={pl.cover} alt="" /> : <PlaylistCover covers={pl.trs.map((id) => (libById.get(id) ?? trackRegistry.get(id))?.cover)} />}
               <CoverProviderBadge provider={playlistProvider(pl.trs, libTracks)} size={24} />
               {/* Плейлист открывается по клику, а не играет → стрелка. */}
               <div className="hpc-play-overlay">
@@ -822,7 +833,7 @@ const PlaylistsSection = ({
                 </div>
               </div>
             </div>
-            <div className="hpc-name">{pl.name}</div>
+            <CardMarquee className="hpc-name">{pl.name}</CardMarquee>
             <div className="hpc-sub">{tt('lib.grid.tracks', { n: pl.trs.length })}</div>
           </div>
         ))}

@@ -15,21 +15,23 @@ import {
   type AchUnit,
 } from '../lib/achievements'
 import { useAchievementsStore, tierKey } from '../model/achievementsStore'
-import { Ico } from '@shared/ui/icons/solar'
+import { ProfilePanelShell } from './ProfilePanelShell'
 
 /**
- * Вкладка «Достижения» на странице профиля. Считает прогресс реактивно из тех же
- * сторов, что и статистика, и хранит только даты разблокировки
- * (`achievementsStore`). Синхронизацию/тосты новых анлоков ведёт глобальный
- * `useAchievementsWatcher` (App) — чтобы достижения приходили в реальном
- * времени, а не только при открытии этой вкладки; здесь только рендер.
+ * Боковая шторка «Достижения» (`.spanel`) — бывшая вкладка страницы профиля,
+ * теперь порт мобильной `achievements_sheet.dart`: шапка со счётчиком взятых
+ * уровней и список карточек в одну колонку.
+ *
+ * Прогресс считается реактивно из тех же сторов, что и статистика; хранятся
+ * только даты разблокировки (`achievementsStore`). Синхронизацию/тосты новых
+ * анлоков ведёт глобальный `useAchievementsWatcher` (App) — чтобы достижения
+ * приходили в реальном времени, а не только при открытии шторки.
  */
 
 const fmtVal = (n: number, unit: AchUnit): string =>
   unit === 'time' ? fmtDurLong(n) : String(n)
 
-export const AchievementsSection = () => {
-  const t = useT()
+export const AchievementsPanel = () => {
   const loc = useLocale()
   const tracks = useLibStore((s) => s.tracks)
   const entries = useHistoryStore((s) => s.entries)
@@ -37,33 +39,25 @@ export const AchievementsSection = () => {
   const appMs = useUsageStore((s) => s.appMs)
   const unlocked = useAchievementsStore((s) => s.unlocked)
 
-  const list = useMemo(() => {
-    const ctx = buildAchContext({
-      tracks,
-      entries,
-      log,
-      appMs,
-    })
-    return buildAchievements(ctx)
-  }, [tracks, entries, log, appMs])
+  const list = useMemo(
+    () => buildAchievements(buildAchContext({ tracks, entries, log, appMs })),
+    [tracks, entries, log, appMs],
+  )
 
   const done = list.reduce((n, a) => n + a.tierReached, 0)
   const total = list.length * TIER_ORDER.length
 
   return (
-    <div className="ach-page">
-      <div className="ach-summary">
-        <Ico name="award" width={15} height={15} />
-        {t('ach.title')}
-        <span className="ach-summary-count">{done}/{total}</span>
-      </div>
-
-      <div className="ach-grid">
+    <ProfilePanelShell kind="ach">
+      {/* Заголовка у шторки нет — от прежней шапки остался только счётчик
+          взятых уровней. */}
+      <div className="pach-count"><span className="ppnl-badge">{done}/{total}</span></div>
+      <div className="pach-list">
         {list.map((a) => (
           <AchCard key={a.def.id} a={a} unlockedAt={unlocked[tierKey(a.def.id, a.tierReached - 1)]} loc={loc} />
         ))}
       </div>
-    </div>
+    </ProfilePanelShell>
   )
 }
 

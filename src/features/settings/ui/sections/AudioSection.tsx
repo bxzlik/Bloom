@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useAudioStore, type NormStatus } from '../../model/audioStore'
+import { useSettingsStore } from '../../model/settingsStore'
 import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
- * Секция «Аудио»: кроссфейд, нормализация громкости, устройство вывода.
- * Значения пишутся в `useAudioStore`; движок (`useAudioEffects` в App) применяет.
+ * Секция «Аудио»: запуск (восстановление сессии), кроссфейд, нормализация
+ * громкости, устройство вывода. Кроссфейд/нормализация/устройство пишутся в
+ * `useAudioStore` (движок `useAudioEffects` в App их применяет), восстановление
+ * и автовоспроизведение — в Rust `AppSettings` через `useSettingsStore`.
  */
 
 const NORM_STATUS_KEY: Record<NormStatus, TranslationKey> = {
@@ -53,6 +56,11 @@ export const AudioSection = () => {
   const setNormEnabled = useAudioStore((s) => s.setNormEnabled)
   const setNormTargetDb = useAudioStore((s) => s.setNormTargetDb)
   const setDeviceId = useAudioStore((s) => s.setDeviceId)
+  const settingsLoaded = useSettingsStore((s) => s.loaded)
+  const restoreQueue = useSettingsStore((s) => s.restore_queue)
+  const autoplay = useSettingsStore((s) => s.autoplay)
+  const setRestoreQueue = useSettingsStore((s) => s.setRestoreQueue)
+  const setAutoplay = useSettingsStore((s) => s.setAutoplay)
 
   const [devices, setDevices] = useState<DeviceOpt[] | null>(null)
   const [devSupported, setDevSupported] = useState(true)
@@ -109,6 +117,40 @@ export const AudioSection = () => {
           <Ico name="eq" width={15} height={15} />{' '}
           {t('settings.nav.audio')}
         </div>
+      </div>
+
+      {/* Запуск: восстановление прошлой сессии и автовоспроизведение.
+          Автовоспроизведение — вложенная настройка восстановления («и сразу
+          продолжить»), само оно ничего не восстанавливает. Поэтому строка
+          появляется только при включённом восстановлении, а его выключение
+          гасит и её (см. `setRestoreQueue`): скрытый флаг не должен остаться
+          поднятым, иначе возврат восстановления дал бы играющий с порога плеер. */}
+      <div className="sc">
+        <h3>{t('settings.system.startup')}</h3>
+        <div className="sr" style={restoreQueue ? undefined : { borderBottom: 'none', paddingBottom: 0 }}>
+          <div>
+            <div className="sl2">{t('settings.system.restoreQueue.title')}</div>
+            <div className="ssub">{t('settings.system.restoreQueue.sub')}</div>
+          </div>
+          <Toggle
+            checked={restoreQueue}
+            disabled={!settingsLoaded}
+            onChange={(v) => void setRestoreQueue(v)}
+          />
+        </div>
+        {restoreQueue && (
+          <div className="sr" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+            <div>
+              <div className="sl2">{t('settings.system.autoplay.title')}</div>
+              <div className="ssub">{t('settings.system.autoplay.sub')}</div>
+            </div>
+            <Toggle
+              checked={autoplay}
+              disabled={!settingsLoaded}
+              onChange={(v) => void setAutoplay(v)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Кроссфейд */}
@@ -224,9 +266,23 @@ const DeviceCard = ({ icon, name, sub, active, onClick }: {
   </button>
 )
 
-const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
+const Toggle = ({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean
+  /** Настройки ещё не подтянулись из Rust — иначе клик перетёрло бы бутстрапом. */
+  disabled?: boolean
+  onChange: (v: boolean) => void
+}) => (
   <label className="tele-sw">
-    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    <input
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.checked)}
+    />
     <span className="tele-sw-track" />
   </label>
 )

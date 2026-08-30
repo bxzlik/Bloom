@@ -700,7 +700,7 @@ const UnifiedList = ({
                       }}
                     />
                   ) : (
-                    <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} seed={pl.id} />
+                    <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} />
                   )}
                 </div>
                 {/* Бейдж площадки поверх обложки плейлиста (нижний-правый угол).

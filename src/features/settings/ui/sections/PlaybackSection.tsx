@@ -23,12 +23,10 @@ export const PlaybackSection = () => {
   const loaded = useSettingsStore((s) => s.loaded)
   const autostart = useSettingsStore((s) => s.autostart)
   const minimizeToTray = useSettingsStore((s) => s.minimize_to_tray)
-  const autoplay = useSettingsStore((s) => s.autoplay)
   const changeTitlebar = useSettingsStore((s) => s.change_titlebar)
   const changeTrayCover = useSettingsStore((s) => s.change_tray_cover)
   const setAutostart = useSettingsStore((s) => s.setAutostart)
   const setMinimizeToTray = useSettingsStore((s) => s.setMinimizeToTray)
-  const setAutoplay = useSettingsStore((s) => s.setAutoplay)
   const setChangeTitlebar = useSettingsStore((s) => s.setChangeTitlebar)
   const setChangeTrayCover = useSettingsStore((s) => s.setChangeTrayCover)
 
@@ -105,14 +103,8 @@ export const PlaybackSection = () => {
           disabled={autostart === null}
           onChange={(v) => void setAutostart(v)}
         />
-        <TeleToggleRow
-          icon={<Ico name="play" width={16} height={16} />}
-          title={t('settings.system.autoplay.title')}
-          sub={t('settings.system.autoplay.sub')}
-          checked={autoplay}
-          disabled={!loaded}
-          onChange={(v) => void setAutoplay(v)}
-        />
+        {/* «Восстановление очереди» + «Автовоспроизведение» живут в разделе
+            «Аудио» (AudioSection): вторая — вложенная настройка первой. */}
         <TeleToggleRow
           icon={<Ico name="inbox" width={16} height={16} />}
           title={t('settings.system.tray.title')}

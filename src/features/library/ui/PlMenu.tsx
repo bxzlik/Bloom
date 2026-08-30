@@ -110,17 +110,19 @@ export const PlMenu = ({
   const [maxH, setMaxH] = useState<number | null>(null)
   // Sub-страница сортировки.
   const [sortPage, setSortPage] = useState(false)
-  // Боковой флайаут «Скачать» (экспорт файлов / офлайн) — как у контекст-меню трека.
-  const [dlFlyout, setDlFlyout] = useState(false)
+  // Боковой флайаут — как у контекст-меню трека. Два варианта содержимого:
+  // 'dl' (экспорт файлов / офлайн) и 'more' («Ещё» — редкие инструменты).
+  const [dlFlyout, setDlFlyout] = useState<null | 'dl' | 'more'>(null)
   const [dlFlyoutPos, setDlFlyoutPos] = useState<{ left: number; top: number } | null>(null)
   const dlItemRef = useRef<HTMLDivElement>(null)
+  const moreItemRef = useRef<HTMLDivElement>(null)
   const dlFlyoutRef = useRef<HTMLDivElement>(null)
   const dlHideTimer = useRef<number | null>(null)
   // Сбрасываем sub-страницу / флайаут при закрытии меню.
   useEffect(() => {
     if (!open) {
       setSortPage(false)
-      setDlFlyout(false)
+      setDlFlyout(null)
     }
   }, [open])
 
@@ -130,22 +132,23 @@ export const PlMenu = ({
       dlHideTimer.current = null
     }
   }
-  const openDlFlyout = () => {
+  const openDlFlyout = (which: 'dl' | 'more') => {
     cancelDlHide()
-    setDlFlyout(true)
+    setDlFlyout(which)
   }
   const scheduleDlHide = () => {
     cancelDlHide()
-    dlHideTimer.current = window.setTimeout(() => setDlFlyout(false), 180)
+    dlHideTimer.current = window.setTimeout(() => setDlFlyout(null), 180)
   }
 
   // Позиционирование флайаута: справа от пункта-якоря, при нехватке места — слева.
+  const flyoutAnchor = dlFlyout === 'more' ? moreItemRef.current : dlItemRef.current
   useLayoutEffect(() => {
-    if (!dlFlyout || !dlItemRef.current || !dlFlyoutRef.current) {
+    if (!dlFlyout || !flyoutAnchor || !dlFlyoutRef.current) {
       setDlFlyoutPos(null)
       return
     }
-    const ar = dlItemRef.current.getBoundingClientRect()
+    const ar = flyoutAnchor.getBoundingClientRect()
     const fw = dlFlyoutRef.current.offsetWidth
     const fh = dlFlyoutRef.current.offsetHeight
     const vw = window.innerWidth
@@ -156,7 +159,7 @@ export const PlMenu = ({
     if (top + fh > vh - 8) top = vh - fh - 8
     if (top < 8) top = 8
     setDlFlyoutPos({ left, top })
-  }, [dlFlyout])
+  }, [dlFlyout, flyoutAnchor])
 
   // Плавная open-анимация (вместо ctxIn) — и для меню, и для флайаута «Скачать»
   // (иначе ctxIn с overshoot+сдвигом дёргает иконки, как было замечено).
@@ -438,7 +441,7 @@ export const PlMenu = ({
       return <img src={playlist.cover} alt="" />
     }
     if (mode === 'pl' && playlist) {
-      return <PlCover trs={playlist.trs} seed={playlist.id} />
+      return <PlCover trs={playlist.trs} />
     }
     if (mode === 'fav') {
       return <Ico name="heart" variant="bold" width={14} height={14} />
@@ -461,6 +464,9 @@ export const PlMenu = ({
   // Логические группы пунктов: пустые отбрасываются, между непустыми
   // автоматически вставляется разделитель (см. склейку в `items` ниже).
   const groups: ReactNode[][] = []
+  // Пункты, уехавшие в боковой флайаут «Ещё» — редкие инструменты, из-за которых
+  // меню плейлиста разрасталось до 15 строк.
+  const moreItems: ReactNode[] = []
 
   // 1. Воспроизведение: ПКМ из sidebar — «Воспроизвести», иначе —
   //    «Перемешать и запустить» (для всех режимов с треками, кроме history).
@@ -481,21 +487,27 @@ export const PlMenu = ({
     />,
   ]
 
-  if (compact && (mode === 'pl' || mode === 'folder')) {
-    groups.push([
-      <Item key="play" icon={<PlayIcon />} label={t('player.aria.play')} onClick={playCtx} />,
-      ...queueItems,
-    ])
-  } else if (!compact && mode !== 'history') {
-    groups.push([
-      <Item
-        key="shuffle-play"
-        icon={<ShuffleIcon />}
-        label={t('lib.plmenu.shuffleStart')}
+  // Верхняя строка-кнопка: широкая «Воспроизвести» + квадратная «перемешать»
+  // справа (вместо двух отдельных пунктов списка).
+  const playRow = (
+    <div key="playrow" className="plmenu-playrow">
+      <button type="button" className="plmenu-play" onClick={playCtx}>
+        <Ico name="play" variant="bold" width={12} height={12} />
+        <span>{t('player.aria.play')}</span>
+      </button>
+      <button
+        type="button"
+        className="plmenu-shuffle"
+        aria-label={t('lib.plmenu.shuffleStart')}
         onClick={shufflePlayCtx}
-      />,
-      ...queueItems,
-    ])
+      >
+        <Ico name="shuffle" width={13} height={13} />
+      </button>
+    </div>
+  )
+
+  if (mode !== 'history' && (!compact || mode === 'pl' || mode === 'folder')) {
+    groups.push([playRow, ...queueItems])
   }
 
   if (mode === 'pl' && playlist) {
@@ -535,8 +547,58 @@ export const PlMenu = ({
       ])
     }
 
-    // 4. Инструменты: объединить / дубли / обновить с площадки.
-    const tools: ReactNode[] = [
+    // 4. Обновление с площадок — частое действие, остаётся в основном списке.
+    const tools: ReactNode[] = []
+    if (playlist.sources?.length) {
+      tools.push(
+        <Item
+          key="refresh-sources"
+          icon={<RefreshIcon />}
+          label={t('lib.plmenu.refreshTracks')}
+          onClick={() => {
+            onClose()
+            void refreshPlaylistTracks(playlist.id)
+          }}
+        />,
+        <Item
+          key="auto-refresh"
+          icon={<Ico name="clock" width={11} height={11} />}
+          label={t('lib.plauto.title')}
+          onClick={() => {
+            onClose()
+            // Этот плейлист сразу отмечаем в наборе — открывать панель, чтобы
+            // ещё раз искать его в списке, было бы лишним шагом.
+            const st = usePlAutoStore.getState()
+            if (!st.ids.includes(playlist.id)) st.toggleId(playlist.id)
+            st.openDrawer()
+          }}
+        />,
+      )
+    }
+    // «Скачать» → боковой флайаут (скачать файлы / слушать офлайн / убрать).
+    tools.push(
+      <div
+        key="download"
+        ref={dlItemRef}
+        className="ci"
+        onMouseEnter={() => openDlFlyout('dl')}
+        onMouseLeave={scheduleDlHide}
+        onClick={(e) => {
+          e.stopPropagation()
+          openDlFlyout('dl')
+        }}
+      >
+        <span className="ci-icon"><DownloadIcon /></span>
+        <span style={{ flex: 1 }}>{t('lib.plmenu.download')}</span>
+        <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
+      </div>,
+    )
+    groups.push(tools)
+
+    // 5. Редкие инструменты — во флайаут «Ещё»: объединить / перенести / дубли.
+    //    Каждый нужен раз в сто открытий меню, но занимал строку всегда.
+    //    (Экспорт в файл живёт во флайауте «Скачать» — это тоже выгрузка на диск.)
+    moreItems.push(
       <Item
         key="merge"
         icon={<MergeIcon />}
@@ -587,55 +649,7 @@ export const PlMenu = ({
           }}
         />
       ),
-    ]
-    if (playlist.sources?.length) {
-      tools.push(
-        <Item
-          key="refresh-sources"
-          icon={<RefreshIcon />}
-          label={t('lib.plmenu.refreshTracks')}
-          onClick={() => {
-            onClose()
-            void refreshPlaylistTracks(playlist.id)
-          }}
-        />,
-        <Item
-          key="auto-refresh"
-          icon={<Ico name="clock" width={11} height={11} />}
-          label={t('lib.plauto.title')}
-          onClick={() => {
-            onClose()
-            // Этот плейлист сразу отмечаем в наборе — открывать панель, чтобы
-            // ещё раз искать его в списке, было бы лишним шагом.
-            const st = usePlAutoStore.getState()
-            if (!st.ids.includes(playlist.id)) st.toggleId(playlist.id)
-            st.openDrawer()
-          }}
-        />,
-      )
-    }
-    groups.push(tools)
-
-    // 5. Экспорт (файл .bloomplaylist) + «Скачать» → боковой флайаут (скачать файлы
-    //    / слушать офлайн / убрать из офлайна) — свёрнуто ради экономии места.
-    groups.push([
-      <Item key="export" icon={<ExportIcon />} label={t('lib.plmenu.exportPlaylist')} onClick={exportPl} />,
-      <div
-        key="download"
-        ref={dlItemRef}
-        className="ci"
-        onMouseEnter={openDlFlyout}
-        onMouseLeave={scheduleDlHide}
-        onClick={(e) => {
-          e.stopPropagation()
-          openDlFlyout()
-        }}
-      >
-        <span className="ci-icon"><DownloadIcon /></span>
-        <span style={{ flex: 1 }}>{t('lib.plmenu.download')}</span>
-        <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
-      </div>,
-    ])
+    )
   } else if (mode === 'folder' && folderPath) {
     const content: ReactNode[] = [
       <Item key="rescan" icon={<RefreshIcon />} label={t('lib.plmenu.rescan')} onClick={rescanFolder} />,
@@ -666,6 +680,27 @@ export const PlMenu = ({
         onClick={() => setSortPage(true)}
         chevron
       />,
+    ])
+  }
+
+  // 5b. Пункт-вход во флайаут «Ещё» — рисуем, только если туда что-то уехало.
+  if (moreItems.length) {
+    groups.push([
+      <div
+        key="more"
+        ref={moreItemRef}
+        className="ci"
+        onMouseEnter={() => openDlFlyout('more')}
+        onMouseLeave={scheduleDlHide}
+        onClick={(e) => {
+          e.stopPropagation()
+          openDlFlyout('more')
+        }}
+      >
+        <span className="ci-icon"><Ico name="kebab" width={11} height={11} /></span>
+        <span style={{ flex: 1 }}>{t('common.more')}</span>
+        <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
+      </div>,
     ])
   }
 
@@ -777,7 +812,7 @@ export const PlMenu = ({
       )}
       </div>
 
-      {/* Боковой флайаут «Скачать» — справа от пункта (как #cxPlFlyout у трека). */}
+      {/* Боковой флайаут «Скачать» / «Ещё» — справа от пункта (как #cxPlFlyout у трека). */}
       {dlFlyout && (
         <div
           ref={dlFlyoutRef}
@@ -791,6 +826,9 @@ export const PlMenu = ({
             visibility: dlFlyoutPos ? 'visible' : 'hidden',
           }}
         >
+          {dlFlyout === 'more' && moreItems}
+          {dlFlyout === 'dl' && (
+          <>
           <div className="ci" onClick={downloadPl}>
             <span className="ci-icon"><DownloadIcon /></span>
             <span style={{ flex: 1 }}>{t('lib.plmenu.downloadPlaylist')}</span>
@@ -806,6 +844,15 @@ export const PlMenu = ({
               <span className="ci-icon"><OfflineOffIcon /></span>
               <span style={{ flex: 1 }}>{t('lib.plmenu.removeOfflinePlaylist')}</span>
             </div>
+          )}
+          {/* Отдельной группой: выше — выгрузка АУДИО (файлы треков, офлайн-кеш),
+              а это .bloomplaylist — сам список, без единого мегабайта музыки. */}
+          <div className="cx-sep" />
+          <div className="ci" onClick={exportPl}>
+            <span className="ci-icon"><ExportIcon /></span>
+            <span style={{ flex: 1 }}>{t('lib.plmenu.exportPlaylist')}</span>
+          </div>
+          </>
           )}
         </div>
       )}
@@ -917,7 +964,6 @@ const ConvertIcon = () => <Ico name="arrowRightStraight" width={11} height={11} 
 const DupsIcon = () => <Ico name="copy" width={11} height={11} />
 const RefreshIcon = () => <Ico name="refresh" width={11} height={11} />
 const PlusIcon = () => <Ico name="add" width={11} height={11} />
-const ShuffleIcon = () => <Ico name="shuffle" width={11} height={11} />
 const AddQueueIcon = () => <Ico name="addQueue" width={11} height={11} />
 const PlayNextIcon = () => <Ico name="playNext" width={11} height={11} />
 const PinIcon = () => <Ico name="pin" width={11} height={11} />

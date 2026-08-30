@@ -194,7 +194,7 @@ body {
      там подсвечивается вся карточка. */
   background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-card-hover)) !important;
 }
-/* Карточка интеграции (.intg-card — SoundCloud/Genius/Last.fm/Яндекс) —
+/* Карточка интеграции (.intg-card — SoundCloud/Last.fm/Яндекс) —
    тот же hover, что у обычных панелей (.sc): фон слегка светлеет. */
 #settingsOverlay .intg-card {
   transition: background .15s;

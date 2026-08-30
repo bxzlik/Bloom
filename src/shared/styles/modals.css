@@ -10,28 +10,50 @@
 #peditModal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.09);border-radius:var(--radius);width:min(420px,calc(100vw - 32px));display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.95);overflow:hidden;transform:translateX(calc(100% + 24px));will-change:auto;transition:transform .42s cubic-bezier(.22,1,.36,1)}
 #peditBackdrop.open #peditModal{transform:translateX(0)}
 
-/* hero (баннер + крупный аватар по центру + имя заголовком) */
+/* hero: живой предпросмотр шапки профиля (обложка + аватар + ник).
+   Обе картинки тут же и меняются — клик разворачивает .pedit-imgpanel; крестиков
+   и hover-пилюль на самом хиро нет, всё убирание живёт в панели. */
 .pedit-hero{position:relative;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-bottom:14px}
 .pedit-hero-banner{position:relative;width:100%;height:130px;overflow:hidden;cursor:pointer;background:linear-gradient(135deg,#1a1a1a 0%,#0d0d0d 100%)}
-.pedit-hero-banner img{width:100%;height:100%;object-fit:cover;display:block}
-.pedit-hero-banner::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,0) 45%,color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift)) 100%)}
-.pedit-banner-overlay{position:absolute;inset:0;background:rgba(0,0,0,.0);display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s;z-index:2}
-.pedit-hero-banner:hover .pedit-banner-overlay{background:rgba(0,0,0,.4)}
-.pedit-hero-banner:hover .pedit-banner-overlay-btn{opacity:1}
-.pedit-banner-overlay-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:calc(var(--radius)*0.55);background:rgba(0,0,0,.7);border:1px solid rgba(var(--ovl-rgb),.25);color:#fff;font-size:12px;font-weight:600;cursor:pointer;opacity:0;transition:.2s;font-family:var(--font)}
-.pedit-banner-overlay-btn:hover{background:rgba(0,0,0,.9);border-color:rgba(var(--ovl-rgb),.5)}
-.pedit-banner-remove{position:absolute;top:12px;left:12px;z-index:6;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:rgba(var(--ovl-rgb),.85);cursor:pointer;display:none;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-.pedit-banner-remove:hover{background:rgba(200,40,40,.85);color:#fff}
+.pedit-hero-banner-fill{position:absolute;inset:0}
+/* Плёнка по наведению: под ::after (фейд в фон модалки), над самой картинкой. */
+.pedit-hero-banner::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:rgba(0,0,0,0);transition:background .2s}
+.pedit-hero-banner:hover::before{background:rgba(0,0,0,.3)}
+.pedit-hero-banner::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,0) 45%,color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift)) 100%)}
+.pedit-hero-pick{position:absolute;top:10px;right:10px;z-index:2;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;pointer-events:none;color:#fff;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:.6;transition:.15s}
+.pedit-hero-banner:hover .pedit-hero-pick{opacity:1;background:rgba(0,0,0,.6)}
+.pedit-hero-banner.active .pedit-hero-pick{opacity:1;background:var(--accent);color:var(--accent-text)}
 .pedit-hero-ava-wrap{position:relative;margin-top:-46px;z-index:3;cursor:pointer;width:92px;height:92px}
 .pedit-hero-ava{width:92px;height:92px;border-radius:50%;background:var(--block-color);border:4px solid color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted)}
 .pedit-hero-ava img{width:100%;height:100%;object-fit:cover;display:block}
-.pedit-ava-cam{position:absolute;inset:4px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s}
-.pedit-hero-ava-wrap:hover .pedit-ava-cam{opacity:1}
-.pedit-ava-remove{position:absolute;top:-2px;right:-2px;z-index:4;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.7);border:1.5px solid color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));color:rgba(var(--ovl-rgb),.85);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
-.pedit-ava-remove:hover{background:rgba(200,40,40,.9);color:#fff}
+/* inset:0, а не 4px: у аватара рамка в те же 4px, и плёнка поменьше оставляла
+   по краю светлый недозатемнённый ободок. */
+.pedit-ava-cam{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.pedit-hero-ava-wrap:hover .pedit-ava-cam,
+.pedit-hero-ava-wrap.active .pedit-ava-cam{opacity:1}
 .pedit-hero-name{margin-top:11px;font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--text);max-width:calc(100% - 32px);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 16px}
 .pedit-hero-name.empty{color:var(--muted)}
-.pedit-hero-sub{margin-top:3px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+
+/* панель картинок: вкладки-миниатюры + превью + (для обложки) её цвет */
+.pedit-imgpanel{background:rgba(0,0,0,.18);border:1px solid rgba(var(--ovl-rgb),.06);border-radius:calc(var(--radius)*0.85);padding:12px;display:flex;flex-direction:column;gap:10px;animation:peditPanelIn .22s cubic-bezier(.22,1,.36,1)}
+@keyframes peditPanelIn{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+.pedit-img-tabs{display:flex;gap:8px}
+/* Выбранная вкладка не обводится, а светлеет — плёнкой поверх той же плашки. */
+.pedit-img-tab{flex:1;display:flex;align-items:center;justify-content:center;height:58px;padding:0;border:none;border-radius:calc(var(--radius)*0.6);background:rgba(var(--ovl-rgb),.05);cursor:pointer;transition:.15s}
+.pedit-img-tab:hover{background:rgba(var(--ovl-rgb),.09)}
+.pedit-img-tab.active{background:rgba(var(--ovl-rgb),.15)}
+.pedit-img-tab-ava{width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0}
+.pedit-img-tab-banner{width:54px;height:30px;border-radius:6px;overflow:hidden;flex-shrink:0}
+.pedit-img-preview{display:flex;align-items:center;justify-content:center;padding:2px 0}
+.pedit-img-prev-ava{width:110px;height:110px;border-radius:50%;overflow:hidden}
+.pedit-img-prev-banner{width:100%;aspect-ratio:16/5;border-radius:calc(var(--radius)*0.6);overflow:hidden}
+.pedit-img-tab-ava img,.pedit-img-tab-banner img,
+.pedit-img-prev-ava img,.pedit-img-prev-banner img,
+.pedit-hero-banner-fill img{width:100%;height:100%;object-fit:cover;display:block}
+.pedit-img-upload{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:10px;border:none;border-radius:calc(var(--radius)*0.6);background:var(--accent);color:var(--accent-text);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.pedit-img-upload:hover{background:var(--accent2)}
+.pedit-img-drop{width:100%;padding:6px;margin-top:-4px;background:none;border:none;color:var(--sys-fav-ico);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:.15s}
+.pedit-img-drop:hover{background:var(--sys-fav-tint)}
 
 /* тело: карточки-секции */
 .pedit-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 16px 6px;display:flex;flex-direction:column;gap:12px}
@@ -41,27 +63,16 @@
 .pedit-card-title{font-size:11px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:7px}
 .pedit-card-title svg{color:var(--accent);flex-shrink:0}
 .pedit-eg{display:flex;flex-direction:column;gap:7px}
-.pedit-colors-section{display:flex;flex-direction:column;gap:14px}
-.pedit-banner-color-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
-.pedit-mode-toggle{display:flex;border-radius:calc(var(--radius)*0.45);overflow:hidden;border:1px solid rgba(var(--ovl-rgb),.1)}
-.pedit-mode-btn{padding:3px 10px;font-size:11px;font-weight:600;font-family:var(--font);background:none;border:none;color:var(--text2);cursor:pointer;transition:.15s}
+.pedit-banner-color-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pedit-mode-toggle{display:flex;border-radius:calc(var(--radius)*0.45);overflow:hidden;border:1px solid rgba(var(--ovl-rgb),.1);flex-shrink:0}
+.pedit-mode-btn{padding:4px 11px;font-size:11px;font-weight:600;font-family:var(--font);background:none;border:none;color:var(--text2);cursor:pointer;transition:.15s}
 .pedit-mode-btn.active{background:var(--accent);color:var(--accent-text)}
 .pedit-banner-swatches{display:flex;align-items:center;gap:8px}
-.pedit-grad-sep{color:var(--text2);font-size:13px;display:none}
-.pedit-angle-row{display:none;gap:4px;margin-top:8px;flex-wrap:wrap}
+.pedit-angle-row{display:flex;gap:4px;flex-wrap:wrap}
 .pedit-angle-btn{width:26px;height:26px;border-radius:calc(var(--radius)*0.4);border:1px solid rgba(var(--ovl-rgb),.1);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;color:var(--text2)}
 .pedit-angle-btn:hover{background:rgba(var(--ovl-rgb),.07);color:var(--text)}
 .pedit-angle-btn.active{border-color:var(--accent);background:rgba(var(--accent-rgb,99,179,237),.15);color:var(--accent)}
 .pedit-color-field{display:flex;flex-direction:column;gap:8px}
-.pedit-disc-section{display:flex;flex-direction:column;gap:9px}
-.pedit-disc-custom{width:42px;height:42px;border-radius:50%;cursor:pointer;border:2px dashed rgba(var(--ovl-rgb),.25);transition:.15s;flex-shrink:0;overflow:hidden;padding:2px;box-sizing:border-box;position:relative}
-.pedit-disc-custom:hover{border-color:rgba(var(--ovl-rgb),.5)}
-.pedit-disc-custom.has-color{border-style:solid;border-color:var(--accent)}
-.pedit-disc-custom-badge{position:absolute;bottom:0;right:0;width:14px;height:14px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2}
-.pedit-disc-row{display:flex;gap:8px;align-items:center}
-.pedit-disc-opt{width:42px;height:42px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.15s;flex-shrink:0;overflow:hidden;padding:2px;box-sizing:border-box}
-.pedit-disc-opt:hover{border-color:rgba(var(--ovl-rgb),.3)}
-.pedit-disc-opt.active{border-color:var(--accent)}
 .acc-bio-box{display:none;margin-top:7px;border:1px solid rgba(var(--ovl-rgb),.13);border-radius:calc(var(--radius)*0.85);padding:8px 11px;max-width:360px;background:rgba(0,0,0,.25)}
 .acc-bio-box-text{font-size:12px;color:rgba(var(--ovl-rgb),.65);line-height:1.45;white-space:pre-wrap;word-break:break-word}
 .acc-bio-box-status{font-size:12px;color:rgba(var(--ovl-rgb),.4);margin-top:4px;font-style:italic}

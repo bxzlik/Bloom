@@ -332,7 +332,7 @@ const BigPicInner = () => {
           className={`bp-q-wrap${shownPanel === 'queue' ? ' bp-q-open' : ''}${ph.closing ? ' bp-panel-out' : ''}`}
           id="bpQueuePanel"
         >
-          {shownPanel === 'queue' && <QueueBlock similarIcon />}
+          {shownPanel === 'queue' && <QueueBlock />}
         </div>
       </div>
 

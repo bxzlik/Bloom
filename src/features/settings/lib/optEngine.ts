@@ -15,7 +15,8 @@ import { isGifUrl, snapshotGif, warmGif, localGifSrc } from './gifFreeze'
  * (читают компоненты плеера), фон #bgl — императивно (он не под React).
  */
 
-const BLUR_QUALITY_PX: Record<string, number> = { low: 4, medium: 8, high: 12 }
+/** Размытие в анфокусе (не настраивается — фиксированное «низкое» качество). */
+const UNFOCUS_BLUR_PX = 4
 
 const bgl = (): HTMLElement | null => document.getElementById('bgl')
 const psCover = (): Element | null => document.querySelector('.ps-cover')
@@ -36,10 +37,10 @@ const applyMode = (mode: OptMode): void => {
   if (!fx.blur) {
     root.classList.add('opt-unfocused')
     if (mode === 'unfocus') {
-      root.style.setProperty('--opt-blur', `${BLUR_QUALITY_PX[s.unfocusBlurQuality] ?? 4}px`)
+      root.style.setProperty('--opt-blur', `${UNFOCUS_BLUR_PX}px`)
       const el = bgl()
       if (el && useCustomizationStore.getState().bgBlur > 0) {
-        el.style.filter = `blur(${s.unfocusBlurStrength}px)`
+        el.style.filter = `blur(${UNFOCUS_BLUR_PX}px)`
       }
     }
   }

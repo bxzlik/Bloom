@@ -675,15 +675,16 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
       const pl = c.playlist
       const byId = new Map(c.allTracks.map((t) => [t.id, t]))
       const dur = pl ? sumDurations(pl.trs.map((id) => byId.get(id)?.dur)) : 0
+      const covers = pl ? pl.trs.map((id) => byId.get(id)?.cover) : []
       return {
         heroName: pl?.name ?? tFn('lib.playlist'),
         heroSub: tracksAndDuration(pl?.trs.length ?? 0, dur),
-        // Без обложки рисуем мозаику из обложек треков (≥4) либо винил-фолбэк;
-        // цвет/вид детерминирован по id плейлиста.
+        // Без обложки рисуем мозаику из обложек треков (до 4), а если и их нет —
+        // ту же пустую обложку, что в сайдбаре и сетке (`EmptyCover`, свой фон).
+        // Нотка тут была бы неверна: у неё в библиотеке значение «раздел
+        // Все треки», а не «обложки нет».
         heroIconClass: pl?.cover ? 'off-icon' : '',
-        HeroIcon: pl
-          ? () => <PlaylistCover covers={pl.trs.map((id) => byId.get(id)?.cover)} seed={pl.id} />
-          : NoteHeroIcon,
+        HeroIcon: pl ? () => <PlaylistCover covers={covers} /> : NoteHeroIcon,
         heroCover: pl?.cover,
       }
     }

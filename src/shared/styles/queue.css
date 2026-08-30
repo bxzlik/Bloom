@@ -96,7 +96,9 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
    Три кнопки растянуты поровну по ширине карточки. */
 .lib-toolbar-block{padding:0;flex-shrink:0}
 .lib-toolbar{display:flex;align-items:stretch;gap:4px;padding:6px}
-.lib-toolbar button{flex:1;display:flex;align-items:center;justify-content:center;height:30px;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:8px;transition:background .15s,color .15s}
+/* Цвет — общий «тихий» токен иконок сайдбара (как у .sni), а не --muted:
+   на #555 кнопки пропадали, когда сквозь блок просвечивает светлая обложка. */
+.lib-toolbar button{flex:1;display:flex;align-items:center;justify-content:center;height:30px;background:none;border:none;color:var(--icon-fg-sb);cursor:pointer;border-radius:8px;transition:background .15s,color .15s}
 .lib-toolbar button:hover{color:var(--text);background:rgba(var(--ovl-rgb),.06)}
 .lib-toolbar #libAddBtn svg{transition:transform .22s cubic-bezier(.34,1.25,.64,1)}
 .lib-toolbar #libAddBtn.open svg{transform:rotate(45deg)}
@@ -187,7 +189,7 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 #afsSortBtn.sort-active{color:var(--accent)!important;border-color:rgba(var(--accent-rgb),.3)!important}
 #addFromLibList::-webkit-scrollbar{width:2px}
 #addFromLibList::-webkit-scrollbar-thumb{background:rgba(var(--ovl-rgb),.12);border-radius:2px}
-#libSortBtn.sort-active,#libFilterBtn.sort-active{color:var(--accent)!important}
+#libSortBtn.sort-active,#libFilterBtn.sort-active,#libAutoBtn.sort-active{color:var(--accent)!important}
 #libAddBtn svg{transition:transform .22s cubic-bezier(.34,1.25,.64,1)}
 #libAddBtn.open svg{transform:rotate(45deg)}
 .lib-item{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;transition:.15s;position:relative;border-radius:calc(var(--radius)*0.55);margin:0 4px 6px}

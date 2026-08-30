@@ -23,7 +23,6 @@ import { TelemetrySection } from './sections/TelemetrySection'
 import { AudioSection } from './sections/AudioSection'
 import { CustomizationSection } from '@features/customization'
 import { ScClientIdCard } from '@features/soundcloud'
-import { GeniusTokenCard } from '@features/lyrics'
 import { LastfmSection } from '@features/lastfm'
 import { YandexSection } from '@features/yandex'
 import { YtmSection } from '@features/ytmusic'
@@ -222,7 +221,6 @@ export const SettingsOverlay = () => {
     // Интеграции
     soundcloud: <ScClientIdCard />,
     ytmusic: <YtmSection />,
-    genius: <GeniusTokenCard />,
     lastfm: <LastfmSection />,
     discord: <DiscordSection />,
     yandex: <YandexSection />,

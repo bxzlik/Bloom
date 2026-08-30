@@ -14,7 +14,7 @@ import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
 import type { ArtistPageData, RepostItem } from '@features/providers'
 import { getProvider } from '@features/providers'
-import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, addToQueue, playNextInQueue, addTracksToQueue, playTracksNext, type PlaySource } from '@features/player'
+import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, addTracksToQueue, playTracksNext, type PlaySource } from '@features/player'
 import {
   TrackCtxMenu,
   saveTrackToLibrary,
@@ -31,7 +31,7 @@ import {
 import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
 import { extractMpBgColor } from '@features/settings'
-import { ExpandDesc, HoverMarquee, toast, useShareStore, WindowedRows } from '@shared/ui'
+import { CardMarquee, ExpandDesc, HoverMarquee, toast, useShareStore, WindowedRows } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
 import { parseArtists } from '@shared/lib/parseArtists'
 import { Ico } from '@shared/ui/icons/solar'
@@ -274,28 +274,6 @@ const TrackRow = ({
         </div>
       </div>
       <div className="trac">
-        <button
-          className="ib"
-          type="button"
-          aria-label={tt('lib.ctx.playNext')}
-          onClick={(e) => {
-            e.stopPropagation()
-            playNextInQueue(track.id)
-          }}
-        >
-          <Ico name="playNext" width={13} height={13} />
-        </button>
-        <button
-          className="ib"
-          type="button"
-          aria-label={tt('lib.ctx.toQueue')}
-          onClick={(e) => {
-            e.stopPropagation()
-            addToQueue(track.id)
-          }}
-        >
-          <Ico name="addQueue" width={14} height={14} />
-        </button>
         <button className={`ib${isFav ? ' fav' : ''}`} onClick={onFav} aria-label={tt('player.aria.favAdd')}>
           <HeartSvg filled={isFav} />
         </button>
@@ -353,7 +331,7 @@ const Card = ({
   onClick: () => void
   onCtxMenu?: (e: ReactMouseEvent<HTMLDivElement>) => void
 }) => (
-  <div className="sp-am-track-card" onClick={onClick} onContextMenu={onCtxMenu}>
+  <div className="sp-am-track-card mqh" onClick={onClick} onContextMenu={onCtxMenu}>
     <div className="sp-tc-cover" style={{ borderRadius: 'var(--radius)' }}>
       <Cover src={cover} placeholder={square ? <PhAlbum /> : <PhTrack />} />
       {badgeTrack && <CoverSourceBadge track={badgeTrack} size={26} />}
@@ -361,8 +339,8 @@ const Card = ({
       {badgeTrack && <PlayStateOverlay trackId={badgeTrack.id} size="card" />}
     </div>
     <div className="sp-tc-info">
-      <div className="sp-tc-name">{name}</div>
-      <div className="sp-tc-artist">{sub}</div>
+      <CardMarquee className="sp-tc-name">{name}</CardMarquee>
+      <CardMarquee className="sp-tc-artist">{sub}</CardMarquee>
     </div>
   </div>
 )
@@ -371,12 +349,12 @@ const Card = ({
 /* Разметка та же, что у карточек артистов в выдаче поиска, — секция «Похожие»
    должна выглядеть ровно как соседняя страница поиска, а не как ещё один вид. */
 const ArtistMiniCard = ({ artist, onOpen }: { artist: Artist; onOpen: () => void }) => (
-  <div className="sp-artist-card" onClick={onOpen} style={{ cursor: 'pointer' }}>
+  <div className="sp-artist-card mqh" onClick={onOpen} style={{ cursor: 'pointer' }}>
     <div className="sp-ac-av">
       <Cover src={artist.avatar} placeholder={<PhArtist />} />
       <OpenBadge />
     </div>
-    <div className="sp-ac-name">{artist.name}</div>
+    <CardMarquee className="sp-ac-name">{artist.name}</CardMarquee>
   </div>
 )
 

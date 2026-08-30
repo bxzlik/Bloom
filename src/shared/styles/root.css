@@ -18,6 +18,13 @@
   --ovl-line:rgba(var(--ovl-rgb),var(--wb));
   --ovl-line2:rgba(var(--ovl-rgb),var(--wb2));
   --ovl-bg:rgba(var(--ovl-rgb),.03);
+  /* Подложка на месте отсутствующей обложки/аватара (EmptyCover, EmptyAvatar).
+     Не просто --card: заглушка лежит НА блоке того же цвета и с ним сливалась —
+     оставался висеть один знак без площадки. Поднимаем на ту же долю плёнки,
+     что и --ovl-bg, но уже СМЕШАННОЙ с подложкой: полупрозрачной заглушке
+     нельзя быть — в режиме прозрачности сквозь неё видно обои, и плитка
+     читается дыркой в списке, а не пустой обложкой. */
+  --cover-empty:color-mix(in srgb,var(--card,var(--bg2)),rgb(var(--ovl-rgb)) 4%);
   /* Рамка поля ввода В ФОКУСЕ. Раньше каждое поле красилось в --accent — на
      акцентных темах это читалось как подсветка «важное/ошибка», а не как
      «сюда сейчас печатают». Правило: активное поле НЕ меняет цвет, только
@@ -134,8 +141,6 @@
 :root.theme-light #bigPicOverlay,
 :root.theme-light .home-quick-card:not(.is-empty),
 :root.theme-light .theme-card-del,
-:root.theme-light .pedit-banner-overlay-btn,
-:root.theme-light .pedit-ava-remove,
 :root.theme-light .mlm-size-badge,
 :root.theme-light .preset-del-btn,
 :root.theme-light .mls-del-btn{

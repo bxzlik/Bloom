@@ -1,12 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { invoke } from '@shared/tauri'
 import { useTauriEvent } from '@shared/hooks'
+// Глубокий импорт (не через barrel): barrel настроек тянет optEngine/autoAccent,
+// а те импортируют @features/player — получился бы цикл.
+import { useSettingsStore } from '@features/settings/model/settingsStore'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore } from '../model/queueStore'
 import { bootstrapSpeed } from '../model/speedStore'
 import { saveVolumePrefs } from '../model/volumePrefs'
 import { audioEngine } from './audioEngine'
-import { saveResume, consumePendingResumeSeek } from './resume'
+import { saveResume, consumePendingResumeSeek, restoreSession } from './resume'
 import {
   togglePlay,
   nextTr,
@@ -34,7 +37,10 @@ import {
 const wireMediaSessionActions = (): void => {
   if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return
   navigator.mediaSession.setActionHandler('play', () => {
-    void audioEngine.play()
+    // Восстановленная после перезапуска сессия: в `<audio>` ещё ничего нет,
+    // play() был бы no-op'ом — грузим трек через транспорт.
+    if (useQueueStore.getState().armed) togglePlay()
+    else void audioEngine.play()
   })
   navigator.mediaSession.setActionHandler('pause', () => {
     audioEngine.pause()
@@ -54,6 +60,33 @@ const wireMediaSessionActions = (): void => {
  * Подключается ОДИН раз в App.tsx.
  */
 export const useMainPlayerBridge = () => {
+  // ── восстановление прошлой сессии после перезапуска ──
+  // «Настройки → Аудио → Запуск»: `restore_queue` возвращает очередь, трек и
+  // позицию, НО не играет (первый «плей» подхватит позицию сам, см.
+  // queueStore.armed). `autoplay` — надстройка над ним: читается только здесь,
+  // внутри ветки восстановления, и означает ровно «и сразу продолжить».
+  // Порт мобильных restoreQueue/autoplay.
+  //
+  // Ждём загрузки настроек из Rust (она асинхронная), поэтому эффект не
+  // одноразовый — сторожим ref'ом.
+  const restoredRef = useRef(false)
+  useEffect(() => {
+    const tryRestore = () => {
+      const s = useSettingsStore.getState()
+      if (restoredRef.current || !s.loaded) return
+      restoredRef.current = true
+      if (!s.restore_queue) return
+      if (!restoreSession()) return
+      _pushNowPlaying()
+      // Автоплей: togglePlay в armed-состоянии = «загрузить и продолжить с
+      // сохранённой позиции». Если webview запретит автостарт звука, движок
+      // просто останется на паузе — сессия всё равно восстановлена.
+      if (s.autoplay) togglePlay()
+    }
+    tryRestore()
+    return useSettingsStore.subscribe(tryRestore)
+  }, [])
+
   // ── engine → store (position/playing/duration) ──
   useEffect(() => {
     let lastResumeSaveAt = 0
@@ -94,7 +127,7 @@ export const useMainPlayerBridge = () => {
         _pushNowPlaying()
       }
       // Перемотка на сохранённую позицию при восстановлении «Продолжить».
-      const seekPos = consumePendingResumeSeek()
+      const seekPos = consumePendingResumeSeek(q.curId)
       if (seekPos != null) {
         audioEngine.seekTo(seekPos)
         usePlayerStore.setState({ position: seekPos })

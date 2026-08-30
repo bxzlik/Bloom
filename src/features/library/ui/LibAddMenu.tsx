@@ -76,7 +76,7 @@ const FavThumb = () => (
 /** Обложка плейлиста для строки выбора цели импорта. */
 const PlThumb = ({ pl }: { pl: Playlist }) => (
   <span className="lam-pl-thumb">
-    {pl.cover ? <img src={pl.cover} alt="" /> : <PlCover trs={pl.trs} seed={pl.id} />}
+    {pl.cover ? <img src={pl.cover} alt="" /> : <PlCover trs={pl.trs} />}
   </span>
 )
 

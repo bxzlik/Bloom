@@ -1,3 +1,4 @@
+import { parseArtists } from '@shared/lib/parseArtists'
 import { srcFromId, type PlayLog, type PlayMeta } from '../model/playLog'
 import type { PeriodRange } from './periods'
 
@@ -25,6 +26,12 @@ export interface WrappedArtist {
   name: string
   plays: number
   cover: string | null
+  /**
+   * Площадка, где его слушали чаще всего — по ней ищется аватар и открывается
+   * страница артиста. Свои файлы в счёт не идут, пока есть хоть одна площадка:
+   * у локального артиста страницы нет.
+   */
+  src: string
 }
 
 export interface WrappedSource {
@@ -72,6 +79,38 @@ const dayKey = (ts: number): string => {
 /** Ключ группировки артиста: регистр и лишние пробелы не должны плодить дубли. */
 const artistKey = (name: string): string => name.trim().toLowerCase()
 
+/**
+ * Имена артистов трека по отдельности: строка бывает мультиартистной
+ * («reidenshi, Øneheart»), а в топ должен попадать каждый сам по себе — по
+ * склеенному имени площадка не найдёт ни аватара, ни страницы.
+ *
+ * Кеш — потому что зовётся на КАЖДОЕ событие журнала, а строк артистов там
+ * заметно меньше, чем прослушиваний.
+ */
+const splitArtists = (str: string, cache: Map<string, string[]>): string[] => {
+  const hit = cache.get(str)
+  if (hit) return hit
+  const names = parseArtists(str)
+  cache.set(str, names)
+  return names
+}
+
+/**
+ * Площадка артиста — та, где его слушали чаще. Свои файлы в счёт не идут, пока
+ * есть хоть одна площадка: у локального артиста своей страницы нет, и искать
+ * его там, где слушали хотя бы раз, — единственный способ на неё попасть.
+ */
+const artistSrc = (plays: Map<string, number>): string => {
+  let top = ''
+  let best = 0
+  for (const [src, n] of plays) {
+    if (src === 'local' || n <= best) continue
+    top = src
+    best = n
+  }
+  return top || 'local'
+}
+
 export const buildWrapped = (log: PlayLog, range: PeriodRange): WrappedData => {
   const { from, to } = range
 
@@ -80,7 +119,10 @@ export const buildWrapped = (log: PlayLog, range: PeriodRange): WrappedData => {
   const seenArtists = new Set<string>()
 
   const trackAgg = new Map<string, WrappedTrack>()
-  const artistAgg = new Map<string, WrappedArtist & { bestPlays: number }>()
+  const artistAgg = new Map<
+    string,
+    WrappedArtist & { bestPlays: number; srcs: Map<string, number> }
+  >()
   const srcAgg = new Map<string, WrappedSource>()
   const dayAgg = new Map<string, number>()
   const hours = new Array<number>(24).fill(0)
@@ -89,12 +131,13 @@ export const buildWrapped = (log: PlayLog, range: PeriodRange): WrappedData => {
   let sec = 0
   let newTracksCount = 0
   const newArtistKeys = new Set<string>()
+  const splitCache = new Map<string, string[]>()
 
   for (const e of log.events) {
     if (e.ts < from) {
       seenTracks.add(e.id)
       const m = log.meta.get(e.id)
-      if (m?.artist) seenArtists.add(artistKey(m.artist))
+      if (m?.artist) for (const n of splitArtists(m.artist, splitCache)) seenArtists.add(artistKey(n))
       continue
     }
     if (e.ts >= to) break // события отсортированы по ts — дальше только «будущее»
@@ -121,19 +164,31 @@ export const buildWrapped = (log: PlayLog, range: PeriodRange): WrappedData => {
     }
 
     if (m.artist) {
-      const k = artistKey(m.artist)
-      const a = artistAgg.get(k)
-      if (a) {
-        a.plays++
-        // Обложка артиста — от его самого заслушанного трека в периоде.
-        const tp = trackAgg.get(e.id)!.plays
-        if (m.cover && tp > a.bestPlays) {
-          a.cover = m.cover
-          a.bestPlays = tp
+      // Обложка артиста — от его самого заслушанного трека в периоде.
+      const tp = trackAgg.get(e.id)!.plays
+      // Каждый участник строки считается сам по себе (см. splitArtists), так что
+      // совместный трек идёт в зачёт обоим.
+      for (const name of splitArtists(m.artist, splitCache)) {
+        const k = artistKey(name)
+        const a = artistAgg.get(k)
+        if (a) {
+          a.plays++
+          if (m.cover && tp > a.bestPlays) {
+            a.cover = m.cover
+            a.bestPlays = tp
+          }
+          a.srcs.set(m.src, (a.srcs.get(m.src) ?? 0) + 1)
+        } else {
+          artistAgg.set(k, {
+            name,
+            plays: 1,
+            cover: m.cover,
+            src: m.src,
+            bestPlays: m.cover ? 1 : -1,
+            srcs: new Map([[m.src, 1]]),
+          })
+          if (!seenArtists.has(k)) newArtistKeys.add(k)
         }
-      } else {
-        artistAgg.set(k, { name: m.artist, plays: 1, cover: m.cover, bestPlays: m.cover ? 1 : -1 })
-        if (!seenArtists.has(k)) newArtistKeys.add(k)
       }
     }
 
@@ -151,7 +206,10 @@ export const buildWrapped = (log: PlayLog, range: PeriodRange): WrappedData => {
   }
 
   const topTracks = [...trackAgg.values()].sort((a, b) => b.plays - a.plays || b.sec - a.sec).slice(0, 5)
-  const artists = [...artistAgg.values()].map(({ bestPlays: _b, ...a }) => a)
+  const artists = [...artistAgg.values()].map(({ bestPlays: _b, srcs, ...a }) => ({
+    ...a,
+    src: artistSrc(srcs),
+  }))
   const topArtists = [...artists].sort((a, b) => b.plays - a.plays).slice(0, 5)
   const newArtists = artists
     .filter((a) => newArtistKeys.has(artistKey(a.name)))

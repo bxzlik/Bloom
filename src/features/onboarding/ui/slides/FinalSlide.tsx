@@ -1,4 +1,3 @@
-import { makeDiscSvg } from '@features/profile'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
@@ -16,7 +15,7 @@ export const FinalSlide = ({ name, avatar }: Props) => {
         {avatar ? (
           <img src={avatar} alt="" />
         ) : (
-          <span dangerouslySetInnerHTML={{ __html: makeDiscSvg(0, null, 'obFinalDisc') }} />
+          <Ico name="user" variant="bold" width={40} height={40} style={{ color: 'var(--text)', opacity: 0.22 }} />
         )}
       </div>
       <div className="ob-final-title">{t('onb.welcome', { name })}</div>

@@ -209,7 +209,7 @@ export const AddPopup = ({
                   {pl.cover ? (
                     <img src={pl.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <PlCover trs={pl.trs} seed={pl.id} />
+                    <PlCover trs={pl.trs} />
                   )}
                 </span>{' '}
                 <span className="ci-pl-txt">

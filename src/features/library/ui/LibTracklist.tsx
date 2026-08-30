@@ -19,7 +19,7 @@ import { getCurrentView } from '../lib/currentView'
 import { historyLabel, historyTime } from '../lib/formatCount'
 import { createPlaylistInline } from '../lib/createPlaylistInline'
 import { deleteUploadedTrack } from '../lib'
-import { playFromSource, playTrack, useQueueStore, AddPopup, addToQueue, playNextInQueue } from '@features/player'
+import { playFromSource, playTrack, useQueueStore, AddPopup } from '@features/player'
 import { TrackCtxMenu } from './TrackCtxMenu'
 import { TagEditor } from './TagEditor'
 import { Ico } from '@shared/ui/icons/solar'
@@ -248,7 +248,7 @@ export const LibTracklist = () => {
     if (dupsActive && (mode !== 'pl' || plId !== dupsPlId)) dupsExit()
   }, [dupsActive, mode, plId, dupsPlId, dupsExit])
 
-  // ── Пилюля «Сейчас играет» ───────────────────────────────────────────
+  // ── Кнопка «Сейчас играет» ───────────────────────────────────────────
   // Показывается, когда играющий трек уехал за пределы видимой части списка
   // (дальше JUMP_SHOW_GAP от края); клик возвращает скролл к нему.
   // Строки играющего трека может не быть в DOM (виртуализация) — позицию
@@ -451,8 +451,9 @@ export const LibTracklist = () => {
         }}
       />
     </div>
-    {/* Плавающая пилюля «Сейчас играет» — вне скролл-контейнера (абсолют внутри
-        .lib-content), поэтому висит на одном месте независимо от прокрутки. */}
+    {/* Плавающая кнопка «Сейчас играет» — круг с обложкой играющего трека вне
+        скролл-контейнера (абсолют внутри .lib-content), поэтому висит на одном
+        месте независимо от прокрутки. */}
     {curTrack && jumpDir !== 0 && (
       <button
         type="button"
@@ -464,17 +465,15 @@ export const LibTracklist = () => {
           {curTrack.cover ? (
             <img src={curTrack.cover} alt="" />
           ) : (
-            <Ico name="note" width={14} height={14} style={{ opacity: 0.4 }} />
+            <Ico name="note" width={16} height={16} style={{ opacity: 0.4 }} />
           )}
           <span className="lib-jump-eq">
             <span className="bars"><span /><span /><span /></span>
           </span>
         </span>
-        <span className="lib-jump-txt">
-          <span className="lib-jump-name">{curTrack.name || '—'}</span>
-          <span className="lib-jump-art">{curTrack.artist || tr('common.unknownArtist')}</span>
+        <span className="lib-jump-badge">
+          <Ico name={jumpDir === -1 ? 'arrowUp' : 'arrowDown'} width={12} height={12} />
         </span>
-        <Ico name={jumpDir === -1 ? 'arrowUp' : 'arrowDown'} width={15} height={15} />
       </button>
     )}
     </>
@@ -892,28 +891,8 @@ const TrackRow = ({
           {historyMeta.time}
         </span>
       )}
-      <button
-        className="ib"
-        type="button"
-        aria-label={t('lib.ctx.playNext')}
-        onClick={(e) => {
-          e.stopPropagation()
-          playNextInQueue(track.id)
-        }}
-      >
-        <Ico name="playNext" width={13} height={13} />
-      </button>
-      <button
-        className="ib"
-        type="button"
-        aria-label={t('lib.ctx.toQueue')}
-        onClick={(e) => {
-          e.stopPropagation()
-          addToQueue(track.id)
-        }}
-      >
-        <Ico name="addQueue" width={14} height={14} />
-      </button>
+      {/* «Играть следующим» / «В очередь» со строки убраны — обе команды
+          остались в контекстном меню трека (TrackCtxMenu). */}
       <button
         className={`ib${isFav ? ' fav' : ''}`}
         type="button"

@@ -168,6 +168,8 @@ body.glass-mode .player-section #vizWrap {
    отдельным экземпляром в App-root, а НЕ внутри .tp-pop — его containing block
    не затрагивается. */
 body.glass-overlays .ctx,
+body.glass-overlays #toast,
+body.glass-overlays #dltoast,
 body.glass-overlays #cxPlFlyout,
 body.glass-overlays .pl-popup,
 body.glass-overlays #plMenu,

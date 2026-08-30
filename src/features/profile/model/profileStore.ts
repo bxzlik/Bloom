@@ -6,6 +6,8 @@ import { t } from '@shared/i18n'
  * + persist в `localStorage['bloom_profile']` (saveProfile).
  *
  * Хранит только данные карточки профиля (ник/био/статус/аватар/баннер/цвета).
+ * Старые поля `discIdx`/`discColor` (пресеты винил-аватара) при загрузке
+ * игнорируются и больше не пишутся — дефолтный аватар теперь заглушка.
  * Счётчики (playCount) в bloom НЕ ведутся — статистика считается из
  * `useHistoryStore`/`useActivityStore` (см. StatsSection). Поле `playCount` из
  * старого формата при загрузке игнорируем, при сохранении не пишем.
@@ -15,23 +17,16 @@ import { t } from '@shared/i18n'
  */
 
 export type BannerColorMode = 'solid' | 'gradient'
-export type AvaBorderMode = 'accent' | 'custom' | 'off'
 
 export interface ProfileData {
   name: string
   bio: string
   status: string
-  /** Индекс пресета винил-диска (дефолтный аватар), 0..5. */
-  discIdx: number
-  /** Кастомный цвет диска (перебивает пресет), null = пресет. */
-  discColor: string | null
   bannerColor: string
   bannerColor2: string
   bannerColorMode: BannerColorMode
   bannerAngle: number
-  avaBorderColor: string | null
-  avaBorderMode: AvaBorderMode
-  /** data-URL загруженного аватара (null = винил-диск). */
+  /** data-URL загруженного аватара (null = заглушка с человечком). */
   avatar: string | null
   /** data-URL загруженного баннера (null = цвет/градиент). */
   banner: string | null
@@ -41,14 +36,10 @@ export const PROFILE_DEFAULTS: ProfileData = {
   name: t('common.defaultUser'),
   bio: '',
   status: '',
-  discIdx: 0,
-  discColor: null,
   bannerColor: '#1a1a1a',
   bannerColor2: '#0d0d0d',
   bannerColorMode: 'solid',
   bannerAngle: 135,
-  avaBorderColor: null,
-  avaBorderMode: 'accent',
   avatar: null,
   banner: null,
 }
@@ -63,15 +54,10 @@ const load = (): ProfileData => {
       name: typeof p.name === 'string' && p.name ? p.name : PROFILE_DEFAULTS.name,
       bio: typeof p.bio === 'string' ? p.bio : '',
       status: typeof p.status === 'string' ? p.status : '',
-      discIdx: typeof p.discIdx === 'number' ? p.discIdx : 0,
-      discColor: typeof p.discColor === 'string' ? p.discColor : null,
       bannerColor: typeof p.bannerColor === 'string' ? p.bannerColor : PROFILE_DEFAULTS.bannerColor,
       bannerColor2: typeof p.bannerColor2 === 'string' ? p.bannerColor2 : PROFILE_DEFAULTS.bannerColor2,
       bannerColorMode: p.bannerColorMode === 'gradient' ? 'gradient' : 'solid',
       bannerAngle: typeof p.bannerAngle === 'number' ? p.bannerAngle : PROFILE_DEFAULTS.bannerAngle,
-      avaBorderColor: typeof p.avaBorderColor === 'string' ? p.avaBorderColor : null,
-      avaBorderMode:
-        p.avaBorderMode === 'custom' || p.avaBorderMode === 'off' ? p.avaBorderMode : 'accent',
       avatar: typeof p.avatar === 'string' ? p.avatar : null,
       banner: typeof p.banner === 'string' ? p.banner : null,
     }
@@ -84,14 +70,10 @@ const pickData = (s: ProfileData): ProfileData => ({
   name: s.name,
   bio: s.bio,
   status: s.status,
-  discIdx: s.discIdx,
-  discColor: s.discColor,
   bannerColor: s.bannerColor,
   bannerColor2: s.bannerColor2,
   bannerColorMode: s.bannerColorMode,
   bannerAngle: s.bannerAngle,
-  avaBorderColor: s.avaBorderColor,
-  avaBorderMode: s.avaBorderMode,
   avatar: s.avatar,
   banner: s.banner,
 })

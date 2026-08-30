@@ -69,6 +69,13 @@ pub fn save_window_state(state: &WindowState) -> Result<()> {
 pub struct AppSettings {
     #[serde(default)]
     pub minimize_to_tray: bool,
+    /// Возвращать при запуске трек, очередь и позицию прошлой сессии — но НЕ
+    /// начинать играть. Порт мобильной `restoreQueue`.
+    #[serde(default = "default_true")]
+    pub restore_queue: bool,
+    /// Надстройка над `restore_queue`: восстановив, сразу продолжить играть.
+    /// Сама ничего не восстанавливает и при выключенном `restore_queue` не
+    /// читается (и не может остаться поднятой — см. `set_restore_queue`).
     #[serde(default)]
     pub autoplay: bool,
     #[serde(default = "default_true")]
@@ -138,6 +145,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             minimize_to_tray: false,
+            restore_queue: true,
             autoplay: false,
             discord_rpc: true,
             change_titlebar: true,

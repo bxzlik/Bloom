@@ -1,25 +1,21 @@
 import type { CSSProperties } from 'react'
-import { VinylCover } from './VinylCover'
+import { EmptyCover } from './EmptyCover'
 
 /**
  * Обложка плейлиста без своей картинки: коллаж из обложек первых треков
  * (как в Spotify). Сколько разных обложек набралось из начала плейлиста —
  * такой и коллаж: 1 → одна на всю площадь, 2 → две половины, 3 → большая слева
- * + две справа, 4 → сетка 2×2. Нет ни одной обложки → нарисованный винил
- * (`VinylCover` по seed).
+ * + две справа, 4 → сетка 2×2. Нет ни одной обложки → пустая обложка
+ * (`EmptyCover`), одна и та же в сайдбаре, сетке и hero.
  *
  * Компонент чистый: `covers` — уже разрешённые URL обложек треков в порядке
  * плейлиста; дубли/пустые отсеиваются здесь. Каждое место вызова само достаёт
  * список обложек из своих треков — shared/ui не тянет library-модели.
  */
-export const PlaylistCover = ({
-  covers,
-  seed,
-}: {
-  covers: (string | null | undefined)[]
-  seed: string
-}) => {
-  // Первые до 4 РАЗНЫХ непустых обложек (в порядке плейлиста).
+export const PlaylistCover = ({ covers }: { covers: (string | null | undefined)[] }) => {
+  // Первые до 4 РАЗНЫХ непустых обложек (в порядке плейлиста). Дубли отсеиваем:
+  // у альбома все треки с одной картинкой, и сетка 2×2 из четырёх её копий
+  // выглядела бы поломанной, а не коллажем.
   const uniq: string[] = []
   for (const c of covers) {
     if (!c || uniq.includes(c)) continue
@@ -27,7 +23,7 @@ export const PlaylistCover = ({
     if (uniq.length === 4) break
   }
 
-  if (uniq.length === 0) return <VinylCover seed={seed} />
+  if (uniq.length === 0) return <EmptyCover />
 
   // Одна обложка — просто картинка на всю площадь.
   if (uniq.length === 1) {

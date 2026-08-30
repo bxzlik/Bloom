@@ -3,7 +3,7 @@ import { useSortable } from '@shared/lib/useSortable'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
 import { ScBadge, YmBadge, type Track } from '@entities/track'
 import { artistSourceFromId } from '@entities/artist'
-import { PlaylistCover } from '@shared/ui'
+import { CardMarquee, PlaylistCover } from '@shared/ui'
 import {
   useLibStore,
   usePlaylistStore,
@@ -273,10 +273,10 @@ export const LibGridOverview = () => {
             const hasYm = plTracks.length > 0 && plTracks.every((t) => t._ym)
             const sec = sumDurations(pl.trs.map((id) => tracksById.get(id)?.dur))
             return (
-              <div key={`pl_${pl.id}`} className="home-pl-card" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
+              <div key={`pl_${pl.id}`} className="home-pl-card mqh" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
                 <div style={{ position: 'relative' }}>
                   <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
-                    {pl.cover ? <img src={pl.cover} loading="lazy" alt="" /> : <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} seed={pl.id} />}
+                    {pl.cover ? <img src={pl.cover} loading="lazy" alt="" /> : <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} />}
                     <OpenOverlay />
                     {/* Бейдж площадки поверх обложки (прячется при наведении —
                         OpenOverlay перекрывает). hasSc/hasYm взаимоисключающи. */}
@@ -288,7 +288,7 @@ export const LibGridOverview = () => {
                   </div>
                   {pinned && <span className="lib-pin-dot" />}
                 </div>
-                <div className="hpc-name">{pl.name}</div>
+                <CardMarquee className="hpc-name">{pl.name}</CardMarquee>
                 <div className="hpc-sub">{cardSub(pl.trs.length, sec)}</div>
               </div>
             )
@@ -299,7 +299,7 @@ export const LibGridOverview = () => {
             const fTrs = tracks.filter((t) => t._folder?.toLowerCase() === lp)
             const sec = sumDurations(fTrs.map((t) => t.dur))
             return (
-              <div key={`f_${path}`} className="home-pl-card" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
+              <div key={`f_${path}`} className="home-pl-card mqh" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
                 <div style={{ position: 'relative' }}>
                   <div className="hpc-cover" style={{ background: 'var(--folder-tint)' }}>
                     <Ico name="folder" width={32} height={32} style={{ color: 'var(--accent)' }} />
@@ -307,7 +307,7 @@ export const LibGridOverview = () => {
                   </div>
                   {pinned && <span className="lib-pin-dot" />}
                 </div>
-                <div className="hpc-name">{entry.name}</div>
+                <CardMarquee className="hpc-name">{entry.name}</CardMarquee>
                 <div className="hpc-sub">{cardSub(fTrs.length, sec)}</div>
               </div>
             )
@@ -319,7 +319,7 @@ export const LibGridOverview = () => {
           const aTrs = tracks.filter((t) => (t.artist || '').toLowerCase() === ln)
           const aSec = sumDurations(aTrs.map((t) => t.dur))
           return (
-            <div key={`art_${a.id}`} className="home-pl-card" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
+            <div key={`art_${a.id}`} className="home-pl-card mqh" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
               <div style={{ position: 'relative' }}>
                 <div className="hpc-cover" style={{ borderRadius: '50%', overflow: 'hidden' }}>
                   {a.avatar ? (
@@ -331,7 +331,7 @@ export const LibGridOverview = () => {
                 </div>
                 {pinned && <span className="lib-pin-dot" />}
               </div>
-              <div className="hpc-name">{a.name}</div>
+              <CardMarquee className="hpc-name">{a.name}</CardMarquee>
               <div className="hpc-sub">{cardSub(aTrs.length, aSec)}</div>
             </div>
           )

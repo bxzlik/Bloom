@@ -9,11 +9,11 @@ import { useLibStore } from '../model'
  * рукой только `Playlist` без готового `tracksById`: контекстные меню, попапы,
  * карточки на главной. Реактивна к изменению библиотеки.
  */
-export const PlCover = ({ trs, seed }: { trs: string[]; seed: string }) => {
+export const PlCover = ({ trs }: { trs: string[] }) => {
   const tracks = useLibStore((s) => s.tracks)
   const covers = useMemo(() => {
     const byId = new Map(tracks.map((t) => [t.id, t]))
     return trs.map((id) => (byId.get(id) ?? trackRegistry.get(id))?.cover)
   }, [tracks, trs])
-  return <PlaylistCover covers={covers} seed={seed} />
+  return <PlaylistCover covers={covers} />
 }

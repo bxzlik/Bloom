@@ -147,42 +147,7 @@ const SidebarCards = () => {
         </div>
       </div>
 
-      <WrappedSettingsCard />
     </>
-  )
-}
-
-/**
- * Пункт «Итоги» в сайдбаре: сам тумблер видимости + снятие расписания. Итоги
- * появляются по понедельникам / 1-го числа / 21–31 декабря и только если за
- * период было что слушать — «Показывать всегда» снимает первое ограничение
- * (второе не снимается никогда: нет данных — нет итогов).
- */
-const WrappedSettingsCard = () => {
-  const t = useT()
-  const p = useUiPrefsStore()
-
-  return (
-    <div className="sc">
-      {/* Заголовок группы (капс с хайрлайнами) — так же оформлены группы в
-          «Системе»/«Аудио». `.sc-title`/`.sc-desc` в раскладке со строками .sr
-          скрыты стилями, поэтому подписи живут в самих строках. */}
-      <h3>{t('settings.wrapped.title')}</h3>
-      <div className="sr">
-        <div>
-          <div className="sl2">{t('settings.wrapped.show')}</div>
-          <div className="ssub">{t('settings.wrapped.showSub')}</div>
-        </div>
-        <Toggle checked={p.wrappedShow} onChange={(v) => p.set('wrappedShow', v)} />
-      </div>
-      <div className="sr">
-        <div>
-          <div className="sl2">{t('settings.wrapped.always')}</div>
-          <div className="ssub">{t('settings.wrapped.alwaysSub')}</div>
-        </div>
-        <Toggle checked={p.wrappedAlways} onChange={(v) => p.set('wrappedAlways', v)} />
-      </div>
-    </div>
   )
 }
 

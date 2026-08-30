@@ -8,22 +8,27 @@ import {
   useProfileStore,
   type ProfileData,
   type BannerColorMode,
-  type AvaBorderMode,
 } from '../model/profileStore'
-import { discDefColors } from '../lib/discSvg'
 import { readFileAsDataURL } from '../lib/readFileAsDataURL'
 import { Ico } from '@shared/ui/icons/solar'
-import { DiscAvatar } from './DiscAvatar'
+import { EmptyAvatar } from './EmptyAvatar'
 import { ImageCropper } from './ImageCropper'
 
 /**
- * Модалка редактирования профиля. `#peditBackdrop` / `openProfileModal`
- * + `_pedit*`. Поля ник/био/статус, винил-пикер,
- * цвет обложки (solid/градиент + углы), обводка аватара (accent/custom/off),
- * загрузка+кроп баннера/аватара (через ImageCropper). Сохранение → profileStore.
+ * Модалка редактирования профиля. `#peditBackdrop` / `openProfileModal`.
  *
- * Цвета выбираются кастомным HSV-попапом (`openColorPicker` → `#cpPopup`) —
- * единый пикер из features/settings.
+ * Раскладка портирована с мобилки (`profile_edit_screen.dart`): сверху живой
+ * предпросмотр шапки профиля, дальше голые поля «капсовая подпись + плашка»
+ * без карточек и заголовков-секций, снизу «Отмена / Сохранить».
+ *
+ * Картинки меняются НЕ крестиками и hover-пилюлями, а одной панелью
+ * (`.pedit-imgpanel`): клик по обложке или аватарке в хиро разворачивает её под
+ * ним. Внутри — две вкладки-миниатюры (аватар / обложка), крупное превью
+ * выбранного, для обложки её цвет (solid/градиент + углы), кнопка «Загрузить»
+ * и красная «Удалить…». Повторный клик по той же цели панель сворачивает.
+ *
+ * Загруженное уходит в `ImageCropper` (круг для аватара, аспект настоящей
+ * карточки профиля для обложки). Сохранение → profileStore.
  *
  * Открытие — флаг `editOpen` в profileStore; анимация `.open` (двойной rAF).
  */
@@ -32,6 +37,8 @@ const ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
 const ANGLE_ARROWS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖']
 
 type Draft = ProfileData
+/** Какую из двух картинок профиля правит развёрнутая панель. */
+type ImageTab = 'avatar' | 'banner'
 
 /** Кликабельный swatch (.cin-swatch) → кастомный HSV-пикер `openColorPicker`. */
 const Swatch = ({
@@ -59,7 +66,8 @@ export const ProfileEditModal = () => {
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
-  const [crop, setCrop] = useState<{ dataUrl: string; type: 'avatar' | 'banner' } | null>(null)
+  const [crop, setCrop] = useState<{ dataUrl: string; type: ImageTab } | null>(null)
+  const [imgTab, setImgTab] = useState<ImageTab | null>(null)
 
   const bannerInputRef = useRef<HTMLInputElement>(null)
   const avaInputRef = useRef<HTMLInputElement>(null)
@@ -69,29 +77,30 @@ export const ProfileEditModal = () => {
     if (editOpen) {
       const s = useProfileStore.getState()
       setDraft({
-        name: s.name, bio: s.bio, status: s.status, discIdx: s.discIdx, discColor: s.discColor,
+        name: s.name, bio: s.bio, status: s.status,
         bannerColor: s.bannerColor, bannerColor2: s.bannerColor2, bannerColorMode: s.bannerColorMode,
-        bannerAngle: s.bannerAngle, avaBorderColor: s.avaBorderColor, avaBorderMode: s.avaBorderMode,
-        avatar: s.avatar, banner: s.banner,
+        bannerAngle: s.bannerAngle, avatar: s.avatar, banner: s.banner,
       })
       setCrop(null)
+      setImgTab(null)
       setMounted(true)
       return runEnterAnimation(setOpening)
     }
     setOpening(false)
   }, [editOpen])
 
-  // Esc: в кропе → назад, иначе закрыть.
+  // Esc: в кропе → назад, из панели картинок → свернуть, иначе закрыть.
   useEffect(() => {
     if (!editOpen) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       if (crop) setCrop(null)
+      else if (imgTab) setImgTab(null)
       else closeEdit()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [editOpen, crop, closeEdit])
+  }, [editOpen, crop, imgTab, closeEdit])
 
   if (!mounted || !draft) return null
 
@@ -102,17 +111,14 @@ export const ProfileEditModal = () => {
       ? `linear-gradient(${draft.bannerAngle}deg,${draft.bannerColor} 0%,${draft.bannerColor2} 100%)`
       : draft.bannerColor
 
-  const onBannerFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /** Клик по цели в хиро: та же цель сворачивает панель, другая — переключает. */
+  const toggleTab = (tab: ImageTab) => setImgTab((cur) => (cur === tab ? null : tab))
+
+  const onPickFile = (type: ImageTab) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     e.target.value = ''
     if (!f) return
-    void readFileAsDataURL(f).then((data) => setCrop({ dataUrl: data, type: 'banner' }))
-  }
-  const onAvaFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    e.target.value = ''
-    if (!f) return
-    void readFileAsDataURL(f).then((data) => setCrop({ dataUrl: data, type: 'avatar' }))
+    void readFileAsDataURL(f).then((data) => setCrop({ dataUrl: data, type }))
   }
 
   // Аспект рамки баннера из реальной карточки профиля.
@@ -131,14 +137,10 @@ export const ProfileEditModal = () => {
       name: draft.name.trim() || useProfileStore.getState().name,
       bio: draft.bio.trim(),
       status: draft.status.trim(),
-      discIdx: draft.discIdx,
-      discColor: draft.discColor,
       bannerColor: draft.bannerColor,
       bannerColor2: draft.bannerColor2,
       bannerColorMode: draft.bannerColorMode,
       bannerAngle: draft.bannerAngle,
-      avaBorderColor: draft.avaBorderColor,
-      avaBorderMode: draft.avaBorderMode,
       avatar: draft.avatar,
       banner: draft.banner,
     })
@@ -146,8 +148,23 @@ export const ProfileEditModal = () => {
     toast(t('profile.toast.saved'))
   }
 
-  const setBorderMode = (m: AvaBorderMode) => patch({ avaBorderMode: m })
   const setBannerMode = (m: BannerColorMode) => patch({ bannerColorMode: m })
+
+  /** Обложка как заливка: своя картинка либо цвет/градиент. */
+  const bannerFill = (className: string) => (
+    <div className={className} style={{ background: bannerBg }}>
+      {draft.banner && <img src={draft.banner} alt="" />}
+    </div>
+  )
+  /** Аватар: своя картинка либо заглушка-человечек. */
+  const avaFill = (className: string) =>
+    draft.avatar ? (
+      <div className={className}><img src={draft.avatar} alt="" /></div>
+    ) : (
+      <EmptyAvatar className={className} />
+    )
+
+  const hasOwn = imgTab === 'avatar' ? !!draft.avatar : !!draft.banner
 
   return createPortal(
     <div
@@ -162,181 +179,157 @@ export const ProfileEditModal = () => {
     >
       <div id="peditModal">
         <div id="peditMainView" style={{ display: crop ? 'none' : 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          {/* HERO: баннер + крупный аватар по центру + имя заголовком */}
+          {/* HERO: живой предпросмотр шапки профиля — обложка, аватар, ник */}
           <div className="pedit-hero">
-            <div className="pedit-hero-banner" style={{ background: bannerBg }}>
-              {draft.banner && <img src={draft.banner} alt="" />}
-              <div className="pedit-banner-overlay">
-                <label className="pedit-banner-overlay-btn">
-                  <Ico name="camera" width={12} height={12} />
-                  {t('profile.changeCover')}
-                  <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onBannerFile} />
-                </label>
+            <div
+              className={`pedit-hero-banner${imgTab === 'banner' ? ' active' : ''}`}
+              onClick={() => toggleTab('banner')}
+            >
+              {bannerFill('pedit-hero-banner-fill')}
+              <div className="pedit-hero-pick">
+                <Ico name="galleryWide" width={17} height={17} />
               </div>
-              {draft.banner && (
-                <button className="pedit-banner-remove" style={{ display: 'flex' }} onClick={() => patch({ banner: null })}>
-                  <Ico name="trash" width={13} height={13} />
-                </button>
-              )}
             </div>
 
-            <div className="pedit-hero-ava-wrap" onClick={() => avaInputRef.current?.click()}>
-              {draft.avatar ? (
-                <div className="pedit-hero-ava"><img src={draft.avatar} alt="" /></div>
-              ) : (
-                <DiscAvatar idx={draft.discIdx} color={draft.discColor} className="pedit-hero-ava" />
-              )}
+            <div
+              className={`pedit-hero-ava-wrap${imgTab === 'avatar' ? ' active' : ''}`}
+              onClick={() => toggleTab('avatar')}
+            >
+              {avaFill('pedit-hero-ava')}
               <div className="pedit-ava-cam">
                 <Ico name="camera" width={18} height={18} style={{ color: '#fff' }} />
               </div>
-              {draft.avatar && (
-                <button
-                  className="pedit-ava-remove"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    patch({ avatar: null })
-                  }}
-                >
-                  <Ico name="close" width={11} height={11} />
-                </button>
-              )}
-              <input ref={avaInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvaFile} />
             </div>
 
             <div className={`pedit-hero-name${draft.name.trim() ? '' : ' empty'}`}>
               {draft.name.trim() || t('profile.nickPlaceholder')}
             </div>
-            <div className="pedit-hero-sub">{t('profile.edit.title')}</div>
           </div>
+
+          <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onPickFile('banner')} />
+          <input ref={avaInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onPickFile('avatar')} />
 
           <div className="pedit-body">
-            {/* Карточка: Профиль */}
-            <div className="pedit-card">
-              <div className="pedit-card-title">
-                <Ico name="user" width={14} height={14} />
-                {t('profile.section.profile')}
-              </div>
-
-              <div className="pedit-eg">
-                <div className="pedit-bio-label">{t('profile.nick')}</div>
-                <div className="pedit-inp-wrap">
-                  <input
-                    className="pedit-nick-inp"
-                    maxLength={32}
-                    placeholder={t('profile.nickPlaceholder')}
-                    style={{ paddingRight: 46 }}
-                    value={draft.name}
-                    onChange={(e) => patch({ name: e.target.value })}
-                  />
-                  <span className="pedit-char-count">{draft.name.length}/32</span>
+            {/* Панель картинок: разворачивается кликом по хиро */}
+            {imgTab && (
+              <div className="pedit-imgpanel">
+                <div className="pedit-img-tabs">
+                  <button
+                    className={`pedit-img-tab${imgTab === 'avatar' ? ' active' : ''}`}
+                    onClick={() => setImgTab('avatar')}
+                    aria-label={t('profile.avatar')}
+                  >
+                    {avaFill('pedit-img-tab-ava')}
+                  </button>
+                  <button
+                    className={`pedit-img-tab${imgTab === 'banner' ? ' active' : ''}`}
+                    onClick={() => setImgTab('banner')}
+                    aria-label={t('profile.cover')}
+                  >
+                    {bannerFill('pedit-img-tab-banner')}
+                  </button>
                 </div>
-              </div>
 
-              {/* Био + статус */}
-              <div className="pedit-bio-section">
-                <div className="pedit-bio-label">{t('profile.about')}</div>
-                <div className="pedit-inp-wrap">
-                  <textarea
-                    className="pedit-bio-inp"
-                    maxLength={300}
-                    placeholder={t('profile.aboutPlaceholder')}
-                    style={{ paddingBottom: 22 }}
-                    value={draft.bio}
-                    onChange={(e) => patch({ bio: e.target.value })}
-                  />
-                  <span className="pedit-char-count area">{draft.bio.length}/300</span>
+                <div className="pedit-img-preview">
+                  {imgTab === 'avatar'
+                    ? avaFill('pedit-img-prev-ava')
+                    : bannerFill('pedit-img-prev-banner')}
                 </div>
-                <div className="pedit-bio-label" style={{ marginTop: 8 }}>{t('profile.status')}</div>
-                <div className="pedit-inp-wrap">
-                  <input
-                    className="pedit-nick-inp"
-                    maxLength={80}
-                    placeholder={t('profile.statusPlaceholder')}
-                    style={{ fontStyle: 'italic', paddingRight: 46 }}
-                    value={draft.status}
-                    onChange={(e) => patch({ status: e.target.value })}
-                  />
-                  <span className="pedit-char-count">{draft.status.length}/80</span>
-                </div>
-              </div>
-            </div>
 
-            {/* Карточка: Внешний вид */}
-            <div className="pedit-card">
-              <div className="pedit-card-title">
-                <Ico name="vinyl" width={14} height={14} />
-                {t('profile.section.appearance')}
-              </div>
-
-              {/* Пластинка */}
-              <div className="pedit-disc-section">
-                <div className="pedit-bio-label">{t('profile.disc')}</div>
-                <div className="pedit-disc-row">
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <div
-                      key={i}
-                      className={`pedit-disc-opt${i === draft.discIdx && !draft.discColor ? ' active' : ''}`}
-                      onClick={() => patch({ discIdx: i, discColor: null })}
-                    >
-                      <DiscAvatar idx={i} color={null} style={{ width: '100%', height: '100%' }} />
+                {/* Цвет обложки живёт здесь: она бывает не картинкой, а заливкой */}
+                {imgTab === 'banner' && (
+                  <div className="pedit-color-field">
+                    <div className="pedit-banner-color-header">
+                      <div className="pedit-banner-swatches">
+                        <Swatch color={draft.bannerColor} onChange={(h) => patch({ bannerColor: h })} />
+                        {draft.bannerColorMode === 'gradient' && (
+                          <Swatch color={draft.bannerColor2} onChange={(h) => patch({ bannerColor2: h })} />
+                        )}
+                      </div>
+                      <div className="pedit-mode-toggle">
+                        <button className={`pedit-mode-btn${draft.bannerColorMode === 'solid' ? ' active' : ''}`} onClick={() => setBannerMode('solid')}>{t('profile.solid')}</button>
+                        <button className={`pedit-mode-btn${draft.bannerColorMode === 'gradient' ? ' active' : ''}`} onClick={() => setBannerMode('gradient')}>{t('profile.gradient')}</button>
+                      </div>
                     </div>
-                  ))}
-                  <DiscColorSwatch
-                    idx={draft.discIdx}
-                    color={draft.discColor}
-                    onChange={(hex) => patch({ discColor: hex })}
-                  />
-                </div>
-              </div>
+                    {draft.bannerColorMode === 'gradient' && (
+                      <div className="pedit-angle-row">
+                        {ANGLES.map((a, i) => (
+                          <button
+                            key={a}
+                            className={`pedit-angle-btn${a === draft.bannerAngle ? ' active' : ''}`}
+                            onClick={() => patch({ bannerAngle: a })}
+                          >
+                            {ANGLE_ARROWS[i]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Цвета: обложка + обводка */}
-              <div className="pedit-colors-section">
-              <div className="pedit-color-field">
-                <div className="pedit-banner-color-header">
-                  <div className="pedit-bio-label" style={{ margin: 0 }}>{t('profile.coverColor')}</div>
-                  <div className="pedit-mode-toggle">
-                    <button className={`pedit-mode-btn${draft.bannerColorMode === 'solid' ? ' active' : ''}`} onClick={() => setBannerMode('solid')}>{t('profile.solid')}</button>
-                    <button className={`pedit-mode-btn${draft.bannerColorMode === 'gradient' ? ' active' : ''}`} onClick={() => setBannerMode('gradient')}>{t('profile.gradient')}</button>
-                  </div>
-                </div>
-                <div className="pedit-banner-swatches">
-                  <Swatch color={draft.bannerColor} onChange={(h) => patch({ bannerColor: h })} />
-                  {draft.bannerColorMode === 'gradient' && (
-                    <>
-                      <span className="pedit-grad-sep">→</span>
-                      <Swatch color={draft.bannerColor2} onChange={(h) => patch({ bannerColor2: h })} />
-                    </>
-                  )}
-                </div>
-                {draft.bannerColorMode === 'gradient' && (
-                  <div className="pedit-angle-row">
-                    {ANGLES.map((a, i) => (
-                      <button
-                        key={a}
-                        className={`pedit-angle-btn${a === draft.bannerAngle ? ' active' : ''}`}
-                        onClick={() => patch({ bannerAngle: a })}
-                      >
-                        {ANGLE_ARROWS[i]}
-                      </button>
-                    ))}
-                  </div>
+                <button
+                  className="pedit-img-upload"
+                  onClick={() => (imgTab === 'avatar' ? avaInputRef : bannerInputRef).current?.click()}
+                >
+                  <Ico name="import" width={16} height={16} />
+                  {t('profile.upload')}
+                </button>
+                {hasOwn && (
+                  <button
+                    className="pedit-img-drop"
+                    onClick={() => patch(imgTab === 'avatar' ? { avatar: null } : { banner: null })}
+                  >
+                    {t(imgTab === 'avatar' ? 'profile.removeAvatar' : 'profile.removeCover')}
+                  </button>
                 )}
               </div>
-              <div className="pedit-color-field">
-                <div className="pedit-banner-color-header">
-                  <div className="pedit-bio-label" style={{ margin: 0 }}>{t('profile.border')}</div>
-                  <div className="pedit-mode-toggle">
-                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'accent' ? ' active' : ''}`} onClick={() => setBorderMode('accent')}>{t('settings.interface.libSys.accent')}</button>
-                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'custom' ? ' active' : ''}`} onClick={() => setBorderMode('custom')}>{t('profile.solid')}</button>
-                    <button className={`pedit-mode-btn${draft.avaBorderMode === 'off' ? ' active' : ''}`} onClick={() => setBorderMode('off')}>{t('settings.discord.mode.off')}</button>
-                  </div>
-                </div>
-                {draft.avaBorderMode === 'custom' && (
-                  <Swatch color={draft.avaBorderColor || '#ffffff'} onChange={(h) => patch({ avaBorderColor: h })} />
-                )}
+            )}
+
+            {/* Поля — без карточек и заголовков секций */}
+            <div className="pedit-eg">
+              <div className="pedit-bio-label">{t('profile.nick')}</div>
+              <div className="pedit-inp-wrap">
+                <input
+                  className="pedit-nick-inp"
+                  maxLength={32}
+                  placeholder={t('profile.nickPlaceholder')}
+                  style={{ paddingRight: 46 }}
+                  value={draft.name}
+                  onChange={(e) => patch({ name: e.target.value })}
+                />
+                <span className="pedit-char-count">{draft.name.length}/32</span>
               </div>
             </div>
-          </div>
+
+            <div className="pedit-eg">
+              <div className="pedit-bio-label">{t('profile.about')}</div>
+              <div className="pedit-inp-wrap">
+                <textarea
+                  className="pedit-bio-inp"
+                  maxLength={300}
+                  placeholder={t('profile.aboutPlaceholder')}
+                  style={{ paddingBottom: 22 }}
+                  value={draft.bio}
+                  onChange={(e) => patch({ bio: e.target.value })}
+                />
+                <span className="pedit-char-count area">{draft.bio.length}/300</span>
+              </div>
+            </div>
+
+            <div className="pedit-eg">
+              <div className="pedit-bio-label">{t('profile.status')}</div>
+              <div className="pedit-inp-wrap">
+                <input
+                  className="pedit-nick-inp"
+                  maxLength={80}
+                  placeholder={t('profile.statusPlaceholder')}
+                  style={{ fontStyle: 'italic', paddingRight: 46 }}
+                  value={draft.status}
+                  onChange={(e) => patch({ status: e.target.value })}
+                />
+                <span className="pedit-char-count">{draft.status.length}/80</span>
+              </div>
+            </div>
           </div>
 
           <div className="pedit-foot">
@@ -359,26 +352,3 @@ export const ProfileEditModal = () => {
     document.body,
   )
 }
-
-/** Седьмой слот пластинки — кастомный цвет диска. */
-const DiscColorSwatch = ({
-  idx,
-  color,
-  onChange,
-}: {
-  idx: number
-  color: string | null
-  onChange: (hex: string) => void
-}) => (
-  <div
-    className={`pedit-disc-custom${color ? ' has-color' : ''}`}
-    onClick={(e) => openColorPicker({ anchor: e.currentTarget, color: color || discDefColors[idx % 6], onChange })}
-  >
-    <div className="pedit-disc-custom-svg">
-      <DiscAvatar idx={idx} color={color} style={{ width: '100%', height: '100%' }} />
-    </div>
-    <div className="pedit-disc-custom-badge">
-      <Ico name="palette" width={8} height={8} style={{ color: '#fff' }} />
-    </div>
-  </div>
-)

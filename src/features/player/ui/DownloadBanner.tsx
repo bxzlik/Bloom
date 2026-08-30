@@ -4,15 +4,16 @@ import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
- * Тост прогресса скачивания плейлиста — карточка сверху по центру в стиле
- * глобального тоста (круглая иконка-бейдж, скругление `var(--radius)`, тень).
- * Показывает «N из M», имя текущего трека и итог; заменяет череду тостов.
+ * Тост прогресса скачивания плейлиста — капсула сверху по центру в стиле
+ * глобального тоста (`#toast`, см. search-misc.css): бейдж-вертушка, две строки
+ * текста, счётчик и полоса ДОЛИ по низу. Показывает «N из M», имя текущего
+ * трека и итог; заменяет череду тостов.
  *
  * Управляется императивно через `downloadBanner.*` (как `toast()`), чтобы звать
  * из не-React кода загрузчика. Рендерится один раз в App. По завершении
  * автоскрывается через таймер (если пользователь не закрыл).
  */
-const DownloadGlyph = () => <Ico name="download" width={16} height={16} />
+const DoneGlyph = () => <Ico name="check" width={17} height={17} />
 
 export const DownloadBanner = () => {
   const t = useT()
@@ -55,27 +56,25 @@ export const DownloadBanner = () => {
 
   return (
     <div id="dltoast" className={done ? 'is-done' : undefined}>
-      <div className="dlt-row">
-        <span className="dlt-ico">
-          <DownloadGlyph />
-        </span>
-        <div className="dlt-body">
-          <div className="dlt-title">
-            {done ? t('dlbanner.titleDone') : t('dlbanner.titleDownloading')}
-            {name ? ` · ${name}` : ''}
-          </div>
-          <div className="dlt-sub">{subtitle}</div>
+      <span className="dlt-badge">
+        {/* Пока идёт работа — вертушка вместо значка (как busyToast на телефоне),
+            по завершении на её месте появляется вид итога. */}
+        <span className="dlt-ico">{done ? <DoneGlyph /> : <span className="dlt-spin" />}</span>
+      </span>
+      <div className="dlt-body">
+        <div className="dlt-title">
+          {done ? t('dlbanner.titleDone') : t('dlbanner.titleDownloading')}
+          {name ? ` · ${name}` : ''}
         </div>
-        <button onClick={hide} className="dlt-close" aria-label={t('common.close')}>
-          <Ico name="close" width={13} height={13} />
-        </button>
+        <div className="dlt-sub">{subtitle}</div>
       </div>
+      <span className="dlt-count">{done ? `${percent}%` : `${current}/${total}`}</span>
+      <button onClick={hide} className="dlt-close" aria-label={t('common.close')}>
+        <Ico name="close" width={13} height={13} />
+      </button>
 
-      <div className="dlt-progress">
-        <div className="dlt-track">
-          <div className="dlt-fill" style={{ width: `${percent}%` }} />
-        </div>
-        <span className="dlt-count">{done ? `${percent}%` : `${current}/${total}`}</span>
+      <div className="dlt-track">
+        <div className="dlt-fill" style={{ width: `${percent}%` }} />
       </div>
     </div>
   )
