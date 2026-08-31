@@ -5,11 +5,21 @@
 //! (идёт через локальный `audio_proxy`).
 //!
 //! Без авторизации (публичный поиск/стрим). Поиск — клиент `WEB_REMIX`, разбор
-//! `musicResponsiveListItemRenderer`. Стрим — клиент `ANDROID_VR` к
+//! `musicResponsiveListItemRenderer`. Стрим — клиент `VISIONOS` к
 //! `player`-эндпоинту: он отдаёт `streamingData.adaptiveFormats[]` с ПРЯМЫМИ url
 //! (без расшифровки signatureCipher / n-throttling) и, в отличие от web/ios/
 //! android, **не требует PoToken** (см. гайд yt-dlp «PO Token»). Эти константы
 //! клиентов время от времени приходится обновлять — все собраны вверху файла.
+//!
+//! ВАЖНО (2026-08-31): раньше основным был `ANDROID_VR`, теперь он мёртв —
+//! googlevideo отдаёт по его ссылкам 403 на всё, что выходит за первый 1 MiB
+//! файла. Симптом коварный: `player` отвечает `OK` и с прямыми url, ссылка
+//! «выглядит рабочей», а `<audio>` первым делом просит `Range: bytes=0-` (весь
+//! файл) → 403 → трек включается и стоит на 0:00. yt-dlp это подтверждает
+//! пометкой у `android_vr`: «Since 2026.08.17, ALL formats are 403'd».
+//! Поэтому ANDROID_VR убран из цепочки совсем, а не понижен в приоритете:
+//! его ответ проходит проверку `playable`, значит перехватить отказ мы не
+//! можем, и он бы молча блокировал запасной путь через SoundCloud-бридж.
 //!
 //! КРИТИЧНО: во все запросы идёт `visitorData` (см. `visitor_data`). Без него
 //! `player` отвечает `LOGIN_REQUIRED` («Sign in to confirm you're not a bot») —
@@ -35,18 +45,14 @@ const WEB_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.
 /// Клиент обычного youtube.com — только чтобы выпросить `visitorData`.
 const YT_CLIENT_VERSION: &str = "2.20260708.00.00";
 
-/// ANDROID_VR (гарнитура Oculus) — основной клиент для `player`. Не требует
-/// PoToken и отдаёт прямые url. Версию/UA обновлять по yt-dlp, если стрим
-/// начнёт ломаться (`yt_dlp/extractor/youtube/_base.py`, INNERTUBE_CLIENTS).
-const VR_CLIENT_VERSION: &str = "1.65.10";
-const VR_UA: &str = "com.google.android.apps.youtube.vr.oculus/1.65.10 \
-                     (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip";
-
-/// VISIONOS (Apple Vision Pro) — запасной клиент с теми же свойствами: если
-/// ANDROID_VR упрётся в ограничение (например «made for kids»), пробуем его.
+/// VISIONOS (Apple Vision Pro) — основной (и единственный) клиент для `player`.
+/// Не требует PoToken, отдаёт прямые url и, в отличие от ANDROID_VR, честно
+/// обслуживает произвольные Range-запросы: открытый `bytes=0-`, перемотку в
+/// середину и в хвост файла. Версию/UA/deviceModel обновлять по yt-dlp, если
+/// стрим начнёт ломаться (`yt_dlp/extractor/youtube/_base.py`, INNERTUBE_CLIENTS).
 const VISION_CLIENT_VERSION: &str = "1.02";
-const VISION_UA: &str =
-    "com.google.ios.youtube/1.02 (Apple Vision Pro; U; CPU visionOS 1_0 like Mac OS X)";
+const VISION_UA: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) \
+                         AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
 
 fn http() -> Result<reqwest::Client> {
     reqwest::Client::builder()
@@ -1642,26 +1648,14 @@ async fn player_with(client: Value, ua: &str, video_id: &str) -> Result<Value> {
     resp.json().await.context("ytm player json")
 }
 
-fn vr_client() -> Value {
-    json!({
-        "clientName": "ANDROID_VR",
-        "clientVersion": VR_CLIENT_VERSION,
-        "deviceMake": "Oculus",
-        "deviceModel": "Quest 3",
-        "osName": "Android",
-        "osVersion": "12L",
-        "androidSdkVersion": 32,
-    })
-}
-
 fn vision_client() -> Value {
     json!({
         "clientName": "VISIONOS",
         "clientVersion": VISION_CLIENT_VERSION,
         "deviceMake": "Apple",
-        "deviceModel": "RealityDevice14,1",
+        "deviceModel": "RealityDevice17,1",
         "osName": "visionOS",
-        "osVersion": "1.0.22N301",
+        "osVersion": "26.5.23O471",
     })
 }
 
@@ -1690,24 +1684,23 @@ fn audio_formats(v: &Value) -> impl Iterator<Item = &Value> {
 
 /// Запрос к player-эндпоинту (даёт прямые url + videoDetails).
 ///
-/// Порядок: ANDROID_VR → (при отказе) свежий `visitorData` и повтор → VISIONOS.
-/// Протухший `visitorData` выглядит как `LOGIN_REQUIRED`, поэтому одна ретрай-
-/// попытка со сбросом сессии закрывает самый частый сбой.
+/// Порядок: VISIONOS → (при отказе) свежий `visitorData` и повтор. Протухший
+/// `visitorData` выглядит как `LOGIN_REQUIRED`, поэтому одна ретрай-попытка со
+/// сбросом сессии закрывает самый частый сбой.
+///
+/// Второго клиента в цепочке намеренно нет (почему — модуль-док). Если VISIONOS
+/// не сыграл (например «made for kids»), честнее вернуть отказ: вызывающий
+/// уйдёт на SoundCloud-бридж, а не получит ссылку, которая молча отдаёт 403.
 async fn player(video_id: &str) -> Result<Value> {
-    let first = player_with(vr_client(), VR_UA, video_id).await?;
+    let first = player_with(vision_client(), VISION_UA, video_id).await?;
     if playable(&first) {
         return Ok(first);
     }
 
     reset_visitor_data().await;
-    let retry = player_with(vr_client(), VR_UA, video_id).await?;
+    let retry = player_with(vision_client(), VISION_UA, video_id).await?;
     if playable(&retry) {
         return Ok(retry);
-    }
-
-    let vision = player_with(vision_client(), VISION_UA, video_id).await?;
-    if playable(&vision) {
-        return Ok(vision);
     }
 
     // Ничего не сыграло — возвращаем первый ответ ради его playabilityStatus,
@@ -1782,6 +1775,12 @@ mod tests {
     /// Ходит в сеть, поэтому `#[ignore]` — запускать вручную, когда YTM перестал
     /// играть, чтобы понять, протухли ли константы клиентов (см. модуль-док):
     /// `cargo test --package bloom ytm::tests::live_stream -- --ignored --nocapture`
+    ///
+    /// Проверяем ИМЕННО те запросы, которые шлёт плеер, а не удобный нам
+    /// маленький кусочек: открытый `bytes=0-` (с него начинает `<audio>` в
+    /// WebView2 и ExoPlayer на мобилке) и перемотку в хвост файла. Урок
+    /// 2026-08-31: на ANDROID_VR тест с `bytes=0-1023` оставался зелёным, пока
+    /// приложение вообще не играло, — googlevideo резал всё дальше 1 MiB.
     #[tokio::test]
     #[ignore = "ходит в сеть"]
     async fn live_stream() {
@@ -1800,15 +1799,39 @@ mod tests {
             let url = stream_url(&track.id).await.expect("стрим не резолвится");
             assert!(url.starts_with("https://"), "не url: {url}");
 
+            // 1. Открытый диапазон = «отдай файл целиком», как просит плеер.
             let resp = http()
                 .unwrap()
                 .get(&url)
-                .header("Range", "bytes=0-1023")
+                .header("Range", "bytes=0-")
                 .send()
                 .await
                 .expect("googlevideo не ответил");
-            println!("    поток: HTTP {}", resp.status());
-            assert!(resp.status().is_success(), "поток не отдаёт байты");
+            let status = resp.status();
+            let body = resp.bytes().await.expect("тело потока не дочиталось");
+            println!("    поток целиком: HTTP {status}, {} байт", body.len());
+            assert!(
+                status.is_success(),
+                "открытый Range не отдаёт байты (HTTP {status}) — \
+                 клиент player-эндпоинта снова упёрся в лимит googlevideo"
+            );
+            assert!(
+                body.len() > 1024 * 1024,
+                "отдано всего {} байт: похоже, поток режется на первом MiB",
+                body.len()
+            );
+
+            // 2. Перемотка: диапазон из хвоста файла.
+            let tail = body.len() as u64 - 65_536;
+            let seek = http()
+                .unwrap()
+                .get(&url)
+                .header("Range", format!("bytes={tail}-"))
+                .send()
+                .await
+                .expect("googlevideo не ответил на перемотку");
+            println!("    перемотка в хвост: HTTP {}", seek.status());
+            assert!(seek.status().is_success(), "перемотка не работает");
         }
     }
 

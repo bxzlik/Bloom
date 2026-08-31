@@ -18,23 +18,32 @@
   color: var(--text);
 }
 
-/* Бейдж непрочитанных */
-.notif-badge {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  min-width: 7px;
-  height: 7px;
-  padding: 0 1.5px;
-  border-radius: 4px;
+/* Число непрочитанных — рисуется ВМЕСТО иконки (см. NotifBell.tsx), поэтому
+   никакого абсолютного позиционирования: обычная «таблетка» по центру кнопки.
+   Фон тот же, что был у старого бейджа-точки (--accent), размер — под 14px
+   иконки соседних .win-btn, чтобы ряд тайтлбара не выбивался. */
+.notif-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
   background: var(--accent);
   color: var(--accent-text, #fff);
-  font-size: 6px;
+  font-size: 9px;
   font-weight: 800;
-  line-height: 7px;
-  text-align: center;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
   pointer-events: none;
-  box-shadow: 0 0 0 1px var(--bg, #000);
+}
+/* Ховер/открытая панель: кнопка сама не красит фон, поэтому подсвечиваем таблетку. */
+.win-bell:hover .notif-count,
+.win-bell.on .notif-count {
+  filter: brightness(1.12);
 }
 
 /* ── Панель ── */

@@ -639,19 +639,35 @@ pub async fn user_playlists(id_or_url: &str) -> Vec<ScRawPlaylist> {
 }
 
 /// Лайкнутые треки пользователя (профиль по ссылке); ошибки — пустой список.
+/// SC отдаёт лайки страницами (в выдаче попадаются и плейлисты — их пропускаем),
+/// поэтому идём по `next_href` до конца; ошибка на середине — отдаём накопленное.
 pub async fn user_likes(id_or_url: &str) -> Vec<ScRawTrack> {
     let inner = async {
         let id = resolve_user_id(id_or_url).await?;
-        let d = api_fetch(&format!("https://api-v2.soundcloud.com/users/{id}/likes?limit=200"), false)
-            .await?;
-        Ok::<_, anyhow::Error>(
-            varr(&d, "collection")
-                .iter()
-                .filter_map(|x| x.get("track"))
-                .filter(|t| has_id(t))
-                .map(map_raw_track)
-                .collect(),
-        )
+        let mut out: Vec<ScRawTrack> = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+        let mut url =
+            format!("https://api-v2.soundcloud.com/users/{id}/likes?limit=200&linked_partitioning=1");
+        // Потолок в 25 страниц (~5000 лайков) — страховка от «висячего» курсора.
+        for _ in 0..25 {
+            let Ok(d) = api_fetch(&url, false).await else { break };
+            let coll = varr(&d, "collection");
+            if coll.is_empty() {
+                break;
+            }
+            for x in coll {
+                let Some(t) = x.get("track").filter(|t| has_id(t)) else { continue };
+                let tr = map_raw_track(t);
+                if seen.insert(tr.id) {
+                    out.push(tr);
+                }
+            }
+            match vstr(&d, "next_href") {
+                Some(n) => url = n.to_string(),
+                None => break,
+            }
+        }
+        Ok::<_, anyhow::Error>(out)
     };
     inner.await.unwrap_or_default()
 }

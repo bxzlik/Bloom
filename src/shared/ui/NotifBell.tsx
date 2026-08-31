@@ -5,9 +5,11 @@ import { useNotifStore, type NotifItem, type NotifKind } from './notificationsSt
 
 /**
  * Колокольчик уведомлений в тайтлбаре (`<NotifBell/>`, вставляется в `.win-btns`
- * рядом с закрепом). Бейдж = число непрочитанных; клик открывает панель-историю
- * (`.notif-panel`, CSS в shared/styles/notifications.css). Открытие помечает всё
- * прочитанным. Видимость самого колокольчика — флаг `tbBell` в uiPrefsStore.
+ * рядом с закрепом). Пока непрочитанных нет — обычная иконка; как только они
+ * появляются, иконка ЗАМЕНЯЕТСЯ их числом (`.notif-count`, не бейдж поверх).
+ * Клик открывает панель-историю (`.notif-panel`, CSS в
+ * shared/styles/notifications.css) и помечает всё прочитанным — число гаснет и
+ * возвращается иконка. Видимость колокольчика — флаг `tbBell` в uiPrefsStore.
  */
 export const NotifBell = () => {
   const t = useT()
@@ -49,8 +51,11 @@ export const NotifBell = () => {
         aria-label={t('titlebar.notifs')}
         aria-expanded={open}
       >
-        <Ico name="winBell" variant={open ? 'bold' : 'linear'} width={14} height={14} />
-        {unread > 0 && <span className="notif-badge">{unread > 9 ? '9+' : unread}</span>}
+        {unread > 0 ? (
+          <span className="notif-count">{unread > 99 ? '99+' : unread}</span>
+        ) : (
+          <Ico name="winBell" variant={open ? 'bold' : 'linear'} width={14} height={14} />
+        )}
       </button>
 
       {open && (
