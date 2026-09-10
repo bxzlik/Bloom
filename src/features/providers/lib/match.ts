@@ -15,31 +15,12 @@ import type { Track } from '@entities/track'
  *   и «Artist A» на другой — тот же трек, штрафовать не за что.
  */
 
-/** Нормализация: lower, без скобочных уточнений, только буквы/цифры. */
-const norm = (s: string): string =>
-  (s || '')
-    .toLowerCase()
-    .replace(/ё/g, 'е')
-    .replace(/\(.*?\)|\[.*?\]/g, ' ')
-    .replace(/[^a-zа-я0-9]+/gi, ' ')
-    .trim()
+// Нормализация, токенизация и containment — общие с детектором дублей
+// (`shared/lib/trackDedup`): вопросы у них разные, но «что считать одним и тем
+// же словом» должно быть одно на приложение.
+import { textTokens as tokens, containment, durToSec } from '@shared/lib/trackDedup'
 
-/** Шумовые слова, которые сами по себе не делают трек другим. */
-const NOISE = new Set([
-  'feat', 'ft', 'featuring', 'prod', 'by', 'the', 'a', 'an', 'and', 'и',
-  'official', 'audio', 'video', 'lyrics', 'hd', 'hq',
-  'remaster', 'remastered', 'version', 'edition', 'bonus', 'track',
-])
-
-const tokens = (s: string): string[] =>
-  norm(s).split(' ').filter((w) => w && !NOISE.has(w))
-
-/** «m:ss» / «h:mm:ss» → секунды (0 — длительность неизвестна). */
-export const durToSec = (d: string): number => {
-  const parts = (d || '').split(':').map(Number)
-  if (!parts.length || parts.some(Number.isNaN)) return 0
-  return parts.reduce((acc, n) => acc * 60 + n, 0)
-}
+export { durToSec }
 
 /** Жаккар по множествам токенов (1 — совпали полностью, 0 — не пересеклись). */
 const jaccard = (a: Set<string>, b: Set<string>): number => {
@@ -47,14 +28,6 @@ const jaccard = (a: Set<string>, b: Set<string>): number => {
   let inter = 0
   for (const t of a) if (b.has(t)) inter++
   return inter / (a.size + b.size - inter)
-}
-
-/** Вложенность: доля меньшего множества, попавшая в большее. */
-const containment = (a: Set<string>, b: Set<string>): number => {
-  if (!a.size || !b.size) return 0
-  let inter = 0
-  for (const t of a) if (b.has(t)) inter++
-  return inter / Math.min(a.size, b.size)
 }
 
 /**

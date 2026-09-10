@@ -14,6 +14,7 @@ import {
   ymResolve,
   ymChart,
   ymNewReleases,
+  ymSimilarTracks,
   ymStreamUrl,
   ymProxyUrl,
 } from '../api/ymClient'
@@ -190,6 +191,15 @@ export const ymProvider: MusicProvider = {
     return { kind: 'albums', albums }
   },
 
+  async getSimilarTracks(seedId): Promise<Track[]> {
+    // Только треки: под тем же префиксом живут альбомы/плейлисты/артисты.
+    const m = /^ym_(?!album_|pl_|artist_)(.+)$/.exec(seedId)
+    if (!m) return []
+    const tracks = (await ymSimilarTracks(m[1]!)).map(toTrack)
+    if (tracks.length) trackRegistry.put(tracks, { temp: true })
+    return tracks
+  },
+
   async getAlbum(id): Promise<{ album: Playlist; tracks: Track[] }> {
     const m = /^ym_album_(\d+)$/.exec(id)
     if (!m) throw new Error(i18nT('search.err.albumNotFound'))
@@ -203,6 +213,7 @@ export const ymProvider: MusicProvider = {
       ownerName: e.subtitle,
       ownerAvatar: e.ownerAvatar || null,
       year: e.year || undefined,
+      releaseDate: e.releaseDate || undefined,
       trackCount: tracks.length,
       source: 'yandex',
       sourceUrl: `https://music.yandex.ru/album/${m[1]}`,

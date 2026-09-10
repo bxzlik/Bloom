@@ -15,6 +15,9 @@ import { saveAppImage, loadAppImages } from '../lib/mediaIdb'
  * визу подключим отдельным заходом.
  */
 
+/** Когда показывать кастомную обложку: всегда или только если у трека нет своей. */
+export type CoverMode = 'always' | 'fallback'
+
 interface CustomizationState {
   bgUrl: string | null
   coverUrl: string | null
@@ -24,10 +27,14 @@ interface CustomizationState {
   bgBlur: number
   bgDim: number
   coverAsBg: boolean
+  coverMode: CoverMode
 
   setBg: (url: string | null) => void
   /** Обложка плеера-override (пишет playerStore.coverOverride; null = снять). */
   setCover: (url: string | null) => void
+  setCoverMode: (m: CoverMode) => void
+  /** Пересчитать coverOverride под текущий режим и обложку трека. */
+  syncCover: () => void
   /** Фото визуализатора (пишет playerStore.vizPhoto; null = снять). */
   setViz: (url: string | null) => void
   setCursor: (url: string | null) => void
@@ -46,7 +53,10 @@ interface BgPrefs {
   bgBlur: number
   bgDim: number
   coverAsBg: boolean
+  coverMode: CoverMode
 }
+
+const DEFAULT_PREFS: BgPrefs = { bgBlur: 0, bgDim: 65, coverAsBg: false, coverMode: 'always' }
 
 const loadPrefs = (): BgPrefs => {
   try {
@@ -55,9 +65,10 @@ const loadPrefs = (): BgPrefs => {
       bgBlur: typeof p.bgBlur === 'number' ? p.bgBlur : 0,
       bgDim: typeof p.bgDim === 'number' ? p.bgDim : 65,
       coverAsBg: !!p.coverAsBg,
+      coverMode: p.coverMode === 'fallback' ? 'fallback' : 'always',
     }
   } catch {
-    return { bgBlur: 0, bgDim: 65, coverAsBg: false }
+    return { ...DEFAULT_PREFS }
   }
 }
 
@@ -87,7 +98,18 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => {
   }
   const persistPrefs = (): void => {
     const s = get()
-    savePrefs({ bgBlur: s.bgBlur, bgDim: s.bgDim, coverAsBg: s.coverAsBg })
+    savePrefs({ bgBlur: s.bgBlur, bgDim: s.bgDim, coverAsBg: s.coverAsBg, coverMode: s.coverMode })
+  }
+  /**
+   * Ставит/снимает override обложки по текущему режиму. В режиме `fallback`
+   * кастом виден только когда у трека нет своей обложки (`artwork`), поэтому
+   * пересчитывать нужно на каждой смене трека — см. подписку в bootstrap.
+   */
+  const applyCoverNow = (): void => {
+    const s = get()
+    const ps = usePlayerStore.getState()
+    const show = s.coverUrl && (s.coverMode === 'always' || !ps.artwork)
+    usePlayerStore.setState({ coverOverride: show ? s.coverUrl : null })
   }
 
   return {
@@ -99,6 +121,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => {
     bgBlur: initPrefs.bgBlur,
     bgDim: initPrefs.bgDim,
     coverAsBg: initPrefs.coverAsBg,
+    coverMode: initPrefs.coverMode,
 
     setBg: (url) => {
       set({ bgUrl: url })
@@ -109,8 +132,14 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => {
       set({ coverUrl: url })
       void saveAppImage('playerCoverUrl', url)
       // Override обложки плеера — через playerStore (его читают PagePlayer/PlayerBar).
-      usePlayerStore.setState({ coverOverride: url })
+      applyCoverNow()
     },
+    setCoverMode: (m) => {
+      set({ coverMode: m })
+      persistPrefs()
+      applyCoverNow()
+    },
+    syncCover: applyCoverNow,
     setViz: (url) => {
       set({ vizUrl: url })
       void saveAppImage('vizPhoto', url)
@@ -175,9 +204,18 @@ export const useCustomizationBootstrap = (): void => {
       applyBackground(bg, s.bgBlur)
       applyBgDim(s.bgDim)
       if (s.cursorUrl) applyCustomCursor(s.cursorUrl)
-      if (s.coverUrl) usePlayerStore.setState({ coverOverride: s.coverUrl })
+      s.syncCover()
       if (s.vizUrl) usePlayerStore.setState({ vizPhoto: s.vizUrl })
       if (s.sliderUrl) usePlayerStore.setState({ sliderThumb: s.sliderUrl })
+    })
+
+    // Режим «если нет обложки»: у нового трека своя обложка может появиться или
+    // пропасть, поэтому override пересчитываем на каждой смене `artwork`.
+    // Запись coverOverride разбудит подписку снова, но `artwork` уже совпадёт —
+    // выйдем на первой проверке, цикла нет.
+    const unsubCover = usePlayerStore.subscribe((st, prev) => {
+      if (st.artwork === prev.artwork) return
+      useCustomizationStore.getState().syncCover()
     })
 
     // Обложка трека как фон: переприменяем при смене показываемой обложки
@@ -193,6 +231,7 @@ export const useCustomizationBootstrap = (): void => {
     })
     return () => {
       cancelled = true
+      unsubCover()
       unsub()
     }
   }, [])

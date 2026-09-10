@@ -45,6 +45,10 @@ export interface AudioState extends Persisted {
   setNormTargetDb: (v: number) => void
   setDeviceId: (v: string) => void
   setNormStatus: (v: NormStatus) => void
+  /** Сброс раздела «Аудио» к значениям по умолчанию. */
+  reset: () => void
+  /** Сброс ОТДЕЛЬНЫХ настроек — для кнопки сброса на карточке. */
+  resetKeys: (...keys: (keyof Persisted)[]) => void
 }
 
 export const useAudioStore = create<AudioState>((set, get) => {
@@ -74,5 +78,11 @@ export const useAudioStore = create<AudioState>((set, get) => {
     setNormTargetDb: (v) => { set({ normTargetDb: v }); persist() },
     setDeviceId: (v) => { set({ deviceId: v }); persist() },
     setNormStatus: (v) => set({ normStatus: v }),
+    // normStatus не трогаем: это не настройка, а состояние движка.
+    reset: () => { set({ ...DEFAULTS }); persist() },
+    resetKeys: (...keys) => {
+      keys.forEach((k) => set({ [k]: DEFAULTS[k] } as Partial<AudioState>))
+      persist()
+    },
   }
 })

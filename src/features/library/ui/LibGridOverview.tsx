@@ -1,9 +1,8 @@
 import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useSortable } from '@shared/lib/useSortable'
 import { useT, useLocale, t as tFn } from '@shared/i18n'
-import { ScBadge, YmBadge, type Track } from '@entities/track'
 import { artistSourceFromId } from '@entities/artist'
-import { CardMarquee, PlaylistCover } from '@shared/ui'
+import { CardMarquee, PlaylistCover, EmptyCover } from '@shared/ui'
 import {
   useLibStore,
   usePlaylistStore,
@@ -15,17 +14,14 @@ import {
 } from '../model'
 import {
   tracksAndDuration,
-  recordsLabel,
   sumDurations,
   fmtTotalDur,
-  usePlayHistoryCount,
   useLibSidebarSort,
   buildOrderedUnifiedEntries,
 } from '../lib'
 import { LibAddMenu } from './LibAddMenu'
 import { LibSortMenu } from './LibSortMenu'
 import { PlMenu } from './PlMenu'
-import { AddFromLibModal } from './AddFromLibModal'
 import { ArtistCtxMenu, FILTER_ICON, FILTER_TYPE } from './LibSidebar'
 import { Ico } from '@shared/ui/icons/solar'
 
@@ -71,7 +67,6 @@ export const LibGridOverview = () => {
   const order = useUnifiedOrderStore((s) => s.order)
   const applyOrder = useUnifiedOrderStore((s) => s.applyOrder)
   const setOrder = useUnifiedOrderStore((s) => s.setOrder)
-  const historyCount = usePlayHistoryCount()
   const [sortMode, setSortMode] = useLibSidebarSort()
 
   // Меню (sort/add) + модалки — те же, что в сайдбаре.
@@ -80,7 +75,6 @@ export const LibGridOverview = () => {
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [addMenuOpen, setAddMenuOpen] = useState(false)
   const startEdit = usePlEditStore((s) => s.startEdit)
-  const [addToPlId, setAddToPlId] = useState<string | null>(null)
 
   // ПКМ карточек: плейлист/папка → PlMenu, артист → ArtistCtxMenu.
   const [ctxEntry, setCtxEntry] = useState<
@@ -206,7 +200,9 @@ export const LibGridOverview = () => {
         </div>
         <div className="lib-grid-sys-card lib-grid-sys-card-fav" onClick={() => selectBuiltin('fav')}>
           <div className="lib-grid-sys-card-icon">
-            <Ico name="heart" variant="bold" width={20} height={20} style={{ color: 'rgba(var(--ovl-rgb),0.9)' }} />
+            {/* Сердечко «Любимых» — красное везде, где оно означает избранное
+                (сайдбар, шапка, меню), поэтому и на карточке сетки. */}
+            <Ico name="heart" variant="bold" width={20} height={20} style={{ color: 'var(--sys-fav-ico)' }} />
           </div>
           <div className="lib-grid-sys-card-info">
             <div className="lib-grid-sys-card-name">{t('lib.liked')}</div>
@@ -217,9 +213,9 @@ export const LibGridOverview = () => {
           <div className="lib-grid-sys-card-icon">
             <Ico name="clock" width={20} height={20} style={{ color: 'rgba(var(--ovl-rgb),0.9)' }} />
           </div>
+          {/* Без подписи — см. сайдбар: счётчик записей истории бессмыслен. */}
           <div className="lib-grid-sys-card-info">
             <div className="lib-grid-sys-card-name">{t('lib.history')}</div>
-            <div className="lib-grid-sys-card-sub">{recordsLabel(historyCount)}</div>
           </div>
         </div>
       </div>
@@ -268,9 +264,6 @@ export const LibGridOverview = () => {
           if (entry.type === 'playlist') {
             const pl = plById.get(entry.id)
             if (!pl) return null
-            const plTracks = pl.trs.map((id) => tracksById.get(id)).filter((t): t is Track => !!t)
-            const hasSc = plTracks.length > 0 && plTracks.every((t) => t._sc)
-            const hasYm = plTracks.length > 0 && plTracks.every((t) => t._ym)
             const sec = sumDurations(pl.trs.map((id) => tracksById.get(id)?.dur))
             return (
               <div key={`pl_${pl.id}`} className="home-pl-card mqh" {...cardProps} onContextMenu={(e) => onCardCtx(e, entry)}>
@@ -278,13 +271,6 @@ export const LibGridOverview = () => {
                   <div className="hpc-cover" style={pl.cover ? undefined : { background: 'transparent' }}>
                     {pl.cover ? <img src={pl.cover} loading="lazy" alt="" /> : <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} />}
                     <OpenOverlay />
-                    {/* Бейдж площадки поверх обложки (прячется при наведении —
-                        OpenOverlay перекрывает). hasSc/hasYm взаимоисключающи. */}
-                    {(hasSc || hasYm) && (
-                      <span className="cov-badge">
-                        {hasSc ? <ScBadge size={24} cover /> : <YmBadge size={24} cover />}
-                      </span>
-                    )}
                   </div>
                   {pinned && <span className="lib-pin-dot" />}
                 </div>
@@ -325,7 +311,7 @@ export const LibGridOverview = () => {
                   {a.avatar ? (
                     <img src={a.avatar} loading="lazy" alt="" />
                   ) : (
-                    <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--text2)' }}>{(a.name || '?').charAt(0).toUpperCase()}</span>
+                    <EmptyCover />
                   )}
                   <OpenOverlay />
                 </div>
@@ -358,9 +344,7 @@ export const LibGridOverview = () => {
           selectPlaylist(id)
           startEdit(id)
         }}
-        onAddTracks={(id) => setAddToPlId(id)}
       />
-      <AddFromLibModal open={addToPlId !== null} onClose={() => setAddToPlId(null)} playlistId={addToPlId} />
       <ArtistCtxMenu ctx={artistCtx} onClose={() => setArtistCtx(null)} />
     </>
   )

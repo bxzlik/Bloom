@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Track } from '@entities/track'
-import { ArtistLinks, CoverSourceBadge } from '@entities/track'
+import { ArtistLinks, ChartTrend, CoverSourceBadge } from '@entities/track'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
 import type { ArtistPageData, RepostItem } from '@features/providers'
@@ -31,11 +31,17 @@ import {
 import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
 import { extractMpBgColor } from '@features/settings'
-import { CardMarquee, ExpandDesc, HoverMarquee, toast, useShareStore, WindowedRows } from '@shared/ui'
+import { CardMarquee, EmptyCover, ExpandDesc, HoverMarquee, PillTabs, toast, useShareStore, WindowedRows } from '@shared/ui'
 import { useT, useI18nStore } from '@shared/i18n'
 import { parseArtists } from '@shared/lib/parseArtists'
 import { Ico } from '@shared/ui/icons/solar'
-import { useDetailStore, useDetailStack, useDetailOpenSeq, type DetailTarget } from '../model/detailStore'
+import {
+  useDetailStore,
+  useDetailStack,
+  useDetailOpenSeq,
+  type DetailTarget,
+  type DetailKind,
+} from '../model/detailStore'
 import { ImportPopup } from './ImportPopup'
 import { TrackRowCover } from './TrackRowCover'
 import { TrackRowNum } from './TrackRowNum'
@@ -65,6 +71,21 @@ const fmtDurLong = (secs: number): string => {
 }
 const totalSec = (tracks: Track[]): number =>
   tracks.reduce((s, t) => s + durToSec(t.dur), 0)
+
+/**
+ * Дата выхода альбома для блока «Релиз» под треклистом: «29 октября 2024» /
+ * «October 29, 2024». Пусто — площадка не отдала ISO-дату (остаётся год).
+ */
+const fmtReleaseDate = (iso?: string): string => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString(useI18nStore.getState().locale === 'ru' ? 'ru' : 'en', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
 
 /**
  * Год выпуска из треков — самый частый непустой `Track.year`. Фолбэк для площадок,
@@ -114,9 +135,9 @@ const artistFromTracks = (tracks: Track[], owner?: string | null): Track | null 
 }
 
 /* ── Иконки ───────────────────────────────────────────────────────────── */
-const PhTrack = () => <Ico name="note" width={20} height={20} style={{ opacity: 0.3 }} />
-const PhAlbum = () => <Ico name="vinyl" width={20} height={20} style={{ opacity: 0.3 }} />
-const PhArtist = () => <Ico name="user" width={20} height={20} style={{ opacity: 0.3 }} />
+const PhTrack = () => <EmptyCover />
+const PhAlbum = () => <EmptyCover />
+const PhArtist = () => <EmptyCover />
 const PlayBadge = () => (
   <div className="sp-tc-play">
     <div className="sp-tc-play-btn">
@@ -133,11 +154,16 @@ const OpenBadge = () => (
   </div>
 )
 const HeartSvg = ({ filled }: { filled: boolean }) => (
-  <Ico name="heart" variant={filled ? 'bold' : 'linear'} width={13} height={13} style={{ color: filled ? '#e03030' : 'currentColor' }} />
+  <Ico name="heart" variant={filled ? 'bold' : 'linear'} width={13} height={13} style={{ color: filled ? 'var(--sys-fav-ico)' : 'currentColor' }} />
 )
 
-/** Сырой SC-id из entity id (`sc_123` → `123`) для share-ссылки. */
-const rawScId = (id: string): string => id.replace(/^sc_/, '')
+/**
+ * Сырой числовой SC-id из entity id: `sc_123` / `sc_artist_123` / `sc_pl_123`
+ * → `123`. Нужен для `FollowedArtist.scId`, который хранит именно номер SC.
+ * Пусто для id без числового хвоста (`sc_artist_p_<permalink>`) и для чужих
+ * площадок. Share-ссылка сквозной id НЕ режет — см. `onShare`.
+ */
+const rawScId = (id: string): string => /^sc_(?:artist_|pl_)?(\d+)$/.exec(id)?.[1] ?? ''
 
 /** Кнопка «подписаться»/«отписаться» на артиста (.sp-follow-btn). */
 const FollowBtn = ({
@@ -191,7 +217,11 @@ const Cover = ({ src, placeholder }: { src?: string | null; placeholder: ReactNo
 /* ── Загруженные данные (union по типу) ───────────────────────────────── */
 type Loaded =
   | { kind: 'artist'; data: ArtistPageData }
-  | { kind: 'album' | 'playlist'; playlist: Playlist; tracks: Track[] }
+  // `chart` ведёт себя как плейлист (hero + список треков), но собирается на
+  // лету из getCharts(): у чарта нет сущности на площадке.
+  | { kind: 'album' | 'playlist' | 'chart'; playlist: Playlist; tracks: Track[] }
+  // `releases` — не треки, а сетка альбомов, поэтому своя ветка без playlist.
+  | { kind: 'releases'; albums: Playlist[] }
 
 /** In-memory кеш страниц, чтобы «назад» к артисту не дёргал сеть заново. */
 const detailCache = new Map<string, Loaded>()
@@ -227,6 +257,7 @@ const TrackRow = ({
   onAddClick,
   reposter,
   num,
+  rank,
   widx,
 }: {
   track: Track
@@ -237,6 +268,11 @@ const TrackRow = ({
   reposter?: string
   /** Порядковый номер: в альбомах вместо обложки (у всех треков она одна). */
   num?: number
+  /**
+   * Место в чарте: колонка «номер + динамика» ПЕРЕД обложкой (обложка остаётся,
+   * в отличие от `num`). Только на странице чарта.
+   */
+  rank?: number
   /** Индекс в оконном списке (data-widx — замер высоты строки WindowedRows). */
   widx?: number
 }) => {
@@ -251,6 +287,12 @@ const TrackRow = ({
   }
   return (
     <div className="tr" data-widx={widx} onClick={onPlay} onContextMenu={onCtxMenu}>
+      {rank !== undefined && (
+        <div className="trrank">
+          <span className="trrank-n">{rank}</span>
+          <ChartTrend track={track} />
+        </div>
+      )}
       {num !== undefined ? (
         <TrackRowNum num={num} trackId={track.id} />
       ) : (
@@ -291,17 +333,6 @@ const TrackRow = ({
       )}
       <div className="trtime">
         {track.dur && <span className="trd">{track.dur}</span>}
-        <button
-          className="ib trmore"
-          type="button"
-          aria-label={tt('common.more')}
-          onClick={(e) => {
-            e.stopPropagation()
-            onCtxMenu(e)
-          }}
-        >
-          <Ico name="kebab" width={15} height={15} />
-        </button>
       </div>
     </div>
   )
@@ -360,9 +391,17 @@ const ArtistMiniCard = ({ artist, onOpen }: { artist: Artist; onOpen: () => void
 
 /* Скелет загрузки `_spSkeletonHTML`:
    заголовок + горизонтальный ряд из 5 карточек + заголовок + 8 строк. */
-const SkCard = () => (
-  <div style={{ flexShrink: 0, width: 148 }}>
-    <div className="sk-block" style={{ width: 148, height: 148, borderRadius: 'var(--radius)', marginBottom: 8 }} />
+/** `grid` — карточка тянется по колонке сетки, а не 148px фиксированной ширины. */
+const SkCard = ({ grid }: { grid?: boolean }) => (
+  <div style={{ flexShrink: 0, width: grid ? 'auto' : 148 }}>
+    <div
+      className="sk-block"
+      style={
+        grid
+          ? { width: '100%', aspectRatio: '1', borderRadius: 'var(--radius)', marginBottom: 12 }
+          : { width: 148, height: 148, borderRadius: 'var(--radius)', marginBottom: 8 }
+      }
+    />
     <div className="sk-block" style={{ height: 12, width: '80%', borderRadius: 6, marginBottom: 5 }} />
     <div className="sk-block" style={{ height: 10, width: '55%', borderRadius: 6 }} />
   </div>
@@ -376,20 +415,45 @@ const SkRow = () => (
     </div>
   </div>
 )
-const Skeleton = () => (
-  <div style={{ padding: '4px 0' }}>
-    <div className="sk-block" style={{ height: 18, width: 160, borderRadius: 8, marginBottom: 14 }} />
-    <div className="sk-grid">
-      {Array.from({ length: 5 }, (_, i) => (
-        <SkCard key={i} />
+/**
+ * Скелет по форме будущего содержимого, а не один на все виды: у артиста это
+ * ряд карточек + список, у альбома/плейлиста/чарта — только строки, у витрины
+ * релизов — сетка карточек. Иначе страница «обещает» не то, что покажет.
+ */
+const Skeleton = ({ kind }: { kind: DetailKind }) => {
+  if (kind === 'releases') {
+    return (
+      <div className="sp-pl-grid sp-pl-grid-lg" style={{ padding: '4px 0' }}>
+        {Array.from({ length: 12 }, (_, i) => (
+          <SkCard key={i} grid />
+        ))}
+      </div>
+    )
+  }
+  if (kind !== 'artist') {
+    return (
+      <div style={{ padding: '4px 0' }}>
+        {Array.from({ length: 10 }, (_, i) => (
+          <SkRow key={i} />
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div style={{ padding: '4px 0' }}>
+      <div className="sk-block" style={{ height: 18, width: 160, borderRadius: 8, marginBottom: 14 }} />
+      <div className="sk-grid">
+        {Array.from({ length: 5 }, (_, i) => (
+          <SkCard key={i} />
+        ))}
+      </div>
+      <div className="sk-block" style={{ height: 18, width: 80, borderRadius: 8, marginBottom: 14 }} />
+      {Array.from({ length: 8 }, (_, i) => (
+        <SkRow key={i} />
       ))}
     </div>
-    <div className="sk-block" style={{ height: 18, width: 80, borderRadius: 8, marginBottom: 14 }} />
-    {Array.from({ length: 8 }, (_, i) => (
-      <SkRow key={i} />
-    ))}
-  </div>
-)
+  )
+}
 
 /**
  * Детальная страница артиста / альбома / плейлиста `#spDetailView`
@@ -486,6 +550,28 @@ export const DetailView = () => {
           if (!prov?.getAlbum) throw new Error(t('search.err.albumPage'))
           const { album, tracks } = await prov.getAlbum(target.id)
           res = { kind: 'album', playlist: album, tracks }
+        } else if (target.kind === 'releases') {
+          if (!prov?.getNewReleases) throw new Error(t('search.err.load'))
+          const r = await prov.getNewReleases()
+          // SoundCloud отдаёт «New & Hot» треками — сетка релизов не про них,
+          // и заголовок-ссылку витрина для такого случая не показывает вовсе.
+          res = { kind: 'releases', albums: r.kind === 'albums' ? r.albums : [] }
+        } else if (target.kind === 'chart') {
+          // Чарт — не сущность площадки: hero собираем сами (обложка первого
+          // места, владелец — сама площадка), треки берём целиком (до 100).
+          if (!prov?.getCharts) throw new Error(t('search.err.load'))
+          const tracks = await prov.getCharts()
+          res = {
+            kind: 'chart',
+            playlist: {
+              id: `${target.providerId}:chart`,
+              title: target.title,
+              cover: tracks[0]?.cover ?? target.cover ?? null,
+              ownerName: prov.label,
+              trackCount: tracks.length,
+            },
+            tracks,
+          }
         } else {
           if (!prov?.getPlaylist) throw new Error(t('search.err.playlistPage'))
           const { playlist, tracks } = await prov.getPlaylist(target.id)
@@ -603,7 +689,7 @@ export const DetailView = () => {
   const tintCover =
     loaded?.kind === 'artist'
       ? loaded.data.artist.avatar ?? target?.cover ?? null
-      : loaded
+      : loaded && loaded.kind !== 'releases'
         ? loaded.playlist.cover ?? target?.cover ?? null
         : target?.cover ?? null
   const [heroTint, setHeroTint] = useState<string | null>(null)
@@ -642,6 +728,15 @@ export const DetailView = () => {
   // ── Hero данные (мгновенно из target, обогащаются из loaded) ──
   const isArtist = target.kind === 'artist'
   const square = !isArtist
+  /**
+   * Чарт и витрину релизов показываем без hero: обложка первого места,
+   * «Яндекс.Музыка» и статы ничего не сообщают (это не сущность площадки, а
+   * список), поэтому остаётся строка «← Чарт» и сразу содержимое — как на
+   * соответствующих страницах у Яндекса. Для чарта рядом с названием остаётся
+   * компактная пара play/шафл: иначе запустить весь список нечем.
+   */
+  const isChart = target.kind === 'chart'
+  const bareHero = isChart || target.kind === 'releases'
 
   let heroName = target.title
   let heroCover = target.cover ?? null
@@ -682,7 +777,7 @@ export const DetailView = () => {
         )}
       </>
     )
-  } else if (loaded) {
+  } else if (loaded && loaded.kind !== 'releases') {
     const { playlist, tracks } = loaded
     heroName = playlist.title
     heroCover = playlist.cover ?? heroCover
@@ -695,7 +790,8 @@ export const DetailView = () => {
     mainTracks = tracks
     const secs = totalSec(tracks)
     // Год: от площадки, иначе самый частый год среди треков, иначе из target.
-    const year = playlist.year || yearFromTracks(tracks) || target.year || ''
+    // У чарта года нет (треки разных лет) — в статах только счёт и длительность.
+    const year = loaded.kind === 'chart' ? '' : playlist.year || yearFromTracks(tracks) || target.year || ''
     subNode = (
       <>
         {!!year && (
@@ -717,6 +813,19 @@ export const DetailView = () => {
       </>
     )
   }
+
+  /**
+   * Подпись «Релиз» под треклистом (только альбом): полная дата от площадки,
+   * иначе год (SC/YTM отдают только его). Нет ни того ни другого — блока нет.
+   */
+  const albumRelease =
+    loaded?.kind === 'album'
+      ? fmtReleaseDate(loaded.playlist.releaseDate) ||
+        loaded.playlist.year ||
+        yearFromTracks(loaded.tracks) ||
+        target.year ||
+        ''
+      : ''
 
   // ── Кликабельный владелец в hero ──
   // У альбома владелец — всегда артист; у плейлиста ссылку вешаем, только если
@@ -753,7 +862,10 @@ export const DetailView = () => {
       return
     }
     // URL коллекции — источник «Обновить треки» (если площадка его отдаёт).
-    const sourceUrl = loaded && loaded.kind !== 'artist' ? loaded.playlist.sourceUrl ?? undefined : undefined
+    const sourceUrl =
+      loaded && loaded.kind !== 'artist' && loaded.kind !== 'releases'
+        ? loaded.playlist.sourceUrl ?? undefined
+        : undefined
     const res = applyImport(target, {
       title: heroName,
       cover: heroCover,
@@ -850,17 +962,24 @@ export const DetailView = () => {
   const onShare = () => {
     if (isArtist) {
       openShare({
+        // Сквозной entity id целиком (`sc_artist_123`, `ym_artist_55`,
+        // `ytm_artist_UC…`): по его префиксу принимающая сторона восстанавливает
+        // площадку. Числового id, из которого её можно было бы собрать заново,
+        // у YM-плейлистов и YTM вообще нет.
         type: 'artist',
-        id: rawScId(target.id),
+        id: target.id,
         name: heroName,
         permalink: loadedArtist?.permalink ?? null,
         cover: heroCover,
       })
     } else {
-      const ownerName = loaded && loaded.kind !== 'artist' ? loaded.playlist.ownerName : ''
+      const ownerName =
+        loaded && loaded.kind !== 'artist' && loaded.kind !== 'releases' ? loaded.playlist.ownerName : ''
       openShare({
-        type: target.kind,
-        id: rawScId(target.id),
+        // У чарта и витрины релизов нет своей сущности на площадке — делимся
+        // ими как подборкой (кнопка share есть только у полного hero).
+        type: target.kind === 'chart' || target.kind === 'releases' ? 'playlist' : target.kind,
+        id: target.id,
         title: heroName,
         artist: ownerName ?? '',
         cover: heroCover,
@@ -885,22 +1004,38 @@ export const DetailView = () => {
       }}
     >
       <div
-        className="sp-dv-hero"
-        style={heroTint ? ({ ['--hero-tint' as string]: heroTint } as CSSProperties) : undefined}
+        className={`sp-dv-hero${bareHero ? ' is-bare' : ''}`}
+        style={heroTint && !bareHero ? ({ ['--hero-tint' as string]: heroTint } as CSSProperties) : undefined}
       >
         {/* Фон hero — нейтральный тёмный цвет, вытянутый из аватарки/обложки
-            (--hero-tint), плавно растворяется в фон страницы (не floating). */}
-        <div className="sp-am-bg" />
+            (--hero-tint), плавно растворяется в фон страницы (не floating).
+            У чарта плёнки нет: красить нечего, шапка — одна строка. */}
+        {!bareHero && <div className="sp-am-bg" />}
         <div className="sp-am-hero-content">
           {/* «Назад» — стрелка + название страницы, слева сверху. */}
-          <button
-            className="sp-am-back"
-            onClick={stack.length > 1 ? back : close}
-            aria-label={t('common.back')}
-          >
-            <Ico name="arrowLeftStraight" width={20} height={20} />
-            <span>{heroName}</span>
-          </button>
+          <div className="sp-am-back-row">
+            <button
+              className="sp-am-back"
+              onClick={stack.length > 1 ? back : close}
+              aria-label={t('common.back')}
+            >
+              <Ico name="arrowLeftStraight" width={20} height={20} />
+              <span>{heroName}</span>
+            </button>
+            {/* Без hero кнопку «Воспроизвести всё» ставить некуда — оставляем
+                компактную пару play/шафл прямо в строке заголовка. */}
+            {isChart && loaded && (
+              <div className="sp-am-back-actions">
+                <button className="sp-am-icon-btn" onClick={onPlayAll} aria-label={t('search.playAll')}>
+                  <Ico name="play" width={15} height={15} />
+                </button>
+                <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
+                  <Ico name="shuffle" width={15} height={15} />
+                </button>
+              </div>
+            )}
+          </div>
+          {!bareHero && (
           <div className="sp-am-hero-info">
             <div className={`sp-am-avatar${square ? ' square' : ''}`}>
               <Cover src={heroCover} placeholder={square ? <PhAlbum /> : <PhTrack />} />
@@ -989,11 +1124,12 @@ export const DetailView = () => {
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
 
       <div className="sp-am-body" style={{ padding: '16px 8px 24px' }}>
-        {!loaded && !error && <Skeleton />}
+        {!loaded && !error && <Skeleton kind={target.kind} />}
         {error && <div className="sc-status error">{t('search.errPrefix')}{error}</div>}
 
         {loaded?.kind === 'artist' && (
@@ -1054,15 +1190,41 @@ export const DetailView = () => {
           />
         )}
 
-        {loaded && loaded.kind !== 'artist' && (
+        {loaded?.kind === 'releases' && (
+          <ReleasesBody
+            albums={loaded.albums}
+            onOpen={(a) =>
+              push({
+                kind: 'album',
+                providerId: target.providerId,
+                id: a.id,
+                title: a.title,
+                cover: a.cover ?? null,
+                ownerAvatar: a.ownerAvatar ?? null,
+                year: a.year,
+                round: false,
+              })
+            }
+          />
+        )}
+
+        {loaded && loaded.kind !== 'artist' && loaded.kind !== 'releases' && (
           <PlaylistBody
             scrollRef={rootRef}
             tracks={loaded.tracks}
             numbered={loaded.kind === 'album'}
+            ranked={loaded.kind === 'chart'}
             onPlayTrack={playOne}
             onCtxMenu={onCtxMenu}
             onAddTrack={onAddTrack}
           />
+        )}
+
+        {!!albumRelease && (
+          <div className="sp-am-release">
+            <div className="sp-am-release-label">{t('search.release')}</div>
+            <div className="sp-am-release-date">{albumRelease}</div>
+          </div>
         )}
       </div>
 
@@ -1348,20 +1510,16 @@ const ArtistBody = ({
     <>
       {/* Вкладки фильтра (рендерим, только если есть хотя бы одна вторая). */}
       {tabs.length > 1 && (
-        <div className="sp-am-tabs" role="tablist">
-          {tabs.map((x) => (
-            <button
-              key={x.id}
-              role="tab"
-              aria-selected={activeTab === x.id}
-              className={`sp-am-tab${activeTab === x.id ? ' active' : ''}`}
-              onClick={() => setTab(x.id)}
-            >
-              <Ico name={x.icon} width={15} height={15} />
-              {x.label}
-            </button>
-          ))}
-        </div>
+        <PillTabs
+          className="sp-am-tabs"
+          active={activeTab}
+          onSelect={setTab}
+          tabs={tabs.map((x) => ({
+            id: x.id,
+            label: x.label,
+            icon: <Ico name={x.icon} width={13} height={13} />,
+          }))}
+        />
       )}
 
       {/* Жанры/сайт */}
@@ -1393,7 +1551,7 @@ const ArtistBody = ({
             <WindowedRows
               items={topTracks}
               scrollRef={scrollRef}
-              estimate={68}
+              estimate={77}
               renderItem={(t, i) => (
                 <TrackRow
                   key={t.id}
@@ -1433,7 +1591,7 @@ const ArtistBody = ({
           <WindowedRows
             items={repostsToShow}
             scrollRef={scrollRef}
-            estimate={68}
+            estimate={77}
             renderItem={(r, i) =>
             r.kind === 'track' ? (
               <TrackRow
@@ -1530,7 +1688,7 @@ const ArtistBody = ({
           <WindowedRows
             items={tracksToShow}
             scrollRef={scrollRef}
-            estimate={68}
+            estimate={77}
             renderItem={(tr, i) => (
               <TrackRow
                 key={tr.id}
@@ -1571,10 +1729,47 @@ const ArtistBody = ({
 }
 
 /* ── Тело альбома / плейлиста ─────────────────────────────────────────── */
+/**
+ * Тело страницы «Релизы»: сетка альбомов теми же карточками, что в выдаче
+ * поиска (`.sp-pl-grid-lg` — 3–4 колонки на текучей ширине). Подпись —
+ * «артист · сингл»; клик открывает альбом.
+ */
+const ReleasesBody = ({ albums, onOpen }: { albums: Playlist[]; onOpen: (a: Playlist) => void }) => {
+  const t = useT()
+  if (!albums.length) return <div className="sc-status">{t('search.err.load')}</div>
+  const typeLabel = (a: Playlist): string =>
+    a.albumType === 'single'
+      ? t('home.rel.single')
+      : a.albumType === 'compilation'
+        ? t('home.rel.compilation')
+        : a.albumType === 'podcast'
+          ? t('home.rel.podcast')
+          : t('home.rel.album')
+  return (
+    <div className="sp-am-section">
+      <div className="sp-pl-grid sp-pl-grid-lg">
+        {albums.map((a) => (
+          <Card
+            key={a.id}
+            cover={a.cover}
+            name={a.title}
+            sub={[a.ownerName, typeLabel(a)].filter(Boolean).join(' · ')}
+            square
+            showPlay
+            openArrow
+            onClick={() => onOpen(a)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const PlaylistBody = ({
   scrollRef,
   tracks,
   numbered,
+  ranked,
   onPlayTrack,
   onCtxMenu,
   onAddTrack,
@@ -1584,6 +1779,8 @@ const PlaylistBody = ({
   tracks: Track[]
   /** Альбом: вместо обложек — номера треков ([TrackRowNum]). */
   numbered?: boolean
+  /** Чарт: колонка места и динамики слева от обложки. */
+  ranked?: boolean
   onPlayTrack: (track: Track) => void
   onCtxMenu: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
   onAddTrack: (e: ReactMouseEvent<HTMLElement>, track: Track) => void
@@ -1595,13 +1792,16 @@ const PlaylistBody = ({
       <WindowedRows
         items={tracks}
         scrollRef={scrollRef}
-        estimate={68}
+        estimate={77}
         renderItem={(tr, i) => (
           <TrackRow
             key={tr.id}
             track={tr}
             widx={i}
             num={numbered ? i + 1 : undefined}
+            // Место берём с самого трека (площадка может отдать чарт с
+            // пропусками), порядковый номер — только фолбэк.
+            rank={ranked ? tr.chartPos ?? i + 1 : undefined}
             onPlay={() => onPlayTrack(tr)}
             onCtxMenu={(e) => onCtxMenu(e, tr)}
             onAddClick={(e) => onAddTrack(e, tr)}

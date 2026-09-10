@@ -1,12 +1,15 @@
+import { TRANSPARENCY_DEFAULTS as TR_DEFAULTS } from '../../model/transparencyStore'
+import { CardReset, CatReset, RowReset } from '../controls/SectionReset'
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
-import { useThemeStore, THEME_PRESETS, themePreview, type ThemePreset } from '../../model/themeStore'
+import { useThemeStore, THEME_DEFAULTS, THEME_PRESETS, AUTO_THEME_ID, DEFAULT_THEME_ID, themePreview, type ThemePreset } from '../../model/themeStore'
 import { AUTO_ACCENT_L_MAX, AUTO_ACCENT_L_MIN } from '../../lib/coverAccent'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useGrpStore } from '@features/player/model/grpStore'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { useTransparencyStore } from '../../model/transparencyStore'
+import { useCustomizationStore } from '@features/customization'
 import { openColorPicker } from '../../model/colorPickerStore'
 import { toast } from '@shared/ui'
 import {
@@ -15,7 +18,6 @@ import {
   useLocale,
   LOCALES,
   type TFunc,
-  type TranslationKey,
 } from '@shared/i18n'
 import {
   FONT_CATS,
@@ -24,7 +26,8 @@ import {
   catOfFont,
   type FontCat,
 } from '../../lib/fonts'
-import { Ico, type IconName } from '@shared/ui/icons/solar'
+import { Ico } from '@shared/ui/icons/solar'
+import type { IfaceTab } from '../subTabs'
 
 /**
  * Раздел «Интерфейс» (`#ssec-interface`). Перенесена РАБОЧАЯ часть:
@@ -64,18 +67,10 @@ const FLAGS: Record<string, React.ReactNode> = {
   ),
 }
 
-/** Вкладки раздела: сам интерфейс и всё про боковые панели. */
-type IfaceTab = 'interface' | 'panels'
-
-const TABS: { id: IfaceTab; labelKey: TranslationKey; icon: IconName }[] = [
-  { id: 'interface', labelKey: 'settings.interface.title', icon: 'palette' },
-  { id: 'panels', labelKey: 'settings.interface.cat.panels', icon: 'sidebar' },
-]
-
-export const InterfaceSection = () => {
+/** Вкладки раздела (сам интерфейс / боковые панели) объявлены в subTabs.ts —
+    полосу рисует шапка панели, сюда приходит только активная. */
+export const InterfaceSection = ({ tab }: { tab: IfaceTab }) => {
   const t = useT()
-  const reset = useUiPrefsStore((s) => s.reset)
-  const [tab, setTab] = useState<IfaceTab>('interface')
 
   return (
     <div className="s-section active" id="ssec-interface">
@@ -84,24 +79,6 @@ export const InterfaceSection = () => {
           <Ico name="sidebar" width={15} height={15} />{' '}
           {t('settings.interface.title')}
         </div>
-        <button className="s-section-reset" onClick={() => reset()}>
-          <Ico name="refresh" width={10} height={10} />{' '}
-          {t('common.reset')}
-        </button>
-      </div>
-
-      {/* Переключатель групп — полоса вкладок над карточками раздела. */}
-      <div className="s-ptabs">
-        {TABS.map((tb) => (
-          <button
-            key={tb.id}
-            className={`s-ptab${tab === tb.id ? ' active' : ''}`}
-            onClick={() => setTab(tb.id)}
-          >
-            <Ico name={tb.icon} width={14} height={14} />
-            {t(tb.labelKey)}
-          </button>
-        ))}
       </div>
 
       {tab === 'interface' ? <InterfaceCards /> : <PanelsCards />}
@@ -125,7 +102,10 @@ const PanelsCards = () => {
   return (
     <>
       <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.interface.drawerSide.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.drawerSide.title')}
+          <CardReset onReset={() => p.resetKeys('drawerSide')} />
+        </div>
         <div className="sc-desc">{t('settings.interface.drawerSide.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.drawerSide === 'left'} onClick={() => p.set('drawerSide', 'left')}>
@@ -140,7 +120,10 @@ const PanelsCards = () => {
       </div>
 
       <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.view.grpSide')}</div>
+        <div className="sc-title">
+          {t('settings.view.grpSide')}
+          <CardReset onReset={() => setGrpSide('right')} />
+        </div>
         <div className="sc-desc">{t('settings.view.grpSide.desc')}</div>
         <div className="s-opt-row">
           {/* Иконки те же, что у «Выезжающих панелей» выше: залитая половина —
@@ -159,7 +142,10 @@ const PanelsCards = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.view.grpLock.title')}</div>
+            <div className="sl2">
+              {t('settings.view.grpLock.title')}
+              <RowReset onReset={() => p.resetKeys('grpResizeLock')} />
+            </div>
             <div className="ssub">{t('settings.view.grpLock.sub')}</div>
           </div>
           <Toggle
@@ -186,6 +172,7 @@ const InterfaceCards = () => {
   const setRadius = useThemeStore((s) => s.setRadius)
   const autoAccent = useThemeStore((s) => s.autoAccent)
   const setAutoAccent = useThemeStore((s) => s.setAutoAccent)
+  const autoTheme = useThemeStore((s) => s.autoTheme)
   const autoAccentL = useThemeStore((s) => s.autoAccentL)
   const setAutoAccentL = useThemeStore((s) => s.setAutoAccentL)
   const customThemes = useThemeStore((s) => s.customThemes)
@@ -210,6 +197,9 @@ const InterfaceCards = () => {
   const setBlockOpacity = useTransparencyStore((s) => s.setBlockOpacity)
   const setGlassStr = useTransparencyStore((s) => s.setGlassStr)
   const setGlassBlur = useTransparencyStore((s) => s.setGlassBlur)
+
+  const coverAsBg = useCustomizationStore((s) => s.coverAsBg)
+  const setCoverAsBg = useCustomizationStore((s) => s.setCoverAsBg)
 
   // Шрифт: вкладка категории + грид. Стартовая вкладка — категория текущего шрифта.
   const [fontCat, setFontCat] = useState<FontCat>(() => catOfFont(fontFamily))
@@ -238,7 +228,19 @@ const InterfaceCards = () => {
         ))}
       </div>
 
-      <div className="s-cat-label">{t('settings.interface.cat.theme')}</div>
+      <div className="s-cat-label">
+        {t('settings.interface.cat.theme')}
+        <CatReset
+          onReset={() => {
+            // Именно applyTheme, а не три пикера: ручные сеттеры помечают тему
+            // как `custom`, и сброс оставлял бы «Свою тему» вместо пресета.
+            applyTheme(DEFAULT_THEME_ID)
+            setAutoAccent(THEME_DEFAULTS.autoAccent)
+            setAutoAccentL(THEME_DEFAULTS.autoAccentL)
+            setAccentBadges(false)
+          }}
+        />
+      </div>
       <div className="sc sc-keep">
         <ThemePicker
           customThemes={customThemes}
@@ -250,19 +252,23 @@ const InterfaceCards = () => {
           t={t}
         />
       </div>
-      <div className="sc">
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.interface.autoAccent.title')}</div>
-            <div className="ssub">{t('settings.interface.autoAccent.sub')}</div>
+      {/* Авто-тема уже красит акцент — отдельный тумблер при ней бессмыслен
+          (включение его сняло бы авто-тему), поэтому карточку прячем. */}
+      {!autoTheme && (
+        <div className="sc">
+          <div className="sr">
+            <div>
+              <div className="sl2">{t('settings.interface.autoAccent.title')}</div>
+              <div className="ssub">{t('settings.interface.autoAccent.sub')}</div>
+            </div>
+            <Toggle checked={autoAccent} onChange={setAutoAccent} />
           </div>
-          <Toggle checked={autoAccent} onChange={setAutoAccent} />
         </div>
-      </div>
+      )}
       {/* Яркость авто-акцента. Отдельной карточкой, а не внутри карточки тоггла:
           правило `.sc:has(>.sr)` (settings.css) снимает у той фон, и соседний
           блок повис бы без подложки. */}
-      {autoAccent && (
+      {(autoAccent || autoTheme) && (
         <div className="sc">
           <div className="s-zoom-slider-row">
             <span className="s-zoom-slider-lbl">{t('settings.interface.autoAccent.level')}</span>
@@ -292,7 +298,10 @@ const InterfaceCards = () => {
 
       <div className="s-cat-label">{t('settings.interface.cat.transparency')}</div>
       <div className="sc">
-        <div className="sc-title">{t('settings.interface.transparency.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.transparency.title')}
+          <CardReset onReset={() => { setTrMode(TR_DEFAULTS.trMode); setOverlayGlass(TR_DEFAULTS.overlayGlass); setNativeTransparent(TR_DEFAULTS.nativeTransparent); setBlockOpacity(TR_DEFAULTS.blockOpacity); setGlassStr(TR_DEFAULTS.glassStr); setGlassBlur(TR_DEFAULTS.glassBlur) }} />
+        </div>
         <div className="sc-desc">{t('settings.interface.transparency.desc')}</div>
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button className={`s-mode-btn${trMode === 'off' ? ' active' : ''}`} onClick={() => setTrMode('off')}>
@@ -331,13 +340,19 @@ const InterfaceCards = () => {
         </div>
       </div>
 
-      <div className="s-cat-label">{t('settings.interface.cat.scaling')}</div>
-      <ZoomCard title={t('settings.interface.zoom.fullscreen')} value={p.fullZoom} onChange={(v) => p.set('fullZoom', v)} />
-      <ZoomCard title={t('settings.interface.zoom.windowed')} value={p.winZoom} onChange={(v) => p.set('winZoom', v)} />
+      <div className="s-cat-label">
+        {t('settings.interface.cat.scaling')}
+        <CatReset onReset={() => p.resetKeys('fullZoom', 'winZoom')} />
+      </div>
+      <ZoomCard title={t('settings.interface.zoom.fullscreen')} value={p.fullZoom} onChange={(v) => p.set('fullZoom', v)} onReset={() => p.resetKeys('fullZoom')} />
+      <ZoomCard title={t('settings.interface.zoom.windowed')} value={p.winZoom} onChange={(v) => p.set('winZoom', v)} onReset={() => p.resetKeys('winZoom')} />
 
       <div className="s-cat-label">{t('settings.interface.cat.font')}</div>
       <div className="sc">
-        <div className="sc-title">{t('settings.interface.font.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.font.title')}
+          <CardReset onReset={() => { setFontFamily(THEME_DEFAULTS.fontFamily); setFontCat(catOfFont(THEME_DEFAULTS.fontFamily)) }} />
+        </div>
         <div className="sc-desc">{t('settings.interface.font.desc')}</div>
         <div className="s-font-cats" style={{ marginTop: 12, flexWrap: 'nowrap' }}>
           {FONT_CAT_LABELS.map((c) => (
@@ -366,10 +381,22 @@ const InterfaceCards = () => {
         </div>
       </div>
 
-      <div className="s-cat-label">{t('settings.interface.cat.interface')}</div>
+      <div className="s-cat-label">
+        {t('settings.interface.cat.interface')}
+        <CatReset
+          onReset={() => {
+            setRadius(THEME_DEFAULTS.radius)
+            p.resetKeys('borderAlpha')
+            setCoverAsBg(false)
+          }}
+        />
+      </div>
       <RadiusCard t={t} value={radius} onChange={setRadius} />
       <div className="sc">
-        <div className="sc-title">{t('settings.interface.borders.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.borders.title')}
+          <CardReset onReset={() => p.resetKeys('borderAlpha')} />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
           <span className="ssub" style={{ minWidth: 36 }}>{Math.round((p.borderAlpha / 6) * 100)}%</span>
           <input
@@ -380,6 +407,20 @@ const InterfaceCards = () => {
             value={p.borderAlpha}
             onChange={(e) => p.set('borderAlpha', Number(e.target.value))}
           />
+        </div>
+      </div>
+      {/* Переехало из убранной вкладки «Фон» раздела «Кастомизация»
+          (сама картинка фона и её размытие/затемнение остались там). */}
+      <div className="sc">
+        <div className="sr">
+          <div>
+            <div className="sl2">
+              {t('settings.background.coverAsBg')}
+              <RowReset onReset={() => setCoverAsBg(false)} />
+            </div>
+            <div className="ssub">{t('settings.background.coverAsBg.sub')}</div>
+          </div>
+          <Toggle checked={coverAsBg} onChange={setCoverAsBg} />
         </div>
       </div>
     </>
@@ -417,7 +458,10 @@ const RadiusCard = ({ t, value, onChange }: { t: TFunc; value: number; onChange:
   const snap = RADIUS_PRESETS.reduce((a, b) => (Math.abs(b.v - value) < Math.abs(a.v - value) ? b : a))
   return (
     <div className="sc">
-      <div className="sc-title">{t('settings.interface.radius.title')}</div>
+      <div className="sc-title">
+        {t('settings.interface.radius.title')}
+        <CardReset onReset={() => onChange(THEME_DEFAULTS.radius)} />
+      </div>
       <div className="sc-desc">{t('settings.interface.radius.desc')}</div>
       <div className="s-zoom-presets" style={{ marginTop: 14 }}>
         {RADIUS_PRESETS.map((p) => (
@@ -446,12 +490,15 @@ const RadiusCard = ({ t, value, onChange }: { t: TFunc; value: number; onChange:
 
 const ZOOM_PRESETS = [70, 85, 100, 115, 130]
 
-const ZoomCard = ({ title, value, onChange }: { title: string; value: number; onChange: (v: number) => void }) => {
+const ZoomCard = ({ title, value, onChange, onReset }: { title: string; value: number; onChange: (v: number) => void; onReset: () => void }) => {
   // Снап к ближайшему пресету для подсветки плитки.
   const snap = ZOOM_PRESETS.reduce((a, b) => (Math.abs(b - value) < Math.abs(a - value) ? b : a))
   return (
     <div className="sc">
-      <div className="sc-title">{title}</div>
+      <div className="sc-title">
+        {title}
+        <CardReset onReset={onReset} />
+      </div>
       <div className="s-zoom-presets" style={{ marginTop: 14 }}>
         {ZOOM_PRESETS.map((z) => (
           <button key={z} className={`s-zoom-tile ${z === snap ? 'bta' : 'btg'}`} onClick={() => onChange(z)}>
@@ -529,10 +576,12 @@ const ThemePicker = ({
   const addBtnRef = useRef<HTMLButtonElement>(null)
   const listOpen = mode === 'list'
 
+  const auto = activeId === AUTO_THEME_ID
   const allThemes = [...THEME_PRESETS, ...customThemes]
   const current = allThemes.find((t) => t.id === activeId)
-  const currentName = current?.name ?? t('theme.ownName')
-  // Нет активного пресета (ручные пикеры) — показываем живые цвета.
+  const currentName = auto ? t('theme.auto.name') : (current?.name ?? t('theme.ownName'))
+  // Нет активного пресета (ручные пикеры) и авто-тема — показываем живые цвета:
+  // у авто-темы они как раз и есть её текущее лицо, снятое с обложки.
   const currentColors: ThemeColors = current
     ? { bg: current.bg, blockColor: current.blockColor, accent: current.accent }
     : liveColors
@@ -557,6 +606,21 @@ const ThemePicker = ({
         <div className="tp-panel-in">
           <div className="tp-list-inner" inert={!listOpen}>
             <div className="tp-grid">
+              {/* Авто-тема — режим, а не палитра: стоит первой строкой во всю
+                  ширину, чтобы не читаться как ещё один пресет и не ломать пары
+                  ниже. Кружки живые — это те цвета, что сейчас сняты с обложки. */}
+              <button
+                className={`tp-card tp-auto${auto ? ' active' : ''}`}
+                onClick={() => onApply(AUTO_THEME_ID)}
+              >
+                <Dots colors={liveColors} />
+                <span className="tp-card-name">{t('theme.auto.card')}</span>
+                {auto && (
+                  <span className="tp-card-slot">
+                    <Ico name="check" className="tp-card-check" width={13} height={13} />
+                  </span>
+                )}
+              </button>
               {THEME_PRESETS.map((th) => (
                 <TpCard key={th.id} t={th} active={th.id === activeId} onApply={onApply} />
               ))}

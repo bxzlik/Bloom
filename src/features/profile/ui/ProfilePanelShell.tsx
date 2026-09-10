@@ -4,17 +4,17 @@ import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useProfilePanelStore, type ProfilePanel } from '../model/profilePanelStore'
 
 /**
- * Каркас боковых шторок профиля («Статистика» / «Достижения»).
+ * Каркас боковых шторок профиля. Сейчас на нём живут «Достижения»: «Статистика»
+ * уехала на свой каркас-модалку (`StatsModalShell`, `.smodal`).
  *
- * Панель — общий `.spanel` (тот же, что у редактора профиля и панели тегов):
+ * Панель — общий `.spanel` (тот же, что у редактора тегов и прочих боковых):
  * затемнение + панель, выезжающая справа на всю высоту (влево — если включена
  * настройка `drawerSide`). Что показывать, решает `profilePanelStore`: открыта
- * ровно одна шторка, поэтому обе монтируют этот каркас и сравнивают свой `kind`
- * с текущим значением.
+ * ровно одна шторка, поэтому каждая сравнивает свой `kind` с текущим значением.
  *
  * Шапки у панели нет — ни заголовка, ни крестика: что открыто, видно по самому
- * содержимому, а закрывают шторку кликом по фону или Esc. Тело скроллится (без
- * видимой полосы прокрутки), футер с действиями необязателен.
+ * содержимому, а закрывают шторку кликом по фону или Esc. Тело скроллится без
+ * видимой полосы прокрутки.
  */
 
 // Длительность slide-out (.spanel transform .42s) перед демонтажем.
@@ -22,11 +22,10 @@ const ANIM_MS = 440
 
 interface Props {
   kind: ProfilePanel
-  footer?: ReactNode
   children: ReactNode
 }
 
-export const ProfilePanelShell = ({ kind, footer, children }: Props) => {
+export const ProfilePanelShell = ({ kind, children }: Props) => {
   const open = useProfilePanelStore((s) => s.panel === kind)
   const close = useProfilePanelStore((s) => s.closePanel)
 
@@ -77,7 +76,6 @@ export const ProfilePanelShell = ({ kind, footer, children }: Props) => {
     >
       <div className="spanel">
         <div className="ppnl-body">{children}</div>
-        {footer && <div className="ppnl-foot">{footer}</div>}
       </div>
     </div>,
     document.body,

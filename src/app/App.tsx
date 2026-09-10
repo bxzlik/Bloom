@@ -12,13 +12,14 @@ import { useFullscreenHotkey } from './useFullscreenHotkey'
 import { useDeepLinkBridge } from './useDeepLinkBridge'
 import { useOverlayBridge } from './useOverlayBridge'
 import { LibPage, TrackInfoModal, MergeModal, ConvertModal, MpNewPlaylistHost, DeepLinkModal, TagEditorHost, PlAutoDrawer, useTrackInfoStore, useLibStore, startUsageTracking, startPlAutoScheduler } from '@features/library'
-import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects, useMiniBarVisible } from '@features/player'
+import { PagePlayer, PlayerBar, VerticalBarColumn, GlobalRightPanel, BigPicture, DownloadBanner, useGrpStore, useBigPicStore, useMainPlayerBridge, useAudioEffects, useMiniBarVisible, initBarsSnap } from '@features/player'
 import { useQueueStore } from '@features/player/model/queueStore'
 import { trackRegistry } from '@entities/track'
 import { useLyricsBridge } from '@features/lyrics'
 import { useLastfmBridge } from '@features/lastfm'
 import { SearchPage, SearchOverlay, DetailView, useDetailStore, useDetailOpen } from '@features/search'
-import { bootstrapProviders, getProvider } from '@features/providers'
+import { getProvider } from '@features/providers'
+import { warmPlayStats } from '@/db/playStats'
 import { bootstrapOffline } from '@features/offline'
 import { bootstrapSoundcloud } from '@features/soundcloud'
 import { bootstrapYandex } from '@features/yandex'
@@ -73,6 +74,7 @@ const APP_PREF_CLASSES = [
   'sidebar-full',
   'sidebar-compact',
   'sidebar-floating',
+  'sidebar-plain',
   'sidebar-autohide',
   'no-sb-sep',
   'cov-btns-in-bar',
@@ -168,9 +170,19 @@ export const App = () => {
     }
   }, [])
 
-  // Регистрируем провайдеры: встроенный локальный + SoundCloud (поиск + стрим).
+  // Ширина/зазор полос эквалайзера — под пиксельную сетку текущего масштаба,
+  // иначе на дробном зуме полосы кажутся разной толщины (см. [barsSnap]).
+  useEffect(() => initBarsSnap(), [])
+
+  // Журнал прослушиваний → память: на нём стоят сиды и фильтры волны, умная
+  // перемешка и статистика профиля, а читают они синхронно. Пока не прогрелся,
+  // отвечает фолбэк по `useHistoryStore` — цифры занижены, но ничего не падает.
   useEffect(() => {
-    bootstrapProviders()
+    void warmPlayStats()
+  }, [])
+
+  // Регистрируем провайдеры площадок (поиск + стрим).
+  useEffect(() => {
     // Раньше площадок: офлайн-копия трека должна выигрывать у сетевого стрима.
     bootstrapOffline()
     bootstrapSoundcloud()
@@ -479,7 +491,12 @@ export const App = () => {
               minHeight: 0,
             }}
           >
-            <div className="main" id="mainEl">
+            {/* main-flush — страницы без внешней рамки .main: их блоки и так
+                очерчены своими рамками и стоят вплотную к краям. См. base.css. */}
+            <div
+              className={`main${page === 'player' || page === 'lib' ? ' main-flush' : ''}`}
+              id="mainEl"
+            >
               <HomePage active={page === 'home'} />
               <PagePlayer active={page === 'player'} />
               <LibPage active={page === 'lib'} />

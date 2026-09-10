@@ -3,6 +3,7 @@ export * from './ui'
 export {
   extractAccentFromCover,
   extractMpBgColor,
+  extractMpTint,
   extractCoverHsl,
   accentHexFromHsl,
   AUTO_ACCENT_L_MIN,

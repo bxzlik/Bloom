@@ -22,7 +22,7 @@ export const TrackRowNum = ({ num, trackId }: { num: number; trackId: string }) 
         <>
           <span className="trnum-i">{num}</span>
           <span className="trnum-p">
-            <Ico name="play" width={15} height={15} />
+            <Ico name="play" width={17} height={17} />
           </span>
         </>
       )}

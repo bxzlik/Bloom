@@ -143,8 +143,7 @@ export const createConvertedPlaylist = (
 ): { id: string; count: number } => {
   const ids: string[] = []
   for (const t of tracks) {
-    // `_ytmTemp` saveTrackToLibrary не снимает (он старше площадки) — чистим тут.
-    saveTrackToLibrary(t._ytmTemp ? { ...t, _ytmTemp: false } : t)
+    saveTrackToLibrary(t)
     if (!ids.includes(t.id)) ids.push(t.id)
   }
   const pl = usePlaylistStore.getState().createPl(name, undefined, cover)

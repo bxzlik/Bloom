@@ -1,3 +1,4 @@
+import { CardReset, RowReset } from '../controls/SectionReset'
 import { useEffect, useState } from 'react'
 import { usePlayerViewStore, type OverlayPos } from '../../model/playerViewStore'
 import { invoke } from '@shared/tauri'
@@ -6,7 +7,7 @@ import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * Раздел «Оверлей» (`#ssec-overlay`) — настройки всплывающей плашки now-playing
- * поверх всех окон. Режим (выкл/остров/компактный/полоса/расширенный), позиция на экране,
+ * поверх всех окон. Режим (выкл/остров/компактный/полоса), позиция на экране,
  * прозрачность, размер, длительность авто-показа, тумблеры показа при смене
  * трека, перемотки по бару и режима оптимизации (без эквалайзера/бегущей строки).
  *
@@ -17,20 +18,6 @@ import { Ico } from '@shared/ui/icons/solar'
 
 /** Позиции оверлея в порядке сетки (2 ряда × 3 колонки). */
 const OVERLAY_POS: OverlayPos[] = ['tl', 'tc', 'tr', 'bl', 'bc', 'br']
-
-/** Поля оверлея, сбрасываемые кнопкой «сброс» этой секции. */
-const OVERLAY_DEFAULTS = {
-  overlayMode: 'off',
-  overlayPos: 'tr',
-  overlayX: 0.98,
-  overlayY: 0.02,
-  overlayOpacity: 90,
-  overlaySize: 100,
-  overlayDuration: 4,
-  overlayOnTrackChange: true,
-  overlaySeek: false,
-  overlayPerf: false,
-} as const
 
 /** Мини-иконка экрана с точкой в выбранном углу/крае. */
 const PosIcon = ({ id }: { id: OverlayPos }) => {
@@ -71,13 +58,6 @@ export const OverlaySection = () => {
     p.set('overlayPos', pos)
   }
 
-  const resetOverlay = () => {
-    if (placing) setPlaceMode(false)
-    for (const [k, v] of Object.entries(OVERLAY_DEFAULTS)) {
-      p.set(k as keyof typeof OVERLAY_DEFAULTS, v as never)
-    }
-  }
-
   return (
     <div className="s-section active" id="ssec-overlay">
       <div className="s-section-head">
@@ -85,14 +65,13 @@ export const OverlaySection = () => {
           <Ico name="widget" width={15} height={15} />{' '}
           {t('settings.nav.overlay')}
         </div>
-        <button className="s-section-reset" onClick={resetOverlay}>
-          <Ico name="refresh" width={10} height={10} />{' '}
-          {t('common.reset')}
-        </button>
       </div>
 
       <div className="sc">
-        <div className="sc-title">{t('settings.view.ovMode')}</div>
+        <div className="sc-title">
+          {t('settings.view.ovMode')}
+          <CardReset onReset={() => p.resetKeys('overlayMode')} />
+        </div>
         <div className="sc-desc">{t('settings.view.ovMode.desc')}</div>
         <div className="s-opt-row" style={{ marginTop: 12 }}>
           <OptBtn active={p.overlayMode === 'off'} onClick={() => p.set('overlayMode', 'off')}>
@@ -111,17 +90,16 @@ export const OverlaySection = () => {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="5" cy="12" r="2.5" /><rect x="9" y="9" width="11" height="6" rx="3" /></svg>
             {t('settings.view.ovMode.bar')}
           </OptBtn>
-          <OptBtn active={p.overlayMode === 'expanded'} onClick={() => p.set('overlayMode', 'expanded')}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}><rect x="2" y="5" width="20" height="14" rx="4" /><rect x="5" y="8" width="5" height="5" rx="1.4" /><path strokeLinecap="round" d="M12.5 9.5h6M5 16h14" /></svg>
-            {t('settings.view.ovMode.expanded')}
-          </OptBtn>
         </div>
       </div>
 
       {p.overlayMode !== 'off' && (
         <>
           <div className="sc">
-            <div className="sc-title">{t('settings.view.ovPos')}</div>
+            <div className="sc-title">
+              {t('settings.view.ovPos')}
+              <CardReset onReset={() => p.resetKeys('overlayPos', 'overlayX', 'overlayY')} />
+            </div>
             <div className="sc-desc">{t('settings.view.ovPos.desc')}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
               {OVERLAY_POS.map((pos) => (
@@ -171,7 +149,10 @@ export const OverlaySection = () => {
           </div>
 
           <div className="sc">
-            <div className="sc-title">{t('settings.view.ovOpacity')}</div>
+            <div className="sc-title">
+              {t('settings.view.ovOpacity')}
+              <CardReset onReset={() => p.resetKeys('overlayOpacity')} />
+            </div>
             <div className="sc-desc">{t('settings.view.ovOpacity.desc')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
               <span className="ssub" style={{ minWidth: 40 }}>{p.overlayOpacity}%</span>
@@ -180,7 +161,10 @@ export const OverlaySection = () => {
           </div>
 
           <div className="sc">
-            <div className="sc-title">{t('settings.view.ovSize')}</div>
+            <div className="sc-title">
+              {t('settings.view.ovSize')}
+              <CardReset onReset={() => p.resetKeys('overlaySize')} />
+            </div>
             <div className="sc-desc">{t('settings.view.ovSize.desc')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
               <span className="ssub" style={{ minWidth: 40 }}>{p.overlaySize}%</span>
@@ -189,7 +173,10 @@ export const OverlaySection = () => {
           </div>
 
           <div className="sc">
-            <div className="sc-title">{t('settings.view.ovDuration')}</div>
+            <div className="sc-title">
+              {t('settings.view.ovDuration')}
+              <CardReset onReset={() => p.resetKeys('overlayDuration')} />
+            </div>
             <div className="sc-desc">{t('settings.view.ovDuration.desc')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
               <span className="ssub" style={{ minWidth: 40 }}>{p.overlayDuration}s</span>
@@ -200,7 +187,10 @@ export const OverlaySection = () => {
           <div className="sc">
             <div className="sr">
               <div>
-                <div className="sl2">{t('settings.view.ovOnTrack')}</div>
+                <div className="sl2">
+                  {t('settings.view.ovOnTrack')}
+                  <RowReset onReset={() => p.resetKeys('overlayOnTrackChange')} />
+                </div>
                 <div className="ssub">{t('settings.view.ovOnTrack.sub')}</div>
               </div>
               <Toggle checked={p.overlayOnTrackChange} onChange={(v) => p.set('overlayOnTrackChange', v)} />
@@ -210,7 +200,10 @@ export const OverlaySection = () => {
           <div className="sc">
             <div className="sr">
               <div>
-                <div className="sl2">{t('settings.view.ovSeek')}</div>
+                <div className="sl2">
+                  {t('settings.view.ovSeek')}
+                  <RowReset onReset={() => p.resetKeys('overlaySeek')} />
+                </div>
                 <div className="ssub">{t('settings.view.ovSeek.sub')}</div>
               </div>
               <Toggle checked={p.overlaySeek} onChange={(v) => p.set('overlaySeek', v)} />
@@ -220,7 +213,10 @@ export const OverlaySection = () => {
           <div className="sc">
             <div className="sr">
               <div>
-                <div className="sl2">{t('settings.view.ovPerf')}</div>
+                <div className="sl2">
+                  {t('settings.view.ovPerf')}
+                  <RowReset onReset={() => p.resetKeys('overlayPerf')} />
+                </div>
                 <div className="ssub">{t('settings.view.ovPerf.sub')}</div>
               </div>
               <Toggle checked={p.overlayPerf} onChange={(v) => p.set('overlayPerf', v)} />

@@ -1,3 +1,31 @@
+/* ===== КОНТРАКТ ОТРИСОВКИ ИКОНОК =====
+   Solar чертит обводкой 1.5 на сетке 24, то есть на экране она равна
+   1.5 × размер/24. На мелких иконках это уходит ниже физического пикселя
+   (на 13px — 0.81px) и браузер размазывает штрих в серое — отсюда ощущение,
+   что иконки блёклые. Лечится не заменой иконок, а весом штриха.
+
+   Вес зависит от РАЗМЕРА отрисовки, поэтому считается в реестре, где размер
+   известен (`Ico` в shared/ui/icons/solar.tsx): цель 1.15px на экране, но не
+   тоньше штатных 1.5 единиц (крупные иконки остаются стоковыми) и не толще
+   2.2 (мельче 11px Solar слишком деталeн, глиф залипает). Значение приезжает
+   inline в `--ico-sw-auto`.
+
+   `--ico-sw` — ручное переопределение для мест, где размер иконки задаёт CSS,
+   а не JSX (там авто-значение посчитано не от того числа). Оно идёт первым в
+   цепочке var(), поэтому перебивает inline-стиль без !important; переменные
+   наследуются, так что достаточно поставить его на сам <svg>.
+
+   `[data-ico]` — метка реестра: схематичные диаграммы и превью, нарисованные
+   сырыми <svg>, под контракт не попадают. */
+[data-ico]:not([data-ink]),
+[data-ico]:not([data-ink]) *{stroke-width:var(--ico-sw,var(--ico-sw-auto,1.5));stroke-linecap:round;stroke-linejoin:round}
+/* Часть иконок Solar (shuffle/repeat/refresh/heart/pin/eyeOff/dislike)
+   начерчена не штрихом, а ЗАЛИТЫМ контуром: толщина 1.5 запечена в
+   координатах, и stroke-width по ним не работает — обводить такой контур
+   нельзя, он обойдёт линию с двух сторон и выйдет полая трубка. Вес им
+   добирается тонкой обводкой ПОВЕРХ заливки: она раздувает фигуру. */
+[data-ico][data-ink="filled"]{stroke:currentColor;stroke-width:var(--ico-ink,var(--ico-ink-auto,0));stroke-linejoin:round}
+
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none}
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:#000;color:var(--text);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
 input,button,select,textarea{font-family:var(--font)}
@@ -12,14 +40,17 @@ input,textarea{user-select:text;-webkit-user-select:text}
 /* Внешний отступ окна и зазор между блоками — единые ручки для всего шелла. */
 /* --sb-w — фактическая ширина сайдбара (её же гасит авто-скрытие отступом);
    в режиме «С подписями» она подменяется на --sb-w-full. */
-:root{--app-pad:8px;--app-gap:8px;--page-pad:12px;--sb-w:70px;--sb-w-full:190px;--grp-w:320px}
+/* --sni-size — квадрат кнопки сайдбара, --sni-ico — размер самой иконки внутри
+   (перебивает width/height из JSX, чтобы ручка была одна на все режимы). */
+:root{--app-pad:8px;--app-gap:8px;--page-pad:12px;--sb-w:70px;--sb-w-full:190px;--grp-w:320px;--sni-size:46px;--sni-ico:25px}
 .app{display:flex;position:relative;z-index:1;background:transparent;padding:var(--app-pad);gap:var(--app-gap);width:100%;flex:1;box-sizing:border-box;transition:height .15s;align-items:stretch;overflow:hidden}
 .sidebar{width:var(--sb-w);flex-shrink:0;border:1px solid var(--ovl-line);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:0;backdrop-filter:blur(12px)}
-.sb-logo{width:34px;height:34px;border-radius:calc(var(--radius) * 0.6);background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:var(--accent-text);flex-shrink:0;}
 .sb-sep{width:28px;height:1px;background:rgba(var(--ovl-rgb),.07);margin:8px 0;flex-shrink:0}.sidebar>.sb-sep{display:none}
 .sb-nav{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%}
-.sni{width:46px;height:46px;border-radius:calc(var(--radius) * 0.75);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--icon-fg-sb);transition:background .12s,color .12s,transform .08s;position:relative;will-change:transform}
+.sni{width:var(--sni-size);height:var(--sni-size);border-radius:calc(var(--radius) * 0.75);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--icon-fg-sb);transition:background .12s,color .12s,transform .08s;position:relative;will-change:transform}
 .sni:hover{color:var(--text)}
+/* Единый размер иконки: у Ico width/height приходят атрибутами из JSX, CSS их перебивает. */
+.sni .sni-ico svg{width:var(--sni-ico);height:var(--sni-ico);--ico-sw:1.5;--ico-ink:0}
 .sni:active{transform:scale(.94)}
 .sni.active{color:var(--accent)}
 .sb-bot{display:flex;flex-direction:column;align-items:center;padding-top:8px;border-top:none;width:100%;margin-top:auto}
@@ -27,7 +58,6 @@ input,textarea{user-select:text;-webkit-user-select:text}
 /* ===== SIDEBAR POSITION: TOP ===== */
 .app.sidebar-top{flex-direction:column}
 .app.sidebar-top .sidebar{width:auto;height:58px;flex-direction:row;padding:0 12px;border-radius:var(--radius);flex-shrink:0;align-items:center;gap:0;position:relative}
-.app.sidebar-top .sb-logo{flex-shrink:0;margin-right:8px}
 .app.sidebar-top .sb-sep{width:1px;height:24px;margin:0 6px;flex-shrink:0}
 .app.sidebar-top .sb-nav{flex-direction:row;position:absolute;left:50%;transform:translateX(-50%);justify-content:center;align-items:center;gap:2px;height:100%;width:auto;flex:none}
 .app.sidebar-top .sni{width:44px;height:44px}
@@ -49,6 +79,15 @@ input,textarea{user-select:text;-webkit-user-select:text}
 .app.sidebar-compact.sidebar-top .sidebar{align-self:center!important;width:auto!important;height:auto!important;padding:6px 8px!important}
 .app.sidebar-compact.sidebar-top .sb-nav{position:static!important;transform:none!important;gap:0!important;flex:none!important;height:auto!important}
 .app.sidebar-compact.sidebar-top .sb-bot{margin-left:0!important;gap:0!important;padding-left:0!important;height:auto!important}
+/* ===== SIDEBAR PLAIN MODE («Полный» — без рамки, сливается с фоном) =====
+   Геометрия та же, что у обычного режима: меняется только оформление плашки —
+   снимаются бордер, скругление, собственный фон и блюр, поэтому иконки и подписи
+   висят прямо на фоне окна.
+   `!important` + повышенная специфичность (0,3,0) нужны, чтобы перебить
+   `.sidebar{background:var(--block-color)!important}` из overrides-main.css,
+   `body.glass-mode .sidebar` из transparency.css и `.opt-unfocused .sidebar`
+   из sliders-telemetry.css — все они грузятся ПОСЛЕ base.css. */
+.app.sidebar-plain .sidebar{border:none;border-radius:0;box-shadow:none;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* ===== SIDEBAR FLOATING MODE (overlay-капсула поверх контента) ===== */
 /* Сайдбар вынимается из потока (absolute) → .main-wrap занимает всю ширину; капсула
    висит поверх, как плавающий мини-плеер (см. player.css .app.mp-floating). Внутренняя
@@ -73,7 +112,11 @@ input,textarea{user-select:text;-webkit-user-select:text}
    Ручки: --sb-w-full (ширина), высота строки 40px, --sb-ico-slot (колонка иконки). */
 .sni-lbl{display:none}
 .sni-ico{display:contents}
-.app.sidebar-full{--sb-w:var(--sb-w-full);--sb-ico-slot:24px}
+/* Знак Bloom на месте иконки «Главная» (настройка navHomeLogo). Не <img>, а маска
+   по /logo.png — так знак наследует цвет `.sni` (hover → --text, active → --accent),
+   как обычная иконка. Тот же приём: `.win-icon`, `.cover-empty-mark`. */
+.sni-logo{width:var(--sni-ico);height:var(--sni-ico);flex-shrink:0;background-color:currentColor;-webkit-mask:url('/logo.png') center/contain no-repeat;mask:url('/logo.png') center/contain no-repeat}
+.app.sidebar-full{--sb-w:var(--sb-w-full);--sb-ico-slot:26px}
 /* Растяжка строк на всю ширину — ТОЛЬКО для вертикального сайдбара. В позиции
    «Сверху» те же селекторы имеют равную специфичность с `.app.sidebar-top ...`,
    но стоят ниже по файлу, поэтому без :not() они перебивали align-items:center и
@@ -105,7 +148,7 @@ input,textarea{user-select:text;-webkit-user-select:text}
 .app.sidebar-floating.sidebar-full.sidebar-top .sidebar{padding:6px 8px}
 
 /* ===== РУЧКИ РАСТЯГИВАНИЯ ПАНЕЛЕЙ (sidebar / боковая панель) =====
-   Обе невидимы: только курсор col-resize, никакой подсветки — как .sm-nav-resizer
+   Обе невидимы: только курсор col-resize, никакой подсветки
    в настройках. Shift+ЛКМ — сброс ширины к дефолту (логика в JS).
 
    .sb-resizer — flex-ребёнок .app сразу за .sidebar (в позиции «Справа» .app
@@ -160,16 +203,27 @@ body.grp-resizing #globalRightPanel,body.grp-resizing #grpInner{transition:none 
 .app.sidebar-autohide.sidebar-floating .sidebar:hover{transform:translate(0, -50%)}
 .app.sidebar-autohide.sidebar-floating.sidebar-top .sb-edge-trigger:hover ~ .sidebar,
 .app.sidebar-autohide.sidebar-floating.sidebar-top .sidebar:hover{transform:translate(-50%, 0)}
-.sb-avatar{width:32px;height:32px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border:none;overflow:hidden;transition:.15s}
+.sb-avatar{width:36px;height:36px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border:none;overflow:hidden;transition:.15s}
 .sb-avatar img{width:100%;height:100%;object-fit:cover}
 /* Заглушка пустой обложки (shared/ui/EmptyCover.tsx): сплошная подложка +
    приглушённый знак bloom. Знак — маска по /logo.png (как .win-icon), чтобы
    перекрашиваться под тему: в светлой белая звезда по белому исчезла бы. */
 .cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--cover-empty);border-radius:inherit;overflow:hidden}
-/* Доля от площадки (34%, как на телефоне), но не мельче 10px: в меню и попапах
+/* Доля от площадки и прозрачность — с телефона (`BloomMark` в Cover.placeholder:
+   size * 0.34, opacity .16). Минимум 10px — уже наша поправка: в меню и попапах
    обложка бывает 22px, и там 34% превращались в невидимую точку. */
-.cover-empty-mark{width:34%;height:34%;min-width:10px;min-height:10px;flex-shrink:0;background-color:var(--text);opacity:.2;-webkit-mask:url('/logo.png') center/contain no-repeat;mask:url('/logo.png') center/contain no-repeat}
+.cover-empty-mark{width:34%;height:34%;min-width:10px;min-height:10px;flex-shrink:0;background-color:var(--text);opacity:.16;-webkit-mask:url('/logo.png') center/contain no-repeat;mask:url('/logo.png') center/contain no-repeat}
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;border-radius:var(--radius);border:1px solid var(--ovl-line);backdrop-filter:blur(12px);position:relative}
+/* Страницы плеера и библиотеки — без внешней рамки .main: их блоки очерчены
+   собственными рамками и стоят вплотную к краям (поля --page-pad там сняты),
+   так что общий контур вокруг них был лишним. Класс ставит App.tsx по активной
+   странице; border-color вместо border:none — чтобы геометрия (1px по
+   периметру) не прыгала при переходе на другие страницы. */
+.main.main-flush{border-color:transparent}
+/* NB: радиус блоков, прижатых к краям .main, должен совпадать с её var(--radius)
+   — иначе в углах остаётся клин фона БЕЗ светлой рамки блока (по прямым краям
+   она есть) и углы читаются чуть темнее. Поэтому блоки библиотеки тоже на
+   var(--radius) (library.css / queue.css), а не на .75 от него. */
 #miniPlayer{backdrop-filter:blur(12px)}
 /* Скруглённый вид бара (pill) — инлайн border-radius иначе перебивает. */
 #miniPlayer.mp-rounded{border-radius:36px!important}
@@ -177,8 +231,6 @@ body.grp-resizing #globalRightPanel,body.grp-resizing #grpInner{transition:none 
 #miniPlayer.mp-bg-cover .mp-inner,#miniPlayer.mp-bg-cover #mpBarBg,#miniPlayer.mp-bg-cover #mpBgProgress{position:relative;z-index:1}
 #mpBgImgLayer{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 #mpBgImgLayer img{width:100%;height:100%;object-fit:cover;display:block}
-#mpVol::-webkit-slider-thumb{background:rgba(var(--ovl-rgb),0.85)!important}
-#mpVol::-moz-range-thumb{background:rgba(var(--ovl-rgb),0.85)!important}
 /* Иконки бара — те же токены, что на странице плеера (--icon-fg → --text на
    ховере). Раньше здесь была своя шкала белого с альфой (.68 → #fff), из-за
    которой бар был заметно тусклее страницы (≈b2b2b2 против d0d0d0). Альфа была
@@ -213,3 +265,17 @@ body.play-flat #miniPlayer .cc-play:hover{background:none!important;color:var(--
    выравнивание, отступы) по-прежнему задаёт класс слота. */
 .mq{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
 .mq>.mq-in{display:inline}
+
+/* ===== РЯД ВКЛАДОК-ПИЛЮЛЬ (PillTabs) =====
+   Вид один в один с рядами настроек (.s-ptab / .sm-ptab): ни коробки вокруг
+   ряда, ни заливки у активной кнопки — под выбранной вкладкой едет пилюля
+   `.pill-tab-ink` (её x/ширину меряет useInk и кладёт в --ink-x/--ink-w).
+   Раскладку ряда (центрирование, отступы, скролл) задаёт класс-компаньон
+   вызывающего места, здесь только сама «механика» вкладок. */
+.pill-tabs{position:relative;display:flex;gap:2px}
+.pill-tab{position:relative;z-index:1;flex:0 0 auto;display:flex;align-items:center;gap:8px;max-width:190px;padding:8px 14px;border:none;border-radius:999px;background:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:color .18s}
+.pill-tab:hover{color:var(--text)}
+.pill-tab.active{color:var(--text)}
+.pill-tab-ico{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pill-tab-lbl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill-tab-ink{position:absolute;top:0;bottom:0;left:0;border-radius:999px;background:rgba(var(--ovl-rgb),.09);width:var(--ink-w,0);transform:translateX(var(--ink-x,0));transition:transform .32s var(--sheet-ease),width .32s var(--sheet-ease)}

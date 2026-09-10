@@ -1,3 +1,4 @@
+import { CardReset, CatReset, RowReset, SectionReset } from '../controls/SectionReset'
 import { useEffect, useState } from 'react'
 import { useSettingsStore } from '../../model'
 import { usePlayerStore, useQueueStore, trackProviderId } from '@features/player'
@@ -60,6 +61,30 @@ export const DiscordSection = () => {
   const b2url = useSettingsStore((s) => s.discord_btn2_url)
   const setDiscordRpc = useSettingsStore((s) => s.setDiscordRpc)
   const setDiscordSettings = useSettingsStore((s) => s.setDiscordSettings)
+
+  // Раздел держит локальные драфты (режимы кнопок, URL), поэтому сброс гасит и
+  // их: иначе поля остались бы заполненными, хотя в конфиге уже пусто.
+  const onReset = () => {
+    void setDiscordRpc(false)
+    void setDiscordSettings({
+      discord_show_progress: true,
+      discord_custom_artwork: '',
+      discord_show_small_img: false,
+      discord_small_img_url: '',
+      discord_small_img_mode: 'default',
+      discord_btn1_mode: '',
+      discord_btn1_label: '',
+      discord_btn1_url: '',
+      discord_btn2_mode: '',
+      discord_btn2_label: '',
+      discord_btn2_url: '',
+    })
+    setCoverMode('auto')
+    setCoverUrl('')
+    setSmallMode(deriveSmallMode(false, '', 'default'))
+    setSmallUrl('')
+    setL1(''); setU1(''); setL2(''); setU2('')
+  }
 
   // Локальные UI-режимы (sticky-подсветка кнопок) + драфты URL/текстов кнопок.
   // Инициализируются из полей стора и пере-синкаются когда настройки догрузились.
@@ -156,6 +181,7 @@ export const DiscordSection = () => {
           <DiscordIcon /> Discord RPC
         </div>
       </div>
+      <SectionReset onReset={onReset} />
 
       {/* Карточка вкл/выкл — структура `sc viz-block` с HTML (НЕ
           drpc-main-card: у того своя flex-раскладка прямых детей, несовместимая
@@ -197,13 +223,33 @@ export const DiscordSection = () => {
           pointerEvents: enabled ? undefined : 'none',
         }}
       >
-        <div className="s-cat-label">{t('settings.discord.cat.display')}</div>
+        <div className="s-cat-label">
+          {t('settings.discord.cat.display')}
+          <CatReset
+            onReset={() => {
+              setCoverMode('auto')
+              setCoverUrl('')
+              setSmallMode(deriveSmallMode(false, '', 'default'))
+              setSmallUrl('')
+              void setDiscordSettings({
+                discord_show_progress: true,
+                discord_custom_artwork: '',
+                discord_show_small_img: false,
+                discord_small_img_url: '',
+                discord_small_img_mode: 'default',
+              })
+            }}
+          />
+        </div>
 
         {/* Прогресс */}
         <div className="sc">
           <div className="sr">
             <div>
-              <div className="sl2">{t('settings.discord.progress')}</div>
+              <div className="sl2">
+                {t('settings.discord.progress')}
+                <RowReset onReset={() => void setDiscordSettings({ discord_show_progress: true })} />
+              </div>
               <div className="ssub">{t('settings.discord.progress.sub')}</div>
             </div>
             <label className="tele-sw">
@@ -219,7 +265,10 @@ export const DiscordSection = () => {
 
         {/* Обложка */}
         <div className="sc">
-          <div className="sc-title">{t('settings.discord.cover')}</div>
+          <div className="sc-title">
+            {t('settings.discord.cover')}
+            <CardReset onReset={() => { setCoverMode('auto'); setCoverUrl(''); void setDiscordSettings({ discord_custom_artwork: '' }) }} />
+          </div>
           <div className="sc-desc">{t('settings.discord.cover.desc')}</div>
           <div className="s-opt-row" style={{ marginTop: 12 }}>
             <OptBtn active={coverMode === 'auto'} onClick={() => pickCover('auto')}>
@@ -250,7 +299,10 @@ export const DiscordSection = () => {
 
         {/* Иконка приложения */}
         <div className="sc">
-          <div className="sc-title">{t('settings.discord.appIcon')}</div>
+          <div className="sc-title">
+            {t('settings.discord.appIcon')}
+            <CardReset onReset={() => { setSmallMode(deriveSmallMode(false, '', 'default')); setSmallUrl(''); void setDiscordSettings({ discord_show_small_img: false, discord_small_img_url: '', discord_small_img_mode: 'default' }) }} />
+          </div>
           <div className="sc-desc">{t('settings.discord.appIcon.desc')}</div>
           <div className="s-opt-row" style={{ marginTop: 12 }}>
             <OptBtn active={smallMode === 'off'} onClick={() => pickSmall('off')}>
@@ -285,7 +337,18 @@ export const DiscordSection = () => {
           )}
         </div>
 
-        <div className="s-cat-label">{t('settings.discord.cat.buttons')}</div>
+        <div className="s-cat-label">
+          {t('settings.discord.cat.buttons')}
+          <CatReset
+            onReset={() => {
+              setL1(''); setU1(''); setL2(''); setU2('')
+              void setDiscordSettings({
+                discord_btn1_mode: '', discord_btn1_label: '', discord_btn1_url: '',
+                discord_btn2_mode: '', discord_btn2_label: '', discord_btn2_url: '',
+              })
+            }}
+          />
+        </div>
 
         <BtnCard
           title={t('settings.discord.btn1')}
@@ -297,6 +360,11 @@ export const DiscordSection = () => {
           onLabel={setL1}
           onUrl={setU1}
           onApply={() => void setDiscordSettings({ discord_btn1_label: l1.trim(), discord_btn1_url: u1.trim() })}
+          onReset={() => {
+            setL1('')
+            setU1('')
+            void setDiscordSettings({ discord_btn1_mode: '', discord_btn1_label: '', discord_btn1_url: '' })
+          }}
         />
         <BtnCard
           title={t('settings.discord.btn2')}
@@ -308,6 +376,11 @@ export const DiscordSection = () => {
           onLabel={setL2}
           onUrl={setU2}
           onApply={() => void setDiscordSettings({ discord_btn2_label: l2.trim(), discord_btn2_url: u2.trim() })}
+          onReset={() => {
+            setL2('')
+            setU2('')
+            void setDiscordSettings({ discord_btn2_mode: '', discord_btn2_label: '', discord_btn2_url: '' })
+          }}
         />
 
         <div className="s-cat-label">{t('settings.discord.cat.preview')}</div>
@@ -375,6 +448,7 @@ const BtnCard = ({
   onLabel,
   onUrl,
   onApply,
+  onReset,
 }: {
   title: string
   desc: string
@@ -385,11 +459,15 @@ const BtnCard = ({
   onLabel: (v: string) => void
   onUrl: (v: string) => void
   onApply: () => void
+  onReset: () => void
 }) => {
   const t = useT()
   return (
   <div className="sc">
-    <div className="sc-title">{title}</div>
+    <div className="sc-title">
+      {title}
+      <CardReset onReset={onReset} />
+    </div>
     <div className="sc-desc">{desc}</div>
     <div className="s-opt-row" style={{ marginTop: 12 }}>
       <OptBtn active={mode === 'off'} onClick={() => onMode('off')}>

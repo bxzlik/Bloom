@@ -1,5 +1,5 @@
 import { parseArtists } from '@shared/lib/parseArtists'
-import { srcFromId, type PlayLog, type PlayMeta } from '../model/playLog'
+import { srcFromId, type PlayLog, type PlayMeta } from '@/db/playLog'
 import type { PeriodRange } from './periods'
 
 /**

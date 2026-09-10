@@ -11,6 +11,7 @@ import { pickFamiliarPool, scIdOf } from "./seeds";
 import type { Candidate, ScRawTrack, Track, WaveMode } from "./types";
 import { tagsFromList } from "../db/track-meta";
 import { markShown } from "../db/shown";
+import { DupGuard } from "@shared/lib/trackDedup";
 
 const BATCH = 20;
 const REFILL_THRESHOLD = 5;
@@ -208,7 +209,25 @@ async function buildBatch(opts: BuildBatchOpts): Promise<Candidate[]> {
   }
 
   const clean = antiClumpByArtist(ordered);
-  return clean.slice(0, opts.takeCount);
+  // Реаплоады: один трек, залитый разными пользователями SoundCloud, имеет
+  // разные id и до сюда доходит несколькими кандидатами. Режем ДО slice, иначе
+  // батч уйдёт неполным — enqueueBatch выбросил бы дубли уже после нарезки.
+  return dedupCandidates(clean).slice(0, opts.takeCount);
+}
+
+// Убрать из ранжированного списка повторы одного и того же трека.
+function dedupCandidates(list: Candidate[]): Candidate[] {
+  const dup = new DupGuard();
+  return list.filter(c => {
+    const t = c.libTrack;
+    if (t) return dup.accept(t);
+    if (!c.raw) return true;
+    return dup.accept({
+      name: c.raw.title ?? "",
+      artist: c.raw.user?.username ?? "",
+      sec: (c.raw.duration ?? 0) / 1000,
+    });
+  });
 }
 
 // Найти трек в библиотеке по scId (на случай, если id-форматы разошлись).
@@ -234,12 +253,24 @@ function adoptCandidate(c: Candidate): Track | null {
 }
 
 // Положить N кандидатов в очередь после curId.
+//
+// Дедуп здесь не только по id: на SoundCloud один и тот же трек часто залит
+// несколькими пользователями, id у них разные, и по id такие реаплоады
+// проскакивали — в очереди оказывалось по 2-3 одинаковых трека подряд.
+// Сверяем по содержимому (см. `shared/lib/trackDedup`), причём против всей
+// текущей очереди: дубль мог прийти и из прошлого батча.
 export function enqueueBatch(batch: Candidate[]): number {
   let added = 0;
+  const dup = new DupGuard();
+  for (const id of host.queue) {
+    const qt = host.trackById(id);
+    if (qt) dup.add(qt);
+  }
   for (const c of batch) {
     const t = adoptCandidate(c);
     if (!t) continue;
     if (host.queue.includes(t.id)) continue;
+    if (!dup.accept(t)) continue;
     host.queue.push(t.id);
     // Отмечаем как «показано в волне», чтобы не возвращалось в выдачу 14 дней.
     if (c.origin !== "library") markShown(t.id);

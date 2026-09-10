@@ -5,7 +5,7 @@ import { usePlayerStore } from '@features/player/model/store'
 
 /**
  * Мост оверлея-«острова» (только в main-окне):
- *   1. Зеркалит конфиг оверлея (режим/якорь/масштаб) в Rust — при старте и смене
+ *   1. Зеркалит конфиг оверлея (якорь/масштаб) в Rust — при старте и смене
  *      настроек. Прозрачность/длительность/масштаб плашка читает сама из
  *      `bloom_view_prefs` (storage-событие), поэтому в Rust шлём лишь то, что
  *      влияет на OS-окно (видимость + позиция/размер).
@@ -23,8 +23,6 @@ export const useOverlayBridge = (): void => {
       const p = usePlayerViewStore.getState()
       void invoke('overlay_set_config', {
         enabled: p.overlayMode !== 'off',
-        // Режим влияет на габарит OS-окна (расширенная карточка крупнее плашки).
-        mode: p.overlayMode,
         anchor: p.overlayPos,
         size: p.overlaySize / 100,
         customX: p.overlayX,

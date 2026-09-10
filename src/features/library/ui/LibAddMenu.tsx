@@ -59,16 +59,16 @@ const CreateThumb = () => (
   </span>
 )
 
-/** Цель «Все треки» — фирменная обложка раздела (тинт + нота, как у папки). */
+/** Цель «Все треки» — обложка раздела: нейтральный квадрат с рамкой + синяя нота. */
 const AllTracksThumb = () => (
   <span className="lam-all-thumb">
     <Ico name="note" width={13} height={13} style={{ color: 'var(--sys-all-ico)' }} />
   </span>
 )
 
-/** Цель «Любимые» — красный тинт + сердце. */
+/** Цель «Любимые» — тот же квадрат, красное сердце. */
 const FavThumb = () => (
-  <span className="lam-all-thumb" style={{ background: 'var(--sys-fav-tint)' }}>
+  <span className="lam-all-thumb">
     <Ico name="heart" variant="bold" width={12} height={12} style={{ color: 'var(--sys-fav-ico)' }} />
   </span>
 )

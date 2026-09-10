@@ -3,7 +3,7 @@
 // SoundCloud-клиенту, глобальному toast и стору дизлайков. Весь движок (engine/seeds/
 // scoring/feedback/session + db/*) ходит через этот единственный объект.
 
-import type { Track } from "./types";
+import type { ScRawTrack, Track } from "./types";
 import { useDislikesStore } from "@features/wave/model/dislikesStore";
 import { useQueueStore, type PlaySource } from "@features/player/model/queueStore";
 import { usePlayerStore } from "@features/player/model/store";
@@ -11,7 +11,11 @@ import { useLibStore } from "@features/library/model/store";
 import { useHistoryStore } from "@features/library/model/historyStore";
 import { trackRegistry } from "@entities/track";
 import { loadPlay } from "@features/player/api/play";
-import { apiFetch as scApiFetch } from "@features/soundcloud/api/scClient";
+import {
+  waveStation as scWaveStation,
+  waveRelated as scWaveRelated,
+  waveResetCache as scWaveResetCache,
+} from "@features/soundcloud/api/scClient";
 import { toast as globalToast } from "@shared/ui";
 import { t as i18nT } from "@shared/i18n";
 
@@ -138,8 +142,16 @@ export const host = {
   },
 
   sc: {
-    apiFetch<T = unknown>(url: string): Promise<T> {
-      return scApiFetch(url) as Promise<T>;
+    // Источники волны. Сеть (URL'ы, rate-limit, кэш, повтор при 429) живёт в
+    // Rust — здесь только invoke и типизация сырого трека под движок.
+    waveStation(scTrackId: string | number, offset = 0): Promise<ScRawTrack[]> {
+      return scWaveStation(scTrackId, offset) as Promise<ScRawTrack[]>;
+    },
+    waveRelated(scTrackId: string | number): Promise<ScRawTrack[]> {
+      return scWaveRelated(scTrackId) as Promise<ScRawTrack[]>;
+    },
+    waveResetCache(): Promise<void> {
+      return scWaveResetCache();
     },
     // Используются только в prefetch (no-op) — best-effort заглушки под тип Host.
     resolveTrack(_permalink: string): Promise<{ media: unknown }> {

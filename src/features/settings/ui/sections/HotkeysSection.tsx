@@ -1,3 +1,4 @@
+import { CatReset } from '../controls/SectionReset'
 import { useEffect, useState } from 'react'
 import { toast } from '@shared/ui'
 import { useT, type TranslationKey } from '@shared/i18n'
@@ -112,14 +113,10 @@ export const HotkeysSection = () => {
           <Ico name="keyboard" width={15} height={15} />{' '}
           {t('settings.hotkeys.heading')}
         </div>
-        <button className="s-section-reset" onClick={onResetAll}>
-          <Ico name="refresh" width={10} height={10} />{' '}
-          {t('common.reset')}
-        </button>
       </div>
 
+      <div className="s-cat-label">{t('settings.hotkeys.heading')}</div>
       <div className="sc">
-        <h3>{t('settings.hotkeys.heading')}</h3>
         <div className="sr">
           <div>
             <div className="sl2">{t('settings.hotkeys.enabled.title')}</div>
@@ -132,12 +129,9 @@ export const HotkeysSection = () => {
         </div>
       </div>
 
-      <div className="hk-active-head">
-        <span className="hk-cat">{t('settings.hotkeys.active')}</span>
-        <button className="btn btg hk-reset" onClick={onResetAll} disabled={!enabled}>
-          <Ico name="refresh" width={11} height={11} />
-          {t('common.reset')}
-        </button>
+      <div className="s-cat-label">
+        {t('settings.hotkeys.active')}
+        <CatReset onReset={onResetAll} disabled={!enabled} />
       </div>
       <div className={`hk-list${enabled ? '' : ' hk-disabled'}`}>
         {HOTKEY_ORDER.map((k) => {

@@ -1,3 +1,4 @@
+import { CatReset } from '../controls/SectionReset'
 import { useState } from 'react'
 import { invoke } from '@shared/tauri'
 import { toast } from '@shared/ui'
@@ -93,10 +94,12 @@ export const PlaybackSection = () => {
       {/* «О приложении» + проверка обновлений (свой заголовок s-cat-label внутри). */}
       <AboutBlock />
 
+      <div className="s-cat-label">
+        {t('settings.system.startup')}
+        <CatReset onReset={() => { void setAutostart(false); void setMinimizeToTray(false) }} />
+      </div>
       <div className="sc">
-        <h3>{t('settings.system.startup')}</h3>
         <TeleToggleRow
-          icon={<Ico name="refresh" width={16} height={16} />}
           title={t('settings.system.autostart.title')}
           sub={t('settings.system.autostart.sub')}
           checked={autostart === true}
@@ -106,7 +109,6 @@ export const PlaybackSection = () => {
         {/* «Восстановление очереди» + «Автовоспроизведение» живут в разделе
             «Аудио» (AudioSection): вторая — вложенная настройка первой. */}
         <TeleToggleRow
-          icon={<Ico name="inbox" width={16} height={16} />}
           title={t('settings.system.tray.title')}
           sub={t('settings.system.tray.sub')}
           checked={minimizeToTray}
@@ -115,10 +117,12 @@ export const PlaybackSection = () => {
         />
       </div>
 
+      <div className="s-cat-label">
+        {t('settings.system.windowTray')}
+        <CatReset onReset={() => { void setChangeTitlebar(false); void setChangeTrayCover(false) }} />
+      </div>
       <div className="sc">
-        <h3>{t('settings.system.windowTray')}</h3>
         <TeleToggleRow
-          icon={<Ico name="windowFrame" width={16} height={16} />}
           title={t('settings.system.titlebarTrack.title')}
           sub={t('settings.system.titlebarTrack.sub')}
           checked={changeTitlebar}
@@ -126,7 +130,6 @@ export const PlaybackSection = () => {
           onChange={(v) => void setChangeTitlebar(v)}
         />
         <TeleToggleRow
-          icon={<Ico name="gallery" width={16} height={16} />}
           title={t('settings.system.trayCover.title')}
           sub={t('settings.system.trayCover.sub')}
           checked={changeTrayCover}
@@ -135,12 +138,9 @@ export const PlaybackSection = () => {
         />
       </div>
 
+      <div className="s-cat-label">{t('settings.system.importExport')}</div>
       <div className="sc">
-        <h3>{t('settings.system.importExport')}</h3>
         <div className="sr">
-          <div className="tele-toggle-icon">
-            <Ico name="export" width={16} height={16} />
-          </div>
           <div className="tele-toggle-info">
             <div className="tele-toggle-title">{t('settings.system.exportAll.title')}</div>
             <div className="tele-toggle-sub">{t('settings.system.exportAll.sub')}</div>
@@ -148,9 +148,6 @@ export const PlaybackSection = () => {
           <button className="btn btg" style={{ flexShrink: 0, fontSize: 11, padding: '4px 12px' }} onClick={onExportAll}>{t('settings.system.exportAll.btn')}</button>
         </div>
         <div className="sr">
-          <div className="tele-toggle-icon">
-            <Ico name="import" width={16} height={16} />
-          </div>
           <div className="tele-toggle-info">
             <div className="tele-toggle-title">{t('settings.system.import.title')}</div>
             <div className="tele-toggle-sub">{t('settings.system.import.sub')}</div>
@@ -159,8 +156,8 @@ export const PlaybackSection = () => {
         </div>
       </div>
 
+      <div className="s-cat-label">{t('settings.system.logs')}</div>
       <div className="sc">
-        <h3>{t('settings.system.logs')}</h3>
         <div className="sr" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <div>
             <div className="sl2">{t('settings.system.log.title')}</div>
@@ -174,11 +171,13 @@ export const PlaybackSection = () => {
         </div>
       </div>
 
+      {/* Красная подпись группы: тот же заголовок, что и остальные, цвет —
+          инлайном, чтобы не заводить класс ради одного места. */}
+      <div className="s-cat-label" style={{ color: '#e03030' }}>
+        <Ico name="danger" width={13} height={13} />
+        {t('settings.system.dangerZone')}
+      </div>
       <div className="sc">
-        <h3 style={{ color: '#e03030' }}>
-          <Ico name="danger" width={13} height={13} style={{ color: '#e03030', marginRight: 6, verticalAlign: 'middle' }} />
-          {t('settings.system.dangerZone')}
-        </h3>
         <div className="sr">
           <div>
             <div className="sl2">{t('settings.system.resetSettings.title')}</div>

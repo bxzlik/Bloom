@@ -1,4 +1,38 @@
 {
+  "3.0.0": {
+    "title": { "ru": "Что нового в 3.0.0", "en": "What's new in 3.0.0" },
+    "date": "2026-09-07",
+    "pages": [
+      {
+        "title": { "ru": "Главная", "en": "Home" },
+        "body": {
+          "ru": "- Новый вид «Моей волны»\n- Новая витрина «Для вас»\n- Новые витрины «Чарт» и «Релизы»",
+          "en": "- A new look for My Wave\n- New \"For you\" section\n- New \"Chart\" and \"Releases\" sections"
+        }
+      },
+      {
+        "title": { "ru": "История и статистика", "en": "History and stats" },
+        "body": {
+          "ru": "- Глобально обновлены история и статистика прослушиваний\n- История больше не ограничена 200 треками\n- Благодаря этому «Моя волна», умная перемешка и статистика профиля учитывают все ваши прослушивания, а не только последние 200 треков",
+          "en": "- History and listening stats have been globally reworked\n- History is no longer limited to 200 tracks\n- Thanks to this, My Wave, smart shuffle and profile stats take all your plays into account, not just the last 200 tracks"
+        }
+      },
+      {
+        "title": { "ru": "Настройки и оформление", "en": "Settings and appearance" },
+        "body": {
+          "ru": "- Обновлены настройки\n- Добавлена «Авто тема» под обложку трека\n- Новый вид сайдбара",
+          "en": "- Updated settings\n- Added an \"Auto theme\" that matches the track cover\n- New sidebar look"
+        }
+      },
+      {
+        "title": { "ru": "Плеер, PiP, трей и оверлей", "en": "Player, PiP, tray and overlay" },
+        "body": {
+          "ru": "- Аватарки артистов в плеере\n- Обновлён PiP\n- Обновлён попап в трее\n- Улучшен оверлей",
+          "en": "- Artist avatars in the player\n- Updated PiP\n- Updated the tray popup\n- Improved the overlay"
+        }
+      }
+    ]
+  },
   "2.0.2": {
     "title": { "ru": "Что нового в 2.0.2", "en": "What's new in 2.0.2" },
     "date": "2026-09-01",

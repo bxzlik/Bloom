@@ -15,6 +15,9 @@ use parking_lot::Mutex;
 use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 const KNOWN_CLIENT_IDS: [&str; 5] = [
@@ -92,15 +95,24 @@ fn proxy_urls(u: &str) -> Vec<String> {
 /// `accept_auth_err` — принять 401/403 от прямого запроса (нужно `api_fetch`
 /// для ветки перебора известных client_id); от прокси — только 2xx.
 async fn race_fetch(url: &str, accept_auth_err: bool) -> Result<(u16, String)> {
+    // 429 от прямого запроса гонку НЕ прерывает: SC лимитит по IP, и прокси в
+    // этот момент обычно проходят. Но если проиграли все ветки — сообщаем
+    // именно про лимит, чтобы вызывающий (волна) повторил с бэкоффом, а не
+    // счёл площадку недоступной.
+    let rate_limited = Arc::new(AtomicBool::new(false));
     let mut set = tokio::task::JoinSet::new();
     {
         let u = url.to_string();
+        let rl = rate_limited.clone();
         set.spawn(async move {
             let r = HTTP.get(&u).timeout(Duration::from_secs(8)).send().await?;
             let status = r.status().as_u16();
             if r.status().is_success() || (accept_auth_err && (status == 401 || status == 403)) {
                 Ok((status, r.text().await?))
             } else {
+                if status == 429 {
+                    rl.store(true, Ordering::Relaxed);
+                }
                 bail!("not ok")
             }
         });
@@ -119,6 +131,9 @@ async fn race_fetch(url: &str, accept_auth_err: bool) -> Result<(u16, String)> {
             set.abort_all();
             return Ok(out);
         }
+    }
+    if rate_limited.load(Ordering::Relaxed) {
+        bail!("sc.err.rateLimited")
     }
     bail!("sc.err.unavailable")
 }
@@ -526,18 +541,12 @@ fn has_id(v: &Value) -> bool {
 
 // ============================ Поиск ============================
 
-pub async fn search_tracks(
-    query: &str,
-    limit: u32,
-    offset: u32,
-    sort: &str,
-) -> Result<ScPage<ScRawTrack>> {
+pub async fn search_tracks(query: &str, limit: u32, offset: u32) -> Result<ScPage<ScRawTrack>> {
     let url = format!(
-        "https://api-v2.soundcloud.com/search/tracks?q={}&limit={}&offset={}{}",
+        "https://api-v2.soundcloud.com/search/tracks?q={}&limit={}&offset={}",
         urlencoding::encode(query),
         limit,
-        offset,
-        if sort == "new" { "&sort=created_at" } else { "" }
+        offset
     );
     let data = api_fetch(&url, false).await?;
     if falsy(data.get("collection")) {
@@ -597,7 +606,7 @@ pub async fn search_albums(query: &str, limit: u32) -> Result<ScPage<ScRawPlayli
 /// Проверка соединения из настроек: сброс авто-кеша → тестовый поиск.
 pub async fn check_connection() -> ScCheckResult {
     reset_auto_cache();
-    match search_tracks("test", 1, 0, "relevance").await {
+    match search_tracks("test", 1, 0).await {
         Ok(_) => ScCheckResult { ok: true, client_id: active_client_id(), error: None },
         Err(e) => ScCheckResult {
             ok: false,
@@ -956,6 +965,156 @@ pub async fn artist_tracks_page(cursor: &str) -> ScTracksCursorPage {
     }
 }
 
+// ============================ Волна: станции и похожие ============================
+//
+// Порт `src/wave/sources.ts`: URL'ы api-v2, последовательный rate-limit, кэш
+// ответов на сеанс и повтор при 429. Сам движок волны (сиды, скоринг, сессия)
+// остаётся на фронте — он работает не с сетью, а с библиотекой, историей и
+// дизлайками пользователя.
+//
+// Отдаём СЫРЫЕ объекты SC, а не `ScRawTrack`: у волны собственный маппер
+// (`scRawToTrack` в engine.ts) — обложка 500px вместо 300px и год из
+// `display_date`. Сюда переезжает сеть, а не форма трека.
+
+const WAVE_STATION_TTL: Duration = Duration::from_secs(5 * 60);
+const WAVE_RELATED_TTL: Duration = Duration::from_secs(10 * 60);
+/// Минимальный зазор между запросами волны — без него SC отвечает 429.
+const WAVE_MIN_GAP: Duration = Duration::from_millis(150);
+const WAVE_RETRY_DELAY: Duration = Duration::from_secs(2);
+
+type WaveCache = Lazy<Mutex<HashMap<String, (Instant, Vec<Value>)>>>;
+
+static STATION_CACHE: WaveCache = Lazy::new(|| Mutex::new(HashMap::new()));
+static RELATED_CACHE: WaveCache = Lazy::new(|| Mutex::new(HashMap::new()));
+
+/// Ворота rate-limit: запросы волны идут строго по одному (как TS-очередь
+/// `enqueue`). Внутри — момент старта предыдущего запроса.
+static WAVE_GATE: Lazy<tokio::sync::Mutex<Option<Instant>>> =
+    Lazy::new(|| tokio::sync::Mutex::new(None));
+
+fn wave_cache_get(cache: &WaveCache, key: &str, ttl: Duration) -> Option<Vec<Value>> {
+    let map = cache.lock();
+    let (at, data) = map.get(key)?;
+    (at.elapsed() < ttl).then(|| data.clone())
+}
+
+/// SC отдаёт треки в двух формах: массивом либо `{ collection: [...] }`, причём
+/// элемент коллекции станции — обёртка `{ track: {...} }`. Приводим к плоскому
+/// списку; объекты без числового id или без названия отбрасываем.
+fn normalize_collection(d: &Value) -> Vec<Value> {
+    let items: &[Value] = match d {
+        Value::Array(a) => a,
+        _ => varr(d, "collection"),
+    };
+    items
+        .iter()
+        .map(|it| it.get("track").filter(|t| !t.is_null()).unwrap_or(it))
+        .filter(|t| t.get("id").is_some_and(Value::is_number) && vstr(t, "title").is_some())
+        .cloned()
+        .collect()
+}
+
+/// Один запрос волны: дождаться своего слота в очереди, при 429 — пауза и одна
+/// повторная попытка. Любая ошибка гасится в пустой список: волна доберёт
+/// кандидатов из других сидов, а падать ей нельзя.
+async fn wave_fetch(url: &str) -> Vec<Value> {
+    let mut gate = WAVE_GATE.lock().await;
+    if let Some(prev) = *gate {
+        let gap = WAVE_MIN_GAP.saturating_sub(prev.elapsed());
+        if !gap.is_zero() {
+            tokio::time::sleep(gap).await;
+        }
+    }
+    *gate = Some(Instant::now());
+
+    match api_fetch(url, false).await {
+        Ok(d) => normalize_collection(&d),
+        Err(e) if e.to_string().contains("rateLimited") => {
+            tokio::time::sleep(WAVE_RETRY_DELAY).await;
+            *gate = Some(Instant::now());
+            api_fetch(url, false).await.map(|d| normalize_collection(&d)).unwrap_or_default()
+        }
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Станция трека (`stations/soundcloud:track-stations:{id}/tracks`) — основной
+/// источник батча волны, пагинируется через `offset`.
+pub async fn wave_station(sc_track_id: &str, offset: u32) -> Vec<Value> {
+    let key = format!("{sc_track_id}@{offset}");
+    if let Some(hit) = wave_cache_get(&STATION_CACHE, &key, WAVE_STATION_TTL) {
+        return hit;
+    }
+    let data = wave_fetch(&format!(
+        "https://api-v2.soundcloud.com/stations/soundcloud:track-stations:{sc_track_id}/tracks?limit=20&offset={offset}"
+    ))
+    .await;
+    // Кэшируем только непустой успех. Пустоту/ошибку запоминать нельзя — сетевой
+    // сбой отравил бы кэш на весь TTL, и волна тихо перестала бы что-то отдавать.
+    if !data.is_empty() {
+        STATION_CACHE.lock().insert(key, (Instant::now(), data.clone()));
+    }
+    data
+}
+
+/// Похожие треки (`tracks/{id}/related`) — второй источник батча; не пагинируется.
+pub async fn wave_related(sc_track_id: &str) -> Vec<Value> {
+    let key = sc_track_id.to_string();
+    if let Some(hit) = wave_cache_get(&RELATED_CACHE, &key, WAVE_RELATED_TTL) {
+        return hit;
+    }
+    let data =
+        wave_fetch(&format!("https://api-v2.soundcloud.com/tracks/{sc_track_id}/related?limit=20"))
+            .await;
+    if !data.is_empty() {
+        RELATED_CACHE.lock().insert(key, (Instant::now(), data.clone()));
+    }
+    data
+}
+
+/// Сколько похожих считаем достаточным, чтобы не добирать станцией.
+const SIMILAR_ENOUGH: usize = 12;
+
+/// Похожие на трек для витрины «Для вас» на главной.
+///
+/// Сеть — та же, что у волны (`wave_related` + добор `wave_station`), со всеми
+/// её кэшами и rate-limit'ом. Отличие в форме выдачи: волне нужны сырые объекты
+/// api-v2 под собственный скоринг, а витрине — обычный `ScRawTrack`, такой же,
+/// как из поиска, чтобы фронт разбирал его штатным маппером провайдера и не
+/// тянул движок волны ради одной секции.
+///
+/// Станция подмешивается только когда одних related мало: related — это именно
+/// «похожие», а станция ближе к радио и разбавляет подборку.
+pub async fn similar_tracks(sc_track_id: &str) -> Vec<ScRawTrack> {
+    let seed: u64 = sc_track_id.parse().unwrap_or(0);
+    let mut out: Vec<ScRawTrack> = Vec::new();
+    let mut seen: std::collections::HashSet<u64> = std::collections::HashSet::new();
+
+    let take = |raw: &[Value], out: &mut Vec<ScRawTrack>, seen: &mut std::collections::HashSet<u64>| {
+        for v in raw {
+            let t = map_raw_track(v);
+            // id 0 — не разобралось; сид в подборке не нужен, он и так в топе.
+            if t.id == 0 || t.id == seed || !seen.insert(t.id) {
+                continue;
+            }
+            out.push(t);
+        }
+    };
+
+    take(&wave_related(sc_track_id).await, &mut out, &mut seen);
+    if out.len() < SIMILAR_ENOUGH {
+        take(&wave_station(sc_track_id, 0).await, &mut out, &mut seen);
+    }
+    out
+}
+
+/// Сброс кэша источников: фронт зовёт его при старте новой волны, чтобы свежая
+/// сессия не переиспользовала выдачу прошлой.
+pub fn reset_wave_cache() {
+    STATION_CACHE.lock().clear();
+    RELATED_CACHE.lock().clear();
+}
+
 // ============================ Плейлисты / треки ============================
 
 /// Треки из данных плейлиста: полные + дозагрузка stub'ов (только id) батчами по 50.
@@ -1141,7 +1300,7 @@ mod tests {
     #[ignore]
     async fn sc_smoke() {
         // Поиск треков + маппинг.
-        let page = search_tracks("daft punk", 5, 0, "relevance").await.expect("search_tracks");
+        let page = search_tracks("daft punk", 5, 0).await.expect("search_tracks");
         assert!(!page.items.is_empty(), "пустая выдача поиска");
         let t = &page.items[0];
         assert!(t.id > 0 && !t.title.is_empty());
@@ -1166,5 +1325,41 @@ mod tests {
             .expect("resolve_url");
         assert!(matches!(resolved, Some(ref r) if r.kind == "track"), "resolve не распознал трек");
         println!("resolve ok");
+
+        // Источники волны. Проверяем не только непустоту, но и что
+        // normalize_collection развернул обёртку `{ track: … }` у станции:
+        // элемент должен быть самим треком (id + title), а не контейнером.
+        let seed = t.id.to_string();
+        let station = wave_station(&seed, 0).await;
+        assert!(!station.is_empty(), "станция трека пуста");
+        assert!(
+            station.iter().all(|x| x.get("id").is_some_and(Value::is_number)
+                && vstr(x, "title").is_some()),
+            "станция отдала не развёрнутые элементы"
+        );
+        println!("station: {} треков", station.len());
+
+        // Второй вызов должен прийти из кэша (тот же размер, без сети).
+        assert_eq!(wave_station(&seed, 0).await.len(), station.len(), "кэш станции");
+
+        let related = wave_related(&seed).await;
+        assert!(!related.is_empty(), "похожие пусты");
+        println!("related: {} треков", related.len());
+
+        // Похожие для витрины «Для вас»: та же сеть, но выдача уже разобрана в
+        // ScRawTrack. Проверяем, что маппер отработал (id/title не пустые), сид
+        // из подборки убран и дублей нет.
+        let similar = similar_tracks(&seed).await;
+        assert!(!similar.is_empty(), "похожие для витрины пусты");
+        assert!(
+            similar.iter().all(|x| x.id > 0 && !x.title.is_empty()),
+            "similar_tracks отдал неразобранные треки"
+        );
+        assert!(similar.iter().all(|x| x.id != t.id), "сид попал в свою же подборку");
+        let uniq: std::collections::HashSet<u64> = similar.iter().map(|x| x.id).collect();
+        assert_eq!(uniq.len(), similar.len(), "дубли в similar_tracks");
+        println!("similar: {} треков", similar.len());
+
+        reset_wave_cache();
     }
 }

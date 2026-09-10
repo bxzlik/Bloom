@@ -18,12 +18,12 @@ import { playFromSource, playShuffledFromSource, addTracksToQueue, playTracksNex
 import { downloadPlaylistOffline, removePlaylistOffline, useOfflineStore } from '@features/offline'
 import { Ico } from '@shared/ui/icons/solar'
 import { PlaylistOfflineTag } from './PlaylistOfflineTag'
+import { CreatedMeta } from './DateMeta'
 import { exportPlaylistFile, folderScan, folderRemove, folderIsCopy } from '../api'
 import { buildExportBundle, refreshPlaylistTracks, deleteUploadedTrack, applyFolderScan } from '../lib'
 import {
   usePlaylistStore,
   useHistoryStore,
-  useActivityStore,
   useDupsStore,
   useMergeStore,
   useConvertStore,
@@ -31,6 +31,7 @@ import {
   useFavStore,
   useUnifiedOrderStore,
   usePlAutoStore,
+  plCreatedAt,
   type Playlist,
   type LibMode,
   type TrackSortMode,
@@ -57,8 +58,6 @@ export interface PlMenuProps {
   onReset?: () => void
   /** «Изменить плейлист» — включает inline-редактор в шапке (см. plEditStore). */
   onEdit?: (id: string) => void
-  /** «Добавить треки» — открывает AddFromLibModal с этим plId. */
-  onAddTracks?: (id: string) => void
 }
 
 /**
@@ -82,7 +81,6 @@ export const PlMenu = ({
   folderPath,
   onReset,
   onEdit,
-  onAddTracks,
 }: PlMenuProps) => {
   const t = useT()
   const deletePl = usePlaylistStore((s) => s.deletePl)
@@ -380,8 +378,10 @@ export const PlMenu = ({
   const clearHistory = () => {
     onClose()
     if (!confirm(t('lib.plmenu.confirmClearHistory'))) return
+    // Только список. Дневной журнал активности — это статистика, а не история:
+    // чистить его заодно значило бы стирать графики профиля и «Итоги» за то,
+    // что человек всего лишь прибрал список недавнего.
     useHistoryStore.getState().clear()
-    useActivityStore.getState().clear()
   }
 
   // ── Воспроизведение / открытие (для ПКМ-меню в sidebar) ──────────
@@ -511,17 +511,8 @@ export const PlMenu = ({
   }
 
   if (mode === 'pl' && playlist) {
-    // 2. Содержимое плейлиста: добавить треки / изменить.
+    // 2. Содержимое плейлиста: изменить.
     groups.push([
-      <Item
-        key="add"
-        icon={<PlusIcon />}
-        label={t('lib.plmenu.addTracks')}
-        onClick={() => {
-          onClose()
-          onAddTracks?.(playlist.id)
-        }}
-      />,
       <Item
         key="edit"
         icon={<EditIcon />}
@@ -786,24 +777,34 @@ export const PlMenu = ({
             : undefined
         }
       >
-        <div
-          id="plMenuHeaderCov"
-          style={
-            mode === 'pl' && playlist && !playlist.cover
-              ? { background: 'transparent', boxShadow: 'none' }
-              : undefined
-          }
-        >
-          {headerIcon}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          {/* max-width:135px + ellipsis в CSS; на ховере догоняем текст marquee. */}
-          <HoverMarquee id="plMenuHeaderName" text={heroName} />
-          <div id="plMenuHeaderSub">
-            {heroSub}
-            {mode === 'pl' && playlist && <PlaylistOfflineTag trackIds={playlist.trs} />}
+        <div className="cx-head-top">
+          <div
+            id="plMenuHeaderCov"
+            style={
+              mode === 'pl' && playlist && !playlist.cover
+                ? { background: 'transparent', boxShadow: 'none' }
+                : undefined
+            }
+          >
+            {headerIcon}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            {/* max-width:135px + ellipsis в CSS; на ховере догоняем текст marquee. */}
+            <HoverMarquee id="plMenuHeaderName" text={heroName} />
+            <div id="plMenuHeaderSub">
+              {heroSub}
+              {mode === 'pl' && playlist && <PlaylistOfflineTag trackIds={playlist.trs} />}
+            </div>
           </div>
         </div>
+        {/* Дата создания — вторым рядом шапки во всю её ширину, отделённым
+            волосяной линией: подпись со счётчиком и офлайн-тегом и так упирается
+            в 135px колонки, дописывать в неё дату некуда. */}
+        {mode === 'pl' && playlist && plCreatedAt(playlist) != null && (
+          <div id="plMenuHeaderMeta" className="cx-head-meta">
+            <CreatedMeta ts={plCreatedAt(playlist)} />
+          </div>
+        )}
       </div>
       {sortPage ? (
         <SortPage onBack={() => setSortPage(false)} />
@@ -936,6 +937,16 @@ const SortPage = ({ onBack }: { onBack: () => void }) => {
         </span>
         <span style={{ flex: 1 }}>{t('lib.sort.default')}</span>
       </div>
+      {/* Не сортировка, а отбор — поэтому без стрелки и рядом с «По умолчанию». */}
+      <div
+        className={`ci${sortMode === 'downloaded' ? ' sort-active' : ''}`}
+        onClick={() => setSort('downloaded')}
+      >
+        <span className="ci-icon" style={{ color: sortMode === 'downloaded' ? 'var(--accent)' : undefined }}>
+          <DiskIcon />
+        </span>
+        <span style={{ flex: 1 }}>{t('lib.sort.downloaded')}</span>
+      </div>
       <div className="pl-menu-back" onClick={onBack}>
         <Ico name="arrowLeft" width={12} height={12} />{' '}
         {t('common.back')}
@@ -963,7 +974,6 @@ const MergeIcon = () => <Ico name="merge" width={11} height={11} />
 const ConvertIcon = () => <Ico name="arrowRightStraight" width={11} height={11} />
 const DupsIcon = () => <Ico name="copy" width={11} height={11} />
 const RefreshIcon = () => <Ico name="refresh" width={11} height={11} />
-const PlusIcon = () => <Ico name="add" width={11} height={11} />
 const AddQueueIcon = () => <Ico name="addQueue" width={11} height={11} />
 const PlayNextIcon = () => <Ico name="playNext" width={11} height={11} />
 const PinIcon = () => <Ico name="pin" width={11} height={11} />

@@ -40,6 +40,7 @@ import { QueueBlock } from './QueueBlock'
 import { LyricsQueueBlock } from './LyricsQueueBlock'
 import { MarqueeTitle } from './MarqueeTitle'
 import { TrackSwap } from './TrackSwap'
+import { ArtistAvatars } from './ArtistAvatars'
 import { AddPopup } from './AddPopup'
 import { SpeedPicker } from './SpeedPicker'
 import { SourcePicker, providerLogo } from './SourcePicker'
@@ -49,7 +50,7 @@ import { speedLabel, useSpeedStore } from '../model/speedStore'
 import { LyricsPanel, LyricsToggleButton, useLyricsStore } from '@features/lyrics'
 import { DislikeButton } from '@features/wave'
 import { usePlayerViewStore, useThemeStore, useOptStore } from '@features/settings'
-import { toast } from '@shared/ui'
+import { toast, CardMarquee, EmptyCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -317,9 +318,7 @@ const PlayerContent = () => {
   const coverImg = artwork ? (
     <img src={artwork} alt="" />
   ) : (
-    <div className="ps-cover-empty">
-      <Ico name="note" width={48} height={48} style={{ opacity: 0.12 }} />
-    </div>
+    <EmptyCover />
   )
   const favOverlayBtn = (
     <button onClick={toggleCurFav} className={`cov-fav${isFav ? '' : ' off'}`} aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}>
@@ -413,8 +412,16 @@ const PlayerContent = () => {
     </div>
   )
   const artistNode = (
-    <div className="ps-artist">
-      <ArtistLinks artist={artist} scId={curTrack?.artistScId} permalink={curTrack?.artistPermalink} artistId={curTrack?.artistId} provider={curTrack?.artistProvider} />
+    <div className="ps-artist mqh">
+      {/* Хвост длинного списка соавторов раньше просто съедало многоточие —
+          теперь строка катится по наведению (hover-marquee карточек: `.mqh` —
+          хост, `.mq` внутри — клип). Аватарки едут вместе с именами: строка
+          центрированная и стопка — её часть, а не якорь у края. */}
+      <CardMarquee>
+        {/* Аватарки артистов — стопкой перед именем (см. ArtistAvatars). */}
+        <ArtistAvatars track={curTrack} />
+        <ArtistLinks artist={artist} scId={curTrack?.artistScId} permalink={curTrack?.artistPermalink} artistId={curTrack?.artistId} provider={curTrack?.artistProvider} />
+      </CardMarquee>
     </div>
   )
   // ── Отдельные кнопки транспорта (вынесены, чтобы переставлять по группам) ──
@@ -619,10 +626,12 @@ const PlayerContent = () => {
   ]
     .filter(Boolean)
     .join(' ')
-  // padding — отступ контента страницы от рамки .main (--page-pad, см. base.css).
+  // padding:0 — у .main на странице плеера нет рамки (.main-player, player.css),
+  // и поля --page-pad внутри неё читались как кривой отступ: блоки не совпадали
+  // с верхом/низом сайдбара. Свои внутренние отступы у блоков остаются.
   const pcStyle: React.CSSProperties = gridLayout
-    ? { display: 'grid', flex: 1, overflow: 'hidden', gap: 10, padding: 'var(--page-pad)' }
-    : { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: 10, padding: 'var(--page-pad)' }
+    ? { display: 'grid', flex: 1, overflow: 'hidden', gap: 10, padding: 0 }
+    : { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: 10, padding: 0 }
 
   // ── Кино (style-cinema): grid обложка(кр.) + очередь; инфо/прогресс/контролы
   // накладываются оверлеем на низ обложки (нет отдельного нижнего бара). ──────
@@ -870,7 +879,7 @@ const NextTrackBlock = ({
           {track.cover ? (
             <img src={track.cover} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <Ico name="note" width={20} height={20} style={{ opacity: 0.4 }} />
+            <EmptyCover />
           )}
         </div>
         <div className="tri">

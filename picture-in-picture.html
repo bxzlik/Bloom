@@ -51,9 +51,11 @@ html,body{
   display:flex;align-items:center;justify-content:center;
   transition:background .12s,color .12s;flex-shrink:0;
 }
-.win-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+/* Ряд без плашек — как `.win-btn` в главном окне (soundcloud-system.css):
+   отклик даёт только подсветка иконки, у закрытия краснеет сама иконка. */
+.win-btn:hover{background:none;color:var(--text)}
 .win-btn.on{color:var(--accent)}
-.win-close:hover{background:#c42b1c!important;color:#fff!important}
+.win-close:hover{background:none!important;color:#e5484d!important}
 
 /* ── Cover fills the whole window ──────────────────── */
 .cover{
@@ -105,6 +107,12 @@ body:hover .info-center{transform:translateY(-16px)}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   text-shadow:0 1px 2px rgba(0,0,0,.5);
 }
+/* Hover-marquee строки артистов — порт `useCardMarquee` из приложения: клип
+   (.artist) стоит на месте, внутренний бегунок в покое `inline` (иначе не
+   работает многоточие), пока курсор в окне — `inline-block` и катится на
+   величину переполнения. Кадры — копия `trscroll` из animations.css. */
+@keyframes pip-artscroll{0%,10%{transform:translateX(0)}80%,100%{transform:translateX(var(--tr-off,0))}}
+.artist>.mq-in{display:inline}
 .tra-link{cursor:pointer;transition:color .1s}
 .tra-link:hover{color:#fff;text-decoration:underline}
 
@@ -129,35 +137,53 @@ body:hover .hover-ui{opacity:1;transform:none}
 }
 .toast.show{opacity:1}
 
-/* ── Add popup (matches main app #cxPlFlyout) ──────── */
-@keyframes apIn{from{opacity:0;transform:scale(.92) translateY(-5px)}to{opacity:1;transform:scale(1) translateY(0)}}
+/* ── Add popup (перенесён с главного окна: #cxPlFlyout + .ci из
+   search-misc.css) ──────────────────────────────────────────────────
+   Строки плоские: ни у пункта, ни у бокса иконки нет подложки — отклик
+   только цветом (--ovl .78 → 1, здесь белым по обложке). Плейлист —
+   двухэтажная строка: 28px обложка + название и счётчик треков. */
+@keyframes apIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 .add-popup{
   position:fixed;z-index:100;
   background:color-mix(in srgb, var(--bg2) 50%, #000 50%);
-  border:1px solid rgba(255,255,255,.07);
+  border:none;
   border-radius:calc(var(--radius) * 0.9);
   padding:5px;min-width:185px;max-width:240px;
   box-shadow:none;
   display:none;max-height:320px;overflow-y:auto;
 }
-.add-popup.open{display:block;animation:apIn .15s cubic-bezier(.34,1.25,.64,1)}
+/* Со списком плейлистов (крупные обложки) нужно больше ширины — иначе
+   названию остаётся ~80px. */
+.add-popup:has(.ci-pl){min-width:218px;max-width:260px}
+.add-popup.open{display:block;animation:apIn .16s cubic-bezier(.2,.9,.3,1)}
 .ci{
-  padding:7px 10px;font-size:13px;cursor:pointer;
+  padding:5px 10px;font-size:13px;cursor:pointer;
   border-radius:calc(var(--radius) * 0.5);
-  display:flex;align-items:center;gap:8px;color:var(--text);
-  transition:background .1s,box-shadow .1s;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  display:flex;align-items:center;gap:10px;
+  color:rgba(255,255,255,.78);transition:color .1s;
+  white-space:nowrap;
 }
-.ci:hover{background:rgba(255,255,255,.07);box-shadow:inset 2.5px 0 0 var(--accent)}
+.ci:hover{color:#fff}
 .ci-icon{
-  width:22px;height:22px;border-radius:5px;
-  background:rgba(255,255,255,.07);
+  width:18px;height:18px;border-radius:5px;background:transparent;
   display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;transition:background .1s;
+  flex-shrink:0;color:inherit;overflow:hidden;
 }
-.ci:hover .ci-icon{background:rgba(255,255,255,.11)}
+.ci-icon svg{width:15px;height:15px}
 .ci.accent{color:var(--accent);font-weight:600}
-.cx-sep{height:1px;background:rgba(255,255,255,.08);margin:4px 3px;opacity:.65}
+.ci.ci-pl{padding:4px 8px;gap:10px}
+.ci.ci-pl .ci-icon{width:28px;height:28px;border-radius:calc(var(--radius) * 0.4)}
+.ci-pl-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.25}
+.ci-pl-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci-pl-sub{font-size:11px;color:var(--text2);opacity:.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Заглушка без обложки (как shared/ui/EmptyCover.tsx): подложка + знак bloom.
+   Одна на всех: и пустой плейлист в попапе «Добавить», и трек без артворка. */
+.pl-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06)}
+.pl-empty i{display:block;width:34%;height:34%;min-width:10px;min-height:10px;flex-shrink:0;background-color:var(--text);opacity:.16;-webkit-mask:url(/logo.png) center/contain no-repeat;mask:url(/logo.png) center/contain no-repeat}
+/* Коллаж из обложек первых треков (как shared/ui/PlaylistCover.tsx). */
+.pl-grid{display:grid;width:100%;height:100%;overflow:hidden}
+.pl-grid img,.pl-one{width:100%;height:100%;object-fit:cover;display:block}
+.cx-sep{height:1px;background:rgba(255,255,255,.08);margin:3px;opacity:.65}
 
 /* ── Progress ─────────────────────────────────────── */
 .prog-wrap{margin-bottom:4px;flex-shrink:0}
@@ -196,13 +222,26 @@ body:hover .hover-ui{opacity:1;transform:none}
    акцентным, отклик — лёгкая подсветка. */
 .cc.on:hover{color:var(--accent);filter:brightness(1.15)}
 .cc.fav.on:hover{color:#e03030;filter:brightness(1.15)}
-.cc.on::after{
-  content:'';position:absolute;bottom:3px;left:50%;
-  transform:translateX(-50%);width:3px;height:3px;
-  border-radius:50%;background:var(--accent);
-}
 .cc.fav.on{color:#e03030}
-.cc.fav.on::after{display:none}
+/* Бейджи режимов (перенесены с главного окна, .cc-badge в player.css):
+   кружок акцентного цвета сверху справа над кнопкой — «умная» перемешка
+   (звёздочка), повтор очереди (список) и повтор трека (цифра 1). Точку под
+   активным тоглом они заменяют: в приложении её нет, включённость видна по
+   акцентному цвету иконки. Смещение 3px — кнопка тут 34px против 30px в
+   плеере, без него кружок отрывался бы от иконки. */
+.cc-badge{
+  position:absolute;top:3px;right:3px;width:13px;height:13px;
+  border-radius:50%;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  line-height:1;color:var(--accent-text);pointer-events:none;
+  font-size:8px;font-weight:700;
+  box-shadow:0 1px 3px rgba(0,0,0,.3);
+  animation:cc-badge-pop .18s ease-out;
+}
+@keyframes cc-badge-pop{0%{opacity:0}100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.cc-badge{animation:none}}
+/* Цифра оптически сидит выше центра — компенсируем отступом сверху. */
+.cc-badge.num{padding-top:1px}
 .cc-play{
   width:44px;height:44px;border-radius:calc(var(--radius)*0.85);
   background:var(--accent);border:none;color:var(--accent-text);
@@ -243,7 +282,32 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   min-width:26px;text-align:right;
   text-shadow:0 1px 4px rgba(0,0,0,.5);
 }
-</style>
+
+    /* ===== КОНТРАКТ ОТРИСОВКИ ИКОНОК =====
+       То же, что `[data-ico]` в base.css главного окна, но окно отдельное:
+       React-реестра здесь нет, иконки вписаны сырыми <svg>, поэтому вес не
+       считается, а задан таблицей по размеру. Формула та же:
+       sw = clamp(1.5, 27.6/размер, 2.2) — цель 1.15px штриха на экране.
+       Зашитые в иконку 1.5 при 12px давали 0.63px, то есть субпиксельную кашу.
+
+       Ограничено 24-й сеткой: бренд-логотипы живут на своих viewBox и под
+       правило не попадают. svg со СВОИМ stroke-width — это голые «+»/«×»,
+       нарисованные вручную, их вес выверен отдельно. */
+    svg[viewBox="0 0 24 24"]:not([stroke-width]):not([data-ink]),
+    svg[viewBox="0 0 24 24"]:not([stroke-width]):not([data-ink]) *{stroke-width:var(--ico-sw,1.5);stroke-linecap:round;stroke-linejoin:round}
+    /* Залитые контуры Solar (сердце, shuffle, repeat): толщина запечена в
+       координатах, stroke-width по ним не работает — вес добирается тонкой
+       обводкой ПОВЕРХ заливки. */
+    svg[viewBox="0 0 24 24"][data-ink="filled"]{stroke:currentColor;stroke-width:var(--ico-ink,0);stroke-linejoin:round}
+    svg[viewBox="0 0 24 24"][width="9"]{--ico-sw:2.2;--ico-ink:.7}
+    svg[viewBox="0 0 24 24"][width="12"]{--ico-sw:2.2;--ico-ink:.7}
+    svg[viewBox="0 0 24 24"][width="13"]{--ico-sw:2.12;--ico-ink:.62}
+    svg[viewBox="0 0 24 24"][width="14"]{--ico-sw:1.97;--ico-ink:.47}
+    svg[viewBox="0 0 24 24"][width="15"]{--ico-sw:1.84;--ico-ink:.34}
+    svg[viewBox="0 0 24 24"][width="16"]{--ico-sw:1.72;--ico-ink:.22}
+    svg[viewBox="0 0 24 24"][width="17"]{--ico-sw:1.62;--ico-ink:.12}
+    svg[viewBox="0 0 24 24"][width="18"]{--ico-sw:1.53;--ico-ink:.03}
+  </style>
 </head>
 <body>
 
@@ -255,7 +319,7 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   </div>
   <div class="win-btns">
     <button class="win-btn on" id="pinBtn">
-      <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="m19.184 7.805l-2.965-2.967c-2.027-2.03-3.04-3.043-4.129-2.803s-1.581 1.587-2.568 4.28l-.668 1.823c-.263.718-.395 1.077-.632 1.355a2 2 0 0 1-.36.332c-.296.213-.664.314-1.4.517c-1.66.458-2.491.687-2.804 1.23a1.53 1.53 0 0 0-.204.773c.004.627.613 1.236 1.83 2.455L6.7 16.216l-4.476 4.48a.764.764 0 0 0 1.08 1.08l4.475-4.48l1.466 1.468c1.226 1.226 1.839 1.84 2.47 1.84c.265 0 .526-.068.757-.2c.548-.313.778-1.149 1.239-2.822c.202-.735.303-1.102.515-1.399q.14-.194.322-.352c.275-.238.632-.372 1.345-.64l1.844-.693c2.664-1 3.996-1.501 4.23-2.586c.235-1.086-.77-2.093-2.783-4.107"/></svg>
+      <svg data-ink="filled" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="m19.184 7.805l-2.965-2.967c-2.027-2.03-3.04-3.043-4.129-2.803s-1.581 1.587-2.568 4.28l-.668 1.823c-.263.718-.395 1.077-.632 1.355a2 2 0 0 1-.36.332c-.296.213-.664.314-1.4.517c-1.66.458-2.491.687-2.804 1.23a1.53 1.53 0 0 0-.204.773c.004.627.613 1.236 1.83 2.455L6.7 16.216l-4.476 4.48a.764.764 0 0 0 1.08 1.08l4.475-4.48l1.466 1.468c1.226 1.226 1.839 1.84 2.47 1.84c.265 0 .526-.068.757-.2c.548-.313.778-1.149 1.239-2.822c.202-.735.303-1.102.515-1.399q.14-.194.322-.352c.275-.238.632-.372 1.345-.64l1.844-.693c2.664-1 3.996-1.501 4.23-2.586c.235-1.086-.77-2.093-2.783-4.107"/></svg>
     </button>
     <button class="win-btn" id="openMainBtn">
       <svg width="13" height="13" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path stroke-linejoin="round" d="m13 11l9-9m0 0h-5.344M22 2v5.344"/><path d="M22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2"/></g></svg>
@@ -305,10 +369,10 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   <!-- Controls -->
   <div class="ctrl">
     <button class="cc fav" id="btnFav" onclick="cmd('fav')">
-      <svg id="favIcon" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="m8.962 18.91l.464-.588zM12 5.5l-.54.52a.75.75 0 0 0 1.08 0zm3.038 13.41l.465.59zm-5.612-.588C7.91 17.127 6.253 15.96 4.938 14.48C3.65 13.028 2.75 11.335 2.75 9.137h-1.5c0 2.666 1.11 4.7 2.567 6.339c1.43 1.61 3.254 2.9 4.68 4.024zM2.75 9.137c0-2.15 1.215-3.954 2.874-4.713c1.612-.737 3.778-.541 5.836 1.597l1.08-1.04C10.1 2.444 7.264 2.025 5 3.06C2.786 4.073 1.25 6.425 1.25 9.137zM8.497 19.5c.513.404 1.063.834 1.62 1.16s1.193.59 1.883.59v-1.5c-.31 0-.674-.12-1.126-.385c-.453-.264-.922-.628-1.448-1.043zm7.006 0c1.426-1.125 3.25-2.413 4.68-4.024c1.457-1.64 2.567-3.673 2.567-6.339h-1.5c0 2.198-.9 3.891-2.188 5.343c-1.315 1.48-2.972 2.647-4.488 3.842zM22.75 9.137c0-2.712-1.535-5.064-3.75-6.077c-2.264-1.035-5.098-.616-7.54 1.92l1.08 1.04c2.058-2.137 4.224-2.333 5.836-1.596c1.659.759 2.874 2.562 2.874 4.713zm-8.176 9.185c-.526.415-.995.779-1.448 1.043s-.816.385-1.126.385v1.5c.69 0 1.326-.265 1.883-.59c.558-.326 1.107-.756 1.62-1.16z"/></svg>
+      <svg data-ink="filled" id="favIcon" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="m8.962 18.91l.464-.588zM12 5.5l-.54.52a.75.75 0 0 0 1.08 0zm3.038 13.41l.465.59zm-5.612-.588C7.91 17.127 6.253 15.96 4.938 14.48C3.65 13.028 2.75 11.335 2.75 9.137h-1.5c0 2.666 1.11 4.7 2.567 6.339c1.43 1.61 3.254 2.9 4.68 4.024zM2.75 9.137c0-2.15 1.215-3.954 2.874-4.713c1.612-.737 3.778-.541 5.836 1.597l1.08-1.04C10.1 2.444 7.264 2.025 5 3.06C2.786 4.073 1.25 6.425 1.25 9.137zM8.497 19.5c.513.404 1.063.834 1.62 1.16s1.193.59 1.883.59v-1.5c-.31 0-.674-.12-1.126-.385c-.453-.264-.922-.628-1.448-1.043zm7.006 0c1.426-1.125 3.25-2.413 4.68-4.024c1.457-1.64 2.567-3.673 2.567-6.339h-1.5c0 2.198-.9 3.891-2.188 5.343c-1.315 1.48-2.972 2.647-4.488 3.842zM22.75 9.137c0-2.712-1.535-5.064-3.75-6.077c-2.264-1.035-5.098-.616-7.54 1.92l1.08 1.04c2.058-2.137 4.224-2.333 5.836-1.596c1.659.759 2.874 2.562 2.874 4.713zm-8.176 9.185c-.526.415-.995.779-1.448 1.043s-.816.385-1.126.385v1.5c.69 0 1.326-.265 1.883-.59c.558-.326 1.107-.756 1.62-1.16z"/></svg>
     </button>
     <button class="cc" id="btnRep" onclick="cmd('repeat')">
-      <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 19.75a.75.75 0 0 0 0-1.5zM11 5v.75a.75.75 0 0 0 .53-1.28zM9.53 2.47a.75.75 0 0 0-1.06 1.06zM9.5 18.25H9v1.5h.5zM9 5.75h2v-1.5H9zm2.53-1.28l-2-2l-1.06 1.06l2 2zM1.25 12A7.75 7.75 0 0 0 9 19.75v-1.5A6.25 6.25 0 0 1 2.75 12zm1.5 0A6.25 6.25 0 0 1 9 5.75v-1.5A7.75 7.75 0 0 0 1.25 12zM13 19v-.75a.75.75 0 0 0-.53 1.28zm1.47 2.53a.75.75 0 1 0 1.06-1.06zm.03-17.28a.75.75 0 0 0 0 1.5zm.5 14h-2v1.5h2zm-2.53 1.28l2 2l1.06-1.06l-2-2zM14.5 5.75h.5v-1.5h-.5zM21.25 12A6.25 6.25 0 0 1 15 18.25v1.5A7.75 7.75 0 0 0 22.75 12zm1.5 0A7.75 7.75 0 0 0 15 4.25v1.5A6.25 6.25 0 0 1 21.25 12z"/></svg>
+      <svg data-ink="filled" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 19.75a.75.75 0 0 0 0-1.5zM11 5v.75a.75.75 0 0 0 .53-1.28zM9.53 2.47a.75.75 0 0 0-1.06 1.06zM9.5 18.25H9v1.5h.5zM9 5.75h2v-1.5H9zm2.53-1.28l-2-2l-1.06 1.06l2 2zM1.25 12A7.75 7.75 0 0 0 9 19.75v-1.5A6.25 6.25 0 0 1 2.75 12zm1.5 0A6.25 6.25 0 0 1 9 5.75v-1.5A7.75 7.75 0 0 0 1.25 12zM13 19v-.75a.75.75 0 0 0-.53 1.28zm1.47 2.53a.75.75 0 1 0 1.06-1.06zm.03-17.28a.75.75 0 0 0 0 1.5zm.5 14h-2v1.5h2zm-2.53 1.28l2 2l1.06-1.06l-2-2zM14.5 5.75h.5v-1.5h-.5zM21.25 12A6.25 6.25 0 0 1 15 18.25v1.5A7.75 7.75 0 0 0 22.75 12zm1.5 0A7.75 7.75 0 0 0 15 4.25v1.5A6.25 6.25 0 0 1 21.25 12z"/></svg>
     </button>
     <button class="cc" onclick="cmd('prev')">
       <svg width="18" height="18" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7.34 9.353c-1.787 1.154-1.787 4.14 0 5.294l10.79 6.967c1.736 1.122 3.87-.338 3.87-2.647V5.033c0-2.31-2.134-3.769-3.87-2.648z"/><path stroke-linecap="round" d="M2 5v14"/></g></svg>
@@ -320,7 +384,7 @@ body.play-flat .cc-play svg{width:22px;height:22px}
       <svg width="18" height="18" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16.66 9.353c1.787 1.154 1.787 4.14 0 5.294L5.87 21.614C4.135 22.737 2 21.277 2 18.968V5.033c0-2.31 2.134-3.769 3.87-2.648z"/><path stroke-linecap="round" d="M22 5v14"/></g></svg>
     </button>
     <button class="cc" id="btnShuf" onclick="cmd('shuffle')">
-      <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M2 16.25a.75.75 0 0 0 0 1.5zm8.748-2.163l-.643-.386zm2.504-4.174l.643.386zM22 7l.53.53a.75.75 0 0 0 0-1.06zm-2.53 1.47a.75.75 0 0 0 1.06 1.06zm1.06-4a.75.75 0 1 0-1.06 1.06zm-5.31 2.92l-.369-.653zM2 17.75h3.603v-1.5H2zm9.39-3.277l2.505-4.174l-1.286-.772l-2.504 4.174zm7.007-6.723H22v-1.5h-3.603zm3.073-1.28l-2 2l1.06 1.06l2-2zm1.06 0l-2-2l-1.06 1.06l2 2zm-8.635 3.829c.434-.724.734-1.22 1.006-1.589c.263-.355.468-.543.689-.668l-.739-1.305c-.467.264-.82.627-1.155 1.08c-.326.44-.668 1.011-1.087 1.71zm4.502-4.049c-.815 0-1.48 0-2.025.052c-.562.055-1.054.17-1.521.435l.739 1.305c.22-.125.487-.204.927-.247c.456-.044 1.036-.045 1.88-.045zM5.603 17.75c.815 0 1.48 0 2.025-.052c.562-.055 1.054-.17 1.521-.435l-.739-1.305c-.22.125-.487.204-.927.247c-.456.044-1.036.045-1.88.045zm4.502-4.049c-.435.724-.734 1.22-1.006 1.589c-.263.355-.468.543-.689.668l.74 1.305c.466-.264.819-.627 1.154-1.08c.326-.44.668-1.011 1.087-1.71zM2 6.25a.75.75 0 0 0 0 1.5zM22 17l.53.53a.75.75 0 0 0 0-1.06zm-1.47-2.53a.75.75 0 1 0-1.06 1.06zm-1.06 4a.75.75 0 1 0 1.06 1.06zm-3.345-1.525l.144-.736zm-1.682-2.33a.75.75 0 1 0-1.286.77zm.025 1.391l.558-.501zm-6.593-8.95l.143-.737zm1.682 2.33a.75.75 0 0 0 1.286-.772zm-.025-1.393l-.558.502zM2 7.75h4.668v-1.5H2zm15.332 10H22v-1.5h-4.668zm5.198-1.28l-2-2l-1.06 1.06l2 2zm-1.06 0l-2 2l1.06 1.06l2-2zm-4.138-.22c-.645 0-.867-.003-1.063-.041l-.287 1.472c.372.072.765.069 1.35.069zm-4.175-.864c.3.502.5.84.754 1.122l1.115-1.003c-.134-.149-.25-.337-.583-.89zm3.112.823a2.25 2.25 0 0 1-1.243-.704l-1.115 1.003a3.75 3.75 0 0 0 2.071 1.173zM6.668 7.75c.645 0 .867.003 1.063.041l.287-1.472c-.372-.072-.765-.069-1.35-.069zm4.175.864c-.3-.502-.5-.84-.754-1.122L8.974 8.495c.134.149.25.337.583.89zm-3.112-.823a2.25 2.25 0 0 1 1.243.704l1.115-1.003a3.75 3.75 0 0 0-2.071-1.173z"/></svg>
+      <svg data-ink="filled" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M2 16.25a.75.75 0 0 0 0 1.5zm8.748-2.163l-.643-.386zm2.504-4.174l.643.386zM22 7l.53.53a.75.75 0 0 0 0-1.06zm-2.53 1.47a.75.75 0 0 0 1.06 1.06zm1.06-4a.75.75 0 1 0-1.06 1.06zm-5.31 2.92l-.369-.653zM2 17.75h3.603v-1.5H2zm9.39-3.277l2.505-4.174l-1.286-.772l-2.504 4.174zm7.007-6.723H22v-1.5h-3.603zm3.073-1.28l-2 2l1.06 1.06l2-2zm1.06 0l-2-2l-1.06 1.06l2 2zm-8.635 3.829c.434-.724.734-1.22 1.006-1.589c.263-.355.468-.543.689-.668l-.739-1.305c-.467.264-.82.627-1.155 1.08c-.326.44-.668 1.011-1.087 1.71zm4.502-4.049c-.815 0-1.48 0-2.025.052c-.562.055-1.054.17-1.521.435l.739 1.305c.22-.125.487-.204.927-.247c.456-.044 1.036-.045 1.88-.045zM5.603 17.75c.815 0 1.48 0 2.025-.052c.562-.055 1.054-.17 1.521-.435l-.739-1.305c-.22.125-.487.204-.927.247c-.456.044-1.036.045-1.88.045zm4.502-4.049c-.435.724-.734 1.22-1.006 1.589c-.263.355-.468.543-.689.668l.74 1.305c.466-.264.819-.627 1.154-1.08c.326-.44.668-1.011 1.087-1.71zM2 6.25a.75.75 0 0 0 0 1.5zM22 17l.53.53a.75.75 0 0 0 0-1.06zm-1.47-2.53a.75.75 0 1 0-1.06 1.06zm-1.06 4a.75.75 0 1 0 1.06 1.06zm-3.345-1.525l.144-.736zm-1.682-2.33a.75.75 0 1 0-1.286.77zm.025 1.391l.558-.501zm-6.593-8.95l.143-.737zm1.682 2.33a.75.75 0 0 0 1.286-.772zm-.025-1.393l-.558.502zM2 7.75h4.668v-1.5H2zm15.332 10H22v-1.5h-4.668zm5.198-1.28l-2-2l-1.06 1.06l2 2zm-1.06 0l-2 2l1.06 1.06l2-2zm-4.138-.22c-.645 0-.867-.003-1.063-.041l-.287 1.472c.372.072.765.069 1.35.069zm-4.175-.864c.3.502.5.84.754 1.122l1.115-1.003c-.134-.149-.25-.337-.583-.89zm3.112.823a2.25 2.25 0 0 1-1.243-.704l-1.115 1.003a3.75 3.75 0 0 0 2.071 1.173zM6.668 7.75c.645 0 .867.003 1.063.041l.287-1.472c-.372-.072-.765-.069-1.35-.069zm4.175.864c-.3-.502-.5-.84-.754-1.122L8.974 8.495c.134.149.25.337.583.89zm-3.112-.823a2.25 2.25 0 0 1 1.243.704l1.115-1.003a3.75 3.75 0 0 0-2.071-1.173z"/></svg>
     </button>
     <button class="cc" id="btnAdd" onclick="cmd('add')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
@@ -371,26 +435,8 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   }
 
   var ti = null;
-  var st = { playing:false, pos:0, dur:0, title:'', artist:'', artwork:'', shuffle:false, repeat:0, volume:80, fav:false, canAddToLib:false, source:null };
+  var st = { playing:false, pos:0, dur:0, title:'', artist:'', artwork:'', shuffle:false, smartShuffle:false, repeat:0, volume:80, fav:false, canAddToLib:false, source:null };
 
-  // Бренд-цвета площадок (как в SourceBadge.tsx). По умолчанию бейдж рисуется
-  // в своём бренд-цвете; тоггл bloom_accent_badges перекрашивает его в акцент.
-  function badgeColor(src) {
-    var accent = false;
-    try { accent = localStorage.getItem('bloom_accent_badges') === '1'; } catch(e) {}
-    if (accent) return 'var(--accent)';
-    var BRAND = { soundcloud:'#ff5500', yandex:'#fed42b', ytmusic:'#ff0033' };
-    return BRAND[src] || 'var(--accent)';
-  }
-  // Бейдж площадки поверх обложки (круглый полупрозрачный, цвет — бренд/акцент).
-  function sourceBadgeHTML(src) {
-    var svg = '';
-    if (src === 'soundcloud') svg = '<svg width="11" height="11" viewBox="0 0 291.319 291.319" fill="currentColor"><path d="M72.83,218.485h18.207V103.832c-6.828,1.93-12.982,5.435-18.207,10.041C72.83,113.874,72.83,218.485,72.83,218.485z M36.415,140.921v77.436l1.174,0.127h17.033v-77.682H37.589C37.589,140.803,36.415,140.921,36.415,140.921z M0,179.63c0,14.102,7.338,26.328,18.207,33.147V146.52C7.338,153.329,0,165.556,0,179.63z M109.245,218.485h18.207v-109.6c-5.444-3.396-11.607-5.635-18.207-6.5V218.485z M253.73,140.803h-10.242c0.519-3.168,0.847-6.382,0.847-9.705c0-32.182-25.245-58.264-56.388-58.264c-16.896,0-31.954,7.775-42.287,19.955v125.695h108.07c20.747,0,37.589-17.388,37.589-38.855C291.319,158.182,274.477,140.803,253.73,140.803z"/></svg>';
-    else if (src === 'yandex') svg = '<svg width="11" height="11" viewBox="0 0 448 445" fill="currentColor"><path d="M442.973 173.499L441.756 164.528L368.261 147.37L406.225 91.0325L401.739 84.9248L342.538 113.892L349.076 35.1002L342.538 31.8563L305.79 95.1128L262.529 0H254.369L264.962 93.0853L156.773 6.94402L147.396 9.4023L230.673 113.892L65.3346 58.7961L57.5796 67.362L205.355 151.045L2.05279 168.202L0 180.443L211.488 203.303L34.7201 347.834L42.8806 358.859L252.316 244.536L211.083 445H223.729L304.574 256.396L353.562 403.767L362.128 397.228L343.754 249.452L418.466 333.946L422.977 325.38L367.45 220.865L446.242 248.641L447.053 240.05L381.338 187.387L442.973 173.499Z"/></svg>';
-    else if (src === 'ytmusic') svg = '<svg width="12" height="9" viewBox="0 0 313.23315 216.02286" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" transform="translate(-54.079375,-5.2758072)" d="m 210.53177,221.29866 c 0,0 98.12514,0 122.46443,-6.48069 13.70449,-3.6724 24.01093,-14.2575 27.62825,-27.32688 6.68807,-23.97854 6.68807,-74.41988 6.68807,-74.41988 0,0 0,-50.117297 -6.68807,-73.879819 C 357.00713,25.79798 346.70069,15.42887 332.9962,11.864515 308.65691,5.2758072 210.53177,5.2758072 210.53177,5.2758072 c 0,0 -97.9062,0 -122.135976,6.5887078 -13.485335,3.564355 -24.010529,13.933465 -27.847831,27.326876 -6.468588,23.762522 -6.468588,73.879819 -6.468588,73.879819 0,0 0,50.44134 6.468588,74.41988 3.837302,13.06938 14.362496,23.65448 27.847831,27.32688 24.229776,6.48069 122.135976,6.48069 122.135976,6.48069 z M 259.30109,113.28723 178.29251,67.382379 v 91.809711 z"/></svg>';
-    else return '';
-    return '<span class="cov-badge" style="color:' + badgeColor(src) + '">' + svg + '</span>';
-  }
   var ticker = null;
   var prevVol = 80;
   var showTrackInTitle = false;
@@ -450,12 +496,44 @@ body.play-flat .cc-play svg{width:22px;height:22px}
 
   function renderArtist(artist) {
     var el = document.getElementById('tArtist');
-    if (!artist) { el.textContent = '—'; return; }
-    var parts = parseArtists(artist);
-    if (parts.length === 0) { el.textContent = '—'; return; }
-    el.innerHTML = parts.map(function(a){
-      return '<span class="tra-link" data-artist="' + esc(a) + '">' + esc(a) + '</span>';
-    }).join(', ');
+    var parts = artist ? parseArtists(artist) : [];
+    var html = parts.length
+      ? parts.map(function(a){
+          return '<span class="tra-link" data-artist="' + esc(a) + '">' + esc(a) + '</span>';
+        }).join(', ')
+      : '—';
+    // Бегунок .mq-in — обёртка для hover-marquee (см. artScroll ниже).
+    el.innerHTML = '<span class="mq-in">' + html + '</span>';
+    // Курсор мог остаться в окне (трек сменился сам) — тогда сразу катим новую
+    // строку, иначе она замерла бы до следующего захода.
+    if (document.body.matches(':hover')) artScrollStart(); else artScrollStop();
+  }
+
+  // Прокрутка не влезшей строки артистов, пока курсор в окне. Пересчитываем на
+  // каждом заходе, а не при рендере: окно PiP свободно тянется мышью.
+  var ART_DURATION = 5, ART_MIN_OVERFLOW = 2;
+  function artScrollStart() {
+    var clip = document.getElementById('tArtist'), inner = clip && clip.firstElementChild;
+    if (!inner) return;
+    var overflow = clip.scrollWidth - clip.clientWidth;
+    if (overflow <= ART_MIN_OVERFLOW) return;
+    // Строка центрированная: на время прокрутки прижимаем к левому краю, иначе
+    // текст стартует «из-под» левой границы клипа.
+    clip.style.textAlign = 'left';
+    inner.style.display = 'inline-block';
+    inner.style.willChange = 'transform';
+    inner.style.setProperty('--tr-off', '-' + overflow + 'px');
+    inner.style.animation = 'pip-artscroll ' + ART_DURATION + 's linear infinite';
+  }
+  function artScrollStop() {
+    var clip = document.getElementById('tArtist'), inner = clip && clip.firstElementChild;
+    if (!inner) return;
+    clip.style.textAlign = '';
+    inner.style.animation = '';
+    inner.style.transform = 'translateX(0)';
+    inner.style.display = ''; // → inline, многоточие снова работает
+    inner.style.willChange = '';
+    inner.style.removeProperty('--tr-off');
   }
 
   var toastTimer = null;
@@ -501,6 +579,36 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   function updateVolumeIcon(v) {
     var icon = document.getElementById('volIcon');
     if (icon) icon.innerHTML = v == 0 ? VOL_MUTED : VOL_LOUD;
+  }
+
+  // ── Бейджи режимов (как в PlayerBar/BigPicture главного окна) ──
+  // Ключ на элементе нужен, чтобы не пересобирать бейдж на каждом пуше
+  // состояния: иначе анимация появления рестартовала бы раз в секунду.
+  var BADGES = {
+    list:  '<span class="cc-badge" data-b="list"><svg width="9" height="9" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" d="M20 7H4m11 5H4m5 5H4"/></svg></span>',
+    one:   '<span class="cc-badge num" data-b="one">1</span>',
+    stars: '<span class="cc-badge" data-b="stars"><svg width="9" height="9" viewBox="0 0 24 24"><g fill="none" stroke="currentColor"><path d="m9.99 16.5l-.975.474c-1.98.548-2.971.822-3.505.245c-.534-.576-.258-1.62.295-3.71l.142-.54c.157-.595.236-.891.197-1.186c-.04-.294-.193-.553-.499-1.07l-.278-.47C4.29 8.422 3.752 7.512 4.11 6.787c.36-.724 1.379-.783 3.418-.9l.527-.03c.58-.034.869-.05 1.122-.185c.252-.135.439-.372.813-.848l.34-.432c1.316-1.673 1.974-2.509 2.73-2.38s1.11 1.137 1.817 3.154l.183.522c.201.573.302.86.497 1.07c.196.212.464.324 1.001.547l.489.204c1.89.786 2.835 1.18 2.942 1.983c.092.686-.477 1.283-1.64 2.29"/><path d="M15.252 10.689c-.987-1.18-1.48-1.77-2.048-1.68c-.567.091-.832.803-1.362 2.227l-.138.368c-.15.405-.226.607-.373.756c-.146.149-.348.228-.75.386l-.367.143c-1.417.555-2.126.833-2.207 1.4s.52 1.049 1.721 2.011l.31.25c.342.273.513.41.611.597c.1.187.115.404.146.837l.029.394c.11 1.523.166 2.285.683 2.545s1.154-.155 2.427-.983l.329-.215c.362-.235.543-.353.75-.387c.208-.033.42.022.841.132l.385.1c1.485.386 2.228.58 2.629.173s.193-1.144-.221-2.62l-.108-.38c-.117-.42-.176-.63-.147-.837c.03-.208.145-.39.374-.756l.21-.332c.807-1.285 1.21-1.927.94-2.438c-.269-.511-1.033-.553-2.562-.635l-.396-.022c-.434-.023-.652-.035-.841-.13c-.19-.095-.33-.263-.61-.599z"/></g></svg></span>'
+  };
+  function setBadge(btn, key) {
+    if (!btn) return;
+    var cur = btn.querySelector('.cc-badge');
+    if (cur && cur.getAttribute('data-b') === key) return;
+    if (cur) cur.parentNode.removeChild(cur);
+    if (key) btn.insertAdjacentHTML('beforeend', BADGES[key]);
+  }
+  // Shuffle: акцент при любой перемешке, звёздочка — только у «умной».
+  // Repeat: 1 (очередь) — список, 2 (трек) — цифра.
+  function renderToggles() {
+    var shuf = document.getElementById('btnShuf');
+    var rep  = document.getElementById('btnRep');
+    if (shuf) {
+      shuf.classList.toggle('on', !!st.shuffle);
+      setBadge(shuf, st.shuffle && st.smartShuffle ? 'stars' : null);
+    }
+    if (rep) {
+      rep.classList.toggle('on', st.repeat > 0);
+      setBadge(rep, st.repeat === 1 ? 'list' : st.repeat === 2 ? 'one' : null);
+    }
   }
 
   function setFavIcon(fav) {
@@ -565,6 +673,8 @@ body.play-flat .cc-play svg{width:22px;height:22px}
     if (s.position !== undefined && !scrubbing && Math.abs(s.position - st.pos) > 1.2) st.pos = s.position;
     if (s.duration !== undefined) st.dur     = s.duration;
     if (s.shuffle  !== undefined) st.shuffle = s.shuffle;
+    if (s.smart_shuffle !== undefined) st.smartShuffle = !!s.smart_shuffle;
+    if (s.smartShuffle  !== undefined) st.smartShuffle = !!s.smartShuffle;
     if (s.repeat   !== undefined) st.repeat  = s.repeat;
     if (s.fav      !== undefined) st.fav     = !!s.fav;
     if (s.canAddToLib !== undefined) st.canAddToLib = !!s.canAddToLib;
@@ -596,7 +706,7 @@ body.play-flat .cc-play svg{width:22px;height:22px}
       if (st.artwork) {
         cov.innerHTML = '<img src="' + st.artwork + '" alt="">';
       } else {
-        cov.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>';
+        cov.innerHTML = '<div class="pl-empty"><i></i></div>';
       }
     }
 
@@ -604,8 +714,7 @@ body.play-flat .cc-play svg{width:22px;height:22px}
     setProgress(st.pos, st.dur);
     if (st.playing) startTicker(); else stopTicker();
 
-    document.getElementById('btnShuf').classList.toggle('on', !!st.shuffle);
-    document.getElementById('btnRep').classList.toggle('on', st.repeat > 0);
+    renderToggles();
 
     document.getElementById('volSl').value = st.volume;
     document.getElementById('volNum').textContent = st.volume;
@@ -616,17 +725,68 @@ body.play-flat .cc-play svg{width:22px;height:22px}
   function getPlaylists() {
     try { return JSON.parse(localStorage.getItem('bloom_playlists') || '[]'); } catch(e) { return []; }
   }
-  // Заглушка пустой обложки (как shared/ui/EmptyCover.tsx): приглушённый знак
-  // bloom — винила у плейлистов больше нет. Площадку даёт сама .ci-icon, её фон
-  // тут не гасим (в отличие от варианта с картинкой).
-  function emptyCoverHTML() {
-    return '<span style="width:12px;height:12px;background-color:var(--text,#fff);opacity:.5;' +
-      '-webkit-mask:url(/logo.png) center/contain no-repeat;mask:url(/logo.png) center/contain no-repeat"></span>';
+  // Обложки треков для коллажа берём из `bloom_cover_cache` — того же LS-кеша
+  // «id трека → URL обложки», что кормит коллажи на главной. Реестра площадок и
+  // библиотеки в этом окне нет, так что это единственный доступный источник:
+  // чего в кеше не нашлось — просто не попадёт в коллаж.
+  var _ccRaw = null, _ccMap = {};
+  function coverCache() {
+    var raw = null;
+    try { raw = localStorage.getItem('bloom_cover_cache'); } catch(e) {}
+    if (raw === _ccRaw) return _ccMap;
+    _ccRaw = raw; _ccMap = {};
+    try {
+      var arr = JSON.parse(raw || '[]');
+      if (Array.isArray(arr)) {
+        for (var i = 0; i < arr.length; i++) {
+          var e = arr[i];
+          if (Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'string') _ccMap[e[0]] = e[1];
+        }
+      }
+    } catch(e) { _ccMap = {}; }
+    return _ccMap;
   }
+  // Первые до 4 РАЗНЫХ обложек в порядке плейлиста (дубли отсеиваем: у альбома
+  // все треки с одной картинкой, сетка из её копий выглядела бы поломанной).
+  function plCovers(trs) {
+    var cc = coverCache(), out = [];
+    for (var i = 0; i < (trs || []).length && out.length < 4; i++) {
+      var c = cc[trs[i]];
+      if (c && out.indexOf(c) < 0) out.push(c);
+    }
+    return out;
+  }
+  // Коллаж как в shared/ui/PlaylistCover.tsx: 1 → на всю площадь, 2 → две
+  // половины, 3 → большая слева + две справа, 4 → сетка 2×2.
+  function collageHTML(covers) {
+    if (covers.length === 1) return '<img class="pl-one" src="' + esc(covers[0]) + '" alt="">';
+    var rows = covers.length === 2 ? '1fr' : '1fr 1fr';
+    var h = '<span class="pl-grid" style="grid-template-columns:1fr 1fr;grid-template-rows:' + rows + '">';
+    for (var i = 0; i < covers.length; i++) {
+      h += '<img src="' + esc(covers[i]) + '" alt=""' +
+        (covers.length === 3 && i === 0 ? ' style="grid-row:span 2"' : '') + '>';
+    }
+    return h + '</span>';
+  }
+  // Своя обложка → коллаж из обложек треков → заглушка (EmptyCover.tsx).
   function plIconHTML(pl) {
-    if (!pl.cover) return '<span class="ci-icon" style="overflow:hidden">' + emptyCoverHTML() + '</span>';
-    var img = '<img src="' + esc(pl.cover) + '" alt="" style="width:100%;height:100%;object-fit:cover">';
-    return '<span class="ci-icon" style="background:transparent;overflow:hidden">' + img + '</span>';
+    var inner;
+    if (pl.cover) {
+      inner = '<img class="pl-one" src="' + esc(pl.cover) + '" alt="">';
+    } else {
+      var cs = plCovers(pl.trs);
+      inner = cs.length ? collageHTML(cs) : '<span class="pl-empty"><i></i></span>';
+    }
+    return '<span class="ci-icon">' + inner + '</span>';
+  }
+  // Склонение счётчика треков (tracksLabel из features/library/lib/formatCount).
+  function tracksLabel(n) {
+    if (LOCALE !== 'ru') return n + (n === 1 ? ' track' : ' tracks');
+    var abs = Math.abs(n) % 100, last = abs % 10;
+    if (abs >= 11 && abs <= 14) return n + ' треков';
+    if (last === 1) return n + ' трек';
+    if (last >= 2 && last <= 4) return n + ' трека';
+    return n + ' треков';
   }
   function closeAddPopup() {
     var p = document.getElementById('addPopup');
@@ -638,9 +798,10 @@ body.play-flat .cc-play svg{width:22px;height:22px}
     if (!st.title) return;
     var pls = getPlaylists();
     var html = '';
-    var ICON_DL  = '<svg width="13" height="13" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15c0 2.828 0 4.243.879 5.121C4.757 21 6.172 21 9 21h6c2.828 0 4.243 0 5.121-.879C21 19.243 21 17.828 21 15M12 3v13m0 0l4-4.375M12 16l-4-4.375"/></svg>';
-    var ICON_NT  = '<svg width="12" height="12" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>';
-    var ICON_PL  = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    // Размер иконок держит `.ci-icon svg` (15px); атрибут width при этом решает,
+    // какой вес штриха возьмёт таблица в <style> — поэтому он тоже 15.
+    var ICON_DL  = '<svg width="15" height="15" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15c0 2.828 0 4.243.879 5.121C4.757 21 6.172 21 9 21h6c2.828 0 4.243 0 5.121-.879C21 19.243 21 17.828 21 15M12 3v13m0 0l4-4.375M12 16l-4-4.375"/></svg>';
+    var ICON_PL  = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
     if (st.canAddToLib) {
       html += '<div class="ci accent" data-act="lib"><span class="ci-icon">' + ICON_DL + '</span>' + tr('toLib') + '</div>';
       if (pls.length) html += '<div class="cx-sep"></div>';
@@ -649,7 +810,11 @@ body.play-flat .cc-play svg{width:22px;height:22px}
       html += '<div class="ci" data-act="new"><span class="ci-icon">' + ICON_PL + '</span>' + tr('createPl') + '</div>';
     } else {
       pls.forEach(function(pl) {
-        html += '<div class="ci" data-act="pl" data-id="' + esc(pl.id) + '">' + plIconHTML(pl) + esc(pl.name) + '</div>';
+        html += '<div class="ci ci-pl" data-act="pl" data-id="' + esc(pl.id) + '">' + plIconHTML(pl) +
+          '<span class="ci-pl-txt">' +
+            '<span class="ci-pl-name">' + esc(pl.name) + '</span>' +
+            '<span class="ci-pl-sub">' + esc(tracksLabel((pl.trs || []).length)) + '</span>' +
+          '</span></div>';
       });
       html += '<div class="cx-sep"></div><div class="ci" data-act="new"><span class="ci-icon">' + ICON_PL + '</span>' + tr('newPl') + '</div>';
     }
@@ -742,13 +907,19 @@ body.play-flat .cc-play svg{width:22px;height:22px}
       setPlayIcon(st.playing);
       if (st.playing) startTicker(); else stopTicker();
     }
+    // Кнопка перемешки в приложении — цикл из ТРЁХ состояний
+    // (`cycleShuffle`: выкл → обычная → умная), а не тогл: мгновенный отклик
+    // повторяем тем же циклом, иначе на переходе «обычная → умная» кнопка
+    // на миг гасла бы. Настоящее состояние всё равно придёт пушем.
     if (c === 'shuffle') {
-      st.shuffle = !st.shuffle;
-      document.getElementById('btnShuf').classList.toggle('on', st.shuffle);
+      if (!st.shuffle) { st.shuffle = true; st.smartShuffle = false; }
+      else if (!st.smartShuffle) { st.smartShuffle = true; }
+      else { st.shuffle = false; st.smartShuffle = false; }
+      renderToggles();
     }
     if (c === 'repeat') {
       st.repeat = (st.repeat + 1) % 3;
-      document.getElementById('btnRep').classList.toggle('on', st.repeat > 0);
+      renderToggles();
     }
     invoke('miniplayer_cmd', { cmd: c, value: null });
   };
@@ -796,7 +967,13 @@ body.play-flat .cc-play svg{width:22px;height:22px}
     });
 
     // Re-evaluate marquee on resize
-    window.addEventListener('resize', function() { updateMarquee(true); });
+    window.addEventListener('resize', function() { updateMarquee(true); artScrollStop(); });
+
+    // Прокрутка артистов — пока курсор в окне (тем же жестом, что показывает
+    // hover-UI). Ховерить саму строку не заставляем: она узкая и стоит поверх
+    // обложки, а окно PiP и так целиком «карточка».
+    document.body.addEventListener('mouseenter', artScrollStart);
+    document.body.addEventListener('mouseleave', artScrollStop);
 
     // Click title → copy "title — artist"
     document.getElementById('tTitle').addEventListener('click', function() {

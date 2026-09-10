@@ -1,6 +1,70 @@
 import type { Track } from '@entities/track'
 import type { PlaySource } from '@features/player/model/queueStore'
-import { useLibStore, usePlaylistStore, useFavStore } from '../model'
+import { isDownloadable } from '@features/player'
+import { offline } from '@features/offline'
+import { playCount } from '@/db/playStats'
+import {
+  useLibStore,
+  usePlaylistStore,
+  useFavStore,
+  useHistoryStore,
+  type TrackSortMode,
+  type TrackSortDir,
+} from '../model'
+import { resolveHistoryTrack } from './historyTracks'
+import { parseDurSec } from './formatCount'
+
+/**
+ * Сортировка вида после фильтрации. Общая для LibTracklist и очереди: раньше
+ * жила только в списке, и клик по треку в отсортированном виде ставил очередь
+ * в исходном порядке — следующим играл не тот трек, что ниже на экране.
+ */
+export const applySort = (
+  tracks: Track[],
+  mode: TrackSortMode,
+  dir: TrackSortDir,
+  libMode: string,
+): Track[] => {
+  const sd = dir === 'asc' ? 1 : -1
+  const sorted = [...tracks]
+  switch (mode) {
+    case 'name':
+      sorted.sort((a, b) => sd * (a.name || '').localeCompare(b.name || '', 'ru'))
+      break
+    case 'artist':
+      sorted.sort((a, b) => sd * (a.artist || '').localeCompare(b.artist || '', 'ru'))
+      break
+    case 'album':
+      sorted.sort((a, b) => sd * (a.album || '').localeCompare(b.album || '', 'ru'))
+      break
+    case 'dur':
+      sorted.sort((a, b) => sd * (parseDurSec(a.dur) - parseDurSec(b.dur)))
+      break
+    case 'date':
+      // В fav-режиме сортируем по favAt, иначе по addedAt.
+      sorted.sort((a, b) => {
+        if (libMode === 'fav') {
+          return sd * (((b.favAt || b.addedAt || 0) - (a.favAt || a.addedAt || 0)))
+        }
+        return sd * (((a.addedAt || 0) - (b.addedAt || 0)))
+      })
+      break
+    case 'plays':
+      // Не `t.playCount` — оно не ведётся и всегда 0, из-за чего пункт меню
+      // «По прослушиваниям» молча ничего не делал. Считаем по журналу.
+      sorted.sort((a, b) => sd * (playCount(a.id) - playCount(b.id)))
+      break
+  }
+  return sorted
+}
+
+/**
+ * Отбор «Только скачанные»: остаются локальные файлы (качать их нечего) и
+ * треки площадок с офлайн-копией. Общий для LibTracklist и очереди — иначе
+ * «Играть все» из отобранного вида играл бы и нескачанное.
+ */
+export const isOnDisk = (t: Track, isOffline: (id: string) => boolean): boolean =>
+  !isDownloadable(t) || isOffline(t.id)
 
 /**
  * Возвращает текущее представление библиотеки: видимые треки + источник для
@@ -54,9 +118,19 @@ export const getCurrentView = (): { tracks: Track[]; source: PlaySource } => {
       }
       break
     }
-    case 'history':
-      // TBD при wiring истории — пока не реализовано.
+    case 'history': {
+      // Порядок из истории (последние сверху), как в filterByMode:
+      // резолв библиотека → trackRegistry (SC/Yandex/YTM), удалённые скипаем.
+      // Резолв идёт до снимка из журнала включительно — иначе всё, что старше
+      // ~300 треков, выпадало бы из списка молча (см. historyTracks).
+      const byId = new Map(all.map((t) => [t.id, t]))
+      for (const e of useHistoryStore.getState().entries) {
+        const t = resolveHistoryTrack(e.id, byId)
+        if (t) base.push(t)
+      }
+      source = { kind: 'lib-history' }
       break
+    }
   }
 
   // Учитываем активный inline-search (как в LibTracklist).
@@ -69,6 +143,10 @@ export const getCurrentView = (): { tracks: Track[]; source: PlaySource } => {
         (t.album || '').toLowerCase().includes(q),
     )
   }
+
+  // Тот же порядок, что на экране: иначе очередь шла бы мимо видимого списка.
+  if (lib.sortMode === 'downloaded') base = base.filter((t) => isOnDisk(t, offline.isOffline))
+  else if (lib.sortMode !== 'default') base = applySort(base, lib.sortMode, lib.sortDir, mode)
 
   return { tracks: base, source }
 }

@@ -9,7 +9,13 @@ import { Ico } from '@shared/ui/icons/solar'
 import { useT, useLocale, t as tt } from '@shared/i18n'
 
 /** Ключ метки тайтлбара: страница или открытая детальная сущность. */
-type LabelKey = PageId | 'artist' | 'album' | 'playlist'
+/**
+ * Что показывает метка тайтлбара: страница либо тип открытого детального вида.
+ * Значения должны покрывать ВЕСЬ `DetailKind` — оба switch ниже без `default`,
+ * и незакрытый вариант возвращает undefined, а `<Icon />` с undefined роняет всё
+ * дерево React (чёрное окно), а не одну метку.
+ */
+type LabelKey = PageId | 'artist' | 'album' | 'playlist' | 'chart' | 'releases'
 
 /**
  * Кастомный titlebar (`#winTitlebar`).
@@ -144,6 +150,10 @@ const pageLabel = (key: LabelKey): string => {
       return tt('search.kind.album')
     case 'playlist':
       return tt('search.kind.playlist')
+    case 'chart':
+      return tt('home.charts')
+    case 'releases':
+      return tt('home.releases')
   }
 }
 
@@ -165,6 +175,10 @@ const pageIcon = (key: LabelKey) => {
       return AlbumIcon
     case 'playlist':
       return PlaylistIcon
+    case 'chart':
+      return ChartIcon
+    case 'releases':
+      return ReleasesIcon
   }
 }
 
@@ -177,3 +191,5 @@ const AccountIcon = () => <Ico name="user" variant="bold" className="wtc-icon" /
 const ArtistIcon = () => <Ico name="user" variant="bold" className="wtc-icon" />
 const AlbumIcon = () => <Ico name="vinyl" variant="bold" className="wtc-icon" />
 const PlaylistIcon = () => <Ico name="list" variant="bold" className="wtc-icon" />
+const ChartIcon = () => <Ico name="chart" variant="bold" className="wtc-icon" />
+const ReleasesIcon = () => <Ico name="vinyl" variant="bold" className="wtc-icon" />

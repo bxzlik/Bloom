@@ -60,6 +60,7 @@ export interface TransparencyState {
   setGlassBlur: (v: number) => void
 }
 
+/** Значения по умолчанию — нужны точечному сбросу карточек настроек. */
 const DEFAULTS = {
   trMode: 'off' as TrMode,
   overlayGlass: false,
@@ -176,3 +177,6 @@ export const useTransparencyBootstrap = (): void => {
     }
   }, [])
 }
+
+/** Значения по умолчанию — нужны точечному сбросу карточек настроек. */
+export { DEFAULTS as TRANSPARENCY_DEFAULTS }

@@ -457,10 +457,11 @@ export const useSortable = <T,>({
     const off = 6
     for (let i = show.length - 1; i >= 0; i--) {
       const clone = show[i]!.cloneNode(true) as HTMLElement
+      // Без теней: слои стека разделяет смещение на `off` и убывающая
+      // непрозрачность (1 → .8 → .6), их достаточно, чтобы стопка читалась.
       clone.style.cssText =
         `position:absolute;width:${rect.width}px;height:${rect.height}px;` +
         `top:${i * off}px;left:0;opacity:${1 - i * 0.2};` +
-        `box-shadow:0 ${8 + i * 4}px ${24 + i * 8}px rgba(0,0,0,.7);` +
         `border-radius:var(--radius);background:var(--card-solid,var(--card));` +
         `box-sizing:border-box;overflow:hidden;`
       clone.style.setProperty('transition', 'none', 'important')
@@ -582,12 +583,13 @@ export const useSortable = <T,>({
         }
         s.multiIds = group
       } else {
-        // Single-mode: клон + фон карточки + радиус +
-        // прямоугольная тень + opacity .92. List vs grid отличаются лишь тем, что
-        // grid не клипует (`overflow:hidden`) и снимает min-width (`min-width:0`),
-        // а после — ресайзит обложку через ghostAdjust (см. ниже).
+        // Single-mode: клон + фон карточки + радиус + opacity .92. Тени нет —
+        // «оторванность» от списка читается по подложке и полупрозрачности.
+        // List vs grid отличаются лишь тем, что grid не клипует
+        // (`overflow:hidden`) и снимает min-width (`min-width:0`), а после —
+        // ресайзит обложку через ghostAdjust (см. ниже).
         ghost = srcRow.cloneNode(true) as HTMLElement
-        const ghostBase = `position:fixed;pointer-events:none;z-index:9999;width:${rect.width}px;height:${rect.height}px;top:0;left:0;box-shadow:0 16px 48px rgba(0,0,0,.85),0 4px 16px rgba(0,0,0,.6);opacity:0.92;will-change:transform;background:var(--card-solid,var(--card));border-radius:var(--radius);`
+        const ghostBase = `position:fixed;pointer-events:none;z-index:9999;width:${rect.width}px;height:${rect.height}px;top:0;left:0;opacity:0.92;will-change:transform;background:var(--card-solid,var(--card));border-radius:var(--radius);`
         ghost.style.cssText = mode === 'grid' ? `${ghostBase}min-width:0;` : `${ghostBase}overflow:hidden;`
         // Принудительно отключаем transition с !important — без этого ghost
         // лагает за курсором из-за classed `.tr/.lib-item { transition:.15s }`.

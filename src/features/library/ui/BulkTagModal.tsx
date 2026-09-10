@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
-import { toast } from '@shared/ui'
+import { toast, EmptyCover } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useSelectionStore, useLibStore } from '../model'
@@ -16,7 +16,9 @@ export interface BulkTagModalProps {
 
 /**
  * Массовое редактирование тегов — боковая панель-drawer (`.spanel-*`), как
- * редактирование профиля. Каркас/тело/футер общие с TagEditor.
+ * редактирование профиля. Каркас/тело/футер общие с TagEditor, включая
+ * модификатор `.spanel-tag` (без плёнки хиро, подложки карточки, разделителя
+ * над футером и полосы прокрутки; поля-капсулы).
  *
  * Применяет к выделенным трекам (useSelectionStore.selected) одно из:
  *   - исполнитель (если поле непустое)
@@ -126,14 +128,14 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
         if (e.target === e.currentTarget) handleClose()
       }}
     >
-      <div className="spanel">
+      <div className="spanel spanel-tag">
         {/* HERO: обложка-для-всех (клик = выбрать) + заголовок + кол-во треков */}
         <div className="spanel-hero">
           <label className="spanel-cover" id="bulkCoverPreview">
             {coverDataUrl ? (
               <img src={coverDataUrl} alt="" />
             ) : (
-              <Ico name="note" width={34} height={34} style={{ opacity: 0.3 }} />
+              <EmptyCover />
             )}
             <div className="spanel-cover-cam">
               <Ico name="camera" width={20} height={20} />
@@ -146,11 +148,6 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
 
         <div className="pedit-body">
           <div className="pedit-card">
-            <div className="pedit-card-title">
-              <Ico name="edit" width={14} height={14} />
-              {t('lib.bulk.title')}
-            </div>
-
             <div className="pedit-eg">
               <div className="pedit-bio-label" style={{ marginBottom: 0 }}>{t('lib.bulk.setArtist')}</div>
               <input
@@ -175,12 +172,13 @@ export const BulkTagModal = ({ open, onClose }: BulkTagModalProps) => {
           </div>
         </div>
 
+        {/* Порядок как в редакторе профиля: акцентная кнопка слева, «Отмена» справа. */}
         <div className="pedit-foot">
-          <button className="pedit-btn-cancel" onClick={handleClose}>
-            {t('common.cancel')}
-          </button>
           <button className="pedit-btn-save" onClick={() => void onSave()}>
             {t('common.apply')}
+          </button>
+          <button className="pedit-btn-cancel" onClick={handleClose}>
+            {t('common.cancel')}
           </button>
         </div>
       </div>

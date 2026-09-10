@@ -1,37 +1,78 @@
-/* ===== TRACK INFO MODAL ===== */
-.ti-overlay{position:absolute;inset:0;z-index:600;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s}
+/* ===== TRACK INFO MODAL =====
+   Общий язык модалок приложения (эталон — «Статистика», `.smodal`): поверхность
+   = цвет блока + подъём (`--ti-surface`), подложка та же (.55 + blur 14),
+   внешней рамки нет, а внутренние рамки взяты на общий токен `--ovl-line` —
+   т.е. следуют слайдеру яркости рамок, как весь остальной интерфейс.
+
+   Анимация тоже от `.smodal`: выезд из-за кромки окна (при `body.drawer-left` —
+   из-за левой), transform .42s. Поэтому демонтаж в TrackInfoModal.tsx — по
+   таймеру, а не по transitionEnd подложки: она гаснет за .22s и обрезала бы
+   выезд на середине. `position:fixed` (а не absolute) — чтобы уехавшая за
+   кромку карточка не растягивала документ. */
+:root{--ti-surface:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift))}
+.ti-overlay{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
 .ti-overlay.open{opacity:1;pointer-events:all}
-.ti-modal{background:rgb(var(--ti-r,15),var(--ti-g,15),var(--ti-b,15));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:var(--radius);width:400px;max-width:95vw;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden;display:flex;flex-direction:column;position:relative;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
-.ti-overlay.open .ti-modal{transform:translateY(0)}
-.ti-head{position:absolute;top:10px;right:10px;z-index:10}
-.ti-close{width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.45);border:none;color:rgba(var(--ovl-rgb),.85);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;backdrop-filter:blur(6px)}
-.ti-close:hover{background:rgba(0,0,0,.7);color:#fff}
+.ti-modal{background:var(--ti-surface);border:none;border-radius:var(--radius);width:400px;max-width:95vw;max-height:calc(100vh - var(--tb-h,32px) - 80px);box-shadow:0 40px 120px rgba(0,0,0,.95);overflow:hidden;display:flex;flex-direction:column;position:relative;transition:transform .42s cubic-bezier(.22,1,.36,1)}
+/* `%` считается от своей ширины, поэтому поправок на ширину карточки не надо. */
+.ti-modal{transform:translateX(calc(50vw + 50% + 24px))}
+body.drawer-left .ti-modal{transform:translateX(calc(-50vw - 50% - 24px))}
+.ti-overlay.open .ti-modal{transform:translateX(0)}
 .ti-hero{position:relative;padding:22px 18px 18px;display:flex;gap:14px;align-items:flex-end;overflow:hidden;min-height:110px}
 .ti-hero-bg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(28px) saturate(1.5) brightness(.65);opacity:.65;pointer-events:none}
-.ti-hero-grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.04) 0%,rgb(var(--ti-r,15),var(--ti-g,15),var(--ti-b,15)) 82%);pointer-events:none}
-.ti-cover{width:86px;height:86px;border-radius:12px;overflow:hidden;flex-shrink:0;border:1px solid rgba(var(--ovl-rgb),.1);box-shadow:0 8px 28px rgba(0,0,0,.7);position:relative;z-index:1;background:var(--bg2);display:flex;align-items:center;justify-content:center}
+.ti-hero-grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.04) 0%,var(--ti-surface) 82%);pointer-events:none}
+.ti-cover{width:86px;height:86px;border-radius:12px;overflow:hidden;flex-shrink:0;border:1px solid var(--ovl-line);box-shadow:none;position:relative;z-index:1;background:var(--bg2);display:flex;align-items:center;justify-content:center}
 .ti-cover img{width:100%;height:100%;object-fit:cover}
 .ti-hero-info{flex:1;min-width:0;position:relative;z-index:1;display:flex;flex-direction:column;gap:6px;padding-bottom:2px}
 .ti-name-row{display:flex;align-items:flex-start;gap:6px;min-width:0}
 .ti-name{font-size:14px;font-weight:800;color:var(--text);line-height:1.3;word-break:break-word;flex:1;min-width:0}
 .ti-explicit{font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;background:rgba(var(--ovl-rgb),.2);color:var(--text);letter-spacing:.5px;flex-shrink:0;line-height:1.6;margin-top:2px}
 .ti-artist-row{display:flex;align-items:center;gap:5px;min-width:0}
-.ti-artist-ava{width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(var(--ovl-rgb),.15)}
+.ti-artist-ava{width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--ovl-line)}
 .ti-artist-link{font-size:12px;color:rgba(var(--ovl-rgb),.65);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;transition:color .15s}
 .ti-artist-link:hover{color:var(--text)}
 .ti-verified{color:#1db954;display:flex;align-items:center;flex-shrink:0}
 .ti-credited{font-size:11px;color:rgba(var(--ovl-rgb),.45)}
-.ti-body{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
-.ti-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(var(--ovl-rgb),.06);border-radius:10px;overflow:hidden;border:1px solid rgba(var(--ovl-rgb),.07)}
-.ti-cell{background:rgba(var(--ti-r,15),var(--ti-g,15),var(--ti-b,15),1);padding:9px 11px;display:flex;flex-direction:column;gap:2px}
+.ti-body{padding:0 14px 4px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.ti-body::-webkit-scrollbar{display:none;width:0;height:0}
+/* Разделители — НАСТОЯЩИЕ рамки ячеек, а не фон сетки, просвечивающий сквозь
+   `gap:1px`. Тот фокус давал две расхождения с ячейкой описания: внешняя рамка
+   ложилась поверх собственного фона сетки (двойная альфа → линия ярче), а в
+   стеклянном режиме, где ячейки гасятся, фон сетки проступал плёнкой на всю
+   коробку. Теперь и сетка, и описание — прозрачная коробка с рамкой
+   `--ovl-line`, т.е. одинаковые в обоих режимах и обе ходят за слайдером.
+
+   Две ступени яркости — намеренно: контур коробки `--ovl-line2`, разделители
+   внутри `--ovl-line`. Так сетка выглядит как до перевода на рамки (там контур
+   был вдвое плотнее из-за наложения на собственный фон), но обе ступени теперь
+   ходят за слайдером (`--wb2 = --wb × 13/6`) и вместе гаснут на нуле.
+
+   Разметка гарантирует, что половинные ячейки бывают только парой (год +
+   длительность, TrackInfoModal.tsx): одиночное значение рендерится как `.full`.
+   Поэтому вторая половинка пары — единственный случай, когда нужен вертикальный
+   разделитель, и его хватает поймать смежным селектором. Горизонтальную линию у
+   неё при этом НЕ снимаем: линия идёт через всю строку, и без неё правая
+   половина остаётся без верхней границы. Гасим только когда пара стоит первой в
+   сетке — тогда её нет и у левой половинки. */
+.ti-grid{display:grid;grid-template-columns:1fr 1fr;background:transparent;border-radius:10px;overflow:hidden;border:1px solid var(--ovl-line2)}
+.ti-cell{background:transparent;padding:9px 11px;display:flex;flex-direction:column;gap:2px}
+.ti-cell + .ti-cell{border-top:1px solid var(--ovl-line)}
+.ti-cell:not(.full) + .ti-cell:not(.full){border-left:1px solid var(--ovl-line)}
+.ti-cell:not(.full):first-child + .ti-cell:not(.full){border-top:none}
 .ti-cell.full{grid-column:1/-1}
 .ti-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
 .ti-val{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ti-val.muted{color:var(--text2)}
 .ti-genres{display:flex;flex-wrap:wrap;gap:4px}
-.ti-genre-tag{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(var(--accent-rgb,136,136,136),.15);color:var(--text2);border:1px solid rgba(var(--accent-rgb,136,136,136),.25)}
-.ti-desc-cell{background:rgba(var(--ti-r,15),var(--ti-g,15),var(--ti-b,15),1);border:1px solid rgba(var(--ovl-rgb),.07);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
+/* Капсулы жанров — заливка без рамки: рамка была акцентной и потому не ходила
+   за слайдером рамок, выбиваясь из остальной модалки. */
+.ti-genre-tag{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(var(--accent-rgb,136,136,136),.15);color:var(--text2);border:none}
+.ti-desc-cell{background:transparent;border:1px solid var(--ovl-line2);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
 .ti-desc{font-size:12px;color:var(--text2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;cursor:pointer}
+/* Футер = футер модалки статистики: та же кнопка (.stats-tool-btn), растянутая
+   на всю ширину. Крестика в углу больше нет — выход только отсюда, кликом по
+   подложке или Esc. */
+.ti-foot{display:flex;gap:8px;padding:10px 14px 14px;flex-shrink:0}
+.ti-foot .stats-tool-btn{flex:1;justify-content:center;padding:10px 11px}
 
 /* ===== EXPAND DESC (shared/ui/ExpandDesc) =====
    Попап с полным текстом обрезанного описания (трек, артист) по клику.
@@ -39,7 +80,7 @@
    (block-color + подъём), а не rgb(var(--ti-*)) модалки инфо: попап живёт и
    там, где модалка не открывалась. Размеры max-width/height дублируются в
    ExpandDesc.tsx — по ним считается, с какой стороны курсора встать. */
-.desc-popup{position:fixed;z-index:99999;max-width:320px;max-height:220px;overflow-y:auto;overscroll-behavior:contain;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.6;box-shadow:none;white-space:pre-wrap;word-break:break-word;pointer-events:auto;scrollbar-width:none;user-select:text;-webkit-user-select:text}
+.desc-popup{position:fixed;z-index:99999;max-width:320px;max-height:220px;overflow-y:auto;overscroll-behavior:contain;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:12px;padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.6;box-shadow:none;white-space:pre-wrap;word-break:break-word;pointer-events:auto;scrollbar-width:none;user-select:text;-webkit-user-select:text}
 .desc-popup::-webkit-scrollbar{display:none}
 .desc-popup a{color:var(--accent);text-decoration:none}
 .desc-popup a:hover{text-decoration:underline}

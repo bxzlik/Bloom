@@ -1,5 +1,13 @@
 /* ===== LOGS VIEWER MODAL ===== */
-.logs-backdrop{position:fixed;top:32px;left:0;right:0;bottom:0;z-index:992;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .22s}
+/* z-index ВЫШЕ слоя боковых панелей (.sheet-layer z995): просмотрщик открывают
+   из настроек, а настройки теперь живут в панели «в полокна» (side-sheet.css).
+   У самой панели фона нет, поэтому при z992 модалка не пряталась под неё
+   целиком — сквозь пустоты панели просвечивал лог, а карточки настроек
+   рисовались поверх текста. Ниже #winTitlebar (z1001), как остальные модалки.
+   Фон — inset:0, как у .mover и прочих: он заходит под прозрачный тайтлбар и
+   затемняет его полосу. Место под тайтлбар — в padding-top (--tb-h, 0 в
+   фуллскрине/при автоскрытии), а не в top, иначе полоса оставалась светлой. */
+.logs-backdrop{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:calc(var(--tb-h,32px) + 24px) 24px 24px;opacity:0;pointer-events:none;transition:opacity .22s}
 .logs-backdrop.open{opacity:1;pointer-events:all}
 .logs-modal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.09);border-radius:var(--radius);width:min(900px,100%);height:min(640px,100%);display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.95);overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
 .logs-backdrop.open .logs-modal{transform:translateY(0)}
@@ -35,7 +43,10 @@
 .pedit-hero-name.empty{color:var(--muted)}
 
 /* панель картинок: вкладки-миниатюры + превью + (для обложки) её цвет */
-.pedit-imgpanel{background:rgba(0,0,0,.18);border:1px solid rgba(var(--ovl-rgb),.06);border-radius:calc(var(--radius)*0.85);padding:12px;display:flex;flex-direction:column;gap:10px;animation:peditPanelIn .22s cubic-bezier(.22,1,.36,1)}
+/* Своей подложки у панели нет: ни фона, ни рамки — она лежит прямо на фоне
+   редактора, отделяясь только зазором, а её содержимое встаёт по той же ширине,
+   что и поля ниже (потому padding:0, а не 12px). */
+.pedit-imgpanel{background:none;border:none;border-radius:calc(var(--radius)*0.85);padding:0;display:flex;flex-direction:column;gap:10px;animation:peditPanelIn .22s cubic-bezier(.22,1,.36,1)}
 @keyframes peditPanelIn{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
 .pedit-img-tabs{display:flex;gap:8px}
 /* Выбранная вкладка не обводится, а светлеет — плёнкой поверх той же плашки. */
@@ -52,16 +63,18 @@
 .pedit-hero-banner-fill img{width:100%;height:100%;object-fit:cover;display:block}
 .pedit-img-upload{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:10px;border:none;border-radius:calc(var(--radius)*0.6);background:var(--accent);color:var(--accent-text);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
 .pedit-img-upload:hover{background:var(--accent2)}
-.pedit-img-drop{width:100%;padding:6px;margin-top:-4px;background:none;border:none;color:var(--sys-fav-ico);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:.15s}
-.pedit-img-drop:hover{background:var(--sys-fav-tint)}
+/* «Удалить…» — голый красный текст: подложки нет даже на наведении (розовая
+   плашка --sys-fav-tint светилась ярче самой кнопки «Загрузить»), ховер только
+   подсвечивает буквы. Красный тут смысловой — --danger, а не «избранное»
+   --sys-fav-ico: цвета близкие, но это разные роли. */
+.pedit-img-drop{width:100%;padding:6px;margin-top:-4px;background:none;border:none;color:var(--danger,#e5484d);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:.15s}
+.pedit-img-drop:hover{background:none;color:color-mix(in srgb,var(--danger,#e5484d),#fff 22%)}
 
 /* тело: карточки-секции */
 .pedit-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 16px 6px;display:flex;flex-direction:column;gap:12px}
 .pedit-body::-webkit-scrollbar{width:3px}
 .pedit-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .pedit-card{background:rgba(0,0,0,.18);border:1px solid rgba(var(--ovl-rgb),.06);border-radius:calc(var(--radius)*0.85);padding:14px;display:flex;flex-direction:column;gap:13px}
-.pedit-card-title{font-size:11px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:7px}
-.pedit-card-title svg{color:var(--accent);flex-shrink:0}
 .pedit-eg{display:flex;flex-direction:column;gap:7px}
 .pedit-banner-color-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pedit-mode-toggle{display:flex;border-radius:calc(var(--radius)*0.45);overflow:hidden;border:1px solid rgba(var(--ovl-rgb),.1);flex-shrink:0}
@@ -76,7 +89,6 @@
 .acc-bio-box{display:none;margin-top:7px;border:1px solid rgba(var(--ovl-rgb),.13);border-radius:calc(var(--radius)*0.85);padding:8px 11px;max-width:360px;background:rgba(0,0,0,.25)}
 .acc-bio-box-text{font-size:12px;color:rgba(var(--ovl-rgb),.65);line-height:1.45;white-space:pre-wrap;word-break:break-word}
 .acc-bio-box-status{font-size:12px;color:rgba(var(--ovl-rgb),.4);margin-top:4px;font-style:italic}
-.pedit-bio-section{display:flex;flex-direction:column;gap:6px}
 .pedit-bio-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
 .pedit-bio-inp{width:100%;box-sizing:border-box;background:rgba(0,0,0,.35);border:1.5px solid rgba(var(--ovl-rgb),.1);border-radius:calc(var(--radius)*0.6);color:var(--text);padding:9px 12px;font-size:13px;outline:none;transition:.2s;font-family:var(--font);resize:none;line-height:1.5;min-height:80px}
 .pedit-bio-inp:focus{border-color:rgba(var(--ovl-rgb),.22);background:rgba(var(--ovl-rgb),.10);box-shadow:0 0 0 3px rgba(var(--ovl-rgb),.05)}
@@ -89,19 +101,61 @@
 .pedit-nick-inp::placeholder{color:var(--muted)}
 .pedit-foot{display:flex;gap:10px;justify-content:flex-end;padding:14px 16px;border-top:1px solid rgba(var(--ovl-rgb),.09);flex-shrink:0}
 .pedit-btn-cancel,.pedit-btn-save{flex:1}
-.pedit-btn-cancel{padding:9px 18px;border-radius:calc(var(--radius)*0.6);background:none;border:1px solid rgba(var(--ovl-rgb),.12);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font)}
-.pedit-btn-cancel:hover{border-color:rgba(var(--ovl-rgb),.25);color:var(--text)}
+/* ВТОРОСТЕПЕННАЯ КНОПКА ДИАЛОГОВ (та, что в паре с акцентной: «Отмена»,
+   «Назад», «Закрыть»). Не обводка, а мягкая заливка rgba(--ovl-rgb,.05),
+   светлеющая до .09 по наведению; вертикальный padding на 1px больше, чем у
+   акцентной пары, — рамки нет, иначе кнопка была бы ниже. Тем же правилом
+   живут .crop-btn-back (ниже), .mpl-btn.ghost, .ob-btn-ghost — каждое лежит
+   рядом со своим компонентом. */
+.pedit-btn-cancel{padding:10px 18px;border-radius:calc(var(--radius)*0.6);background:rgba(var(--ovl-rgb),.05);border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font)}
+.pedit-btn-cancel:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
 .pedit-btn-save{padding:9px 22px;border-radius:calc(var(--radius)*0.6);background:var(--accent);border:none;color:var(--accent-text);font-size:13px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
 .pedit-btn-save:hover{background:var(--accent2)}
 #peditCropView{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0}
 #peditCropView.active{display:flex}
+
+/* Редактор профиля в панели-полокна (.pedit-sheet, каркас — side-sheet.css).
+   Панель шире старой карточки 420px, поэтому: хиро во всю ширину панели (как
+   настоящая шапка профиля), поля — колонкой ограниченной ширины по центру
+   (.sheet-col), футер — полосой во всю ширину с той же колонкой внутри.
+   Скроллит теперь .sheet-body целиком, а не .pedit-body. */
+.pedit-sheet .sheet-body{padding:22px 0 0}
+.pedit-sheet .pedit-hero{padding-bottom:16px}
+/* Обложка теперь не во всю ширину панели, а превью-плашкой внутри колонки.
+   Рамки нет — скруглённого пятна достаточно, обводка резала хиро пополам.
+   Фейд-в-фон снизу тут не нужен — он был для полноширинного хиро. */
+.pedit-sheet .pedit-hero-banner{height:150px;border-radius:calc(var(--radius)*0.9);border:none}
+.pedit-sheet .pedit-hero-banner::after{display:none}
+.pedit-sheet .pedit-hero-ava-wrap,
+.pedit-sheet .pedit-hero-ava{width:104px;height:104px}
+.pedit-sheet .pedit-hero-ava-wrap{margin-top:-52px}
+.pedit-sheet .pedit-hero-name{margin-top:13px;font-size:19px}
+.pedit-sheet .pedit-body{flex:none;overflow:visible;padding:0 0 18px}
+/* Футер — полоса во всю ширину панели, кнопки внутри той же колонки. flex:1
+   обязателен: .pedit-foot — flex-контейнер, и без него колонка сжалась бы по
+   содержимому вместо своих 520px. */
+.pedit-sheet .pedit-foot{padding:12px 0;border-top:none}
+.pedit-sheet .pedit-foot .sheet-col{flex:1;display:flex;gap:10px}
+/* Поля — та же капсула, что строка поиска (.sp-inp-wrap): фон var(--input),
+   еле заметная рамка, никакого акцентного свечения на фокусе. Правила scoped
+   на .pedit-sheet: .pedit-nick-inp/.pedit-bio-inp переиспользуют теги/массовые
+   теги (.spanel), там прежний вид. Текстареа — не 999px, иначе первая строка
+   уезжает от дуги; радиус ровно в половину высоты однострочника. */
+.pedit-sheet .pedit-nick-inp{height:44px;padding:0 16px;background:var(--input,var(--card));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:999px;font-size:14px;transition:.15s}
+.pedit-sheet .pedit-bio-inp{padding:12px 16px;background:var(--input,var(--card));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:22px;font-size:14px;transition:.15s}
+.pedit-sheet .pedit-nick-inp:focus,
+.pedit-sheet .pedit-bio-inp:focus{border-color:color-mix(in srgb,var(--border),transparent 25%);background:var(--card);box-shadow:none}
+.pedit-sheet .pedit-char-count{right:14px}
+.pedit-sheet .pedit-char-count.area{bottom:11px}
 
 /* ===== SIDE PANEL DRAWER (теги трека / массовые теги / объединение) ===== */
 /* Общий каркас, как у редактирования профиля (#peditModal): затемнение + панель,
    выезжающая справа на всю высоту. Тело/футер/поля переиспользуют .pedit-*. */
 .spanel-backdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.55);display:flex;align-items:stretch;justify-content:flex-end;padding:calc(var(--tb-h,32px) + 16px) 16px 16px;opacity:0;pointer-events:none;transition:opacity .22s}
 .spanel-backdrop.open{opacity:1;pointer-events:all}
-.spanel{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.09);border-radius:var(--radius);width:min(420px,calc(100vw - 32px));display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.95);overflow:hidden;transform:translateX(calc(100% + 24px));will-change:auto;transition:transform .42s cubic-bezier(.22,1,.36,1)}
+/* Ни рамки, ни тени: карточка отделяется от приложения только затемнением
+   подложки — светлая нитка по краю и тяжёлый ореол читались как обводка. */
+.spanel{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:var(--radius);width:min(420px,calc(100vw - 32px));display:flex;flex-direction:column;box-shadow:none;overflow:hidden;transform:translateX(calc(100% + 24px));will-change:auto;transition:transform .42s cubic-bezier(.22,1,.36,1)}
 .spanel-backdrop.open .spanel{transform:translateX(0)}
 
 /* Сторона выезда drawer-панелей — настройка `uiPrefs.drawerSide`, body-класс
@@ -125,45 +179,57 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .spanel-hero-sub{margin-top:3px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
 /* строка из нескольких полей в карточке */
 .spanel-row{display:flex;gap:8px}
+
+/* Редакторы тегов — трека и массовый (.spanel-tag) — та же шторка, но «тихая»:
+   без плёнки поверх хиро, без карточки-секции с заголовком, без разделителя над
+   футером и без видимой полосы прокрутки. Модификатор, а не правка самого
+   .spanel: у остальных шторок (объединение, конвертер, авто-обновление) свой
+   внутренний набор классов (.mpl- / .cvt- / .pau- в merge-playlists.css) —
+   тот же «тихий» язык оформления. */
+.spanel-tag .spanel-hero{background:none}
+.spanel-tag .pedit-body{scrollbar-width:none}
+.spanel-tag .pedit-body::-webkit-scrollbar{width:0;height:0}
+/* Карточка остаётся контейнером-колонкой, но без своей подложки: с убранным
+   заголовком тёмный прямоугольник был бы пустой рамкой вокруг полей. */
+.spanel-tag .pedit-card{background:none;border:none;padding:0}
+.spanel-tag .pedit-foot{border-top:none}
+/* Поля — как в редакторе профиля (.pedit-sheet выше): капсула на var(--input),
+   еле заметная рамка, без акцентного свечения на фокусе. */
+.spanel-tag .pedit-nick-inp{height:44px;padding:0 16px;background:var(--input,var(--card));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:999px;font-size:14px;transition:.15s}
+.spanel-tag .pedit-nick-inp:focus{border-color:color-mix(in srgb,var(--border),transparent 25%);background:var(--card);box-shadow:none}
 .crop-canvas-wrap{flex:1;position:relative;overflow:hidden;background-color:#111;background-image:linear-gradient(45deg,#222 25%,transparent 25%),linear-gradient(-45deg,#222 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#222 75%),linear-gradient(-45deg,transparent 75%,#222 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;display:flex;align-items:center;justify-content:center;min-height:280px;cursor:grab}
 .crop-canvas-wrap:active{cursor:grabbing}
-#cropCanvas{display:block;touch-action:none;user-select:none;-webkit-user-select:none}
 .crop-controls{padding:12px 20px 14px;display:flex;flex-direction:column;gap:10px;border-top:1px solid rgba(var(--ovl-rgb),.09);flex-shrink:0}
 .crop-zoom-row{display:flex;align-items:center;gap:10px}
 .crop-zoom-label{font-size:11px;color:var(--text2);white-space:nowrap;min-width:80px}
 .crop-zoom-slider{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer}
 .crop-zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
 .crop-actions{display:flex;gap:8px;justify-content:flex-end}
-.crop-btn-back{padding:8px 16px;border-radius:calc(var(--radius)*0.6);background:none;border:1px solid rgba(var(--ovl-rgb),.12);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font)}
-.crop-btn-back:hover{border-color:rgba(var(--ovl-rgb),.25);color:var(--text)}
+.crop-btn-back{padding:9px 16px;border-radius:calc(var(--radius)*0.6);background:rgba(var(--ovl-rgb),.05);border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font)}
+.crop-btn-back:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
 .crop-btn-apply{padding:8px 18px;border-radius:calc(var(--radius)*0.6);background:var(--accent);border:none;color:var(--accent-text);font-size:13px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
 .crop-btn-apply:hover{background:var(--accent2)}
 
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;color:var(--muted);text-align:center;gap:10px}
 .empty p{font-size:13px}
-.pl-popup{position:fixed;z-index:9000;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius) * 0.9);padding:5px;min-width:185px;max-width:240px;box-shadow:none;display:none;max-height:320px;overflow-y:auto;pointer-events:auto}
-.pl-popup-title{padding:4px 10px 6px;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);margin-bottom:3px}
-.pl-popup-item{padding:7px 10px;font-size:13px;cursor:pointer;border-radius:calc(var(--radius) * 0.5);display:flex;align-items:center;gap:8px;color:var(--text);transition:background .1s,box-shadow .1s}
-.pl-popup-item:hover{background:var(--hover)}
 /* ===== CREATE/EDIT PLAYLIST MODAL ===== */
 .mover{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:994;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
 .mover.open{opacity:1;pointer-events:all}
 .modal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:20px;width:460px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden}
 .mover.open .modal{transform:translateY(0)}
 /* ===== DEEP LINK SHARE MODAL ===== */
-#dlinkMover{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9900;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+/* z-index ниже оконного тайтлбара (#winTitlebar z1001), чтобы кнопки окна и
+   перетаскивание оставались доступны — как у #shareCardMover (996) и .unm-mover
+   (998). Внешней рамки и inset-кольца у карточки нет: только тень. */
+#dlinkMover{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:997;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
 #dlinkMover.open{opacity:1;pointer-events:all}
-#dlinkModal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:20px;width:340px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden}
+#dlinkModal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:20px;width:340px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98);overflow:hidden}
 #dlinkMover.open #dlinkModal{transform:translateY(0)}
 /* ===== SHARE CARD MODAL ===== */
 #shareCardMover{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:996;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 #shareCardMover.open{opacity:1;pointer-events:all}
 #shareCardModal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:22px;width:360px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden}
 #shareCardMover.open #shareCardModal{transform:translateY(0)}
-#profileShareMover{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:997;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
-#profileShareMover.open{opacity:1;pointer-events:all}
-#profileShareModal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:22px;width:360px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden}
-#profileShareMover.open #profileShareModal{transform:translateY(0)}
 .sc-card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 14px;border-bottom:1px solid rgba(var(--ovl-rgb),.07)}
 .sc-card-title{font-size:14px;font-weight:700;color:var(--text)}
 .sc-card-close{width:26px;height:26px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
@@ -184,13 +250,19 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .dlink-info{flex:1;min-width:0}
 .dlink-title{font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
 .dlink-artist{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dlink-close-btn{width:26px;height:26px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
-.dlink-close-btn:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
+/* Футер = футер модалки «Инфо о треке» (.ti-foot): та же кнопка
+   (.stats-tool-btn), растянутая на всю ширину. Крестика в шапке нет. */
+.dlink-foot{display:flex;gap:8px;padding:10px 14px 14px;flex-shrink:0}
+.dlink-foot .stats-tool-btn{flex:1;justify-content:center;padding:10px 11px}
 .dlink-actions{padding:8px 8px}
-.dlink-act{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;cursor:pointer;font-size:13px;color:var(--text);transition:.12s;user-select:none}
-.dlink-act:hover{background:rgba(var(--ovl-rgb),.07)}
-.dlink-act:active{background:rgba(var(--ovl-rgb),.11);transform:scale(.98)}
-.dlink-act-icon{width:30px;height:30px;border-radius:8px;background:rgba(var(--ovl-rgb),.07);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* Плоские пункты (конвенция меню Bloom): подложки на ховере нет, отклик даёт
+   осветление текста/иконки rgba(var(--ovl-rgb),.78) → var(--text). */
+.dlink-act{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;cursor:pointer;font-size:13px;color:rgba(var(--ovl-rgb),.78);transition:.12s;user-select:none}
+.dlink-act:hover{color:var(--text)}
+.dlink-act:active{transform:scale(.98)}
+/* Плашки под иконкой нет — иконка лежит прямо на фоне модалки и потому крупнее
+   (бокс 22px, svg 18px). Бокс оставлен для выравнивания подписей в колонку. */
+.dlink-act-icon{width:22px;height:22px;background:none;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .dlink-act-label{flex:1;font-weight:500}
 .dlink-act-chevron{opacity:.3;flex-shrink:0}
 .dlink-pl-list{display:none}
@@ -208,26 +280,23 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .dlink-pl-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
 .dlink-pl-item-count{font-size:11px;color:var(--text2);flex-shrink:0}
 .dlink-sep{height:1px;background:rgba(var(--ovl-rgb),.07);margin:4px 8px}
-.modal-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 13px;border-bottom:1px solid rgba(var(--ovl-rgb),.07)}
-.modal-head h3{font-size:14px;font-weight:800;letter-spacing:-.02em;margin:0}
-.modal-x{width:26px;height:26px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
-.modal-x:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
-.modal-body{display:flex;gap:15px;padding:16px 18px}
 /* .pl-cov-* переиспользует inline-редактор плейлиста в шапке
    (LibContent .lib-hero-cov-edit) — оставлены после удаления модалки. */
-.pl-cov-zone{width:100%;height:100%;border-radius:12px;background:rgba(var(--ovl-rgb),.07);border:1.5px dashed rgba(var(--ovl-rgb),.16);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;overflow:hidden;position:relative}
+/* Пустая зона без заливки: серый квадрат выбивался из шапки — теперь её
+   очерчивает только пунктир, а фон берётся от поверхности под ней. */
+.pl-cov-zone{width:100%;height:100%;border-radius:12px;background:transparent;border:1.5px dashed rgba(var(--ovl-rgb),.16);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;overflow:hidden;position:relative}
 .pl-cov-zone:hover{border-color:rgba(var(--accent-rgb),.7);background:rgba(var(--accent-rgb),.05)}
 .pl-cov-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pl-cov-hint{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);pointer-events:none;transition:.2s}
 .pl-cov-zone:hover .pl-cov-hint{color:var(--accent)}
 .pl-cov-hint svg{opacity:.7}
 .pl-cov-hint span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;line-height:1.3}
-.pl-cov-rmv{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:#333;border:1.5px solid rgba(var(--ovl-rgb),.15);cursor:pointer;z-index:3;transition:.15s;padding:0;margin:0;box-sizing:border-box;appearance:none;-webkit-appearance:none;overflow:hidden}
-.pl-cov-rmv:hover{background:rgba(210,45,45,.9);border-color:transparent}
+/* Кнопка удаления обложки: стекло по теме вместо жёсткого серого #333 —
+   подложка размывает то, что под ней (обложка/фон шапки), цвет иконки идёт от
+   темы. На hover — красная заливка, как у остальных деструктивных действий. */
+.pl-cov-rmv{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;background:rgba(var(--ovl-rgb),.09);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);border:1px solid var(--ovl-line);color:var(--text);cursor:pointer;z-index:3;transition:.15s;padding:0;margin:0;box-sizing:border-box;appearance:none;-webkit-appearance:none;overflow:hidden}
+.pl-cov-rmv:hover{background:rgba(210,45,45,.9);border-color:transparent;color:#fff}
 .pl-cov-rmv svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-.modal-foot{display:flex;gap:8px;padding:0 18px 16px;justify-content:flex-end}
-.modal-foot .btn{padding:9px 20px;border-radius:10px;font-size:13px}
-.modal-foot .bta{font-weight:700}
 
 /* ── Модалка заметок обновления (UpdateNotesModal) ── */
 /* Чрома/анимации как у штатных модалок (.mover/.modal). z-index ниже оконного
@@ -255,9 +324,8 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
   display:flex;
   flex-direction:column;
   background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));
-  border:1px solid rgba(var(--ovl-rgb),.08);
   border-radius:20px;
-  box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;
+  box-shadow:0 40px 120px rgba(0,0,0,.98);
   overflow:hidden;
   transform:translateY(14px);
   transition:.32s cubic-bezier(.34,1.38,.64,1);
@@ -279,7 +347,7 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
   transition:.15s;
 }
 .unm-close svg{display:block}
-.unm-close:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
+.unm-close:hover{color:var(--text)}
 
 .unm-ghost{
   font-family:var(--font);
@@ -347,16 +415,16 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
   gap:10px;
   width:100%;
   padding:10px 12px;
-  border:1px solid var(--border);
+  border:none;
   border-radius:10px;
-  background:rgba(var(--ovl-rgb),.02);
+  background:rgba(var(--ovl-rgb),.04);
   color:var(--text);
   font-family:var(--font);
   text-align:left;
   cursor:pointer;
   transition:.15s;
 }
-.unm-history-item:hover{background:rgba(var(--ovl-rgb),.06);border-color:var(--border-strong,var(--border))}
+.unm-history-item:hover{background:rgba(var(--ovl-rgb),.08)}
 .unm-history-ver{font-size:13px;font-weight:700;flex-shrink:0}
 .unm-history-title{
   font-size:13px;

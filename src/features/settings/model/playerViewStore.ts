@@ -46,8 +46,8 @@ export interface MpProgress {
   bg: boolean
   circle: boolean
 }
-/** Режим оверлея-«острова»: выключен / плашка / компактная плашка (раскрытие по наведению) / полоса (круг-play + стеклянная полоса с названием + круг-визуализатор) / расширенная карточка (обложка + прогресс + полный набор кнопок). */
-export type OverlayMode = 'off' | 'island' | 'compact' | 'bar' | 'expanded'
+/** Режим оверлея-«острова»: выключен / плашка / компактная плашка (раскрытие по наведению) / полоса (круг-play + стеклянная полоса с названием + круг-визуализатор). */
+export type OverlayMode = 'off' | 'island' | 'compact' | 'bar'
 /** Якорь оверлея на экране: верт. (t/b) + гориз. (l/c/r); `custom` — свободная
  *  позиция, заданная вручную перетаскиванием (доли overlayX/overlayY). */
 export type OverlayPos = 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br' | 'custom'
@@ -164,6 +164,8 @@ export interface PlayerViewPrefs {
   mpEnabled: boolean
   mpBgMode: MpBgMode
   mpProgress: MpProgress
+  /** Красить прогресс бара цветом трека (акцент из обложки) вместо --accent. */
+  mpProgressTint: boolean
   mpCoverShape: MpCoverShape
   /** Скруглённый вид бара (сильно скруглённые края — pill). Входит в пресет «Закруглённый». */
   mpRounded: boolean
@@ -191,6 +193,12 @@ export interface PlayerViewPrefs {
   overlayPerf: boolean
 }
 
+/**
+ * Значения по умолчанию. Экспортируются ради точечного сброса карточек, где
+ * настройка — это объект по «поверхностям» (анимация смены трека, оформление
+ * текста): такой карточке нужно вернуть к умолчанию ОДНУ свою поверхность, а
+ * `resetKeys` умеет только ключ целиком.
+ */
 const DEFAULTS: PlayerViewPrefs = {
   titleAlign: 'center',
   playerStyle: 'standard',
@@ -223,6 +231,7 @@ const DEFAULTS: PlayerViewPrefs = {
   mpEnabled: true,
   mpBgMode: 'theme',
   mpProgress: { line: true, bg: false, circle: false },
+  mpProgressTint: false,
   mpCoverShape: 'default',
   mpRounded: false,
   mpHide: { lyrics: false, queue: false, bigpic: false, shuffle: false, repeat: false, time: false, fav: false, add: false },
@@ -304,7 +313,7 @@ const parseLyricsStyleAll = (raw: unknown, legacy: unknown): LyricsStyle => {
 }
 
 const OVERLAY_POSITIONS: OverlayPos[] = ['tl', 'tc', 'tr', 'bl', 'bc', 'br']
-const OVERLAY_MODES: OverlayMode[] = ['island', 'compact', 'bar', 'expanded']
+const OVERLAY_MODES: OverlayMode[] = ['island', 'compact', 'bar']
 const clampNum = (v: unknown, min: number, max: number, def: number): number => {
   const n = typeof v === 'number' && Number.isFinite(v) ? v : def
   return Math.max(min, Math.min(max, n))
@@ -385,6 +394,7 @@ const load = (): PlayerViewPrefs => {
         bg: !!(p.mpProgress && p.mpProgress.bg),
         circle: !!(p.mpProgress && p.mpProgress.circle),
       },
+      mpProgressTint: !!p.mpProgressTint,
       mpCoverShape: p.mpCoverShape === 'round' ? 'round' : 'default',
       mpRounded: !!p.mpRounded,
       mpHide: {
@@ -397,7 +407,13 @@ const load = (): PlayerViewPrefs => {
         fav: !!(p.mpHide && p.mpHide.fav),
         add: !!(p.mpHide && p.mpHide.add),
       },
-      overlayMode: OVERLAY_MODES.includes(p.overlayMode) ? p.overlayMode : 'off',
+      // Расширенный режим убран: у тех, у кого он был сохранён, оверлей остаётся
+      // включённым и падает на обычную плашку (а не выключается совсем).
+      overlayMode: OVERLAY_MODES.includes(p.overlayMode)
+        ? p.overlayMode
+        : (p.overlayMode as string) === 'expanded'
+          ? 'island'
+          : 'off',
       overlayPos: OVERLAY_POSITIONS.includes(p.overlayPos) || p.overlayPos === 'custom' ? p.overlayPos : 'tr',
       overlayX: clampNum(p.overlayX, 0, 1, 0.98),
       overlayY: clampNum(p.overlayY, 0, 1, 0.02),
@@ -441,6 +457,7 @@ const persist = (s: PlayerViewPrefs): void => {
         mpEnabled: s.mpEnabled,
         mpBgMode: s.mpBgMode,
         mpProgress: s.mpProgress,
+        mpProgressTint: s.mpProgressTint,
         mpCoverShape: s.mpCoverShape,
         mpRounded: s.mpRounded,
         mpHide: s.mpHide,
@@ -466,6 +483,12 @@ interface PlayerViewState extends PlayerViewPrefs {
   /** Применить пресет мини-плеера. */
   applyMpPreset: (name: string) => void
   reset: () => void
+  /**
+   * Сброс ПОДМНОЖЕСТВА ключей — для кнопки сброса на карточке настройки.
+   * Идёт через `set`, чтобы отработали инварианты (взаимоисключающие режимы
+   * бара, побочные классы), иначе сброс мог бы оставить противоречивую пару.
+   */
+  resetKeys: (...keys: (keyof PlayerViewPrefs)[]) => void
 }
 
 export const usePlayerViewStore = create<PlayerViewState>((set, get) => ({
@@ -507,6 +530,10 @@ export const usePlayerViewStore = create<PlayerViewState>((set, get) => ({
     set({ ...DEFAULTS })
     persist({ ...DEFAULTS })
   },
+  resetKeys: (...keys) => {
+    const { set: setKey } = get()
+    keys.forEach((k) => setKey(k, DEFAULTS[k]))
+  },
 }))
 
 /** Классы для `.app` из view-префов (навешивает App.tsx). */
@@ -522,3 +549,6 @@ export const BODY_SLIDER_CLASSES = ['slider-thin', 'slider-ios', 'slider-wave', 
 /** Body-класс для текущего типа слайдера (default → нет класса). */
 export const bodySliderClass = (t: SliderType): string | null =>
   t === 'default' ? null : `slider-${t}`
+
+/** Значения по умолчанию — нужны точечному сбросу карточек настроек. */
+export { DEFAULTS as PLAYER_VIEW_DEFAULTS }

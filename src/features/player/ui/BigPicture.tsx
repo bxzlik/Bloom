@@ -37,11 +37,12 @@ import { audioEngine } from '../lib/audioEngine'
 import { regenWave, hasWaveData, drawWaveTo } from '../lib/waveSlider'
 import { MarqueeTitle } from './MarqueeTitle'
 import { TrackSwap } from './TrackSwap'
+import { ArtistAvatars } from './ArtistAvatars'
 import { PlayPauseButton } from './PlayPauseButton'
-import { QueueBlock } from './QueueBlock'
 import { AddPopup } from './AddPopup'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
+import { CardMarquee, EmptyCover } from '@shared/ui'
 
 /**
  * Длительности анимаций выхода — DOM живёт ровно столько, сколько идёт
@@ -84,16 +85,18 @@ const createPlFromBp = (track: Track | null, trackId?: string) => {
  *
  * Открывается кликом по обложке плеера (PagePlayer → renderCover) либо кнопкой
  * «Big picture» в нижнем баре. Внутри: крупная обложка (parallax/винил) + инфо +
- * прогресс (с волновым слайдером) + транспорт; боковые панели очередь/текст
- * (реюз QueueBlock/LyricsView) переключают раскладку bp-inner в строку.
+ * прогресс (с волновым слайдером) + транспорт; боковая панель текста
+ * (реюз LyricsView) переключает раскладку bp-inner в строку.
  *
  * Стили — shared/styles/big-picture.css (#bigPicOverlay .bp-*). Перетаскивание окна/максимайз
- * — через `data-tauri-drag-region` на тайтлбаре и фоновых слоях (вместо webview
+ * — через `data-tauri-drag-region` ТОЛЬКО на тайтлбаре (вместо webview
  * postMessage из).
  */
 export const BigPicture = () => {
   const open = useBigPicStore((s) => s.open)
   const closeBig = useBigPicStore((s) => s.closeBig)
+  const openFontPanel = useBigPicStore((s) => s.openFontPanel)
+  const closeFontPanel = useBigPicStore((s) => s.closeFontPanel)
 
   // Оверлей переживает closeBig ещё на время bpSheetOut — эти миллисекунды
   // шторка уезжает вниз. 'closing' = стор уже закрыт, DOM ещё жив.
@@ -114,7 +117,10 @@ export const BigPicture = () => {
   useEffect(() => {
     if (!visible) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeBig()
+      // Esc сначала гасит ПКМ-меню настроек, и только потом — фуллскрин.
+      if (e.key !== 'Escape') return
+      if (useBigPicStore.getState().fontPanelPos) closeFontPanel()
+      else closeBig()
     }
     document.addEventListener('keydown', onKey)
     const prevOverflow = document.body.style.overflow
@@ -126,10 +132,20 @@ export const BigPicture = () => {
       document.body.style.overflow = prevOverflow
       if (tb) tb.style.visibility = ''
     }
-  }, [visible, closeBig])
+  }, [visible, closeBig, closeFontPanel])
 
   return (
-    <div id="bigPicOverlay" className={visible ? `open${phase === 'closing' ? ' bp-closing' : ''}` : ''}>
+    <div
+      id="bigPicOverlay"
+      className={visible ? `open${phase === 'closing' ? ' bp-closing' : ''}` : ''}
+      // ПКМ по любому месту фуллскрина = меню настроек (шрифт/вид/оффсет).
+      // Обложка и текст меню трека гасят событие сами — сюда оно не доходит.
+      onContextMenu={(e) => {
+        if (phase !== 'open') return
+        e.preventDefault()
+        openFontPanel(e.clientX, e.clientY)
+      }}
+    >
       {visible && <BigPicInner />}
     </div>
   )
@@ -138,13 +154,8 @@ export const BigPicture = () => {
 // ── Внутренности (монтируются только когда открыто — replay анимаций + scoped effects) ──
 
 const BigPicInner = () => {
-  const t = useT()
   const panel = useBigPicStore((s) => s.panel)
-  const fontPanelOpen = useBigPicStore((s) => s.fontPanelOpen)
-  const toggleQueue = useBigPicStore((s) => s.toggleQueue)
-  const toggleLyrics = useBigPicStore((s) => s.toggleLyrics)
-  const toggleFontPanel = useBigPicStore((s) => s.toggleFontPanel)
-  const closeBig = useBigPicStore((s) => s.closeBig)
+  const fontPanelPos = useBigPicStore((s) => s.fontPanelPos)
 
   const artworkRaw = usePlayerStore((s) => s.artwork)
   const coverOverride = usePlayerStore((s) => s.coverOverride)
@@ -152,7 +163,6 @@ const BigPicInner = () => {
   const artwork = frozenCover ?? coverOverride ?? artworkRaw
 
   const lyrView = useBigPicStore((s) => s.lyrView)
-  const lyricsBtnVisible = useLyricsBtnVisible(panel === 'lyrics')
 
   // Анимация смены трека («Плеер» → Анимация смены трека → Полный экран).
   // Обложка (вместе с размытой подложкой) и подпись — независимо.
@@ -160,8 +170,8 @@ const BigPicInner = () => {
   const textAnim = usePlayerViewStore((s) => s.trackAnim.big.text)
   const curId = useQueueStore((s) => s.curId)
 
-  // Эффективная панель отстаёт от стора на время анимации выхода: пока очередь
-  // или текст уезжают вправо, раскладка (.bp-inner) остаётся прежней — иначе
+  // Эффективная панель отстаёт от стора на время анимации выхода: пока текст
+  // уезжает вправо, раскладка (.bp-inner) остаётся прежней — иначе
   // колонка схлопнулась бы в центр раньше, чем панель успела уехать.
   const [ph, setPh] = useState<{ p: BpPanel; closing: boolean }>({ p: panel, closing: false })
   useEffect(() => {
@@ -246,72 +256,61 @@ const BigPicInner = () => {
 
   // Выравнивание заголовка/артиста/текста следует настройке titleAlign плеера.
   const titleAlign = usePlayerViewStore((s) => s.titleAlign)
+  // Вид «Текст»: обложки нет (.bp-left скрыт), текст прижат к левому краю —
+  // кнопка выхода в этом режиме единственная уезжает в правый верхний угол.
+  const textMode = shownPanel === 'lyrics' && lyrView === 'text'
   // Раскладка следует за эффективной панелью (shownPanel), а не за стором.
   const modeClass =
     shownPanel === 'lyrics'
       ? ` bp-lyr-mode${lyrView === 'text' ? ' bp-lv-text' : ''}`
-      : shownPanel === 'queue'
-        ? ' bp-q-mode'
-        : ' bp-cov-mode'
+      : ' bp-cov-mode'
   // bp-chrome-out — ♥/+ на обложке и транспорт гаснут вместе с верхними
   // кнопками, пока курсор вне окна.
   const innerClass = `bp-inner bp-align-${titleAlign}${modeClass}${cursorOut ? ' bp-chrome-out' : ''}`
 
   return (
     <>
-      {/* Тайтлбар + фоновые слои = drag-зоны окна (двойной клик — максимайз). */}
-      <div className="bp-titlebar" id="bpTitlebar" data-tauri-drag-region />
-      <div className="bp-bg" data-tauri-drag-region />
+      {/* Перетаскивание окна — только за тайтлбар (двойной клик — максимайз);
+          фоновые слои намеренно НЕ drag-зоны. */}
+      <div
+        className={`bp-titlebar${shownPanel !== 'none' ? ' bp-titlebar-slim' : ''}`}
+        id="bpTitlebar"
+        data-tauri-drag-region
+      />
+      <div className="bp-bg" />
       {/* Размытая подложка = та же обложка → перетекает вместе с ней. Всегда
           затуханием, даже при слайде: смещать подложку нельзя — она растянута
           scale(1.25) и дрейфует, край вылез бы в кадр. */}
       <TrackSwap id={curId} kind={coverAnim === 'none' ? 'none' : 'fade'} fill className="bp-blur-swap">
         <div
           className="bp-blur"
-          data-tauri-drag-region
           style={{ backgroundImage: artwork ? `url('${artwork}')` : 'none' }}
         />
       </TrackSwap>
-      <div className="bp-vignette" data-tauri-drag-region />
+      <div className="bp-vignette" />
 
-      {/* Выход — отдельной кнопкой слева (стрелка вниз = «свернуть фуллскрин»). */}
-      <div className={`bp-top-left${cursorOut ? ' bp-chrome-hidden' : ''}`}>
-        <button className="bp-top-btn" onClick={closeBig} aria-label={t('player.aria.close')}>
-          <Ico name="arrowDown" width={17} height={17} />
-        </button>
-      </div>
+      {/* Выход в виде «Текст»: обложки нет, кнопка живёт в правом верхнем углу. */}
+      {textMode && (
+        <div className={`bp-top-right${cursorOut ? ' bp-chrome-hidden' : ''}`}>
+          <BpCloseBtn />
+        </div>
+      )}
 
-      <div className={`bp-top-actions${cursorOut ? ' bp-chrome-hidden' : ''}`}>
-        <button
-          className={`bp-top-btn${panel === 'queue' ? ' bp-lyr-active' : ''}`}
-          id="bpQueueBtn"
-          onClick={toggleQueue}
-          aria-label={t('player.aria.queue')}
-        >
-          <Ico name="sidebar" width={15} height={15} />
-        </button>
-        {lyricsBtnVisible && (
-          <button
-            className={`bp-top-btn${panel === 'lyrics' ? ' bp-lyr-active' : ''}`}
-            id="bpLyricsBtn"
-            onClick={toggleLyrics}
-            aria-label={t('player.lyrics')}
-          >
-            <Ico name="lyrics" width={15} height={15} />
-          </button>
-        )}
-        <button className="bp-top-btn" id="bpFontBtn" onClick={toggleFontPanel} aria-label={t('player.aria.textSettings')}>
-          <Ico name="settings" width={15} height={15} />
-        </button>
-      </div>
-
-      {fontPanelOpen && <BpFontPanel />}
+      {/* key по координатам — новое место = новый монтаж, чтобы каждый вызов
+          проигрывал анимацию появления. */}
+      {fontPanelPos && (
+        <BpFontPanel key={`${fontPanelPos.x},${fontPanelPos.y}`} pos={fontPanelPos} />
+      )}
 
       <div className={innerClass}>
         {/* .bp-left — грид «пустая строка / обложка / всё остальное»: обложка
             стоит ровно по центру высоты окна во всех режимах, подпись с
             транспортом висят под ней (см. big-picture.css). */}
         <div className="bp-left" ref={leftRef}>
+          {/* Первая строка грида (бывший спейсер ::before) — кнопка выхода,
+              прижатая к её низу, т.е. всегда ровно над обложкой и едущая
+              вместе с колонкой (FLIP). */}
+          <BpCloseBtn />
           <BpCover artwork={artwork} anim={coverAnim} />
           <div className="bp-below">
             <BpInfo anim={textAnim} />
@@ -327,13 +326,6 @@ const BigPicInner = () => {
         >
           {shownPanel === 'lyrics' && <BpLyrics />}
         </div>
-        {/* Очередь (реюз QueueBlock) */}
-        <div
-          className={`bp-q-wrap${shownPanel === 'queue' ? ' bp-q-open' : ''}${ph.closing ? ' bp-panel-out' : ''}`}
-          id="bpQueuePanel"
-        >
-          {shownPanel === 'queue' && <QueueBlock />}
-        </div>
       </div>
 
       {/* Вид «только обложка»: полоса прогресса во всю ширину внизу окна.
@@ -341,6 +333,23 @@ const BigPicInner = () => {
           для неё containing block (position:fixed) и таскал бы её за собой. */}
       {shownPanel === 'none' && <BpProgress bottom />}
     </>
+  )
+}
+
+// ── Кнопка выхода («свернуть фуллскрин») ────────────────────────────────────
+
+/**
+ * Голая иконка-шеврон без подложки. Живёт в двух местах (см. BigPicInner):
+ * над обложкой (первая строка грида `.bp-left`) — в режимах с обложкой, и в
+ * правом верхнем углу — в виде «Текст», где обложки нет.
+ */
+const BpCloseBtn = () => {
+  const t = useT()
+  const closeBig = useBigPicStore((s) => s.closeBig)
+  return (
+    <button className="bp-close-btn" onClick={closeBig} aria-label={t('player.aria.close')}>
+      <Ico name="arrowDown" width={22} height={22} />
+    </button>
   )
 }
 
@@ -415,9 +424,7 @@ const BpCover = ({ artwork, anim }: { artwork: string | null; anim: TrackAnimKin
           {artwork ? (
             <img id="bpCoverImg" src={artwork} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <div className="bp-cover-empty" style={{ display: 'flex' }}>
-              <Ico name="note" width={64} height={64} />
-            </div>
+            <EmptyCover />
           )}
         </TrackSwap>
         <button
@@ -494,8 +501,16 @@ const BpInfo = ({ anim }: { anim: TrackAnimKind }) => {
           offsetVar="--bp-off"
         />
       </div>
-      <div className="bp-artist" id="bpArtist">
-        <ArtistLinks artist={artist} scId={curTrack?.artistScId} permalink={curTrack?.artistPermalink} artistId={curTrack?.artistId} provider={curTrack?.artistProvider} />
+      {/* Артисты — строго в одну строку: у треков с пятью соавторами имя
+          переносилось на вторую строку и толкало транспорт вниз. Хвост катится
+          hover-marquee карточек (`.mqh` — хост ховера, `.mq` — клип; тот же
+          useCardMarquee, что у подписей карточек чарта). */}
+      <div className="bp-artist mqh" id="bpArtist">
+        <CardMarquee>
+          {/* Аватарки артистов — стопкой перед именем (см. ArtistAvatars). */}
+          <ArtistAvatars track={curTrack} />
+          <ArtistLinks artist={artist} scId={curTrack?.artistScId} permalink={curTrack?.artistPermalink} artistId={curTrack?.artistId} provider={curTrack?.artistProvider} />
+        </CardMarquee>
       </div>
     </TrackSwap>
   )
@@ -682,9 +697,9 @@ const BpLyrics = () => {
   )
 }
 
-// ── Попап настроек шрифта/оффсета ───────────────────────────────────────────
+// ── Попап настроек шрифта/оффсета (ПКМ-меню фуллскрина) ─────────────────────
 
-const BpFontPanel = () => {
+const BpFontPanel = ({ pos }: { pos: { x: number; y: number } }) => {
   const t = useT()
   const fontSize = useBigPicStore((s) => s.fontSize)
   const offset = useBigPicStore((s) => s.offset)
@@ -694,6 +709,34 @@ const BpFontPanel = () => {
   const setView = useBigPicStore((s) => s.setView)
   const adjustOffset = useBigPicStore((s) => s.adjustOffset)
   const resetOffset = useBigPicStore((s) => s.resetOffset)
+  const closeFontPanel = useBigPicStore((s) => s.closeFontPanel)
+
+  // Меню открывается в точке курсора; оверлей — fixed inset:0, поэтому его
+  // absolute-координаты совпадают с вьюпортными. Замер после монтирования:
+  // высота панели зависит от того, есть ли у трека текст (селектор «Вид»).
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [at, setAt] = useState<{ x: number; y: number } | null>(null)
+  useLayoutEffect(() => {
+    const m = menuRef.current
+    if (!m) return
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    setAt({
+      x: Math.max(8, Math.min(pos.x, vw - m.offsetWidth - 8)),
+      y: Math.max(8, Math.min(pos.y, vh - m.offsetHeight - 8)),
+    })
+  }, [pos])
+
+  // Закрытие по клику мимо — как у обычного ctx-меню. ПКМ мимо тоже закрывает:
+  // обработчик оверлея тут же откроет меню на новом месте.
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current?.contains(e.target as Node)) return
+      closeFontPanel()
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [closeFontPanel])
 
   // Активный вид: «Обложка» = без панели текста, иначе раскладка текста.
   const view = panel === 'lyrics' ? lyrView : 'cover'
@@ -708,8 +751,19 @@ const BpFontPanel = () => {
     ] as const
   ).filter((v) => lyricsAvail || v.id === 'cover')
 
+  const p = at ?? pos
   return (
-    <div id="bpFontPanel" className="bp-font-panel">
+    <div
+      id="bpFontPanel"
+      className="bp-font-panel"
+      ref={menuRef}
+      style={{ left: p.x, top: p.y }}
+      // ПКМ по самому меню не должен перевешивать его под курсор.
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}
+    >
       <div className="bp-font-sizes">
         {[0, 1, 2, 3].map((sz) => (
           <button

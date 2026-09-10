@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
+import { playCount } from '@/db/playStats'
 import { useSortable } from '@shared/lib/useSortable'
 import { useWindowedList } from '@shared/lib/useWindowedList'
 import { useUiPrefsStore } from '@features/settings'
@@ -12,10 +13,8 @@ import {
   useHistoryStore,
   useSelectionStore,
   useDupsStore,
-  type TrackSortMode,
-  type TrackSortDir,
 } from '../model'
-import { getCurrentView } from '../lib/currentView'
+import { getCurrentView, isOnDisk, applySort } from '../lib/currentView'
 import { historyLabel, historyTime } from '../lib/formatCount'
 import { createPlaylistInline } from '../lib/createPlaylistInline'
 import { deleteUploadedTrack } from '../lib'
@@ -23,6 +22,7 @@ import { playFromSource, playTrack, useQueueStore, AddPopup } from '@features/pl
 import { TrackCtxMenu } from './TrackCtxMenu'
 import { TagEditor } from './TagEditor'
 import { Ico } from '@shared/ui/icons/solar'
+import { EmptyCover } from '@shared/ui'
 import { useOfflineStore } from '@features/offline'
 
 /**
@@ -60,18 +60,19 @@ export const LibTracklist = () => {
   const historyEntries = useHistoryStore((s) => s.entries)
   const sortMode = useLibStore((s) => s.sortMode)
   const sortDir = useLibStore((s) => s.sortDir)
+  // Офлайн-состав нужен списку только в режиме «Только скачанные»: карта
+  // меняется на каждом треке пакетной загрузки, и без отбора подписка лишь
+  // перестраивала бы список впустую.
+  const offlinePaths = useOfflineStore((s) => (sortMode === 'downloaded' ? s.paths : null))
 
-  // Плотность строк + видимость доп-колонок (пер-колонка гейтится префом,
+  // Плотность строк + видимость колонки «Альбом» (гейтится префом,
   // ширина окна — CSS-классом body.win-lib-wide). useLocale — реактивный
-  // ре-рендер форматтера даты «Добавлено» при смене языка.
+  // ре-рендер форматтера дат (заголовки Истории) при смене языка.
   useLocale()
   const libDensity = useUiPrefsStore((s) => s.libDensity)
   const colAlbum = useUiPrefsStore((s) => s.libColAlbum)
-  const colDate = useUiPrefsStore((s) => s.libColDate)
   const listCls = `lib-tracklist${libDensity === 'compact' ? ' lib-dense' : ''}`
-  // «Дата добавления» бессмысленна в Истории (там своя колонка времени игры).
   const showAlbum = colAlbum
-  const showDate = colDate && mode !== 'history'
 
   const viewTracks = useMemo(() => {
     let base = filterByMode(
@@ -91,9 +92,10 @@ export const LibTracklist = () => {
           (t.album || '').toLowerCase().includes(q),
       )
     }
-    if (sortMode !== 'default') base = applySort(base, sortMode, sortDir, mode)
+    if (offlinePaths) base = base.filter((t) => isOnDisk(t, (id) => offlinePaths.has(id)))
+    else if (sortMode !== 'default') base = applySort(base, sortMode, sortDir, mode)
     return base
-  }, [tracks, mode, folderPath, playlistTrs, favs, historyEntries, searchQuery, sortMode, sortDir])
+  }, [tracks, mode, folderPath, playlistTrs, favs, historyEntries, searchQuery, sortMode, sortDir, offlinePaths])
 
   // Контекстное меню + edit-модалка плейлиста (для «Новый плейлист» из меню).
   const [ctx, setCtx] = useState<{ pos: { x: number; y: number }; track: Track } | null>(
@@ -164,7 +166,7 @@ export const LibTracklist = () => {
   )
   const win = useWindowedList({
     count: histFlat ? histFlat.length : viewTracks.length,
-    estimate: libDensity === 'compact' ? 46 : 68,
+    estimate: libDensity === 'compact' ? 46 : 77,
     estimate1: 28,
     getType: histFlat ? getHistType : undefined,
     freezeRef,
@@ -366,7 +368,7 @@ export const LibTracklist = () => {
   if (viewTracks.length === 0) {
     return (
       <div className={listCls} id="libTracklist">
-        <EmptyState mode={mode} />
+        <EmptyState mode={mode} downloaded={sortMode === 'downloaded'} />
       </div>
     )
   }
@@ -395,11 +397,9 @@ export const LibTracklist = () => {
               idx={item.idx}
               widx={win.start + i}
               onContextMenu={(e) => onTrackCtx(e, item.track)}
-              onMore={(e) => onTrackCtx(e, item.track)}
               onClick={(e) => onTrackClickWithMods(item.track, item.idx, e)}
               onAddClick={openAddPopup}
               showAlbum={showAlbum}
-              showDate={showDate}
               historyMeta={item.meta}
             />
           ),
@@ -418,12 +418,10 @@ export const LibTracklist = () => {
             idx={idx}
             widx={idx}
             onContextMenu={(e) => onTrackCtx(e, t)}
-            onMore={(e) => onTrackCtx(e, t)}
             onClick={(e) => onTrackClickWithMods(t, idx, e)}
             onAddClick={openAddPopup}
             inPl={!!plTrsSet?.has(t.id)}
             showAlbum={showAlbum}
-            showDate={showDate}
             rootProps={rootProps}
             handleProps={handleProps}
           />
@@ -451,9 +449,10 @@ export const LibTracklist = () => {
         }}
       />
     </div>
-    {/* Плавающая кнопка «Сейчас играет» — круг с обложкой играющего трека вне
-        скролл-контейнера (абсолют внутри .lib-content), поэтому висит на одном
-        месте независимо от прокрутки. */}
+    {/* Плавающая пилюля «Сейчас играет» — эквалайзер, подпись и стрелка
+        (вверх/вниз — куда уехал трек), как в мобильном `NowPlayingJump`.
+        Живёт вне скролл-контейнера (абсолют внутри .lib-content), поэтому
+        висит на одном месте независимо от прокрутки. */}
     {curTrack && jumpDir !== 0 && (
       <button
         type="button"
@@ -461,19 +460,14 @@ export const LibTracklist = () => {
         onClick={jumpToCurrent}
         aria-label={tr('lib.jumpToNow')}
       >
-        <span className="lib-jump-cov">
-          {curTrack.cover ? (
-            <img src={curTrack.cover} alt="" />
-          ) : (
-            <Ico name="note" width={16} height={16} style={{ opacity: 0.4 }} />
-          )}
-          <span className="lib-jump-eq">
-            <span className="bars"><span /><span /><span /></span>
-          </span>
-        </span>
-        <span className="lib-jump-badge">
-          <Ico name={jumpDir === -1 ? 'arrowUp' : 'arrowDown'} width={12} height={12} />
-        </span>
+        <span className="bars"><span /><span /><span /></span>
+        <span className="lib-jump-txt">{tr('lib.nowPlaying')}</span>
+        <Ico
+          name={jumpDir === -1 ? 'arrowUp' : 'arrowDown'}
+          width={15}
+          height={15}
+          className="lib-jump-arw"
+        />
       </button>
     )}
     </>
@@ -488,11 +482,18 @@ export const LibTracklist = () => {
 const normStr = (s: string | undefined): string =>
   (s || '').toLowerCase().replace(/\s+/g, ' ').trim()
 
-/** Сортировка группы: с обложкой → больше playCount → раньше добавлен. Первый = keep. */
+/**
+ * Сортировка группы: с обложкой → больше прослушиваний → раньше добавлен.
+ * Первый = keep. Прослушивания берём из журнала: `t.playCount` не ведётся, и
+ * этот шаг раньше не работал — из двух копий предлагалась к сохранению не та,
+ * которую человек реально слушал, а просто добавленная раньше.
+ */
 const sortGroup = (group: Track[]): Track[] =>
   [...group].sort((a, b) => {
     if (!!a.cover !== !!b.cover) return a.cover ? -1 : 1
-    if ((b.playCount || 0) !== (a.playCount || 0)) return (b.playCount || 0) - (a.playCount || 0)
+    const pa = playCount(a.id)
+    const pb = playCount(b.id)
+    if (pa !== pb) return pb - pa
     return (a.addedAt || 0) - (b.addedAt || 0)
   })
 
@@ -546,64 +547,62 @@ const DupsInline = ({
   const deleteGroup = (g: Track[]) => deleteTracks(sortGroup(g).slice(1))
   const deleteAll = () => groups.forEach((g) => deleteTracks(g.slice(1)))
 
+  // Шапки у режима нет: выход — кружок статуса, на hover он превращается в ✕.
+  const status = (tone: 'ok' | 'warn' | 'idle', icon: ReactNode) => (
+    <button className={`dups-status ${tone}`} onClick={onExit} aria-label={t('common.close')}>
+      <span className="dups-status-ico">{icon}</span>
+      <span className="dups-status-x"><Ico name="close" width={20} height={20} /></span>
+    </button>
+  )
+
   return (
     <div className="lib-tracklist dups-inline" id="libTracklist">
-      <div className="dups-inline-bar">
-        <div className="dups-inline-info">
-          <Ico name="copy" width={14} height={14} style={{ flexShrink: 0 }} />
-          {groups.length > 0 ? (
-            <span>
-              {t('lib.dups.found.a')} <strong>{groups.length}</strong> {t('lib.dups.found.b')}{' '}
-              <strong>{totalDups}</strong> {t('lib.dups.found.c')}
-            </span>
-          ) : (
-            <span>{t('lib.dups.title')}</span>
-          )}
-        </div>
-        <div className="dups-inline-actions">
-          {groups.length > 0 && (
-            <button className="dups-delete-all" onClick={deleteAll}>
-              <Ico name="trash" width={13} height={13} />
-              {t('lib.dups.delAll')}
-            </button>
-          )}
-          <button className="dups-close" onClick={onExit} aria-label={t('common.close')}>
-            <Ico name="close" width={14} height={14} />
-          </button>
-        </div>
-      </div>
-
       {pool.length === 0 ? (
         <div className="dups-empty">
-          <div className="dups-empty-icon"><DupNoteIcon size={22} /></div>
-          <span style={{ fontSize: 13 }}>{plId ? t('lib.dups.noTracksPl') : t('lib.dups.noTracksLib')}</span>
+          {status('idle', <DupNoteIcon size={22} />)}
+          <span className="dups-empty-title">{plId ? t('lib.dups.noTracksPl') : t('lib.dups.noTracksLib')}</span>
         </div>
       ) : groups.length === 0 ? (
         <div className="dups-empty">
-          <div className="dups-empty-icon" style={{ background: 'rgba(0,200,100,.08)' }}>
-            <Ico name="check" variant="bold" width={22} height={22} style={{ color: '#3dd68c' }} />
-          </div>
-          <span style={{ fontSize: 13, color: 'var(--text2)' }}>{t('lib.dups.none')}!</span>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{t('lib.dups.checked', { n: pool.length })}</span>
+          {status('ok', <Ico name="check" width={22} height={22} />)}
+          <span className="dups-empty-title">{t('lib.dups.none')}</span>
+          <span className="dups-empty-sub">{t('lib.dups.checked', { n: pool.length })}</span>
         </div>
       ) : (
-        groups.map((group, gi) => (
+        <>
+          <div className="dups-summary">
+            {status('warn', <Ico name="copy" width={20} height={20} />)}
+            <div className="dups-summary-text">
+              <div className="dups-summary-title">
+                {t('lib.dups.found.a')} <strong>{groups.length}</strong> {t('lib.dups.found.b')}{' '}
+                <strong>{totalDups}</strong> {t('lib.dups.found.c')}
+              </div>
+              <div className="dups-summary-sub">{t('lib.dups.checked', { n: pool.length })}</div>
+            </div>
+            <button className="dups-delete-all" onClick={deleteAll} aria-label={t('lib.dups.delAll')}>
+              <Ico name="trash" width={18} height={18} />
+            </button>
+          </div>
+          {groups.map((group, gi) => (
           <div className="dups-group" key={gi}>
             <div className="dups-group-head">
               <div className="dups-group-label">
-                <Ico name="copy" width={12} height={12} />
-                {group[0]!.name} — {group[0]!.artist || t('common.unknownArtist')}
-                <span className="dups-group-badge">{t('lib.dups.copies', { n: group.length })}</span>
+                <span className="dups-group-badge">×{group.length}</span>
+                <span className="dups-group-name">
+                  {group[0]!.name} — {group[0]!.artist || t('common.unknownArtist')}
+                </span>
               </div>
-              <button className="dups-del-btn" onClick={() => deleteGroup(group)}>{t('lib.dups.delGroup')}</button>
+              <button className="dups-del-btn" onClick={() => deleteGroup(group)} aria-label={t('lib.dups.delGroup')}>
+                <Ico name="trash" width={15} height={15} />
+              </button>
             </div>
             {group.map((tr, ti) => (
               <div className={`dups-track${ti === 0 ? ' keep' : ''}`} key={tr.id} onClick={() => playTrack(tr.id)}>
-                <div className="dups-track-cov">{tr.cover ? <img src={tr.cover} alt="" /> : <DupNoteIcon />}</div>
+                <div className="dups-track-cov">{tr.cover ? <img src={tr.cover} alt="" /> : <EmptyCover />}</div>
                 <div className="dups-track-info">
                   <div className="dups-track-name">{tr.name}</div>
                   <div className="dups-track-artist">
-                    {(tr.artist || t('common.unknownArtist')) + (tr.playCount ? ` · ${t('lib.dups.plays', { n: tr.playCount })}` : '')}
+                    {(tr.artist || t('common.unknownArtist')) + (playCount(tr.id) ? ` · ${t('lib.dups.plays', { n: playCount(tr.id) })}` : '')}
                   </div>
                 </div>
                 {ti === 0 ? (
@@ -624,56 +623,11 @@ const DupsInline = ({
               </div>
             ))}
           </div>
-        ))
+          ))}
+        </>
       )}
     </div>
   )
-}
-
-// ── Sort после фильтрации ─────────────────────────────────────────────
-
-const parseDurSec = (d: string | undefined): number => {
-  if (!d || d === '—') return 0
-  const parts = String(d).split(':').map(Number)
-  if (parts.length === 2) return (parts[0] || 0) * 60 + (parts[1] || 0)
-  return parts[0] || 0
-}
-
-const applySort = (
-  tracks: Track[],
-  mode: TrackSortMode,
-  dir: TrackSortDir,
-  libMode: string,
-): Track[] => {
-  const sd = dir === 'asc' ? 1 : -1
-  const sorted = [...tracks]
-  switch (mode) {
-    case 'name':
-      sorted.sort((a, b) => sd * (a.name || '').localeCompare(b.name || '', 'ru'))
-      break
-    case 'artist':
-      sorted.sort((a, b) => sd * (a.artist || '').localeCompare(b.artist || '', 'ru'))
-      break
-    case 'album':
-      sorted.sort((a, b) => sd * (a.album || '').localeCompare(b.album || '', 'ru'))
-      break
-    case 'dur':
-      sorted.sort((a, b) => sd * (parseDurSec(a.dur) - parseDurSec(b.dur)))
-      break
-    case 'date':
-      // В fav-режиме сортируем по favAt, иначе по addedAt.
-      sorted.sort((a, b) => {
-        if (libMode === 'fav') {
-          return sd * (((b.favAt || b.addedAt || 0) - (a.favAt || a.addedAt || 0)))
-        }
-        return sd * (((a.addedAt || 0) - (b.addedAt || 0)))
-      })
-      break
-    case 'plays':
-      sorted.sort((a, b) => sd * ((a.playCount || 0) - (b.playCount || 0)))
-      break
-  }
-  return sorted
 }
 
 // ── Filter по режиму ──────────────────────────────────────────────────
@@ -736,12 +690,10 @@ const TrackRow = ({
   idx: _idx,
   widx,
   onContextMenu,
-  onMore,
   onClick,
   onAddClick,
   inPl,
   showAlbum,
-  showDate,
   rootProps,
   handleProps,
   historyMeta,
@@ -751,16 +703,12 @@ const TrackRow = ({
   /** Индекс в оконном списке (data-widx — замер высоты строки в useWindowedList). */
   widx?: number
   onContextMenu?: (e: ReactMouseEvent<HTMLDivElement>) => void
-  /** Открыть контекстное меню кнопкой «…» (в позиции клика). */
-  onMore?: (e: ReactMouseEvent<HTMLButtonElement>) => void
   onClick?: (e: ReactMouseEvent<HTMLDivElement>) => void
   onAddClick?: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
   /** Трек уже лежит в открытом плейлисте — «+» рисуется bold-кружком. */
   inPl?: boolean
   /** Показывать ячейку «Альбом» (пер-колонка гейт; ширина — через CSS). */
   showAlbum?: boolean
-  /** Показывать ячейку «Добавлено». */
-  showDate?: boolean
   rootProps?: {
     'data-sortable-id': string
     style: React.CSSProperties
@@ -873,9 +821,6 @@ const TrackRow = ({
         )}
       </div>
     )}
-    {showDate && (
-      <div className="tr-date">{track.addedAt ? historyLabel(track.addedAt) : '—'}</div>
-    )}
     <div className="trac">
       {historyMeta && (
         <span
@@ -924,22 +869,11 @@ const TrackRow = ({
         слева от пилюли длительности. */}
     {isOffline && (
       <span className="tr-offline">
-        <Ico name="save" width={13} height={13} />
+        <Ico name="save" width={15} height={15} />
       </span>
     )}
     <div className="trtime">
       <span className="trd">{track.dur || '—'}</span>
-      <button
-        className="ib trmore"
-        type="button"
-        aria-label={t('common.more')}
-        onClick={(e) => {
-          e.stopPropagation()
-          onMore?.(e)
-        }}
-      >
-        <Ico name="kebab" width={15} height={15} />
-      </button>
     </div>
   </div>
   )
@@ -964,18 +898,28 @@ const HistoryHeader = ({ label, widx }: { label: string; widx?: number }) => (
   </div>
 )
 
-const MusicNoteIcon = () => <Ico name="note" width={20} height={20} style={{ opacity: 0.4 }} />
+/** Трек без обложки — та же заглушка, что у плейлистов (знак bloom на подложке). */
+const MusicNoteIcon = () => <EmptyCover />
 
 // ── Пустые состояния ─────────────────
 
-const EmptyState = ({ mode }: { mode: string }) => {
+const EmptyState = ({ mode, downloaded }: { mode: string; downloaded: boolean }) => {
   const t = useT()
   let icon: React.ReactNode = null
   let title = ''
   let sub = ''
-  switch (mode) {
+  // Список не пуст — просто под отбором показать нечего. Без этой ветки
+  // «Плейлист пуст» на полном плейлисте выглядел бы поломкой.
+  switch (downloaded ? 'downloaded' : mode) {
+    case 'downloaded':
+      icon = <Ico name="save" width={48} height={48} style={{ opacity: 0.3 }} />
+      title = t('lib.empty.downloadedTitle')
+      sub = t('lib.empty.downloadedSub')
+      break
     case 'fav':
-      icon = <Ico name="heart" width={48} height={48} style={{ opacity: 0.3 }} />
+      // Единственная цветная заглушка: пустое «Любимое» — про сердечко, и оно
+      // красное, как везде. Приглушаем прозрачностью, а не серым цветом.
+      icon = <Ico name="heart" width={48} height={48} style={{ color: 'var(--sys-fav-ico)', opacity: 0.55 }} />
       title = t('lib.empty.favTitle')
       sub = t('lib.empty.favSub')
       break

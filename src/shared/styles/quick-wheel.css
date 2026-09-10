@@ -14,7 +14,6 @@
 .qw-sector.qw-active{fill:rgba(var(--accent-rgb),.22);stroke:rgba(var(--accent-rgb),.5)}
 .qw-icon-wrap{position:absolute;display:flex;flex-direction:column;align-items:center;gap:5px;transform:translate(-50%,-50%);pointer-events:none;color:rgba(var(--ovl-rgb),.55);transition:color .1s}
 .qw-icon-wrap svg{display:block}
-.qw-icon-wrap .qw-lbl{font-size:9px;font-family:var(--font);font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 .qw-icon-wrap.qw-active{color:var(--accent)}
 #qw-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:88px;height:88px;border-radius:50%;background:rgba(18,18,18,.96);border:1px solid rgba(var(--ovl-rgb),.14);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;z-index:2;transition:background .15s;font-family:inherit}
 #qw-center:hover{background:rgba(30,30,30,.98)}

@@ -6,6 +6,8 @@ import * as session from "./session";
 import { startWave, maybeRefill, WAVE_SOURCE_TYPE, waveLabel, prefetchUpcoming } from "./engine";
 import { pickPersonalSeeds, pickTrackSeeds, pickQueueSeeds, pickDisplaySeeds, scIdOf } from "./seeds";
 import { dispatch, onPlayStart } from "./feedback";
+// Сброс кэша источников живёт в Rust, поэтому он async — его ОБЯЗАТЕЛЬНО ждать
+// перед startWave, иначе первый батч успеет прочитать выдачу прошлой волны.
 import { resetWaveSourceCache } from "./sources";
 import * as ymWave from "./yandex";
 import type { FeedbackEvent } from "./types";
@@ -32,7 +34,7 @@ async function waveStartPersonal(): Promise<boolean> {
     if (session.isActive()) session.endSession();
     return ymWave.start();
   }
-  resetWaveSourceCache();
+  await resetWaveSourceCache();
   const seeds = pickPersonalSeeds();
   if (!seeds.length) {
     host.toast(i18nT("wave.toast.notEnough"), "warn");
@@ -43,10 +45,9 @@ async function waveStartPersonal(): Promise<boolean> {
   return ok;
 }
 
-// `opts.seedFirst` — начать волну С САМОГО сида (клик по обложке в кольце «Моей
-// волны»: сначала играет выбранный трек, дальше — подобранные к нему). По
-// умолчанию выключено: пункт «Волна по треку» в меню трека как и раньше сразу
-// уходит в похожие.
+// `opts.seedFirst` — начать волну С САМОГО сида: сначала играет выбранный трек,
+// дальше — подобранные к нему. По умолчанию выключено: пункт «Волна по треку» в
+// меню трека сразу уходит в похожие.
 async function waveStartByTrack(trackId: string, opts?: { seedFirst?: boolean }): Promise<boolean> {
   const t = host.trackById(trackId);
   if (!t) { host.toast(i18nT("wave.toast.noSeed"), "error"); return false; }
@@ -58,7 +59,7 @@ async function waveStartByTrack(trackId: string, opts?: { seedFirst?: boolean })
     return ymWave.startByTrack(t.ymTrackId, first);
   }
 
-  resetWaveSourceCache();
+  await resetWaveSourceCache();
   const seeds = pickTrackSeeds(trackId);
   if (!seeds.length) { host.toast(i18nT("wave.toast.noSeed"), "error"); return false; }
   if (!t.scId && !t.scTrackId) {
@@ -72,7 +73,7 @@ async function waveStartByTrack(trackId: string, opts?: { seedFirst?: boolean })
 
 // «Похожие на очередь»: запустить волну с сидами из текущей очереди (или переданного списка id).
 async function waveStartByQueue(trackIds?: string[]): Promise<boolean> {
-  resetWaveSourceCache();
+  await resetWaveSourceCache();
   const src = trackIds && trackIds.length ? trackIds : host.queue;
   if (!src.length) { host.toast(i18nT("wave.toast.queueEmpty"), "warn"); return false; }
   const seeds = pickQueueSeeds(src);
@@ -100,7 +101,7 @@ async function waveStartByArtist(opts: {
     return ymWave.startByArtist(opts.ymArtistId);
   }
   // SoundCloud: сиды из треков артиста, у которых есть scId.
-  resetWaveSourceCache();
+  await resetWaveSourceCache();
   const pool = (opts.seedTrackIds ?? []).filter(id => scIdOf(host.trackById(id)));
   if (!pool.length) { host.toast(i18nT("wave.toast.artistNoSeeds"), "warn"); return false; }
   const seeds = pickQueueSeeds(pool);

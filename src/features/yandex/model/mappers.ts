@@ -61,6 +61,11 @@ export const toTrack = (t: YmRawTrack): Track => ({
   ymAvailable: t.available,
   artistId: t.artistId ? ymArtistId(t.artistId) : undefined,
   artistProvider: t.artistId ? 'yandex' : undefined,
+  // Чартовые поля есть только у ответа ym_chart; у прочих запросов chartPos = 0
+  // — тогда полей на треке нет вовсе, и UI не рисует ни ранга, ни стрелки.
+  chartPos: t.chartPos || undefined,
+  chartShift: t.chartPos ? t.chartShift : undefined,
+  chartNew: t.chartPos ? t.chartNew : undefined,
 })
 
 export const toArtist = (a: YmRawArtist): Artist => ({
@@ -75,8 +80,12 @@ export const toAlbum = (a: YmRawAlbum): Playlist => ({
   title: a.title || i18nT('ym.fallback.album'),
   cover: a.cover || null,
   ownerName: a.artist || '',
+  ownerAvatar: a.artistCover || null,
+  ownerId: a.artistId ? ymArtistId(a.artistId) : undefined,
   trackCount: a.trackCount || 0,
   year: a.year || undefined,
+  releaseDate: a.releaseDate || undefined,
+  albumType: a.albumType || undefined,
   source: 'yandex',
 })
 

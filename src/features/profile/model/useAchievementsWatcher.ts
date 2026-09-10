@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import {
   useLibStore,
-  useHistoryStore,
   useActivityStore,
   useUsageStore,
 } from '@features/library'
@@ -9,6 +8,7 @@ import { toast } from '@shared/ui'
 import { t } from '@shared/i18n'
 import { buildAchContext, buildAchievements, TIER_ORDER } from '../lib/achievements'
 import { useAchievementsStore } from './achievementsStore'
+import { usePlayEntries } from '../lib/usePlayEntries'
 
 /**
  * Глобальный вотчер достижений. Раньше синхронизация/тосты жили ВНУТРИ
@@ -23,7 +23,7 @@ const tierLabelKey = { bronze: 'ach.tier.bronze', silver: 'ach.tier.silver', gol
 
 export const useAchievementsWatcher = (): void => {
   const tracks = useLibStore((s) => s.tracks)
-  const entries = useHistoryStore((s) => s.entries)
+  const entries = usePlayEntries()
   const log = useActivityStore((s) => s.log)
   const appMs = useUsageStore((s) => s.appMs)
 

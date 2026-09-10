@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { parseArtists } from '@shared/lib/parseArtists'
 import { useT, useLocale, type TranslationKey } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
-import { toast } from '@shared/ui'
+import { toast, EmptyCover } from '@shared/ui'
 import { invoke } from '@shared/tauri'
 import {
   coverCache,
@@ -615,7 +615,7 @@ const TracksSlide = ({ d, onLeave }: { d: WrappedData; onLeave: () => void }) =>
         }}
       >
         <span className="wrm-hero-cov">
-          {cover ? <img src={cover} alt="" /> : <Ico name="note" width={28} height={28} />}
+          {cover ? <img src={cover} alt="" /> : <EmptyCover />}
         </span>
         <span className="wrm-hero-txt">
           <span className="wrm-num">
@@ -679,7 +679,7 @@ const TrackRow = ({
       }}
     >
       <span className="wrm-row-cov">
-        {cover ? <img src={cover} alt="" /> : <Ico name="note" width={18} height={18} />}
+        {cover ? <img src={cover} alt="" /> : <EmptyCover />}
       </span>
       <span className="wrm-row-info">
         <span className="wrm-row-name">{tr.name || t('common.track')}</span>

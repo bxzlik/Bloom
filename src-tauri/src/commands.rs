@@ -475,21 +475,20 @@ pub fn now_playing(
 
 // ============= Overlay (HUD-«остров») =============
 
-/// Конфиг оверлея с фронта (режим/якорь/масштаб + свободная позиция). enabled=false прячет окно.
+/// Конфиг оверлея с фронта (якорь/масштаб + свободная позиция). enabled=false прячет окно.
 // Команды оверлея, способные лениво СОЗДАТЬ его окно, — async: sync-команда
 // исполняется на главном потоке и дедлочит создание вебвью (см. open_miniplayer).
 #[tauri::command]
 pub async fn overlay_set_config(
     app: AppHandle,
     enabled: bool,
-    mode: String,
     anchor: String,
     size: f64,
     custom_x: f64,
     custom_y: f64,
     preview: bool,
 ) -> Result<(), String> {
-    crate::overlay::set_config(&app, enabled, mode, anchor, size, custom_x, custom_y, preview);
+    crate::overlay::set_config(&app, enabled, anchor, size, custom_x, custom_y, preview);
     Ok(())
 }
 
@@ -521,16 +520,21 @@ pub async fn overlay_toggle(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Переключить click-through оверлея: interactive=true → окно ловит мышь (кнопки
-/// кликабельны), false → клики проходят насквозь. Зовётся плашкой при показе/скрытии.
+/// Плашка показана/скрыта. Заодно источник правды «плашка видима»: JS зовёт это
+/// ровно при показе/скрытии острова (пока false — now_playing не шлёт состояние
+/// в окно оверлея). Click-through при показе НЕ снимается целиком — мышь окно
+/// ловит только под самой плашкой (сторож курсора в overlay.rs).
 #[tauri::command]
 pub fn overlay_set_interactive(app: AppHandle, interactive: bool) -> Result<(), String> {
-    // Заодно источник правды «плашка видима»: JS зовёт это ровно при показе/скрытии
-    // острова. Пока false — now_playing не шлёт состояние в окно оверлея.
-    crate::overlay::set_island_visible(interactive);
-    if let Some(w) = app.get_webview_window("overlay") {
-        let _ = w.set_ignore_cursor_events(!interactive);
-    }
+    crate::overlay::set_interactive(&app, interactive);
+    Ok(())
+}
+
+/// Габарит видимой плашки внутри окна оверлея (CSS px) — по нему сторож курсора
+/// решает, ловить мышь или пропускать клики насквозь.
+#[tauri::command]
+pub fn overlay_set_hit_rect(x: f64, y: f64, w: f64, h: f64) -> Result<(), String> {
+    crate::overlay::set_hit_rect(x, y, w, h);
     Ok(())
 }
 
@@ -553,6 +557,7 @@ pub async fn open_miniplayer(app: AppHandle) -> Result<(), String> {
         let _ = w.emit_to("miniplayer", "bloom-win-vis", true);
         let _ = w.show();
         let _ = w.set_focus();
+        notify_mp_toggle(&app, true);
     }
     Ok(())
 }
@@ -564,10 +569,30 @@ pub fn close_miniplayer(app: AppHandle) -> Result<(), String> {
         let _ = w.emit_to("miniplayer", "bloom-win-vis", false);
         let _ = w.hide();
     }
-    if let Some(main) = app.get_webview_window("main") {
-        let _ = main.emit_to("main", "bloom-mp-closed", ());
-    }
+    notify_mp_toggle(&app, false);
     Ok(())
+}
+
+/// PiP открыт/закрыт — разослать окнам, где живут тогглы этого окна: сайдбар
+/// главного окна и кнопка в попапе трея. Оба держат состояние у себя, а открыть
+/// или закрыть PiP можно из любого из них (и его собственным крестиком).
+fn notify_mp_toggle(app: &AppHandle, open: bool) {
+    let event = if open { "bloom-mp-opened" } else { "bloom-mp-closed" };
+    for label in ["main", "tray-popup"] {
+        if let Some(w) = app.get_webview_window(label) {
+            let _ = w.emit_to(label, event, ());
+        }
+    }
+}
+
+/// Открыт ли PiP прямо сейчас — попап трея спрашивает при показе, чтобы его
+/// кнопка-тоггл не разошлась с реальностью (события, пришедшие пока попапа не
+/// существовало, он не слышал).
+#[tauri::command]
+pub fn miniplayer_is_open(app: AppHandle) -> bool {
+    app.get_webview_window("miniplayer")
+        .and_then(|w| w.is_visible().ok())
+        .unwrap_or(false)
 }
 
 #[tauri::command]
@@ -1746,6 +1771,15 @@ pub async fn ym_chart() -> Result<Vec<yandex::YmTrack>, String> {
     yandex::chart(&token).await.map_err(|e| e.to_string())
 }
 
+/// Похожие на трек Яндекс.Музыки — для витрины «Для вас» на главной.
+#[tauri::command]
+pub async fn ym_similar_tracks(ym_track_id: String) -> Result<Vec<yandex::YmTrack>, String> {
+    let token = ym_token()?;
+    yandex::similar_tracks(&token, &ym_track_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Новинки Яндекс.Музыки (свежие альбомы) — для витрины «Новинки» на главной.
 #[tauri::command]
 pub async fn ym_new_releases() -> Result<Vec<yandex::YmAlbum>, String> {
@@ -1866,15 +1900,14 @@ pub async fn sc_api_fetch(url: String, no_retry: Option<bool>) -> Result<serde_j
     sc::api_fetch(&url, no_retry.unwrap_or(false)).await.map_err(|e| e.to_string())
 }
 
-/// Поиск треков. `sort`: "relevance" | "new".
+/// Поиск треков.
 #[tauri::command]
 pub async fn sc_search_tracks(
     query: String,
     limit: u32,
     offset: u32,
-    sort: String,
 ) -> Result<sc::ScPage<sc::ScRawTrack>, String> {
-    sc::search_tracks(&query, limit, offset, &sort).await.map_err(|e| e.to_string())
+    sc::search_tracks(&query, limit, offset).await.map_err(|e| e.to_string())
 }
 
 /// Поиск артистов (пользователей).
@@ -1947,6 +1980,31 @@ pub async fn sc_related_artists(id_or_url: String) -> Vec<sc::ScRawArtist> {
 #[tauri::command]
 pub async fn sc_artist_tracks_page(cursor: String) -> sc::ScTracksCursorPage {
     sc::artist_tracks_page(&cursor).await
+}
+
+/// Станция трека для волны. Сырые объекты SC — движок волны маппит их сам.
+#[tauri::command]
+pub async fn sc_wave_station(sc_track_id: String, offset: Option<u32>) -> Vec<serde_json::Value> {
+    sc::wave_station(&sc_track_id, offset.unwrap_or(0)).await
+}
+
+/// Похожие треки для волны.
+#[tauri::command]
+pub async fn sc_wave_related(sc_track_id: String) -> Vec<serde_json::Value> {
+    sc::wave_related(&sc_track_id).await
+}
+
+/// Похожие на трек SoundCloud — для витрины «Для вас» на главной.
+/// В отличие от `sc_wave_related` отдаёт готовый `ScRawTrack`, а не сырой api-v2.
+#[tauri::command]
+pub async fn sc_similar_tracks(sc_track_id: String) -> Vec<sc::ScRawTrack> {
+    sc::similar_tracks(&sc_track_id).await
+}
+
+/// Сбросить кэш источников волны (старт новой волны).
+#[tauri::command]
+pub fn sc_wave_reset_cache() {
+    sc::reset_wave_cache();
 }
 
 /// Треки плейлиста/альбома по permalink-URL (ошибки пробрасываются — импорт).

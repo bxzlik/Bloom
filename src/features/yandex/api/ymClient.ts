@@ -23,6 +23,12 @@ export interface YmRawTrack {
   /** Год релиза (из первого альбома) или пусто. */
   year: string
   available: boolean
+  /** Позиция в чарте (1-based); 0 — трек пришёл не из чарта. */
+  chartPos: number
+  /** Сдвиг позиции: >0 вверх, <0 вниз, 0 без изменений. */
+  chartShift: number
+  /** Новичок чарта — вместо стрелки «new». */
+  chartNew: boolean
 }
 
 export interface YmRawArtist {
@@ -39,6 +45,14 @@ export interface YmRawAlbum {
   year: string
   /** Кол-во треков (для подписи карточки «N треков»). */
   trackCount: number
+  /** Id первого артиста (переход на страницу артиста с карточки релиза). */
+  artistId: string
+  /** Фото первого артиста, 1000×1000 (круг в карточке релиза); '' — нет. */
+  artistCover: string
+  /** ISO-дата выхода; '' — Яндекс не отдал. */
+  releaseDate: string
+  /** Тип релиза: 'single' | 'compilation' | …; '' = обычный альбом. */
+  albumType: string
 }
 
 export interface YmRawPlaylist {
@@ -60,6 +74,8 @@ export interface YmRawEntity {
   albums: YmRawAlbum[]
   /** Год выпуска (альбом). */
   year: string
+  /** ISO-дата выхода (альбом) — блок «Релиз» под треклистом; '' — нет. */
+  releaseDate: string
   /** Аватар артиста/владельца (альбом → artists[0].cover). */
   ownerAvatar: string
   /** Только у артиста: похожие исполнители (brief-info). */
@@ -134,6 +150,10 @@ export const ymChart = (): Promise<YmRawTrack[]> => invoke<YmRawTrack[]>('ym_cha
 
 /** Новинки Яндекс.Музыки (свежие альбомы). */
 export const ymNewReleases = (): Promise<YmRawAlbum[]> => invoke<YmRawAlbum[]>('ym_new_releases')
+
+/** Похожие на трек (`/tracks/{id}/similar`, фолбэк — rotor `track:<id>`). */
+export const ymSimilarTracks = (ymTrackId: string): Promise<YmRawTrack[]> =>
+  invoke<YmRawTrack[]>('ym_similar_tracks', { ymTrackId })
 
 /* ── Стрим ─────────────────────────────────────────────────────────────── */
 

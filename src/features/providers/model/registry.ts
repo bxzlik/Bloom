@@ -38,20 +38,17 @@ const EMPTY: SearchResults = { artists: [], playlists: [], albums: [], tracks: [
  * нормализованный результат. Провайдер, упавший с ошибкой, просто не вносит
  * вклад.
  *
- * Порядок слияния = порядок регистрации провайдеров (local → sc → …), чтобы
+ * Порядок слияния = порядок регистрации провайдеров (sc → ym → …), чтобы
  * выдача была детерминированной.
  */
 export const searchAll = async (
   query: string,
-  opts?: { signal?: AbortSignal; providerId?: string; sort?: 'relevance' | 'new' },
+  opts?: { signal?: AbortSignal; providerId?: string },
 ): Promise<SearchResults> => {
   const q = query.trim()
   if (!q) return { ...EMPTY }
 
   // providerId задан — ищем только в нём (дропдаун источника); иначе во всех.
-  // При «Все источники» сетевые провайдеры (SoundCloud) идут ПЕРВЫМИ, локальная
-  // библиотека — в конце, чтобы поиск-открытие вёл сетевой контент, а свои треки
-  // были дополнением, а не засоряли начало выдачи.
   // 'all' — сентинел «все источники» (SearchSource = 'all' | providerId), трактуем
   // как отсутствие фильтра. Иначе filter(p.id === 'all') вырезал бы ВСЕХ → пусто.
   const onlyId = opts?.providerId && opts.providerId !== 'all' ? opts.providerId : null
@@ -62,9 +59,7 @@ export const searchAll = async (
   // (стейл id из localStorage) — фолбэк на все включённые. «Все источники»
   // (onlyId=null) опрашивают только включённые.
   const picked = onlyId ? getAllProviders().filter((p) => p.id === onlyId) : enabled
-  const providers = (picked.length ? picked : enabled).sort(
-    (a, b) => (a.id === 'local' ? 1 : 0) - (b.id === 'local' ? 1 : 0),
-  )
+  const providers = picked.length ? picked : enabled
   // Пер-провайдерный таймаут: один медленный/висящий источник (напр. SoundCloud
   // во время скрейпа client_id) не должен блокировать всю мультипоисковую выдачу.
   // По таймауту провайдер просто не вносит вклад (как при ошибке). При поиске по
@@ -76,7 +71,7 @@ export const searchAll = async (
       new Promise<Partial<SearchResults>>((resolve) => setTimeout(() => resolve({}), PER_PROVIDER_MS)),
     ])
   const settled = await Promise.allSettled(
-    providers.map((p) => withTimeout(p.search(q, { signal: opts?.signal, sort: opts?.sort }))),
+    providers.map((p) => withTimeout(p.search(q, { signal: opts?.signal }))),
   )
 
   const merged: SearchResults = { artists: [], playlists: [], albums: [], tracks: [], tracksHasMore: false }
@@ -119,7 +114,7 @@ export const resolveUrlAny = async (
 export const loadMoreTracksAll = async (
   query: string,
   offset: number,
-  opts?: { providerId?: string; sort?: 'relevance' | 'new' },
+  opts?: { providerId?: string },
 ): Promise<{ tracks: SearchResults['tracks']; hasMore: boolean }> => {
   const q = query.trim()
   if (!q) return { tracks: [], hasMore: false }
@@ -127,7 +122,7 @@ export const loadMoreTracksAll = async (
   const providers = (onlyId ? getProviders().filter((p) => p.id === onlyId) : getProviders())
     .filter((p) => typeof p.loadMoreTracks === 'function')
   const settled = await Promise.allSettled(
-    providers.map((p) => p.loadMoreTracks!(q, offset, { sort: opts?.sort })),
+    providers.map((p) => p.loadMoreTracks!(q, offset)),
   )
   const tracks: SearchResults['tracks'] = []
   let hasMore = false

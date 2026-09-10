@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { usePopupOpenAnimation } from '@shared/hooks'
 import { useT, useLocale, type TranslationKey } from '@shared/i18n'
 import { useNavStore } from '@app/navigationStore'
-import { useUiPrefsStore } from '@features/settings'
 import type { Track } from '@entities/track'
 import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
@@ -27,7 +26,7 @@ type Row =
   | { key: string; kind: 'recentItem'; item: RecentItem }
 
 /**
- * Всплывающий поиск (второй вид, `uiPrefs.searchView === 'overlay'`).
+ * Всплывающий поиск — открывается только хоткеем Ctrl+T.
  *
  * Центральный оверлей поверх текущей страницы: та же строка ввода, что и на
  * `SearchPage` (`.sp-inp-wrap` + выбор источника), под ней — недавние запросы и
@@ -46,7 +45,6 @@ export const SearchOverlay = () => {
   const open = useSearchOverlayStore((s) => s.open)
   const close = useSearchOverlayStore((s) => s.close)
   const toggle = useSearchOverlayStore((s) => s.toggle)
-  const hotkeyOn = useUiPrefsStore((s) => s.searchHotkey)
 
   const query = useSearchStore((s) => s.query)
   const setQuery = useSearchStore((s) => s.setQuery)
@@ -81,10 +79,9 @@ export const SearchOverlay = () => {
 
   // Ctrl+T — показать/скрыть всплывающий поиск. Локальный capture-хендлер на
   // документе (как удержание Tab у QuickWheel), а не глобальный Tauri-шорткат:
-  // работает только когда окно в фокусе. Ось независимая от вида поиска: хоткей
-  // открывает всплывающий ввод и когда клик по вкладке ведёт на страницу.
+  // работает только когда окно в фокусе. Единственный способ открыть оверлей —
+  // клик по вкладке «Поиск» всегда ведёт на страницу.
   useEffect(() => {
-    if (!hotkeyOn) return
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (!e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.code !== 'KeyT') return
       e.preventDefault()
@@ -92,7 +89,7 @@ export const SearchOverlay = () => {
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [hotkeyOn, toggle])
+  }, [toggle])
 
   // Esc закрывает оверлей независимо от того, где фокус (в поле его ловит
   // onKeyDown, но после клика по строке фокус может быть уже не там).

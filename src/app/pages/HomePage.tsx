@@ -12,9 +12,9 @@ import {
   TrackCtxMenu,
   TagEditor,
   PlMenu,
-  AddFromLibModal,
   createPlaylistInline,
   tracksLabel,
+  resolveHistoryTrack,
   type Playlist,
 } from '@features/library'
 import {
@@ -33,10 +33,11 @@ import {
 import { seek, seekLive } from '@features/player/api/play'
 import { extractAccentFromCover, useUiPrefsStore } from '@features/settings'
 import { trackRegistry, coverCache, ArtistLinks, CoverSourceBadge, CoverProviderBadge, type Track } from '@entities/track'
-import { CardMarquee, PlaylistCover } from '@shared/ui'
+import { CardMarquee, PlaylistCover, EmptyCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '../navigationStore'
 import { DiscoverSections } from './DiscoverSections'
+import { ForYouSection } from './ForYouSection'
 
 /**
  * Главная страница
@@ -50,7 +51,6 @@ export const HomePage = ({ active }: { active: boolean }) => {
   const [tagEditTrack, setTagEditTrack] = useState<Track | null>(null)
   // ПКМ по плейлисту → PlMenu (cursor-mode).
   const [plCtx, setPlCtx] = useState<{ x: number; y: number; pl: Playlist } | null>(null)
-  const [addToPlId, setAddToPlId] = useState<string | null>(null)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
   const goNav = useNavStore((s) => s.goNav)
   const startEdit = usePlEditStore((s) => s.startEdit)
@@ -63,30 +63,6 @@ export const HomePage = ({ active }: { active: boolean }) => {
   const showContinue = useUiPrefsStore((s) => s.homeContinue)
   const showRecent = useUiPrefsStore((s) => s.homeRecent)
   const showPlaylists = useUiPrefsStore((s) => s.homePlaylists)
-
-  // Пока идёт скролл — вешаем .is-scrolling, чтобы CSS поставил на паузу тяжёлый
-  // SVG-фильтр фаербола «Моей волны» (feTurbulence/feDisplacementMap не
-  // композитятся на GPU и перерисовывают вьюпорт каждый кадр → jank при листании).
-  // Снимаем класс через паузу простоя, анимация возобновляется.
-  const scrollRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    let idle: number | undefined
-    const onScroll = () => {
-      if (idle === undefined) el.classList.add('is-scrolling')
-      else window.clearTimeout(idle)
-      idle = window.setTimeout(() => {
-        el.classList.remove('is-scrolling')
-        idle = undefined
-      }, 160)
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      el.removeEventListener('scroll', onScroll)
-      if (idle !== undefined) window.clearTimeout(idle)
-    }
-  }, [])
 
   const onTrackCtx = (e: ReactMouseEvent, track: Track) => {
     e.preventDefault()
@@ -101,7 +77,7 @@ export const HomePage = ({ active }: { active: boolean }) => {
 
   return (
     <div className={`page${active ? ' active' : ''}`} id="page-home">
-      <div className="home-scroll" ref={scrollRef}>
+      <div className="home-scroll">
         {hasTracks && (showWave || showContinue) && (
           <div className="home-actions">
             {showWave && <WaveCard />}
@@ -109,6 +85,9 @@ export const HomePage = ({ active }: { active: boolean }) => {
           </div>
         )}
         <QuickGrid />
+        {/* «Для вас» идёт впереди витрин площадок: она про самого слушателя,
+            а «Релизы» и «Чарт» — общие для всех. */}
+        <ForYouSection active={active} onTrackCtx={onTrackCtx} />
         <DiscoverSections active={active} onTrackCtx={onTrackCtx} />
         {showRecent && <RecentSection onTrackCtx={onTrackCtx} />}
         {showPlaylists && (
@@ -152,9 +131,7 @@ export const HomePage = ({ active }: { active: boolean }) => {
           selectPlaylist(id)
           startEdit(id)
         }}
-        onAddTracks={(id) => setAddToPlId(id)}
       />
-      <AddFromLibModal open={addToPlId !== null} onClose={() => setAddToPlId(null)} playlistId={addToPlId} />
     </div>
   )
 }
@@ -215,7 +192,7 @@ const ContinueSourceIcon = ({ kind, cover }: { kind: SrcIconKind; cover: string 
     return <img src={cover} alt="" style={{ width: 16, height: 16, borderRadius: 'calc(var(--radius)*0.4)', objectFit: 'cover', flexShrink: 0 }} />
   }
   if (kind === 'fav') {
-    return <Ico name="heart" variant="bold" width={11} height={11} />
+    return <Ico name="heart" variant="bold" width={11} height={11} style={{ color: 'var(--sys-fav-ico)' }} />
   }
   if (kind === 'wave') {
     return <Ico name="wave" variant="bold" width={12} height={12} style={{ color: 'var(--accent)' }} />
@@ -494,7 +471,7 @@ const ContinueView = ({
       <div className="hcc-row">
         {/* Клик по обложке открывает полноэкранный плеер. */}
         <div className="hcc-cover" id="homeCcCover" onClick={onResume}>
-          {cover ? <img src={cover} alt="" /> : <NoteSvg />}
+          {cover ? <img src={cover} alt="" /> : <EmptyCover />}
         </div>
         <button
           className="hcc-play-btn"
@@ -755,10 +732,13 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
   const recent = useMemo(() => {
     const out: Track[] = []
     const seen = new Set<string>()
+    // Резолв со снимком из журнала: иначе «Недавно слушали» после перезапуска
+    // редело до тех треков, что уцелели в кэшах на 300/400 записей.
+    const libById = new Map(libTracks.map((t) => [t.id, t]))
     for (const e of entries) {
       if (seen.has(e.id)) continue
       seen.add(e.id)
-      const t = findTrack(e.id, libTracks)
+      const t = resolveHistoryTrack(e.id, libById)
       if (t) out.push(t)
       if (out.length >= 12) break
     }
@@ -778,7 +758,7 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
             onContextMenu={(e) => onTrackCtx(e, t)}
           >
             <div className="hc-cover">
-              {t.cover ? <img src={t.cover} alt="" /> : <NoteSvg size={24} />}
+              {t.cover ? <img src={t.cover} alt="" /> : <EmptyCover />}
               <CoverSourceBadge track={t} size={24} />
               <div className="hc-play-overlay">
                 <div className="hc-play-btn">
@@ -844,7 +824,7 @@ const PlaylistsSection = ({
             onNewPl()
           }}
         >
-          <Ico name="add" width={18} height={18} />
+          <Ico name="add" width={22} height={22} />
           {t('common.new')}
         </button>
       </div>

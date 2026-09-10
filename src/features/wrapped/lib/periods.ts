@@ -18,6 +18,14 @@ export type PeriodKind = 'month' | 'year'
 
 /** День месяца, с которого предлагаем итоги прошедшего месяца. */
 export const MONTH_WINDOW_DOM = 1
+/**
+ * Последний день «недели напоминания»: пока идут первые семь чисел, обычная
+ * карточка статистики раз в несколько секунд подменяет своё число надписью
+ * «Итоги месяца». Это НЕ подмена карточки (`monthTakeover`) — она про то, что
+ * итоги ещё не смотрели; эта же подсказка живёт и после просмотра, просто
+ * напоминая, что итоги никуда не делись.
+ */
+export const MONTH_HINT_TO_DOM = 7
 /** Окно «года»: с 21 декабря (месяц 0-based) по 31 декабря включительно. */
 export const YEAR_WINDOW_FROM = { month: 11, day: 21 }
 export const YEAR_WINDOW_TO = { month: 11, day: 31 }
@@ -88,6 +96,13 @@ export const inYearWindow = (now: Date = new Date()): boolean => {
  */
 export const inMonthWindow = (now: Date = new Date()): boolean =>
   forcedByLs() || now.getDate() >= MONTH_WINDOW_DOM
+
+/**
+ * Идёт ли «неделя напоминания» — первые семь чисел месяца, когда карточка
+ * статистики чередует своё число с надписью «Итоги месяца».
+ */
+export const inMonthHintWindow = (now: Date = new Date()): boolean =>
+  forcedByLs() || (now.getDate() >= MONTH_WINDOW_DOM && now.getDate() <= MONTH_HINT_TO_DOM)
 
 /**
  * О каких итогах «сегодня» уместно НАПОМНИТЬ. У месяца это ровно 1-е число (а не

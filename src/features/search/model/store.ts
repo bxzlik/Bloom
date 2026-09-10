@@ -28,11 +28,6 @@ export type SearchTab = 'all' | 'tracks' | 'artists' | 'playlists' | 'albums'
 /** Источник поиска: 'all' (все провайдеры) или конкретный providerId. */
 export type SearchSource = string
 
-/** Мета-фильтры треков. */
-export type DurFilter = 'all' | 'short' | 'mid' | 'long'
-export type YearFilter = 'all' | 'new' | '2010' | '2000' | 'old'
-export type SortOrder = 'relevance' | 'new'
-
 /* ── Недавние: запросы + открытые (persist в localStorage) ───────────── */
 const RS_KEY = 'bloom_recent_searches'
 const RI_KEY = 'bloom_recent_items'
@@ -114,12 +109,6 @@ export interface SearchState {
   /** Активный таб-категория. */
   tab: SearchTab
 
-  /** Мета-фильтры треков. dur/year/genre — client-side; sort — перезапрос API. */
-  durFilter: DurFilter
-  yearFilter: YearFilter
-  genreFilter: string | null
-  sortOrder: SortOrder
-
   /** Пагинация треков: сколько уже запрошено + флаг догрузки. */
   tracksOffset: number
   loadingMore: boolean
@@ -136,11 +125,6 @@ export interface SearchState {
   setSource: (s: SearchSource) => void
   setTab: (t: SearchTab) => void
 
-  setDurFilter: (d: DurFilter) => void
-  setYearFilter: (y: YearFilter) => void
-  setGenreFilter: (g: string | null) => void
-  /** Сменить сортировку и перезапросить (sort=new → SC &sort=created_at). */
-  setSortOrder: (o: SortOrder) => void
   /** Догрузить ещё треки (кнопка «ещё»). */
   loadMoreTracks: () => Promise<void>
 
@@ -166,11 +150,6 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   source: loadSource(),
   tab: 'all',
 
-  durFilter: 'all',
-  yearFilter: 'all',
-  genreFilter: null,
-  sortOrder: 'relevance',
-
   tracksOffset: 0,
   loadingMore: false,
 
@@ -194,9 +173,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
 
     const my = ++_token
     const source = get().source
-    const sort = get().sortOrder
-    // Новый запрос — сбрасываем жанр-фильтр (список жанров зависит от выдачи) + профиль.
-    set({ loading: true, searched: true, submitted: query, recentSearches: rs, genreFilter: null, profile: null })
+    set({ loading: true, searched: true, submitted: query, recentSearches: rs, profile: null })
 
     // Ссылка SoundCloud → резолвим: профиль /username →
     // инлайн hero; трек/плейлист/альбом/артист → ОДНА карточка.
@@ -216,19 +193,18 @@ export const useSearchStore = create<SearchState>((set, get) => ({
 
     // `source` передаём как есть, включая сентинел 'all' — searchAll сам трактует
     // 'all' как «по всем провайдерам» (единая точка истины, без хрупкого гарда тут).
-    const results = await searchAll(query, { providerId: source, sort })
+    const results = await searchAll(query, { providerId: source })
     if (my !== _token) return // перебит более новым поиском
     // tracksOffset = размер первой страницы SC-треков (limit 12) для пагинации.
     set({ results, loading: false, tracksOffset: 12 })
   },
 
   loadMoreTracks: async () => {
-    const { submitted, source, sortOrder, tracksOffset, results, loadingMore } = get()
+    const { submitted, source, tracksOffset, results, loadingMore } = get()
     if (loadingMore || !results.tracksHasMore || !submitted) return
     set({ loadingMore: true })
     const { tracks: more, hasMore } = await loadMoreTracksAll(submitted, tracksOffset, {
       providerId: source, // 'all' → все провайдеры (см. searchAll)
-      sort: sortOrder,
     })
     const cur = get().results
     set({
@@ -250,15 +226,6 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     if (q) void get().runSearch(q)
   },
   setTab: (t) => set({ tab: t }),
-
-  setDurFilter: (d) => set({ durFilter: d }),
-  setYearFilter: (y) => set({ yearFilter: y }),
-  setGenreFilter: (g) => set({ genreFilter: g }),
-  setSortOrder: (o) => {
-    set({ sortOrder: o })
-    const q = get().submitted.trim()
-    if (q) void get().runSearch(q) // sort требует перезапрос API
-  },
 
   pushRecentItem: (item) => {
     const next = [{ ...item, ts: Date.now() }, ...get().recentItems.filter((x) => x.id !== item.id)].slice(0, RI_MAX)

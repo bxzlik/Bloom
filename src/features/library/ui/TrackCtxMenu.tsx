@@ -22,10 +22,11 @@ import {
 import { getProviders } from '@features/providers'
 import { useOfflineStore, toggleTrackOffline } from '@features/offline'
 import waveApi from '@/wave'
-import { useShareStore } from '@shared/ui'
+import { useShareStore, EmptyCover } from '@shared/ui'
 import { PlCover } from './PlCover'
+import { AddedMeta } from './DateMeta'
 import { useT } from '@shared/i18n'
-import { useFavStore, useLibStore, usePlaylistStore, useTrackInfoStore } from '../model'
+import { useFavStore, useLibStore, usePlaylistStore, useTrackInfoStore, useHistoryStore } from '../model'
 import { Ico } from '@shared/ui/icons/solar'
 import { deleteUploadedTrack, saveTrackToLibrary, tracksLabel } from '../lib'
 
@@ -70,6 +71,7 @@ export const TrackCtxMenu = ({
   const playlists = usePlaylistStore((s) => s.playlists)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
   const removeTrackFromPl = usePlaylistStore((s) => s.removeTrackFromPl)
+  const removeFromHistory = useHistoryStore((s) => s.remove)
   const openTrackInfo = useTrackInfoStore((s) => s.openTrackInfo)
   const openShare = useShareStore((s) => s.openShare)
   const mode = useLibStore((s) => s.mode)
@@ -79,6 +81,12 @@ export const TrackCtxMenu = ({
   // В библиотеке ли трек. Для треков площадок (SC/Yandex) из поиска — false:
   // показываем «В библиотеку», а fav/в-плейлист сперва персистят трек.
   const inLib = useLibStore((s) => (track ? s.tracks.some((t) => t.id === track.id) : false))
+  // Когда трек попал в БИБЛИОТЕКУ: в плейлисте лежат одни id, времени добавления
+  // в него нет. Берём из библиотечной записи, а не из самого `track` — в меню он
+  // приходит и из поиска/очереди, где поля нет вовсе (тогда строки не будет).
+  const addedAt = useLibStore((s) =>
+    track ? s.tracks.find((t) => t.id === track.id)?.addedAt : undefined,
+  )
   // Доступен ли трек офлайн (для тоггла «Слушать офлайн / Убрать из офлайна»).
   const isOffline = useOfflineStore((s) => (track ? s.paths.has(track.id) : false))
 
@@ -259,13 +267,20 @@ export const TrackCtxMenu = ({
   const inCurrentPl = mode === 'pl' && plId
     ? playlists.find((p) => p.id === plId)?.trs.includes(track.id) ?? false
     : false
+  // «Убрать из истории» — только в самом разделе, как «Убрать из плейлиста»
+  // показывается только внутри плейлиста. Прячет строку из списка; события в
+  // журнале остаются, поэтому статистика и «Итоги» не меняются.
+  const inHistory = mode === 'history'
+  const curProv = trackProviderId(track)
   // Платформенные действия (share/wave/download) — общий флаг для разделителя.
-  const hasShare = track.scId != null || track.scPermalink != null
+  // Делимся треком любой сетевой площадки: в ссылку идёт сквозной entity id, по
+  // префиксу которого принимающая сторона поднимает нужного провайдера. Локальный
+  // файл делить нечем — у получателя его нет.
+  const hasShare = curProv !== 'local'
   const hasWave = track.scId != null || track.scTrackId != null || !!track._ym
   const hasDl = !!(track._sc || track._ym || track._ytm)
   // Сменить площадку — только для библиотечного трека с площадочным origin и при
   // наличии хотя бы одной ДРУГОЙ сетевой площадки (замена = поиск + ремап записи).
-  const curProv = trackProviderId(track)
   const netProviders = getProviders().filter((p) => p.id !== 'local')
   const canSwitchSrc = inLib && curProv !== 'local' && netProviders.some((p) => p.id !== curProv)
 
@@ -293,29 +308,39 @@ export const TrackCtxMenu = ({
               : {}),
           }}
         >
-          <div id="cxPreviewCov">
-            {track.cover ? (
-              <img src={track.cover} alt="" />
-            ) : (
-              <Ico name="note" width={14} height={14} />
-            )}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div id="cxPreviewName">{track.name || '—'}</div>
-            <div id="cxPreviewArtist">
-              {track.artist ? (
-                <ArtistLinks
-                  artist={track.artist}
-                  scId={track.artistScId}
-                  permalink={track.artistPermalink}
-                  artistId={track.artistId}
-                  provider={track.artistProvider}
-                />
+          <div className="cx-head-top">
+            <div id="cxPreviewCov">
+              {track.cover ? (
+                <img src={track.cover} alt="" />
               ) : (
-                '—'
+                <EmptyCover />
               )}
             </div>
+            <div style={{ minWidth: 0 }}>
+              <div id="cxPreviewName">{track.name || '—'}</div>
+              <div id="cxPreviewArtist">
+                {track.artist ? (
+                  <ArtistLinks
+                    artist={track.artist}
+                    scId={track.artistScId}
+                    permalink={track.artistPermalink}
+                    artistId={track.artistId}
+                    provider={track.artistProvider}
+                  />
+                ) : (
+                  '—'
+                )}
+              </div>
+            </div>
           </div>
+          {/* «Добавлен 2 сент. 2026 г.» — вторым рядом шапки во всю её ширину,
+              отделённым волосяной линией (как в шапке меню плейлиста). Трека нет
+              в библиотеке — строки нет. */}
+          {addedAt ? (
+            <div id="cxPreviewMeta" className="cx-head-meta">
+              <AddedMeta ts={addedAt} />
+            </div>
+          ) : null}
         </div>
 
         {/* ── Очередь ── */}
@@ -448,7 +473,23 @@ export const TrackCtxMenu = ({
           <Ico name="arrowRight" width={10} height={10} style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} />
         </div>
 
-        {(inCurrentPl || isInQueue || isDeletable) && <div className="cx-sep" />}
+        {(inCurrentPl || inHistory || isInQueue || isDeletable) && <div className="cx-sep" />}
+
+        {inHistory && (
+          <div
+            className="ci red"
+            id="cxrmh"
+            onClick={() => {
+              removeFromHistory(track.id)
+              onClose()
+            }}
+          >
+            <span className="ci-icon">
+              <Ico name="close" width={11} height={11} />
+            </span>{' '}
+            {t('lib.ctx.removeFromHistory')}
+          </div>
+        )}
 
         {inCurrentPl && plId && (
           <div
@@ -619,7 +660,9 @@ export const TrackCtxMenu = ({
                   onClick={() => {
                     openShare({
                       type: 'track',
-                      id: track.scId != null ? String(track.scId) : '',
+                      // Сквозной entity id целиком (`sc_123`, `ym_456`, `ytm_<videoId>`):
+                      // площадка восстанавливается из префикса, см. useDeepLinkBridge.
+                      id: track.id,
                       title: track.name,
                       artist: track.artist,
                       permalink: track.scPermalink ?? null,

@@ -75,17 +75,30 @@ export const GlobalToast = () => {
     }
   }, [seq])
 
-  const onUndo = () => {
+  const onUndo = (e: React.MouseEvent) => {
+    e.stopPropagation() // иначе клик всплывёт в onDismiss и дёрнет onExpire поверх отмены
     const a = actionRef.current
     if (timer.current !== null) window.clearTimeout(timer.current) // отменяем onExpire
     setVisible(false)
     a?.fn()
   }
 
+  /**
+   * Клик по капсуле убирает тост досрочно. Это НЕ отмена: действие считается
+   * подтверждённым, поэтому зовём onExpire — как если бы тост дожил до конца.
+   */
+  const onDismiss = () => {
+    if (!visible) return
+    if (timer.current !== null) window.clearTimeout(timer.current)
+    setVisible(false)
+    actionRef.current?.onExpire?.()
+  }
+
   return (
     <div
       id="toast"
       className={`toast-${kind}${action && visible ? ' has-action' : ''}${visible ? ' show' : ''}`}
+      onClick={onDismiss}
     >
       <span className="toast-badge">
         {/* Кольцо обратного отсчёта вокруг значка — перезапускается через key={seq}. */}

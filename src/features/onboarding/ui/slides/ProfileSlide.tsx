@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
+import { EmptyAvatar } from '@features/profile'
 
 /**
  * Слайд «Профиль»: обложка-баннер (во всю ширину карточки), аватар поверх неё и ник.
@@ -74,7 +75,7 @@ export const ProfileSlide = ({ name, onName, avatar, onAvatar, cover, onCover, o
       <div className="ob-profile-mid">
         <div className="ob-ava-wrap">
           <label className="ob-ava">
-            {avatar ? <img src={avatar} alt="" /> : <Ico name="user" width={26} height={26} style={{ color: 'var(--muted,#555)' }} />}
+            {avatar ? <img src={avatar} alt="" /> : <EmptyAvatar style={{ width: '100%', height: '100%' }} />}
             <div className="ob-ava-overlay">
               <Ico name="camera" width={14} height={14} />
             </div>

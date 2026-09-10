@@ -13,7 +13,7 @@ import {
 } from '@features/library'
 import type { Track } from '@entities/track'
 import { trackRegistry, ArtistLinks, CoverSourceBadge } from '@entities/track'
-import { PlaylistCover, HoverMarquee } from '@shared/ui'
+import { PlaylistCover, HoverMarquee, EmptyCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '@app/navigationStore'
 import waveApi from '@/wave'
@@ -246,7 +246,6 @@ const QueueBlockImpl = ({ headerExtra }: { headerExtra?: ReactNode } = {}) => {
                   rootProps={{ 'data-sortable-id': nowItem.id, style: {} }}
                   onClick={() => playFromCurrentQueue(nowItem.id)}
                   onContextMenu={(e) => openCtx(e, nowItem.track)}
-                  onMore={(e) => openCtx(e, nowItem.track)}
                   onAddClick={openAddPopup}
                   onRemove={() => removeFromQueue(nowItem.id)}
                 />
@@ -384,11 +383,18 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
     alignItems: 'center',
     justifyContent: 'center',
   }
+  // Обложка системного раздела: нейтральная подложка + рамка на всех трёх, цвет
+  // несёт только иконка (--sys-cov-* в root.css, тот же вид, что в библиотеке).
+  const sysCovStyle: React.CSSProperties = {
+    ...innerStyle,
+    background: 'var(--sys-cov-bg)',
+    boxShadow: 'inset 0 0 0 1px var(--sys-cov-bd)',
+  }
   switch (source.kind) {
     case 'lib-all':
       return (
         <div id="qpSourceIcon" style={box}>
-          <div style={{ ...innerStyle, background: 'var(--sys-all-tint)' }}>
+          <div style={sysCovStyle}>
             <Ico name="note" width={13} height={13} style={{ color: 'var(--sys-all-ico)' }} />
           </div>
         </div>
@@ -396,7 +402,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
     case 'lib-fav':
       return (
         <div id="qpSourceIcon" style={box}>
-          <div style={{ ...innerStyle, background: 'var(--sys-fav-tint)' }}>
+          <div style={sysCovStyle}>
             <Ico name="heart" variant="bold" width={13} height={13} style={{ color: 'var(--sys-fav-ico)' }} />
           </div>
         </div>
@@ -405,7 +411,7 @@ const SourceIcon = ({ source }: { source: PlaySource }) => {
       // Для источника 'history' рисуем clock на нейтральном фоне.
       return (
         <div id="qpSourceIcon" style={box}>
-          <div style={{ ...innerStyle, background: 'var(--sys-hist-tint)' }}>
+          <div style={sysCovStyle}>
             <Ico name="clock" width={13} height={13} style={{ color: 'var(--sys-hist-ico)' }} />
           </div>
         </div>
@@ -657,7 +663,7 @@ const QueueSortList = ({
   const win = useWindowedList({
     count: items.length,
     scrollRef,
-    estimate: 68,
+    estimate: 77,
     freezeRef,
     expandRef: dragExpandRef,
   })
@@ -715,7 +721,6 @@ const QueueSortList = ({
             handleProps={handleProps}
             onClick={() => handlers.onPlay(id)}
             onContextMenu={(e) => handlers.onOpenCtx(e, track)}
-            onMore={(e) => handlers.onOpenCtx(e, track)}
             onAddClick={handlers.onAddClick}
             onRemove={() => handlers.onRemove(id)}
           />
@@ -737,7 +742,6 @@ const QueueRow = ({
   handleProps,
   onClick,
   onContextMenu,
-  onMore,
   onAddClick,
   onRemove,
 }: {
@@ -758,8 +762,6 @@ const QueueRow = ({
   }
   onClick: () => void
   onContextMenu: (e: ReactMouseEvent<HTMLDivElement>) => void
-  /** Открыть контекстное меню кнопкой «…» (в позиции клика). */
-  onMore?: (e: ReactMouseEvent<HTMLButtonElement>) => void
   onAddClick: (e: ReactMouseEvent<HTMLButtonElement>, trackId: string) => void
   onRemove: (e: ReactMouseEvent<HTMLButtonElement>) => void
 }) => {
@@ -781,7 +783,7 @@ const QueueRow = ({
         {track?.cover ? (
           <img src={track.cover} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <Ico name="note" width={20} height={20} style={{ opacity: 0.4 }} />
+          <EmptyCover />
         )}
         {/* Эквалайзер на обложке играющего трека очереди.
             Пока грузится — только спиннер (ниже), бары не рисуем. */}
@@ -851,17 +853,6 @@ const QueueRow = ({
       </div>
       <div className="trtime">
         <span className="trd">{track?.dur || '—'}</span>
-        <button
-          className="ib trmore"
-          type="button"
-          aria-label={t('common.more')}
-          onClick={(e) => {
-            e.stopPropagation()
-            onMore?.(e)
-          }}
-        >
-          <Ico name="kebab" width={15} height={15} />
-        </button>
       </div>
     </div>
   )

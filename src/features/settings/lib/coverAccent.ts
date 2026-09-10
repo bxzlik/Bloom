@@ -6,6 +6,7 @@
  *
  *   - extractAccentFromCover — акцент (для авто-акцента; яркость настраивается)
  *   - extractMpBgColor       — тёмный доминант (для фона мини-плеера, mode coverColor)
+ *   - extractMpTint          — яркий акцент трека (для прогресса мини-плеера)
  *
  * Возвращает hex или null (CORS-tainted canvas / ошибка загрузки → null).
  *
@@ -132,6 +133,28 @@ export const accentHexFromHsl = (
   return hslToHex(hsl.h, finalS, finalL)
 }
 
+/**
+ * Светлота и потолок насыщенности поверхности авто-темы. Поверхность плоская
+ * (фон = блоки, как у встроенных пресетов, см. THEME_PRESETS): цвет обложки
+ * входит сюда лишь оттенком, иначе интерфейс превращается в цветное пятно.
+ * L=0.075 — между Dark (#0a0a0a, ≈0.04) и Midnight (#101828, ≈0.11).
+ */
+const AUTO_THEME_BG_L = 0.075
+const AUTO_THEME_BG_S_MAX = 0.5
+
+/**
+ * Все три цвета темы из доминантного HSL обложки: плоская поверхность
+ * (фон = блоки) в оттенке обложки + акцент по той же формуле, что у авто-акцента
+ * (`level` — центр коридора светлоты).
+ */
+export const autoThemeFromHsl = (
+  hsl: { h: number; s: number; l: number },
+  level: number = AUTO_ACCENT_L_DEFAULT,
+): { bg: string; blockColor: string; accent: string } => {
+  const surface = hslToHex(hsl.h, Math.min(AUTO_THEME_BG_S_MAX, hsl.s * 0.6), AUTO_THEME_BG_L)
+  return { bg: surface, blockColor: surface, accent: accentHexFromHsl(hsl, level) }
+}
+
 /** Акцент из обложки при заданной яркости (`level` — центр коридора светлоты). */
 export const extractAccentFromCover = async (
   imgSrc: string,
@@ -141,6 +164,22 @@ export const extractAccentFromCover = async (
   if (!hsl) return null
   return accentHexFromHsl(hsl, level)
 }
+
+/**
+ * Яркость акцента трека для прогресса мини-плеера. Выше дефолта авто-акцента
+ * (0.375): прогресс — тонкая линия/кольцо в 2.5px поверх тёмного бара, на
+ * приглушённом тоне она попросту не читается, а фону-заливке яркий тон не мешает
+ * (та берётся с малой альфой).
+ */
+export const MP_TINT_L = 0.5
+
+/**
+ * Акцент трека для прогресса мини-плеера («красить цветом трека», mpProgressTint).
+ * Тот же алгоритм, что у авто-акцента, но с фиксированной яркостью MP_TINT_L —
+ * прогресс не должен зависеть от ползунка «Яркость акцента» (тот про интерфейс).
+ */
+export const extractMpTint = (imgSrc: string): Promise<string | null> =>
+  extractAccentFromCover(imgSrc, MP_TINT_L)
 
 /** Тёмный доминант для фона мини-плеера. */
 export const extractMpBgColor = async (imgSrc: string): Promise<string | null> => {

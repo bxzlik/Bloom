@@ -1,12 +1,10 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@shared/lib/cn'
-import { toast, PlaylistCover } from '@shared/ui'
+import { toast, PlaylistCover, EmptyCover } from '@shared/ui'
 import { useT, useLocale } from '@shared/i18n'
 import { useSortable } from '@shared/lib/useSortable'
-import { ScBadge, YmBadge, type Track } from '@entities/track'
 import { artistSourceFromId } from '@entities/artist'
-import { playFromSource } from '@features/player'
 import { useUiPrefsStore } from '@features/settings'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
 import {
@@ -14,6 +12,7 @@ import {
   usePlaylistStore,
   usePlEditStore,
   useFavStore,
+  useHistoryStore,
   useFollowStore,
   useUnifiedOrderStore,
   usePlAutoStore,
@@ -22,9 +21,8 @@ import {
 } from '../model'
 import {
   tracksAndDuration,
-  recordsLabel,
   sumDurations,
-  usePlayHistoryCount,
+  historyTotals,
   useLibSidebarSort,
   buildOrderedUnifiedEntries,
   type LibSidebarSort,
@@ -34,64 +32,6 @@ import { LibAddMenu } from './LibAddMenu'
 import { LibSortMenu } from './LibSortMenu'
 import { PlMenu } from './PlMenu'
 import { PlaylistOfflineTag } from './PlaylistOfflineTag'
-import { AddFromLibModal } from './AddFromLibModal'
-
-// Hover-кнопки play на системных строках сайдбара. Берём треки императивно
-// из стора в момент клика — libPlayAll / libPlayFav, без
-// переключения раздела (пользователь может play не открывая «Все»/«Любимые»).
-const playAllFromStore = () => {
-  const all = useLibStore.getState().tracks
-  if (!all.length) return
-  playFromSource(
-    all.map((t) => t.id),
-    { kind: 'lib-all' },
-  )
-}
-const playFavFromStore = () => {
-  const all = useLibStore.getState().tracks
-  const favs = useFavStore.getState().favs
-  const list = all
-    .filter((t) => favs.has(t.id))
-    .sort((a, b) => (favs.get(b.id) ?? 0) - (favs.get(a.id) ?? 0))
-  if (!list.length) return
-  playFromSource(
-    list.map((t) => t.id),
-    { kind: 'lib-fav' },
-  )
-}
-const playPlaylistFromStore = (plId: string) => {
-  const all = useLibStore.getState().tracks
-  const pls = usePlaylistStore.getState().playlists
-  const pl = pls.find((p) => p.id === plId)
-  if (!pl) return
-  const byId = new Map(all.map((t) => [t.id, t]))
-  const ids = pl.trs.filter((id) => byId.has(id))
-  if (!ids.length) return
-  playFromSource(ids, {
-    kind: 'playlist',
-    id: pl.id,
-    name: pl.name,
-    cover: pl.cover ?? null,
-  })
-}
-const playFolderFromStore = (path: string) => {
-  const all = useLibStore.getState().tracks
-  const lp = path.toLowerCase()
-  const ids = all
-    .filter((t) => t._folder?.toLowerCase() === lp)
-    .map((t) => t.id)
-  if (!ids.length) return
-  const parts = path.replace(/\\/g, '/').split('/').filter(Boolean)
-  playFromSource(ids, {
-    kind: 'folder',
-    path,
-    name: parts[parts.length - 1] || path,
-  })
-}
-const stopAnd = (fn: () => void) => (e: ReactMouseEvent) => {
-  e.stopPropagation()
-  fn()
-}
 
 // Иконка циклической кнопки-фильтра по текущему состоянию.
 // Экспортируются — grid-обзор (LibGridOverview) переиспользует ту же кнопку.
@@ -134,11 +74,19 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
   // `tracks.filter(t=>t.fav).length`.
   const favTracks = allTracks.filter((t) => favs.has(t.id))
   const favCount = favTracks.length
-  const historyCount = usePlayHistoryCount()
 
   // Суммарная длительность для системных пунктов.
   const allDurSec = sumDurations(allTracks.map((t) => t.dur))
   const favDurSec = sumDurations(favTracks.map((t) => t.dur))
+
+  // История: сколько треков и сколько наслушано. Раньше подписи не было —
+  // счётчик упирался в лимит 200 и рос от любого прослушивания, так что не
+  // сообщал ничего. Теперь считается по журналу и осмыслен.
+  const histEntries = useHistoryStore((s) => s.entries)
+  const hist = useMemo(() => {
+    const byId = new Map(allTracks.map((t) => [t.id, t]))
+    return historyTotals(histEntries, byId)
+  }, [histEntries, allTracks])
 
   const addBtnRef = useRef<HTMLButtonElement>(null)
   const sortBtnRef = useRef<HTMLButtonElement>(null)
@@ -168,7 +116,6 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
     | null
   >(null)
   const startEdit = usePlEditStore((s) => s.startEdit)
-  const [addToPlId, setAddToPlId] = useState<string | null>(null)
   // ПКМ по артисту в sidebar — отдельное меню (не PlMenu).
   const [artistCtx, setArtistCtx] = useState<{ id: string; x: number; y: number } | null>(null)
   // Роутинг ПКМ: артист → своё меню, плейлист/папка → PlMenu.
@@ -221,8 +168,10 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
     >
       {/* ── Системные ─────────────────────────────────────────── */}
       <div className="lib-block" style={{ paddingBottom: 0 }}>
-        {/* padding-bottom 7px: у последнего .lib-item свой margin-bottom 1px,
-            итого низ 8px = верх (симметрия). */}
+        {/* Значения работают только в компактном виде: полный и «только обложки»
+            перебивают этот padding своими правилами в queue.css / library.css —
+            там зазор считается от ручки (5px и --cv-pad). Низ 7px + margin-bottom
+            1px последнего .lib-item = 8px = верх. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 4px 7px' }}>
           <div
             className={cn(
@@ -233,7 +182,7 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
             onClick={() => selectBuiltin('all')}
           >
             <div className="lib-icon off-icon">
-              <Ico name="note" width={18} height={18} />
+              <Ico name="note" width={22} height={22} />
             </div>
             <div className="lib-item-info">
               <div className="lib-item-name">{t('lib.allTracks')}</div>
@@ -241,12 +190,6 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
                 {tracksAndDuration(totalTracks, allDurSec)}
               </div>
             </div>
-            <button
-              className="lib-item-play"
-              onClick={stopAnd(playAllFromStore)}
-            >
-              <Ico name="play" variant="bold" width={11} height={11} />
-            </button>
           </div>
 
           <div
@@ -258,7 +201,7 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
             onClick={() => selectBuiltin('fav')}
           >
             <div className="lib-icon fav-icon">
-              <Ico name="heart" variant="bold" width={16} height={16} />
+              <Ico name="heart" variant="bold" width={20} height={20} />
             </div>
             <div className="lib-item-info">
               <div className="lib-item-name">{t('lib.liked')}</div>
@@ -266,12 +209,6 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
                 {tracksAndDuration(favCount, favDurSec)}
               </div>
             </div>
-            <button
-              className="lib-item-play"
-              onClick={stopAnd(playFavFromStore)}
-            >
-              <Ico name="play" variant="bold" width={11} height={11} />
-            </button>
           </div>
 
           <div
@@ -283,12 +220,12 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
             onClick={() => selectBuiltin('history')}
           >
             <div className="lib-icon">
-              <Ico name="clock" width={16} height={16} />
+              <Ico name="clock" width={20} height={20} />
             </div>
             <div className="lib-item-info">
               <div className="lib-item-name">{t('lib.history')}</div>
-              <div className="lib-item-sub" id="libHistorySub">
-                {recordsLabel(historyCount)}
+              <div className="lib-item-sub">
+                {tracksAndDuration(hist.tracks, hist.sec)}
               </div>
             </div>
           </div>
@@ -355,7 +292,9 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
-            padding: '8px 4px 10px',
+            // Как в системном блоке выше: значения для компактного вида, полный
+            // и covers перебивают их своими правилами. Низ 7px + margin 1px = верх.
+            padding: '8px 4px 7px',
             scrollbarWidth: 'none',
           }}
         >
@@ -397,12 +336,6 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
           selectPlaylist(id)
           startEdit(id)
         }}
-        onAddTracks={(id) => setAddToPlId(id)}
-      />
-      <AddFromLibModal
-        open={addToPlId !== null}
-        onClose={() => setAddToPlId(null)}
-        playlistId={addToPlId}
       />
 
       {/* ПКМ-меню артиста в sidebar (Открыть / Закрепить / Отписаться) */}
@@ -571,6 +504,35 @@ const UnifiedList = ({
     // Pinned-партиционирование: закреплённые (ранг 0) реордерятся только среди
     // закреплённых, обычные (ранг 1) — среди обычных. Граница не пересекается.
     getGroupRank: (key) => (pinnedSet.has(key) ? 0 : 1),
+    // В виде «только обложки» за курсором должна ехать сама обложка, без плашки.
+    // Ghost — клон строки, смонтированный в body, то есть ВНЕ
+    // `.lib-sidebar.lib-sb-covers`: ни одно правило этого вида на него не
+    // действует. Из-за этого у клона проступала скрытая в сайдбаре подпись,
+    // обложка падала к базовым 50px (в covers она var(--cv-ico)), а паддинг
+    // брался базовый. Переносим геометрию с исходной строки руками и снимаем
+    // карточную подложку, которую useSortable ставит инлайном.
+    ghostAdjust:
+      sbView === 'covers'
+        ? (ghost, srcRow) => {
+            ghost.style.background = 'transparent'
+            // Радиус и клип нужны только карточной подложке, а её тут нет. Без
+            // этого дуга правого верхнего угла (var(--radius)=14px) срезала
+            // точку закрепа: ghost в этом виде всего 64×64, точка висит в 3px
+            // за краем обложки и уходит за дугу примерно наполовину.
+            ghost.style.borderRadius = '0'
+            ghost.style.overflow = 'visible'
+            ghost.style.padding = getComputedStyle(srcRow).padding
+            const srcIco = srcRow.querySelector<HTMLElement>('.lib-icon')
+            const dstIco = ghost.querySelector<HTMLElement>('.lib-icon')
+            if (srcIco && dstIco) {
+              const r = srcIco.getBoundingClientRect()
+              dstIco.style.width = `${r.width}px`
+              dstIco.style.height = `${r.height}px`
+            }
+            const info = ghost.querySelector<HTMLElement>('.lib-item-info')
+            if (info) info.style.display = 'none'
+          }
+        : undefined,
     onReorder: (newKeys) => {
       const next: UnifiedItem[] = newKeys.map((k) => {
         const i = k.indexOf(':')
@@ -661,10 +623,6 @@ const UnifiedList = ({
           const pl = plById.get(entry.id)
           if (!pl) return null
           const isActive = mode === 'pl' && plId === pl.id
-          // Бейдж «плейлист из площадки»: все треки одного источника.
-          const plTracks = pl.trs.map((id) => tracksById.get(id)).filter((t): t is Track => !!t)
-          const hasScTracks = plTracks.length > 0 && plTracks.every((t) => t._sc)
-          const hasYmTracks = plTracks.length > 0 && plTracks.every((t) => t._ym)
           return (
             <div
               key={`pl_${pl.id}`}
@@ -703,13 +661,6 @@ const UnifiedList = ({
                     <PlaylistCover covers={pl.trs.map((id) => tracksById.get(id)?.cover)} />
                   )}
                 </div>
-                {/* Бейдж площадки поверх обложки плейлиста (нижний-правый угол).
-                    hasSc/hasYm взаимоисключающи (every-track), поэтому один бейдж. */}
-                {(hasScTracks || hasYmTracks) && (
-                  <span className="cov-badge" style={{ right: 2, bottom: 2 }}>
-                    {hasScTracks ? <ScBadge size={14} cover /> : <YmBadge size={14} cover />}
-                  </span>
-                )}
                 {isPinnedEntry && <span className="lib-pin-dot" />}
               </div>
               <div className="lib-item-info">
@@ -724,12 +675,6 @@ const UnifiedList = ({
                   <PlaylistOfflineTag trackIds={pl.trs} />
                 </div>
               </div>
-              <button
-                className="lib-item-play"
-                onClick={stopAnd(() => playPlaylistFromStore(pl.id))}
-              >
-                <Ico name="play" variant="bold" width={11} height={11} />
-              </button>
             </div>
           )
         }
@@ -765,9 +710,7 @@ const UnifiedList = ({
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
-                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text2)' }}>
-                      {(a.name || '?').charAt(0).toUpperCase()}
-                    </span>
+                    <EmptyCover />
                   )}
                 </div>
                 {isPinnedEntry && <span className="lib-pin-dot" />}
@@ -803,7 +746,7 @@ const UnifiedList = ({
           >
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <div className="lib-icon" style={{ background: 'var(--folder-tint)' }} {...iconHandle}>
-                <Ico name="folder" width={16} height={16} style={{ color: 'var(--accent)' }} />
+                <Ico name="folder" width={20} height={20} style={{ color: 'var(--accent)' }} />
               </div>
               {isPinnedEntry && <span className="lib-pin-dot" />}
             </div>
@@ -819,12 +762,6 @@ const UnifiedList = ({
                 })()}
               </div>
             </div>
-            <button
-              className="lib-item-play"
-              onClick={stopAnd(() => playFolderFromStore(path))}
-            >
-              <Ico name="play" variant="bold" width={11} height={11} />
-            </button>
           </div>
         )
       })}

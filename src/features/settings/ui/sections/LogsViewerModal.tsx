@@ -37,8 +37,13 @@ export const LogsViewerModal = ({
 
   useEffect(() => {
     if (content === null) return
+    // stopPropagation обязателен: панель настроек (SideSheet) слушает Escape на
+    // window, а мы — на document, то есть раньше по всплытию. Без остановки один
+    // Esc закрывал бы и просмотрщик, и всю панель настроек под ним.
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      onClose()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)

@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
-import { useLibStore, useHistoryStore, useActivityStore, useUsageStore } from '@features/library'
+import { useMemo, useSyncExternalStore } from 'react'
+import { useLibStore, useActivityStore, useUsageStore } from '@features/library'
+import { allPlayed, subscribePlayStats, playStatsVersion } from '@/db/playStats'
 import { trackRegistry, type Track } from '@entities/track'
 import { parseArtists } from '@shared/lib/parseArtists'
 import { t as tt } from '@shared/i18n'
@@ -10,9 +11,14 @@ import { parseDur } from './formatStats'
  * нет — статистика уехала в боковую шторку `StatsPanel`), но те же цифры нужны
  * ещё и карточке-входу на странице профиля, поэтому вынесен в хук.
  *
- * Источники — те же сторы: `useHistoryStore` (прослушивания), `useActivityStore`
- * (дневной журнал), `useLibStore.tracks` (библиотека), `useUsageStore` (время в
+ * Источники: `db/playStats` (прослушивания), `useActivityStore` (дневной
+ * журнал), `useLibStore.tracks` (библиотека), `useUsageStore` (время в
  * приложении).
+ *
+ * Прослушивания раньше брались из `useHistoryStore` — и были занижены его
+ * лимитом в 200 уникальных треков: всё, что вытеснено, пропадало из сумм и из
+ * топа артистов, а цифры расходились с «Итогами», которые считались по полному
+ * журналу. Теперь источник у них общий.
  */
 
 const findTrack = (id: string, libTracks: Track[]): Track | undefined =>
@@ -89,11 +95,14 @@ export interface ProfileStats {
 
 export const useProfileStats = (): ProfileStats => {
   const tracks = useLibStore((s) => s.tracks)
-  const entries = useHistoryStore((s) => s.entries)
   const log = useActivityStore((s) => s.log)
   const appMs = useUsageStore((s) => s.appMs)
+  // playStats — не стор, а модуль слоя `db`; версия меняется при прогреве
+  // журнала и на каждом зачтённом прослушивании, и по ней пересчитываем.
+  const statsVer = useSyncExternalStore(subscribePlayStats, playStatsVersion)
 
   return useMemo(() => {
+    const entries = allPlayed()
     let totalSec = 0
     let totalPlays = 0
     const artistMap = new Map<
@@ -106,7 +115,7 @@ export const useProfileStats = (): ProfileStats => {
     const trackRows: { track: Track; plays: number }[] = []
 
     for (const e of entries) {
-      const plays = e.count || 0
+      const plays = e.plays || 0
       totalPlays += plays
       // Разбивку по площадке считаем ВСЕГДА (по префиксу id), даже если сам трек
       // уже не резолвится — иначе теряются все площадки кроме SoundCloud.
@@ -166,10 +175,8 @@ export const useProfileStats = (): ProfileStats => {
     let firstTs = Date.now()
     let lastTs = Date.now()
     for (const e of entries) {
-      if (e.ts) {
-        if (e.ts < firstTs) firstTs = e.ts
-        if (e.ts > lastTs) lastTs = e.ts
-      }
+      if (e.firstTs && e.firstTs < firstTs) firstTs = e.firstTs
+      if (e.lastTs && e.lastTs > lastTs) lastTs = e.lastTs
     }
     const daySpan = Math.max(1, Math.ceil((lastTs - firstTs) / 86400000))
 
@@ -193,5 +200,5 @@ export const useProfileStats = (): ProfileStats => {
       avgTracksDay: (totalPlays / daySpan).toFixed(1),
       log,
     }
-  }, [entries, tracks, log, appMs])
+  }, [statsVer, tracks, log, appMs])
 }

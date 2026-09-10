@@ -116,9 +116,8 @@ export const searchTracks = (
   query: string,
   limit = 12,
   offset = 0,
-  sort: 'relevance' | 'new' = 'relevance',
 ): Promise<ScSearchPage<ScRawTrack>> =>
-  scInvoke('sc_search_tracks', { query, limit, offset, sort })
+  scInvoke('sc_search_tracks', { query, limit, offset })
 
 export interface ScCheckResult {
   ok: boolean
@@ -241,6 +240,35 @@ export const getArtistTracksPage = (
   cursor: string,
 ): Promise<{ tracks: ScRawTrack[]; next: string | null }> =>
   scInvoke('sc_artist_tracks_page', { cursor })
+
+/* ── Источники волны ────────────────────────────────────────────────────
+ * Rate-limit, кэш и повтор при 429 — в Rust (`soundcloud.rs`). Отдают СЫРЫЕ
+ * объекты api-v2 (snake_case), а не `ScRawTrack`: у движка волны собственный
+ * маппер (`scRawToTrack`) — он же и типизирует выдачу.
+ */
+
+/** Станция трека (`stations/soundcloud:track-stations:{id}/tracks`). */
+export const waveStation = (
+  scTrackId: string | number,
+  offset = 0,
+): Promise<unknown[]> =>
+  scInvoke('sc_wave_station', { scTrackId: String(scTrackId), offset })
+
+/** Похожие треки (`tracks/{id}/related`). */
+export const waveRelated = (scTrackId: string | number): Promise<unknown[]> =>
+  scInvoke('sc_wave_related', { scTrackId: String(scTrackId) })
+
+/**
+ * Похожие на трек для витрины «Для вас». Сеть та же, что у волны, но выдача —
+ * готовый `ScRawTrack` (как из поиска), а не сырой api-v2: витрина разбирает
+ * его штатным маппером провайдера.
+ */
+export const scSimilarTracks = (scTrackId: string | number): Promise<ScRawTrack[]> =>
+  scInvoke('sc_similar_tracks', { scTrackId: String(scTrackId) })
+
+/** Сбросить кэш источников волны (при старте новой волны). */
+export const waveResetCache = (): Promise<void> =>
+  scInvoke('sc_wave_reset_cache')
 
 /** Нормализованный результат резолва SC-ссылки (`/resolve?url=`). */
 export type ScResolved =

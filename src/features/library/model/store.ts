@@ -3,8 +3,20 @@ import type { Track } from '@entities/track'
 import type { LibMode } from './types'
 import { applyTracksOrder, loadTracksOrder, saveTracksOrder } from '../lib/tracksOrder'
 
-/** Режимы сортировки tracklist'а `libSortMode`. */
-export type TrackSortMode = 'default' | 'name' | 'artist' | 'dur' | 'date' | 'plays' | 'album'
+/**
+ * Режимы сортировки tracklist'а `libSortMode`. `downloaded` не сортирует, а
+ * отбирает: порядок остаётся своим, в списке только то, что есть на диске
+ * (как «Только скачанные» в мобилке).
+ */
+export type TrackSortMode =
+  | 'default'
+  | 'name'
+  | 'artist'
+  | 'dur'
+  | 'date'
+  | 'plays'
+  | 'album'
+  | 'downloaded'
 export type TrackSortDir = 'asc' | 'desc'
 
 /**
@@ -249,7 +261,8 @@ export const useLibStore = create<LibState>((set, get) => ({
   sortDir: 'asc',
   setSort: (mode) =>
     set((s) => {
-      if (mode === s.sortMode && mode !== 'default') {
+      // У «По умолчанию» и «Только скачанные» своего направления нет.
+      if (mode === s.sortMode && mode !== 'default' && mode !== 'downloaded') {
         // Toggle direction.
         return { sortDir: s.sortDir === 'asc' ? 'desc' : 'asc' }
       }

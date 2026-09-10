@@ -1,21 +1,25 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useHistoryStore, useActivityStore, useUsageStore } from '@features/library'
 import { playTrack } from '@features/player'
-import { ScLogo, YmLogo, YtmLogo, HddLogo, providerBrandColor } from '@entities/track'
-import { toast } from '@shared/ui'
+import { ArtistLinks, ScLogo, YmLogo, YtmLogo, HddLogo, providerBrandColor } from '@entities/track'
+import { toast, EmptyCover } from '@shared/ui'
 import { useT, useLocale, t as tt } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { fmtDurLong } from '../lib/formatStats'
 import { artistAvatarKey, artistProviderOf, useArtistAvatars } from '../lib/useArtistAvatars'
 import { useProfileStats, type ProfileStats } from '../lib/useProfileStats'
 import { useAchievementsStore } from '../model/achievementsStore'
-import { clearPlayLog } from '@features/wrapped/model/playLog'
+import { clearPlayLog } from '@/db/playLog'
+import { resetPlayStats } from '@/db/playStats'
+import { plural } from '@features/wrapped/lib/fmt'
 import { useWrappedEntries, useWrappedUiStore } from '@features/wrapped'
 import { useProfilePanelStore } from '../model/profilePanelStore'
-import { ProfilePanelShell } from './ProfilePanelShell'
+import { StatsModalShell } from './StatsModalShell'
 
 /**
- * Боковая шторка «Статистика» (`.spanel`) — порт мобильной `stats_sheet.dart`.
+ * Модалка «Статистика» (`.smodal`) — порт мобильной `stats_sheet.dart`.
+ * Не шторка у кромки, а карточка по центру окна (каркас — `StatsModalShell`);
+ * выезжает она по-прежнему сбоку, как drawer.
  *
  * Раскладка мобильная: лента любимых исполнителей кружками (листается вбок) →
  * топ треков → «Обзор» (сетка цифр с тонкими линиями между рядами) → «Где
@@ -38,9 +42,9 @@ const SOURCE_META: Record<string, { label: string; Logo: React.ComponentType<{ s
 const dayKey = (d: Date) => d.toISOString().slice(0, 10)
 
 /**
- * Недель в теплокарте. На странице их было 53 (год), но в панели шириной 420
- * такие колонки схлопываются в невидимые 4px — берём полгода, чтобы клетка
- * осталась ~11px, как на мобиле.
+ * Недель в теплокарте. На странице их было 53 (год), но в модалке шириной 540
+ * такие колонки схлопываются в 6px — берём полгода, чтобы клетка осталась
+ * ~16px. Растянешь `--smodal-w` — можно вернуть год.
  */
 const HEATMAP_WEEKS = 26
 
@@ -48,16 +52,13 @@ const HEATMAP_WEEKS = 26
 const Section = ({
   title,
   trailing,
-  bleed,
   children,
 }: {
   title: string
   trailing?: ReactNode
-  /** Содержимое без боковых полей — ленте артистов они мешают листаться. */
-  bleed?: boolean
   children: ReactNode
 }) => (
-  <div className={`pstat-sec${bleed ? ' bleed' : ''}`}>
+  <div className="pstat-sec">
     <div className="pstat-sec-head">
       <span className="pstat-sec-title">{title}</span>
       {trailing}
@@ -153,8 +154,11 @@ export const StatsPanel = () => {
     useActivityStore.getState().clear()
     useUsageStore.getState().clear()
     useAchievementsStore.getState().clear()
-    // Журнал «Итогов» — часть той же статистики, чистим вместе с остальным.
+    // Журнал прослушиваний — часть той же статистики, чистим вместе с
+    // остальным, включая свёрнутый в память агрегат (иначе волна и перемешка
+    // продолжили бы считать по нему до перезапуска).
     void clearPlayLog()
+    resetPlayStats()
     toast(t('stats.cleared'))
   }
 
@@ -227,7 +231,7 @@ export const StatsPanel = () => {
   }, [period, log, todayKey])
 
   return (
-    <ProfilePanelShell kind="stats" footer={
+    <StatsModalShell footer={
       <>
         {/* Итоги месяца доступны всегда — это их постоянный вход. Подмена
             карточки в профиле живёт до первого просмотра, а сюда можно
@@ -249,9 +253,9 @@ export const StatsPanel = () => {
       </>
     }>
       {/* Лента любимых исполнителей — кружок, имя, прослушивания. */}
-      <Section title={t('stats.topArtists')} bleed>
+      <Section title={t('stats.topArtists')}>
         {stats.topArtists.length === 0 ? (
-          <div className="pstat-empty" style={{ padding: '0 16px' }}>{t('stats.noDataYet')}</div>
+          <Empty />
         ) : (
           <div className="pstat-strip">
             {stats.topArtists.map((a) => {
@@ -259,10 +263,12 @@ export const StatsPanel = () => {
               return (
                 <div className="pstat-artist" key={a.name} onClick={() => goArtist(a.name, a.source)}>
                   <div className="pstat-artist-ava">
-                    {ava ? <img src={ava} alt="" /> : <Ico name="user" width={22} height={22} style={{ opacity: 0.3 }} />}
+                    {ava ? <img src={ava} alt="" /> : <Ico name="user" width={38} height={38} style={{ opacity: 0.3 }} />}
                   </div>
                   <div className="pstat-artist-name">{a.name}</div>
-                  <div className="pstat-artist-plays">{a.plays}</div>
+                  {/* Подпись — сколько раз слушали; «раз/раза» склоняет общий
+                      plural «Итогов», голое число читалось хуже. */}
+                  <div className="pstat-artist-sub">{plural(loc, a.plays, 'times')}</div>
                 </div>
               )
             })}
@@ -273,13 +279,35 @@ export const StatsPanel = () => {
       <Section title={t('stats.topTracks')}>
         {stats.topTracks.length === 0 ? <Empty /> : (
           stats.topTracks.map(({ track, plays }) => (
-            <div className="pstat-track" key={track.id} onClick={() => playTrack(track.id)}>
+            <div
+              className="pstat-track"
+              key={track.id}
+              // Имена артистов внутри строки ведут на их страницы (общий делегат
+              // `.tra-link`), поэтому клик по ним не должен ещё и включать трек.
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest('.tra-link')) return
+                playTrack(track.id)
+              }}
+            >
               <div className="pstat-track-cov">
-                {track.cover ? <img src={track.cover} alt="" /> : <Ico name="note" width={14} height={14} style={{ opacity: 0.3 }} />}
+                {track.cover ? <img src={track.cover} alt="" /> : <EmptyCover />}
               </div>
-              <div className="pstat-track-info">
-                <div className="pstat-track-name">{track.name}</div>
-                <div className="pstat-track-artist">{track.artist || ''}</div>
+              {/* Одна строка «артист — название»: артист приглушён, название
+                  светлое. Без артиста строка — просто название. */}
+              <div className="pstat-track-line">
+                {track.artist && (
+                  <span className="pstat-track-artist">
+                    <ArtistLinks
+                      artist={track.artist}
+                      scId={track.artistScId}
+                      permalink={track.artistPermalink}
+                      artistId={track.artistId}
+                      provider={track.artistProvider}
+                    />
+                    {' — '}
+                  </span>
+                )}
+                <span className="pstat-track-name">{track.name}</span>
               </div>
               <div className="pstat-track-plays">{plays}</div>
             </div>
@@ -369,7 +397,7 @@ export const StatsPanel = () => {
           )}
         </div>
       </Section>
-    </ProfilePanelShell>
+    </StatsModalShell>
   )
 }
 

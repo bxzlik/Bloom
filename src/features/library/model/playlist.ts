@@ -28,6 +28,8 @@ export interface Playlist {
   cover?: string
   /** Источники «Обновить треки» (несколько, любые площадки). */
   sources?: PlSourceRef[]
+  /** Время создания (ms). У плейлистов старше этого поля берётся из id — см. `plCreatedAt`. */
+  createdAt?: number
   /** @deprecated мигрирует в `sources` при загрузке стора (старый формат). */
   scSource?: string
   /** @deprecated мигрирует в `sources` при загрузке стора (старый формат). */
@@ -53,3 +55,20 @@ export const migratePlSources = (p: Playlist): Playlist => {
 
 /** Генератор id: 'pl' + Date.now(). */
 export const newPlaylistId = (): string => 'pl' + Date.now().toString(36)
+
+/**
+ * Дата создания плейлиста в ms — либо `createdAt`, либо восстановленная из id.
+ *
+ * Поле появилось позже самого плейлиста, но id всё это время был меткой времени
+ * (`newPlaylistId`), так что у заведённых раньше дата всё-таки есть. Значения вне
+ * разумного окна (чужой формат id, мусор) отбрасываем — лучше не показать строку,
+ * чем показать 1970-й.
+ */
+export const plCreatedAt = (p: Playlist): number | null => {
+  if (p.createdAt && p.createdAt > 0) return p.createdAt
+  if (!/^pl[0-9a-z]+$/.test(p.id)) return null
+  const ts = parseInt(p.id.slice(2), 36)
+  // 2020-01-01 … «завтра»: id-метка из будущего означала бы не время, а что-то ещё.
+  if (!Number.isFinite(ts) || ts < 1577836800000 || ts > Date.now() + 86400000) return null
+  return ts
+}

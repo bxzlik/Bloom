@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import {
   useLibStore,
-  useHistoryStore,
   useActivityStore,
   useUsageStore,
 } from '@features/library'
@@ -15,6 +14,7 @@ import {
   type AchUnit,
 } from '../lib/achievements'
 import { useAchievementsStore, tierKey } from '../model/achievementsStore'
+import { usePlayEntries } from '../lib/usePlayEntries'
 import { ProfilePanelShell } from './ProfilePanelShell'
 
 /**
@@ -32,9 +32,10 @@ const fmtVal = (n: number, unit: AchUnit): string =>
   unit === 'time' ? fmtDurLong(n) : String(n)
 
 export const AchievementsPanel = () => {
+  const t = useT()
   const loc = useLocale()
   const tracks = useLibStore((s) => s.tracks)
-  const entries = useHistoryStore((s) => s.entries)
+  const entries = usePlayEntries()
   const log = useActivityStore((s) => s.log)
   const appMs = useUsageStore((s) => s.appMs)
   const unlocked = useAchievementsStore((s) => s.unlocked)
@@ -49,9 +50,11 @@ export const AchievementsPanel = () => {
 
   return (
     <ProfilePanelShell kind="ach">
-      {/* Заголовка у шторки нет — от прежней шапки остался только счётчик
-          взятых уровней. */}
-      <div className="pach-count"><span className="ppnl-badge">{done}/{total}</span></div>
+      {/* Шапка: название раздела слева, счётчик взятых уровней справа. */}
+      <div className="pach-count">
+        <span className="pach-title">{t('ach.title')}</span>
+        <span className="ppnl-badge">{done}/{total}</span>
+      </div>
       <div className="pach-list">
         {list.map((a) => (
           <AchCard key={a.def.id} a={a} unlockedAt={unlocked[tierKey(a.def.id, a.tierReached - 1)]} loc={loc} />

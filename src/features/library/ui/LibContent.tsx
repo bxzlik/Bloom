@@ -1,8 +1,8 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ChangeEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react'
@@ -13,16 +13,17 @@ import {
   useLibStore,
   usePlaylistStore,
   useFavStore,
+  useHistoryStore,
   usePlEditStore,
   useSelectionStore,
+  plCreatedAt,
 } from '../model'
 import type { LibMode, Playlist, PlSourceRef } from '../model'
 import type { Track } from '@entities/track'
 import {
   tracksAndDuration,
-  recordsLabel,
   sumDurations,
-  usePlayHistoryCount,
+  historyTotals,
   importTracks,
   getCurrentView,
   compressCover,
@@ -34,7 +35,7 @@ import { LibGridOverview } from './LibGridOverview'
 import { PlSourcesEditor } from './PlSourcesEditor'
 import { PlMenu } from './PlMenu'
 import { PlaylistOfflineTag } from './PlaylistOfflineTag'
-import { AddFromLibModal } from './AddFromLibModal'
+import { CreatedMeta } from './DateMeta'
 import { SelActions } from './SelActions'
 import { Ico } from '@shared/ui/icons/solar'
 
@@ -54,7 +55,6 @@ export const LibContent = () => {
     ? allTracks.filter((t) => t._folder === folderPath)
     : []
   const folderTracksCount = folderTracks.length
-  const historyCount = usePlayHistoryCount()
   const activePlaylist = usePlaylistStore((s) =>
     plId ? s.playlists.find((p) => p.id === plId) : undefined,
   )
@@ -112,7 +112,6 @@ export const LibContent = () => {
   // ПКМ по шапке: координаты курсора для позиционирования меню (null = меню
   // открыто от кнопки «…» в anchor-режиме).
   const [plMenuCursor, setPlMenuCursor] = useState<{ x: number; y: number } | null>(null)
-  const [addToPlId, setAddToPlId] = useState<string | null>(null)
 
   // Редактирование плейлиста: шапка + большой редактор на месте трек-листа.
   const [editName, setEditName] = useState('')
@@ -143,8 +142,12 @@ export const LibContent = () => {
   useEffect(() => {
     if (!editingId) return
     const tm = setTimeout(() => {
-      editNameRef.current?.focus()
-      editNameRef.current?.select()
+      const el = editNameRef.current
+      if (!el) return
+      el.focus()
+      // Курсор в конец, а не выделение всего: поле выглядит как обычный текст
+      // шапки, и синяя плашка выделения ломала бы этот вид.
+      el.setSelectionRange(el.value.length, el.value.length)
     }, 40)
     return () => clearTimeout(tm)
   }, [editingId])
@@ -234,21 +237,25 @@ export const LibContent = () => {
   // показывал бы «висячие» лайки удалённых треков. Согласовано с видом и сайдбаром.
   const favCount = allTracks.filter((t) => favs.has(t.id)).length
 
+  // Сводка истории для подписи в шапке — считается только когда раздел открыт.
+  const histEntries = useHistoryStore((s) => s.entries)
+  const hist = useMemo(() => {
+    if (mode !== 'history') return { tracks: 0, sec: 0 }
+    const byId = new Map(allTracks.map((t) => [t.id, t]))
+    return historyTotals(histEntries, byId)
+  }, [mode, histEntries, allTracks])
+
   const { heroName, heroSub, heroIconClass, heroCover, HeroIcon } = heroFor(mode, {
     totalTracks,
     favCount,
-    historyCount,
     folderPath,
     folderTracksCount,
     playlist: activePlaylist,
     allTracks,
     favs,
     folderTracks,
+    hist,
   })
-
-  // В режиме редактирования шапка (блюр-фон) должна сразу отражать выбранную
-  // в редакторе обложку, не дожидаясь сохранения.
-  const headCover = editing ? editCover : heroCover
 
   /**
    * Открытый поиск: капсула той же высоты, что и группы иконок — встаёт на место
@@ -448,8 +455,7 @@ export const LibContent = () => {
       ) : (
       <>
       <div
-        className={`lib-content-head${headCover ? ' has-cover' : ''}`}
-        style={headCover ? ({ '--hero-cover': `url("${headCover}")` } as CSSProperties) : undefined}
+        className="lib-content-head"
         onContextMenu={(e) => {
           // ПКМ по шапке открывает то же меню, что и кнопка «…», но у курсора.
           // В режиме редактирования — отдаём нативное меню (для полей ввода).
@@ -487,7 +493,7 @@ export const LibContent = () => {
                   aria-label={t('lib.newpl.removeCover')}
                   style={{ display: 'flex' }}
                 >
-                  <Ico name="close" width={8} height={8} style={{ display: 'block', flexShrink: 0, color: 'white' }} />
+                  <Ico name="trash" width={12} height={12} style={{ display: 'block', flexShrink: 0 }} />
                 </button>
               )}
             </div>
@@ -502,9 +508,7 @@ export const LibContent = () => {
                   ? {
                       background: `center / cover no-repeat url(${heroCover})`,
                     }
-                  : mode === 'history'
-                    ? { background: 'var(--sys-hist-tint)' }
-                    : {}),
+                  : {}),
               }}
             >
               {!heroCover && <HeroIcon />}
@@ -538,6 +542,13 @@ export const LibContent = () => {
                   else if (e.key === 'Escape') cancelEdit()
                 }}
               />
+              {/* Подпись остаётся и в редакторе: шапка не должна «пустеть» —
+                  меняются только два поля, остальная информация на месте. */}
+              <div className="lib-hero-sub" id="libHeroSub">
+                {heroSub}
+                {activePlaylist && <PlaylistOfflineTag trackIds={activePlaylist.trs} />}
+                {activePlaylist && <CreatedMeta ts={plCreatedAt(activePlaylist)} dot />}
+              </div>
             </div>
           ) : (
             <div style={{ minWidth: 0 }} id="libHeroNameWrap">
@@ -560,17 +571,29 @@ export const LibContent = () => {
               ) : (
                 <div className="lib-hero-desc" id="libHeroDesc" style={{ display: 'none' }} />
               )}
-              <div className="lib-hero-sub" id="libHeroSub">
-                {heroSub}
-                {mode === 'pl' && activePlaylist && (
-                  <PlaylistOfflineTag trackIds={activePlaylist.trs} />
-                )}
-              </div>
+              {/* Пустую подпись не рисуем совсем: у .lib-hero-sub свой
+                  margin-top, и пустой div сдвигал бы название вверх на 5px
+                  относительно разделов со счётчиком. */}
+              {(heroSub || (mode === 'pl' && activePlaylist)) && (
+                <div className="lib-hero-sub" id="libHeroSub">
+                  {heroSub}
+                  {mode === 'pl' && activePlaylist && (
+                    <PlaylistOfflineTag trackIds={activePlaylist.trs} />
+                  )}
+                  {/* Дата создания — хвостом подписи, а не отдельной строкой:
+                      в шапке уже три строки (имя, описание, счётчик). */}
+                  {mode === 'pl' && activePlaylist && (
+                    <CreatedMeta ts={plCreatedAt(activePlaylist)} dot />
+                  )}
+                </div>
+              )}
             </div>
           )}
-          {heroBtnsBelow && heroBtns}
+          {/* Кнопки редактора (✕ / ✓) всегда справа от текста — раскладка
+              «под названием» на них не распространяется. */}
+          {heroBtnsBelow && !editing && heroBtns}
           </div>
-          {!heroBtnsBelow && heroBtns}
+          {(!heroBtnsBelow || editing) && heroBtns}
         </div>
         {/* Индикатор прокрутки на нижней границе шапки — отражает/двигает
             вертикальный скролл трек-листа. Только когда список показан. */}
@@ -602,12 +625,6 @@ export const LibContent = () => {
         folderPath={folderPath}
         onReset={() => selectBuiltin('all')}
         onEdit={(id) => startEdit(id)}
-        onAddTracks={(id) => setAddToPlId(id)}
-      />
-      <AddFromLibModal
-        open={addToPlId !== null}
-        onClose={() => setAddToPlId(null)}
-        playlistId={addToPlId}
       />
     </div>
   )
@@ -618,13 +635,14 @@ export const LibContent = () => {
 interface HeroCounts {
   totalTracks: number
   favCount: number
-  historyCount: number
   folderPath: string | null
   folderTracksCount: number
   playlist?: Playlist
   allTracks: Track[]
   favs: Map<string, number>
   folderTracks: Track[]
+  /** История: треков в списке и сколько по ним наслушано, сек. */
+  hist: { tracks: number; sec: number }
 }
 
 const folderName = (path: string): string => {
@@ -657,8 +675,12 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
     case 'history':
       return {
         heroName: tFn('lib.history'),
-        heroSub: recordsLabel(c.historyCount),
-        heroIconClass: '',
+        // Время тут — прослушанное (длительность × число прослушиваний), а не
+        // суммарная длина списка, как у «Всех треков»: для истории осмысленно
+        // именно оно. Подписи раньше не было, потому что счётчик упирался в
+        // лимит 200 и ничего не сообщал; теперь считается по журналу.
+        heroSub: tracksAndDuration(c.hist.tracks, c.hist.sec),
+        heroIconClass: 'hist-icon',
         HeroIcon: HistoryHeroIcon,
       }
     case 'folder': {
@@ -683,7 +705,10 @@ const heroFor = (mode: LibMode, c: HeroCounts): HeroResult => {
         // ту же пустую обложку, что в сайдбаре и сетке (`EmptyCover`, свой фон).
         // Нотка тут была бы неверна: у неё в библиотеке значение «раздел
         // Все треки», а не «обложки нет».
-        heroIconClass: pl?.cover ? 'off-icon' : '',
+        // Классов нет и с обложкой: `off-icon` тут раньше стоял ради тинта под
+        // картинкой, а теперь он несёт вид системного раздела (рамка + нейтральная
+        // подложка) — на обложке плейлиста это лишняя обводка.
+        heroIconClass: '',
         HeroIcon: pl ? () => <PlaylistCover covers={covers} /> : NoteHeroIcon,
         heroCover: pl?.cover,
       }

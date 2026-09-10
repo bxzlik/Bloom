@@ -24,6 +24,7 @@ import {
   getUserPlaylists,
   getUserLikes,
   resolveScUrl,
+  scSimilarTracks,
   type ScMedia,
   type ScRawArtist,
   type ScRawPlaylist,
@@ -60,8 +61,33 @@ interface ScPlaylistHandle {
 }
 const scHandles = new Map<string, ScArtistHandle | ScPlaylistHandle>()
 
+/**
+ * Мягкий лимит реестра: без него карта росла до конца сессии (≈20 записей на
+ * каждый поиск, плюс альбомы и «похожие» с каждой страницы артиста). Вытесняем
+ * самые давние ПО ОБРАЩЕНИЮ: `getHandle` переставляет запись в конец, поэтому
+ * открытая/играющая сущность не выпадет из реестра, пока ею пользуются.
+ */
+const HANDLES_MAX = 500
+const getHandle = (id: string): ScArtistHandle | ScPlaylistHandle | undefined => {
+  const h = scHandles.get(id)
+  if (h) {
+    scHandles.delete(id)
+    scHandles.set(id, h)
+  }
+  return h
+}
+const setHandle = (id: string, h: ScArtistHandle | ScPlaylistHandle): void => {
+  scHandles.delete(id) // перезапись должна уходить в конец очереди, а не оставаться на месте
+  scHandles.set(id, h)
+  while (scHandles.size > HANDLES_MAX) {
+    const oldest: string | undefined = scHandles.keys().next().value
+    if (oldest === undefined) break
+    scHandles.delete(oldest)
+  }
+}
+
 const putArtistHandle = (entityId: string, a: ScRawArtist): void => {
-  scHandles.set(entityId, {
+  setHandle(entityId, {
     kind: 'artist',
     scId: a.id,
     permalink: a.permalink ?? null,
@@ -75,7 +101,7 @@ const putPlaylistHandle = (
   p: ScRawPlaylist,
   kind: 'playlist' | 'album',
 ): void => {
-  scHandles.set(entityId, {
+  setHandle(entityId, {
     kind,
     scId: p.id,
     permalink: p.permalink ?? null,
@@ -115,10 +141,9 @@ export const scProvider: MusicProvider = {
   id: 'soundcloud',
   label: 'SoundCloud',
 
-  async search(query, opts): Promise<Partial<SearchResults>> {
-    const sort = opts?.sort ?? 'relevance'
+  async search(query): Promise<Partial<SearchResults>> {
     const [tr, ar, pl, al] = await Promise.allSettled([
-      searchTracks(query, 12, 0, sort),
+      searchTracks(query, 12, 0),
       searchArtists(query, 8),
       searchPlaylists(query, 6),
       searchAlbums(query, 6),
@@ -158,8 +183,8 @@ export const scProvider: MusicProvider = {
     return { tracks, artists, playlists, albums, tracksHasMore }
   },
 
-  async loadMoreTracks(query, offset, opts): Promise<{ tracks: Track[]; hasMore: boolean }> {
-    const page = await searchTracks(query, 12, offset, opts?.sort ?? 'relevance')
+  async loadMoreTracks(query, offset): Promise<{ tracks: Track[]; hasMore: boolean }> {
+    const page = await searchTracks(query, 12, offset)
     const tracks = page.items.map(toTrack)
     if (tracks.length) trackRegistry.put(tracks, { temp: true })
     return { tracks, hasMore: page.hasMore }
@@ -255,7 +280,7 @@ export const scProvider: MusicProvider = {
   async getArtist(id): Promise<ArtistPageData> {
     // Хэндл может отсутствовать (открытие из «недавних» после рестарта) —
     // восстанавливаем ref из самого id: `sc_artist_<scId>` или `sc_artist_p_<permalink>`.
-    const h = scHandles.get(id)
+    const h = getHandle(id)
     let ref: number | string = ''
     let hintName = ''
     if (h && h.kind === 'artist') {
@@ -285,6 +310,20 @@ export const scProvider: MusicProvider = {
     const rawReposts = repostR.status === 'fulfilled' ? repostR.value : { items: [], next: null }
     const rawRelated = relatedR.status === 'fulfilled' ? relatedR.value : []
 
+    // Rust-команды страницы артиста инфаллибельны (Option/Vec, а не Result) —
+    // сбой сети/протухший client_id приходит сюда как «успешная» пустота, и без
+    // этой проверки DetailView рисовал бы пустой hero вместо ошибки, да ещё и
+    // клал пустышку в свой detailCache (до перезапуска артист оставался пустым).
+    if (
+      !user &&
+      !rawTracks.length &&
+      !rawTop.length &&
+      !rawAlbums.length &&
+      !rawReposts.items.length &&
+      !rawRelated.length
+    )
+      throw new Error(i18nT('search.err.artistPage'))
+
     const tracks = rawTracks.map(toTrack)
     const topTracks = rawTop.map(toTrack)
     const albums: Playlist[] = rawAlbums.map((raw) => {
@@ -309,6 +348,9 @@ export const scProvider: MusicProvider = {
       id,
       name: user?.username || hintName || '',
       source: 'soundcloud',
+      // Без permalink share-ссылка артиста уходит с пустым `permalink=`, а
+      // подписка сохраняется с `scPermalink: null` (DetailView читает его отсюда).
+      permalink: user?.permalink ?? (h && h.kind === 'artist' ? h.permalink : null),
       avatar: user?.avatar ?? (h && h.kind === 'artist' ? h.artwork : null),
       followers: user?.followers ?? (h && h.kind === 'artist' ? h.followers : undefined),
       fullName: user?.fullName || '',
@@ -348,6 +390,14 @@ export const scProvider: MusicProvider = {
   // `kind=trending` (New & Hot), а этот поток подмешивает случайные/нерелевантные
   // треки. Реальные чарты/новинки — у Яндекса и YouTube Music.
 
+  async getSimilarTracks(seedId): Promise<Track[]> {
+    const m = /^sc_(\d+)$/.exec(seedId)
+    if (!m) return []
+    const tracks = (await scSimilarTracks(m[1]!)).map(toTrack)
+    if (tracks.length) trackRegistry.put(tracks, { temp: true })
+    return tracks
+  },
+
   async getAlbum(id): Promise<{ album: Playlist; tracks: Track[] }> {
     const { playlist, tracks } = await loadScPlaylist(id)
     return { album: playlist, tracks }
@@ -366,7 +416,7 @@ export const scProvider: MusicProvider = {
 const loadScPlaylist = async (
   id: string,
 ): Promise<{ playlist: Playlist; tracks: Track[] }> => {
-  const h = scHandles.get(id)
+  const h = getHandle(id)
   const permalink = h && h.kind !== 'artist' ? h.permalink : null
 
   let raw: Awaited<ReturnType<typeof getPlaylistTracks>>
@@ -414,9 +464,27 @@ const loadScPlaylist = async (
   return { playlist, tracks }
 }
 
-/** Кеш signed-URL стрима (SC URL живёт ~5 мин — держим 4). */
-const streamCache = new Map<number, { src: PlayableSource; at: number }>()
+/** Кеш signed-URL стрима (SC URL живёт ~5 мин — держим 4). Ключ — числовой
+ *  SC-id, либо permalink, если id неизвестен (трек из deep-link по ссылке). */
+const streamCache = new Map<string, { src: PlayableSource; at: number }>()
 const STREAM_TTL = 4 * 60 * 1000
+/**
+ * Мягкий лимит кеша. TTL проверяется только при чтении, поэтому протухшие
+ * signed-URL (а их подавляющее большинство: по 5 на каждый поиск от префетча)
+ * иначе лежали бы в памяти до конца сессии. Чистим на записи.
+ */
+const STREAM_MAX = 200
+const putStream = (key: string, src: PlayableSource): void => {
+  const now = Date.now()
+  for (const [k, v] of streamCache) if (now - v.at >= STREAM_TTL) streamCache.delete(k)
+  streamCache.delete(key)
+  streamCache.set(key, { src, at: now })
+  while (streamCache.size > STREAM_MAX) {
+    const oldest: string | undefined = streamCache.keys().next().value
+    if (oldest === undefined) break
+    streamCache.delete(oldest)
+  }
+}
 
 /**
  * Прогреть стримы первых треков выдачи (fire-and-forget) — кладёт signed-URL в
@@ -424,14 +492,33 @@ const STREAM_TTL = 4 * 60 * 1000
  * (первые 5, только у кого есть media).
  */
 let _prefetchBusy = false
+/** Последняя выдача, пришедшая пока пачка в работе (держим только её). */
+let _prefetchPending: Track[] | null = null
+/** Страховка от зависшего invoke: у scInvoke своего таймаута нет. */
+const PREFETCH_MAX_MS = 15000
 const prefetchStreams = (tracks: Track[]): void => {
-  if (_prefetchBusy) return
   const todo = tracks.filter((t) => t._sc && t.scMedia).slice(0, 5)
   if (!todo.length) return
+  // Пачка уже идёт — не теряем новую выдачу (раньше она молча оставалась без
+  // прогрева, а на медленной сети защёлка держалась десятки секунд), а прогреем
+  // её следом. Помним только самую свежую: промежуточные запросы не нужны.
+  if (_prefetchBusy) {
+    _prefetchPending = tracks
+    return
+  }
   _prefetchBusy = true
-  void Promise.allSettled(todo.map((t) => scResolveStream(t))).finally(() => {
+  const done = (): void => {
     _prefetchBusy = false
-  })
+    const next = _prefetchPending
+    _prefetchPending = null
+    if (next) prefetchStreams(next)
+  }
+  // race, а не finally: незавершившийся invoke иначе оставлял бы защёлку
+  // взведённой до конца сессии — префетч выключался бы весь сеанс.
+  void Promise.race([
+    Promise.allSettled(todo.map((t) => scResolveStream(t))),
+    new Promise((r) => setTimeout(r, PREFETCH_MAX_MS)),
+  ]).then(done, done)
 }
 
 /**
@@ -440,21 +527,35 @@ const prefetchStreams = (tracks: Track[]): void => {
  */
 export const scResolveStream = async (t: Track): Promise<PlayableSource | null> => {
   if (!t._sc) return null
-  const scId = typeof t.scId === 'number' ? t.scId : Number(t.scId)
-  if (!Number.isFinite(scId)) return null
+  // Строго положительный id: Number('') === 0 и Number.isFinite(0) === true,
+  // поэтому пустой scId (трек из ссылки без числового id) раньше проходил как
+  // валидный и уходил в sc_track_by_id(0) → «нет данных потока».
+  const num = typeof t.scId === 'number' ? t.scId : Number(t.scId)
+  const scId = Number.isFinite(num) && num > 0 ? num : 0
+  const permalink = t.scPermalink || ''
+  if (!scId && !permalink) return null
 
-  const cached = streamCache.get(scId)
+  const key = scId ? String(scId) : permalink
+  const cached = streamCache.get(key)
   if (cached && Date.now() - cached.at < STREAM_TTL) return cached.src
 
   // У треков волны (station/related) media почти всегда есть, но если нет —
-  // дотягиваем полный трек по id, иначе getStreamUrl упадёт «нет данных потока».
-  let media = (t.scMedia as ScMedia) ?? null
-  if (!media || !(media as ScMedia).transcodings?.length) {
-    const full = await getTrackById(scId)
-    media = (full?.media as ScMedia) ?? null
+  // дотягиваем полный трек, иначе getStreamUrl упадёт «нет данных потока»:
+  // по числовому id, а когда его нет (ссылка с одним permalink) — через /resolve.
+  // Аннотация обязательна: `scMedia` объявлен как unknown, и без неё вывод даёт
+  // не-nullable ScMedia (`X ?? null` не добавляет `| null`) → присваивания ниже не проходят.
+  let media: ScMedia | null = (t.scMedia as ScMedia | null) ?? null
+  if (!media || !media.transcodings?.length) {
+    if (scId) {
+      const full = await getTrackById(scId)
+      media = full?.media ?? null
+    } else {
+      const r = await resolveScUrl(permalink)
+      media = r?.kind === 'track' ? r.track.media : null
+    }
   }
   const stream = await getStreamUrl(media)
   const src: PlayableSource = { url: stream.url, hls: stream.isHls }
-  streamCache.set(scId, { src, at: Date.now() })
+  putStream(key, src)
   return src
 }

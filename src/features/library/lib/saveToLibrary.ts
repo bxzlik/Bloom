@@ -4,9 +4,9 @@ import { useLibStore } from '../model/store'
 import { idbSaveMeta } from './idb'
 
 /**
- * Сохранить трек в библиотеку навсегда. Для треков площадок (SoundCloud/Yandex):
- * снимает temp-флаг, кладёт в `useLibStore` + персистит meta в IDB (без Blob —
- * стрим резолвится source-resolver'ом).
+ * Сохранить трек в библиотеку навсегда. Для треков площадок (SoundCloud / Yandex /
+ * YouTube Music): снимает temp-флаг, кладёт в `useLibStore` + персистит meta в IDB
+ * (без Blob — стрим резолвится source-resolver'ом).
  *
  * Идемпотентно: если трек уже в библиотеке — ничего не делает.
  * Возвращает true, если трек был добавлен (false — уже был).
@@ -19,6 +19,7 @@ export const saveTrackToLibrary = (track: Track): boolean => {
     ...track,
     _scTemp: false,
     _ymTemp: false,
+    _ytmTemp: false,
     addedAt: track.addedAt ?? Date.now(),
     url: null, // blob/stream URL не персистим
   }

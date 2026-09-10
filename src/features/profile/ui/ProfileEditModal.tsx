@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { toast } from '@shared/ui'
+import { toast, SideSheet } from '@shared/ui'
 import { useT } from '@shared/i18n'
-import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { openColorPicker } from '@features/settings'
 import {
   useProfileStore,
@@ -19,7 +17,7 @@ import { ImageCropper } from './ImageCropper'
  *
  * Раскладка портирована с мобилки (`profile_edit_screen.dart`): сверху живой
  * предпросмотр шапки профиля, дальше голые поля «капсовая подпись + плашка»
- * без карточек и заголовков-секций, снизу «Отмена / Сохранить».
+ * без карточек и заголовков-секций, снизу «Сохранить / Отмена».
  *
  * Картинки меняются НЕ крестиками и hover-пилюлями, а одной панелью
  * (`.pedit-imgpanel`): клик по обложке или аватарке в хиро разворачивает её под
@@ -30,7 +28,9 @@ import { ImageCropper } from './ImageCropper'
  * Загруженное уходит в `ImageCropper` (круг для аватара, аспект настоящей
  * карточки профиля для обложки). Сохранение → profileStore.
  *
- * Открытие — флаг `editOpen` в profileStore; анимация `.open` (двойной rAF).
+ * Открытие — флаг `editOpen` в profileStore; каркас — общий `SideSheet` (панель
+ * в полокна справа, приложение уходит в глубину). Esc здесь свой, трёхступенчатый
+ * (кроп → панель картинок → закрыть), поэтому `escClose` у панели выключен.
  */
 
 const ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
@@ -63,8 +63,6 @@ export const ProfileEditModal = () => {
   const closeEdit = useProfileStore((s) => s.closeEdit)
   const setProfile = useProfileStore((s) => s.setProfile)
 
-  const [mounted, setMounted] = useState(false)
-  const [opening, setOpening] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [crop, setCrop] = useState<{ dataUrl: string; type: ImageTab } | null>(null)
   const [imgTab, setImgTab] = useState<ImageTab | null>(null)
@@ -72,21 +70,18 @@ export const ProfileEditModal = () => {
   const bannerInputRef = useRef<HTMLInputElement>(null)
   const avaInputRef = useRef<HTMLInputElement>(null)
 
-  // Открытие: снимок текущего профиля в draft + анимация.
+  // Открытие: снимок текущего профиля в draft. Выезд и демонтаж — на SideSheet;
+  // draft после закрытия не сбрасываем, иначе панель опустела бы на время ухода.
   useEffect(() => {
-    if (editOpen) {
-      const s = useProfileStore.getState()
-      setDraft({
-        name: s.name, bio: s.bio, status: s.status,
-        bannerColor: s.bannerColor, bannerColor2: s.bannerColor2, bannerColorMode: s.bannerColorMode,
-        bannerAngle: s.bannerAngle, avatar: s.avatar, banner: s.banner,
-      })
-      setCrop(null)
-      setImgTab(null)
-      setMounted(true)
-      return runEnterAnimation(setOpening)
-    }
-    setOpening(false)
+    if (!editOpen) return
+    const s = useProfileStore.getState()
+    setDraft({
+      name: s.name, bio: s.bio, status: s.status,
+      bannerColor: s.bannerColor, bannerColor2: s.bannerColor2, bannerColorMode: s.bannerColorMode,
+      bannerAngle: s.bannerAngle, avatar: s.avatar, banner: s.banner,
+    })
+    setCrop(null)
+    setImgTab(null)
   }, [editOpen])
 
   // Esc: в кропе → назад, из панели картинок → свернуть, иначе закрыть.
@@ -102,7 +97,7 @@ export const ProfileEditModal = () => {
     return () => document.removeEventListener('keydown', onKey)
   }, [editOpen, crop, imgTab, closeEdit])
 
-  if (!mounted || !draft) return null
+  if (!draft) return null
 
   const patch = (p: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...p } : d))
 
@@ -166,21 +161,19 @@ export const ProfileEditModal = () => {
 
   const hasOwn = imgTab === 'avatar' ? !!draft.avatar : !!draft.banner
 
-  return createPortal(
-    <div
-      id="peditBackdrop"
-      className={opening ? 'open' : ''}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !crop) closeEdit()
-      }}
-      onTransitionEnd={(e) => {
-        if (!editOpen && e.target === e.currentTarget) setMounted(false)
-      }}
+  return (
+    <SideSheet
+      open={editOpen}
+      // Клик по ушедшему приложению закрывает — но не поверх кропа: там сначала
+      // «назад» (иначе несохранённая обрезка терялась бы одним промахом мыши).
+      onClose={() => { if (!crop) closeEdit() }}
+      escClose={false}
+      className="pedit-sheet"
     >
-      <div id="peditModal">
-        <div id="peditMainView" style={{ display: crop ? 'none' : 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div id="peditMainView" style={{ display: crop ? 'none' : 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+        <div className="sheet-body">
           {/* HERO: живой предпросмотр шапки профиля — обложка, аватар, ник */}
-          <div className="pedit-hero">
+          <div className="pedit-hero sheet-col">
             <div
               className={`pedit-hero-banner${imgTab === 'banner' ? ' active' : ''}`}
               onClick={() => toggleTab('banner')}
@@ -209,7 +202,7 @@ export const ProfileEditModal = () => {
           <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onPickFile('banner')} />
           <input ref={avaInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onPickFile('avatar')} />
 
-          <div className="pedit-body">
+          <div className="pedit-body sheet-col">
             {/* Панель картинок: разворачивается кликом по хиро */}
             {imgTab && (
               <div className="pedit-imgpanel">
@@ -331,24 +324,26 @@ export const ProfileEditModal = () => {
               </div>
             </div>
           </div>
-
-          <div className="pedit-foot">
-            <button className="pedit-btn-cancel" onClick={closeEdit}>{t('common.cancel')}</button>
-            <button className="pedit-btn-save" onClick={save}>{t('common.save')}</button>
-          </div>
         </div>
 
-        {crop && (
-          <ImageCropper
-            dataUrl={crop.dataUrl}
-            type={crop.type}
-            bannerAspect={bannerAspect}
-            onApply={onCropApply}
-            onBack={() => setCrop(null)}
-          />
-        )}
+        <div className="pedit-foot">
+          <div className="sheet-col">
+            {/* Порядок: «Сохранить» слева, «Отмена» справа. */}
+            <button className="pedit-btn-save" onClick={save}>{t('common.save')}</button>
+            <button className="pedit-btn-cancel" onClick={closeEdit}>{t('common.cancel')}</button>
+          </div>
+        </div>
       </div>
-    </div>,
-    document.body,
+
+      {crop && (
+        <ImageCropper
+          dataUrl={crop.dataUrl}
+          type={crop.type}
+          bannerAspect={bannerAspect}
+          onApply={onCropApply}
+          onBack={() => setCrop(null)}
+        />
+      )}
+    </SideSheet>
   )
 }

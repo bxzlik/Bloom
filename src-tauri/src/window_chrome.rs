@@ -8,8 +8,8 @@ use tauri::{AppHandle, Manager};
 use windows::core::{HSTRING, PCWSTR};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Dwm::{
-    DwmSetWindowAttribute, DWMWA_TRANSITIONS_FORCEDISABLED, DWMWA_WINDOW_CORNER_PREFERENCE,
-    DWM_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+    DwmSetWindowAttribute, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE, DWMWA_TRANSITIONS_FORCEDISABLED,
+    DWMWA_WINDOW_CORNER_PREFERENCE, DWM_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
 };
 use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 use winreg::enums::*;
@@ -33,6 +33,19 @@ pub fn apply_dwm(hwnd: HWND) {
             DWMWA_TRANSITIONS_FORCEDISABLED,
             &off as *const i32 as *const c_void,
             std::mem::size_of::<i32>() as u32,
+        );
+        // Гасим цвет нативной рамки Windows 11 (по умолчанию — системный).
+        // Сама светлая линия по верхней кромке шла НЕ отсюда: tao у окна
+        // `decorations:false` + тень опускает верх клиентской области на 1px
+        // (WM_NCCALCSIZE + calculate_insets_for_dpi), и эту неклиентскую полосу
+        // красит DWM. Лечится это `"shadow": false` в tauri.conf.json; COLOR_NONE
+        // остаётся страховкой от рамки по остальным краям.
+        let border = DWMWA_COLOR_NONE;
+        let _ = DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_BORDER_COLOR,
+            &border as *const u32 as *const c_void,
+            std::mem::size_of::<u32>() as u32,
         );
     }
 }

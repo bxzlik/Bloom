@@ -5,6 +5,7 @@ import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
 import { useLibStore, useTagEditStore } from '../model'
 import { Ico } from '@shared/ui/icons/solar'
+import { EmptyCover } from '@shared/ui'
 import { compressCover, idbUpdateMeta } from '../lib'
 
 export interface TagEditorProps {
@@ -16,7 +17,9 @@ export interface TagEditorProps {
 /**
  * Редактор тегов трека — боковая панель-drawer (`.spanel-backdrop`/`.spanel`),
  * выезжает справа, как редактирование профиля. Каркас/тело/футер переиспользуют
- * общие классы `.spanel-*` (modals.css) и `.pedit-*`.
+ * общие классы `.spanel-*` (modals.css) и `.pedit-*`; модификатор `.spanel-tag`
+ * убирает плёнку хиро, подложку карточки, разделитель над футером и полосу
+ * прокрутки, а поля делает капсулами, как в редакторе профиля.
  *
  * Сохранение: обновляем меру в useLibStore.addTracks (merge by id) + idbUpdateMeta.
  * Если есть новая обложка — сжимаем через compressCover (300×300 JPEG 80%).
@@ -128,14 +131,14 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
         if (e.target === e.currentTarget) handleClose()
       }}
     >
-      <div className="spanel">
-        {/* HERO: крупная обложка по центру + название + подпись */}
+      <div className="spanel spanel-tag">
+        {/* HERO: крупная обложка по центру + название (подписи-заголовка нет) */}
         <div className="spanel-hero">
           <label className="spanel-cover">
             {coverSrc ? (
               <img src={coverSrc} alt="" />
             ) : (
-              <Ico name="note" width={34} height={34} style={{ opacity: 0.3 }} />
+              <EmptyCover />
             )}
             <div className="spanel-cover-cam">
               <Ico name="camera" width={20} height={20} />
@@ -145,16 +148,10 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
           <div className={`spanel-hero-name${name.trim() ? '' : ' empty'}`}>
             {name.trim() || t('lib.tag.titlePlaceholder')}
           </div>
-          <div className="spanel-hero-sub">{t('lib.tag.editorTitle')}</div>
         </div>
 
         <div className="pedit-body">
           <div className="pedit-card">
-            <div className="pedit-card-title">
-              <Ico name="edit" width={14} height={14} />
-              {t('lib.tag.editorTitle')}
-            </div>
-
             <Field label={t('lib.tag.title')}>
               <input
                 className="pedit-nick-inp"
@@ -224,12 +221,13 @@ export const TagEditor = ({ track, onClose }: TagEditorProps) => {
           </div>
         </div>
 
+        {/* Порядок как в редакторе профиля: «Сохранить» слева, «Отмена» справа. */}
         <div className="pedit-foot">
-          <button className="pedit-btn-cancel" onClick={handleClose}>
-            {t('common.cancel')}
-          </button>
           <button className="pedit-btn-save" onClick={() => void onSave()}>
             {t('common.save')}
+          </button>
+          <button className="pedit-btn-cancel" onClick={handleClose}>
+            {t('common.cancel')}
           </button>
         </div>
       </div>

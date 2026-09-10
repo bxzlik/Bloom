@@ -17,7 +17,6 @@ export const ru = {
   'common.save': 'Сохранить',
 
   // Навигация настроек
-  'settings.nav.search': 'Поиск...',
   'settings.nav.group.main': 'Основное',
   'settings.nav.group.appearance': 'Оформление',
   'settings.nav.group.integrations': 'Интеграции',
@@ -32,7 +31,6 @@ export const ru = {
   'settings.nav.library': 'Библиотека',
   'settings.nav.pages': 'Страницы',
   'settings.nav.tabs': 'Вкладки',
-  'settings.nav.background': 'Фон',
   'settings.nav.customization': 'Кастомизация',
   'settings.nav.yandex': 'Яндекс.Музыка',
 
@@ -64,6 +62,7 @@ export const ru = {
   'settings.interface.sidebar.normal': 'Обычный',
   'settings.interface.sidebar.compact': 'Компактный',
   'settings.interface.sidebar.floating': 'Плавающий',
+  'settings.interface.sidebar.plain': 'Полный',
   'settings.interface.sidebarView.title': 'Вид сайдбара',
   'settings.interface.sidebarView.desc': 'Показывать ли названия вкладок рядом с иконками',
   'settings.interface.sidebarView.icons': 'Только иконки',
@@ -104,8 +103,6 @@ export const ru = {
   'settings.interface.libDensity.compact': 'Компактно',
   'settings.interface.libCols.album': 'Колонка «Альбом»',
   'settings.interface.libCols.albumSub': 'Показывать альбом в списке треков на широком окне',
-  'settings.interface.libCols.date': 'Колонка «Добавлено»',
-  'settings.interface.libCols.dateSub': 'Показывать дату добавления на широком окне',
 
   // Вкладка «Главная» раздела «Страницы»
   'settings.home.sections.title': 'Секции главной',
@@ -116,28 +113,12 @@ export const ru = {
   'settings.home.item.continue': 'Продолжить',
   'settings.home.item.fav': 'Любимые треки',
   'settings.home.item.history': 'История',
-  'settings.home.item.new': 'Новинки',
+  'settings.home.item.new': 'Релизы',
   'settings.home.item.charts': 'Чарты',
+  'settings.home.item.forYou': 'Для вас',
   'settings.home.item.recent': 'Недавно слушали',
   'settings.home.item.playlists': 'Плейлисты',
-  'settings.home.waveView.title': 'Вид «Моей волны»',
-  'settings.home.waveView.desc': 'Как выглядит блок волны на главной',
-  'settings.home.waveView.fire': 'Огонь',
-  'settings.home.waveView.ring': 'Кольцо',
-  'settings.home.waveView.fireHint':
-    'Турбулентный шар пламени во весь блок. Цвет — акцент темы или тон обложки играющего трека.',
-  'settings.home.waveView.ringHint':
-    'Обложки, на которых строится волна, кружат вокруг кнопки запуска. Клик по обложке включает её трек и продолжает волной по нему.',
 
-  // Вкладка «Поиск» раздела «Страницы»
-  'settings.search.view.title': 'Вид поиска',
-  'settings.search.view.desc': 'Что открывает клик по вкладке «Поиск»',
-  'settings.search.view.page': 'Страница',
-  'settings.search.view.overlay': 'Всплывающий',
-  'settings.search.view.pageHint': 'Поиск занимает всю страницу: табы, фильтры и полная выдача.',
-  'settings.search.view.overlayHint': 'Ввод всплывает поверх текущей страницы: недавние запросы и подсказки. Enter открывает страницу поиска с результатами.',
-  'settings.search.hotkey.title': 'Всплывающий поиск по Ctrl+T',
-  'settings.search.hotkey.sub': 'Работает на любой странице, независимо от вида поиска',
   'settings.library.import.title': 'Локальная библиотека',
   'settings.library.import.desc':
     'Что Bloom делает с файлами добавляемой папки. Уже добавленные папки не меняются.',
@@ -177,6 +158,8 @@ export const ru = {
   'settings.interface.nav.desc': 'Управляйте видимостью кнопок в панели',
   'settings.interface.nav.float.title': 'Окно PiP',
   'settings.interface.nav.float.sub': 'Показывать кнопку PiP в сайдбаре',
+  'settings.interface.nav.homeLogo.title': 'Логотип вместо «Главной»',
+  'settings.interface.nav.homeLogo.sub': 'Знак Bloom на месте иконки вкладки «Главная»',
 
   'settings.interface.titlebar.title': 'Отображать на панели',
   'settings.interface.titlebar.desc': 'Выберите элементы для отображения на панели',
@@ -212,6 +195,9 @@ export const ru = {
 
   // Пикер темы
   'theme.ownName': 'Своя тема',
+  'theme.auto.name': 'Авто тема',
+  // Подпись карточки в списке тем (в строке-заголовке остаётся «Авто тема»).
+  'theme.auto.card': 'Под обложку трека',
   'theme.defaultName': 'Моя тема',
   'theme.myPreset': 'Мой пресет',
   'theme.slot.bg': 'Фон',
@@ -394,7 +380,6 @@ export const ru = {
   'settings.view.ovMode.island': 'Остров',
   'settings.view.ovMode.compact': 'Компактный',
   'settings.view.ovMode.bar': 'Полоса',
-  'settings.view.ovMode.expanded': 'Расширенный',
   'settings.view.ovPos': 'Положение на экране',
   'settings.view.ovPos.desc': 'Где появляется плашка оверлея',
   'settings.view.ovPos.custom': 'Свободно',
@@ -440,6 +425,8 @@ export const ru = {
   'settings.view.grpLock.title': 'Заблокировать ширину панели',
   'settings.view.grpLock.sub':
     'Запретить растягивание боковой панели мышью. Обычно её внутренний край можно тянуть, а Shift+ЛКМ сбрасывает ширину',
+  'settings.view.cat.queue': 'Очередь',
+  'settings.view.cat.lyricsStyle': 'Оформление текста',
   'settings.view.queuePos': 'Положение очереди',
   'settings.view.queuePos.desc': 'Где отображается список треков в плеере',
   'settings.view.queuePos.left': 'Слева',
@@ -491,6 +478,8 @@ export const ru = {
   'settings.view.mpProgress.line': 'Линия',
   'settings.view.mpProgress.bg': 'Фоном',
   'settings.view.mpProgress.circle': 'Вокруг обложки',
+  'settings.view.mpProgress.tint': 'Цвет трека',
+  'settings.view.mpProgress.tint.sub': 'Красить прогресс акцентом из обложки, а не цветом темы',
   'settings.view.mpCover': 'Обложка мини-плеера',
   'settings.view.mpCover.desc': 'Выберите форму обложки в мини-плеере',
   'settings.view.mpCover.default': 'По умолчанию',
@@ -549,7 +538,7 @@ export const ru = {
   'settings.view.trackAnim.cover': 'Обложка',
   'settings.view.trackAnim.text': 'Название и артист',
 
-  // Вкладка «Фон» раздела «Кастомизация» (BackgroundCards)
+  // Фон: coverAsBg живёт в «Интерфейсе», blur/dim — в «Кастомизации» (BackgroundSliders)
   'settings.background.coverAsBg': 'Обложка трека как фон',
   'settings.background.coverAsBg.sub': 'Использовать обложку текущего трека как фон',
   'settings.background.blur': 'Размытие',
@@ -563,16 +552,25 @@ export const ru = {
   'settings.custom.ctx.slider': 'Слайдер',
   'settings.custom.ctx.soon': 'Скоро',
   'settings.custom.ctx.tap': 'Нажмите для выбора',
+  'settings.custom.coverMode': 'Режим',
+  'settings.custom.coverMode.sub': 'Отображать кастомную обложку для всех треков или только при отсутствии оригинальной',
+  'settings.custom.coverMode.always': 'Всегда',
+  'settings.custom.coverMode.fallback': 'Если нет обложки',
   'settings.custom.library': 'Библиотека',
-  'settings.custom.library.empty': 'Библиотека пуста — добавьте фото или GIF выше',
+  'settings.custom.library.empty': 'Нет добавленных картинок',
+  'settings.custom.library.emptySub': 'Загрузите фото или GIF либо добавьте картинку по ссылке',
+  'settings.custom.add': 'Добавить',
   'settings.custom.addUrl': 'Добавить по ссылке',
+  'settings.custom.addUrl.placeholder': 'Вставьте прямую ссылку на GIF или изображение',
   'settings.custom.addFiles': 'Добавить файлы',
   'settings.custom.presets': 'Пресеты',
   'settings.custom.presets.cancel': 'Отмена',
   'settings.custom.presets.new': 'Новый пресет',
+  'settings.custom.presets.import': 'Импортировать пресет',
   'settings.custom.presets.namePlaceholder': 'Назовите пресет...',
   'settings.custom.presets.save': 'Сохранить',
-  'settings.custom.presets.empty': 'Сохраните текущие настройки как пресет',
+  'settings.custom.presets.empty': 'Нет сохранённых пресетов',
+  'settings.custom.presets.emptySub': 'Сохраните текущее оформление или импортируйте готовый пресет',
   'settings.custom.presets.untitled': 'Без названия',
   'settings.custom.ctxmenu.export': 'Экспортировать',
   'settings.custom.ctxmenu.delete': 'Удалить',
@@ -591,7 +589,6 @@ export const ru = {
   'settings.custom.toast.cursorReset': 'Курсор сброшен',
   'settings.custom.toast.sliderUpdated': 'Фото слайдера обновлено!',
   'settings.custom.toast.sliderRemoved': 'Фото слайдера удалено',
-  'settings.custom.toast.selectCard': 'Выберите карточку (Фон/Обложка/Виз/Курсор/Слайдер), затем картинку',
 
   // SoundCloud (ScClientIdCard)
   'settings.sc.intro.a': 'Если поиск SoundCloud не работает — введи актуальный',
@@ -764,6 +761,7 @@ export const ru = {
   'common.edit': 'Изменить',
   'lib.playAll': 'Играть все',
   'lib.jumpToNow': 'Перейти к играющему треку',
+  'lib.nowPlaying': 'Сейчас играет',
   'lib.myLibrary': 'Моя библиотека',
   'lib.libraryEmpty': 'Библиотека пуста',
 
@@ -782,16 +780,13 @@ export const ru = {
   'lib.sort.date': 'По дате добавления',
   'lib.sort.plays': 'По прослушиваниям',
   'lib.sort.album': 'По альбому',
+  'lib.sort.downloaded': 'Только скачанные',
   'lib.sortMenu.nameAsc': 'По имени A–Z',
   'lib.sortMenu.nameDesc': 'По имени Z–A',
   'lib.sortMenu.type': 'По типу',
 
-  // AddFromLibModal
-  'lib.addModal.title': 'Добавить треки в плейлист',
+  // Списки с множественным выбором (MergeModal, PlAutoDrawer)
   'lib.addModal.selected': '{n} выбрано',
-  'lib.addModal.add': 'Добавить',
-  'lib.addModal.addN': 'Добавить ({n})',
-  'lib.searchTrackArtist': 'Поиск трека или артиста...',
   'lib.selectAll': 'Выбрать всё',
   'lib.deselectAll': 'Снять выделение',
 
@@ -849,6 +844,7 @@ export const ru = {
   'lib.deeplink.toFav': 'В любимое',
   'lib.deeplink.toPl': 'В плейлист',
   'lib.deeplink.noPlaylists': 'Нет плейлистов',
+  'lib.deeplink.untitled': 'Без названия',
 
   // MergeModal
   'lib.merge.toast.created': 'Создан плейлист «{name}» — {n} треков',
@@ -872,7 +868,6 @@ export const ru = {
   'lib.merge.merge': 'Объединить',
 
   // ConvertModal («Перенести на площадку»)
-  'lib.convert.title': 'Перенос на площадку',
   'lib.convert.namePlaceholder': 'Название нового плейлиста',
   'lib.convert.targetTitle': 'Куда переносим',
   'lib.convert.noProviders': 'Нет доступных площадок',
@@ -929,6 +924,7 @@ export const ru = {
   'lib.ctx.toQueue': 'В очередь',
   'lib.ctx.playNext': 'Играть следующим',
   'lib.ctx.removeFromPl': 'Убрать из плейлиста',
+  'lib.ctx.removeFromHistory': 'Убрать из истории',
   'lib.ctx.deleteTrack': 'Удалить трек',
   'lib.ctx.confirmDelete': 'Удалить трек?',
   'lib.ctx.toLibrary': 'В библиотеку',
@@ -943,6 +939,8 @@ export const ru = {
   'lib.empty.plSub': 'Добавьте треки в этот плейлист',
   'lib.empty.noTracksTitle': 'Нет треков',
   'lib.empty.noTracksSub': 'Добавьте папку с музыкой в настройках',
+  'lib.empty.downloadedTitle': 'Скачанных треков тут нет',
+  'lib.empty.downloadedSub': 'Отметьте треки «Слушать офлайн» в меню «Скачать»',
 
   // LibGridOverview
   'lib.grid.tracks': '{n} тр.',
@@ -959,7 +957,6 @@ export const ru = {
   'lib.plmenu.shuffleStart': 'Перемешать и запустить',
   'lib.plmenu.toQueue': 'В очередь',
   'lib.plmenu.playNext': 'Играть следующими',
-  'lib.plmenu.addTracks': 'Добавить треки',
   'lib.plmenu.editPlaylist': 'Изменить плейлист',
   'lib.plmenu.mergeWith': 'Объединить с…',
   'lib.plmenu.convert': 'Перенести на площадку…',
@@ -995,7 +992,6 @@ export const ru = {
   'lib.pledit.scLikes': 'Лайки пользователя SoundCloud',
 
   // Авто-обновление плейлистов (PlAutoDrawer)
-  'lib.plauto.kicker': 'Плейлисты',
   'lib.plauto.title': 'Авто-обновление',
   'lib.plauto.open': 'Авто-обновление плейлистов',
   'lib.plauto.selectedN': 'Выбрано: {n}',
@@ -1060,18 +1056,6 @@ export const ru = {
   'search.ov.hintNav': 'выбрать',
   'search.ov.hintEnter': 'открыть',
   'search.ov.hintEsc': 'закрыть',
-  'search.opt.any': 'Любой',
-  'search.opt.anyF': 'Любая',
-  'search.year.old': 'до 2000',
-  'search.year.2010s': '2010-е',
-  'search.year.2000s': '2000-е',
-  'search.dur.short': '< 3 мин',
-  'search.dur.mid': '3 – 7 мин',
-  'search.dur.long': '7+ мин',
-  'search.sort.relevance': 'По релевантности',
-  'search.sort.new': 'Сначала новые',
-  'search.dd.duration': 'Длительность',
-  'search.dd.genre': 'Жанр',
   'search.followers': '{n} подписчиков',
   'search.tracksCount': '{n} треков',
   'search.album.showAll': 'Показать все ({n})',
@@ -1086,6 +1070,7 @@ export const ru = {
   'search.detail.playlist': 'ПЛЕЙЛИСТ',
   'search.noArtistTracks': 'У этого артиста нет доступных треков',
   'search.noTracks': 'Нет доступных треков',
+  'search.release': 'Релиз',
   'search.err.artistPage': 'Страница артиста недоступна',
   'search.err.albumPage': 'Страница альбома недоступна',
   'search.err.playlistPage': 'Страница плейлиста недоступна',
@@ -1247,6 +1232,7 @@ export const ru = {
   'wave.start': 'Запустить «Мою волну»',
   'wave.startFrom': 'Волна с трека «{name}»',
   'wave.title': 'Моя волна',
+  'wave.tune': 'Настроить',
   'wave.settings': 'Настройки волны',
   'wave.pickSource': 'Выбор площадки',
   'wave.dislikes': 'Дизлайки',
@@ -1271,16 +1257,27 @@ export const ru = {
   'home.hShort': 'ч',
   'home.mShort': 'м',
   'home.recent': 'Недавно слушали',
-  'home.charts': 'Чарты',
-  'home.newReleases': 'Новинки',
+  'home.charts': 'Чарт',
+  'home.releases': 'Релизы',
+  'home.forYou': 'Для вас',
+  'home.forYouAll': 'Вся подборка',
+  /** Динамика позиции в чарте (aria-подписи + короткая метка новичка). */
+  'chart.up': 'Поднялся на {n}',
+  'chart.down': 'Опустился на {n}',
+  'chart.same': 'Без изменений',
+  'chart.new': 'Новичок чарта',
+  'chart.newShort': 'нов.',
+  /** Типы релиза в подписи карточки: «альбом · 14 августа». */
+  'home.rel.album': 'альбом',
+  'home.rel.single': 'сингл',
+  'home.rel.compilation': 'сборник',
+  'home.rel.podcast': 'подкаст',
   'home.minsAgo': '{n} мин. назад',
   'home.hoursAgo': '{n} ч. назад',
   'home.daysAgo': '{n} дн. назад',
   'home.info': 'Сведения',
   'home.srcLabel': 'Источник',
   'home.actLabel': 'Активность',
-  'home.discOnlyCap': 'Доступно только для',
-  'home.discOnlyVal': 'Яндекс Музыки',
 
   // Итоги (недели/месяца/года)
   'wrapped.watch': 'Смотреть',
@@ -1396,6 +1393,9 @@ export const ru = {
   'common.delete': 'Удалить',
   'common.undo': 'Отменить',
   'common.more': 'Ещё',
+  // Метки дат в шапках: «Создан 2 сент. 2026 г.», «Добавлен …».
+  'common.createdOn': 'Создан',
+  'common.addedOn': 'Добавлен',
   'share.savePng': 'Сохранить PNG',
   'share.copyLink': 'Копировать ссылку',
   'stats.title': 'Статистика',
@@ -1424,7 +1424,6 @@ export const ru = {
   'lib.import.toast.toFavorites': 'Добавлено в любимые: {n}',
   'lib.bulk.title': 'Массовое редактирование',
   'lib.bulk.selected': 'Выбрано {n} треков',
-  'lib.merge.title': 'Объединение плейлистов',
   'lib.tag.editorTitle': 'Редактор тегов',
   'lib.tag.cover': 'Обложка',
   'lib.sidebar.empty': 'Нет плейлистов и папок',
@@ -1436,7 +1435,6 @@ export const ru = {
   'lib.sel.edit': 'Редактировать треки',
   'lib.sel.exit': 'Выйти из редактирования',
   'lib.newpl.addCover': 'Добавить обложку',
-  'lib.addModal.allAdded': 'Все треки уже в плейлисте',
 
   // Тексты песен
   'lyrics.loading': 'Загрузка текста…',
@@ -1506,6 +1504,7 @@ export const ru = {
 
   // SoundCloud — ошибки клиента
   'sc.err.unavailable': 'SoundCloud недоступен (все прокси упали)',
+  'sc.err.rateLimited': 'SoundCloud ограничил частоту запросов (429)',
   'sc.err.forbidden': 'SC: доступ запрещён (401/403)',
   'sc.err.clientIdInvalid': 'SC: client_id недействителен',
   'sc.err.clientIdExpired': 'SC: client_id истёк',
@@ -1590,7 +1589,6 @@ export const en: Record<TranslationKey, string> = {
   'common.save': 'Save',
 
   // Settings navigation
-  'settings.nav.search': 'Search...',
   'settings.nav.group.main': 'General',
   'settings.nav.group.appearance': 'Appearance',
   'settings.nav.group.integrations': 'Integrations',
@@ -1605,7 +1603,6 @@ export const en: Record<TranslationKey, string> = {
   'settings.nav.library': 'Library',
   'settings.nav.pages': 'Pages',
   'settings.nav.tabs': 'Tabs',
-  'settings.nav.background': 'Background',
   'settings.nav.customization': 'Customization',
   'settings.nav.yandex': 'Yandex Music',
 
@@ -1637,6 +1634,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.interface.sidebar.normal': 'Normal',
   'settings.interface.sidebar.compact': 'Compact',
   'settings.interface.sidebar.floating': 'Floating',
+  'settings.interface.sidebar.plain': 'Full',
   'settings.interface.sidebarView.title': 'Sidebar view',
   'settings.interface.sidebarView.desc': 'Whether tab names are shown next to the icons',
   'settings.interface.sidebarView.icons': 'Icons only',
@@ -1677,8 +1675,6 @@ export const en: Record<TranslationKey, string> = {
   'settings.interface.libDensity.compact': 'Compact',
   'settings.interface.libCols.album': 'Album column',
   'settings.interface.libCols.albumSub': 'Show the album in the track list on a wide window',
-  'settings.interface.libCols.date': 'Date added column',
-  'settings.interface.libCols.dateSub': 'Show the date added on a wide window',
 
   // «Home» tab of the «Pages» section
   'settings.home.sections.title': 'Home sections',
@@ -1689,28 +1685,12 @@ export const en: Record<TranslationKey, string> = {
   'settings.home.item.continue': 'Continue',
   'settings.home.item.fav': 'Liked tracks',
   'settings.home.item.history': 'History',
-  'settings.home.item.new': 'New releases',
+  'settings.home.item.new': 'Releases',
   'settings.home.item.charts': 'Charts',
+  'settings.home.item.forYou': 'For you',
   'settings.home.item.recent': 'Recently played',
   'settings.home.item.playlists': 'Playlists',
-  'settings.home.waveView.title': '«My Wave» view',
-  'settings.home.waveView.desc': 'How the wave block looks on the home page',
-  'settings.home.waveView.fire': 'Fireball',
-  'settings.home.waveView.ring': 'Ring',
-  'settings.home.waveView.fireHint':
-    'A turbulent fireball filling the block. Its colour is the theme accent or the hue of the playing cover.',
-  'settings.home.waveView.ringHint':
-    'The covers your wave is built from orbit the play button. Clicking a cover plays that track and continues with a wave based on it.',
 
-  // «Search» tab of the «Pages» section
-  'settings.search.view.title': 'Search view',
-  'settings.search.view.desc': 'What clicking the «Search» tab opens',
-  'settings.search.view.page': 'Page',
-  'settings.search.view.overlay': 'Popup',
-  'settings.search.view.pageHint': 'Search takes the whole page: tabs, filters and full results.',
-  'settings.search.view.overlayHint': 'The input pops up over the current page with recent searches and suggestions. Enter opens the search page with results.',
-  'settings.search.hotkey.title': 'Popup search on Ctrl+T',
-  'settings.search.hotkey.sub': 'Works on any page, regardless of the search view',
   'settings.library.import.title': 'Local library',
   'settings.library.import.desc':
     'What Bloom does with the files of a folder you add. Folders already added stay as they are.',
@@ -1750,6 +1730,8 @@ export const en: Record<TranslationKey, string> = {
   'settings.interface.nav.desc': 'Manage button visibility in the panel',
   'settings.interface.nav.float.title': 'PiP window',
   'settings.interface.nav.float.sub': 'Show the PiP button in the sidebar',
+  'settings.interface.nav.homeLogo.title': 'Logo instead of Home',
+  'settings.interface.nav.homeLogo.sub': 'Show the Bloom mark in place of the Home tab icon',
 
   'settings.interface.titlebar.title': 'Show on the bar',
   'settings.interface.titlebar.desc': 'Choose items to show on the title bar',
@@ -1785,6 +1767,8 @@ export const en: Record<TranslationKey, string> = {
 
   // Theme picker
   'theme.ownName': 'Custom theme',
+  'theme.auto.name': 'Auto theme',
+  'theme.auto.card': 'Match track cover',
   'theme.defaultName': 'My theme',
   'theme.myPreset': 'My preset',
   'theme.slot.bg': 'Background',
@@ -1967,7 +1951,6 @@ export const en: Record<TranslationKey, string> = {
   'settings.view.ovMode.island': 'Island',
   'settings.view.ovMode.compact': 'Compact',
   'settings.view.ovMode.bar': 'Bar',
-  'settings.view.ovMode.expanded': 'Expanded',
   'settings.view.ovPos': 'Screen position',
   'settings.view.ovPos.desc': 'Where the overlay pill appears',
   'settings.view.ovPos.custom': 'Free',
@@ -2013,6 +1996,8 @@ export const en: Record<TranslationKey, string> = {
   'settings.view.grpLock.title': 'Lock panel width',
   'settings.view.grpLock.sub':
     'Disable dragging the side panel. Normally its inner edge can be dragged, and Shift+click resets the width',
+  'settings.view.cat.queue': 'Queue',
+  'settings.view.cat.lyricsStyle': 'Lyrics style',
   'settings.view.queuePos': 'Queue position',
   'settings.view.queuePos.desc': 'Where the track list appears in the player',
   'settings.view.queuePos.left': 'Left',
@@ -2064,6 +2049,8 @@ export const en: Record<TranslationKey, string> = {
   'settings.view.mpProgress.line': 'Line',
   'settings.view.mpProgress.bg': 'Background',
   'settings.view.mpProgress.circle': 'Around cover',
+  'settings.view.mpProgress.tint': 'Track color',
+  'settings.view.mpProgress.tint.sub': 'Color the progress with the cover accent instead of the theme color',
   'settings.view.mpCover': 'Mini-player cover',
   'settings.view.mpCover.desc': 'Choose the cover shape in the mini-player',
   'settings.view.mpCover.default': 'Default',
@@ -2122,7 +2109,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.view.trackAnim.cover': 'Cover',
   'settings.view.trackAnim.text': 'Title and artist',
 
-  // Background tab of the Customization section (BackgroundCards)
+  // Background: coverAsBg lives in Interface, blur/dim in Customization (BackgroundSliders)
   'settings.background.coverAsBg': 'Track cover as background',
   'settings.background.coverAsBg.sub': 'Use the current track cover as the background',
   'settings.background.blur': 'Blur',
@@ -2136,16 +2123,25 @@ export const en: Record<TranslationKey, string> = {
   'settings.custom.ctx.slider': 'Slider',
   'settings.custom.ctx.soon': 'Soon',
   'settings.custom.ctx.tap': 'Tap to choose',
+  'settings.custom.coverMode': 'Mode',
+  'settings.custom.coverMode.sub': 'Show the custom cover for every track, or only when the original one is missing',
+  'settings.custom.coverMode.always': 'Always',
+  'settings.custom.coverMode.fallback': 'If no cover',
   'settings.custom.library': 'Library',
-  'settings.custom.library.empty': 'Library is empty — add a photo or GIF above',
+  'settings.custom.library.empty': 'No images yet',
+  'settings.custom.library.emptySub': 'Upload a photo or GIF, or add an image by link',
+  'settings.custom.add': 'Add',
   'settings.custom.addUrl': 'Add by link',
+  'settings.custom.addUrl.placeholder': 'Paste a direct link to a GIF or image',
   'settings.custom.addFiles': 'Add files',
   'settings.custom.presets': 'Presets',
   'settings.custom.presets.cancel': 'Cancel',
   'settings.custom.presets.new': 'New preset',
+  'settings.custom.presets.import': 'Import a preset',
   'settings.custom.presets.namePlaceholder': 'Name the preset...',
   'settings.custom.presets.save': 'Save',
-  'settings.custom.presets.empty': 'Save the current settings as a preset',
+  'settings.custom.presets.empty': 'No saved presets',
+  'settings.custom.presets.emptySub': 'Save the current look or import a ready-made preset',
   'settings.custom.presets.untitled': 'Untitled',
   'settings.custom.ctxmenu.export': 'Export',
   'settings.custom.ctxmenu.delete': 'Delete',
@@ -2164,7 +2160,6 @@ export const en: Record<TranslationKey, string> = {
   'settings.custom.toast.cursorReset': 'Cursor reset',
   'settings.custom.toast.sliderUpdated': 'Slider photo updated!',
   'settings.custom.toast.sliderRemoved': 'Slider photo removed',
-  'settings.custom.toast.selectCard': 'Select a card (Background/Cover/Viz/Cursor/Slider), then an image',
 
   // SoundCloud (ScClientIdCard)
   'settings.sc.intro.a': "If SoundCloud search isn't working, enter a valid",
@@ -2337,6 +2332,7 @@ export const en: Record<TranslationKey, string> = {
   'common.edit': 'Edit',
   'lib.playAll': 'Play all',
   'lib.jumpToNow': 'Jump to the playing track',
+  'lib.nowPlaying': 'Now playing',
   'lib.myLibrary': 'My library',
   'lib.libraryEmpty': 'Library is empty',
 
@@ -2355,16 +2351,13 @@ export const en: Record<TranslationKey, string> = {
   'lib.sort.date': 'By date added',
   'lib.sort.plays': 'By plays',
   'lib.sort.album': 'By album',
+  'lib.sort.downloaded': 'Downloaded only',
   'lib.sortMenu.nameAsc': 'Name A–Z',
   'lib.sortMenu.nameDesc': 'Name Z–A',
   'lib.sortMenu.type': 'By type',
 
-  // AddFromLibModal
-  'lib.addModal.title': 'Add tracks to playlist',
+  // Multi-select lists (MergeModal, PlAutoDrawer)
   'lib.addModal.selected': '{n} selected',
-  'lib.addModal.add': 'Add',
-  'lib.addModal.addN': 'Add ({n})',
-  'lib.searchTrackArtist': 'Search track or artist...',
   'lib.selectAll': 'Select all',
   'lib.deselectAll': 'Deselect all',
 
@@ -2422,6 +2415,7 @@ export const en: Record<TranslationKey, string> = {
   'lib.deeplink.toFav': 'To Liked',
   'lib.deeplink.toPl': 'To playlist',
   'lib.deeplink.noPlaylists': 'No playlists',
+  'lib.deeplink.untitled': 'Untitled',
 
   // MergeModal
   'lib.merge.toast.created': 'Created playlist “{name}” — {n} tracks',
@@ -2445,7 +2439,6 @@ export const en: Record<TranslationKey, string> = {
   'lib.merge.merge': 'Merge',
 
   // ConvertModal
-  'lib.convert.title': 'Transfer to source',
   'lib.convert.namePlaceholder': 'New playlist name',
   'lib.convert.targetTitle': 'Transfer to',
   'lib.convert.noProviders': 'No sources available',
@@ -2502,6 +2495,7 @@ export const en: Record<TranslationKey, string> = {
   'lib.ctx.toQueue': 'To queue',
   'lib.ctx.playNext': 'Play next',
   'lib.ctx.removeFromPl': 'Remove from playlist',
+  'lib.ctx.removeFromHistory': 'Remove from history',
   'lib.ctx.deleteTrack': 'Delete track',
   'lib.ctx.confirmDelete': 'Delete track?',
   'lib.ctx.toLibrary': 'Add to library',
@@ -2516,6 +2510,8 @@ export const en: Record<TranslationKey, string> = {
   'lib.empty.plSub': 'Add tracks to this playlist',
   'lib.empty.noTracksTitle': 'No tracks',
   'lib.empty.noTracksSub': 'Add a music folder in settings',
+  'lib.empty.downloadedTitle': 'Nothing downloaded here',
+  'lib.empty.downloadedSub': 'Mark tracks “Listen offline” in the Download menu',
 
   // LibGridOverview
   'lib.grid.tracks': '{n} tracks',
@@ -2532,7 +2528,6 @@ export const en: Record<TranslationKey, string> = {
   'lib.plmenu.shuffleStart': 'Shuffle and play',
   'lib.plmenu.toQueue': 'Add to queue',
   'lib.plmenu.playNext': 'Play next',
-  'lib.plmenu.addTracks': 'Add tracks',
   'lib.plmenu.editPlaylist': 'Edit playlist',
   'lib.plmenu.mergeWith': 'Merge with…',
   'lib.plmenu.convert': 'Transfer to source…',
@@ -2568,7 +2563,6 @@ export const en: Record<TranslationKey, string> = {
   'lib.pledit.scLikes': 'SoundCloud user likes',
 
   // Playlist auto-update (PlAutoDrawer)
-  'lib.plauto.kicker': 'Playlists',
   'lib.plauto.title': 'Auto-update',
   'lib.plauto.open': 'Playlist auto-update',
   'lib.plauto.selectedN': 'Selected: {n}',
@@ -2633,18 +2627,6 @@ export const en: Record<TranslationKey, string> = {
   'search.ov.hintNav': 'navigate',
   'search.ov.hintEnter': 'open',
   'search.ov.hintEsc': 'close',
-  'search.opt.any': 'Any',
-  'search.opt.anyF': 'Any',
-  'search.year.old': 'before 2000',
-  'search.year.2010s': '2010s',
-  'search.year.2000s': '2000s',
-  'search.dur.short': '< 3 min',
-  'search.dur.mid': '3 – 7 min',
-  'search.dur.long': '7+ min',
-  'search.sort.relevance': 'By relevance',
-  'search.sort.new': 'Newest first',
-  'search.dd.duration': 'Duration',
-  'search.dd.genre': 'Genre',
   'search.followers': '{n} followers',
   'search.tracksCount': '{n} tracks',
   'search.album.showAll': 'Show all ({n})',
@@ -2659,6 +2641,7 @@ export const en: Record<TranslationKey, string> = {
   'search.detail.playlist': 'PLAYLIST',
   'search.noArtistTracks': 'This artist has no available tracks',
   'search.noTracks': 'No available tracks',
+  'search.release': 'Release',
   'search.err.artistPage': 'Artist page unavailable',
   'search.err.albumPage': 'Album page unavailable',
   'search.err.playlistPage': 'Playlist page unavailable',
@@ -2820,6 +2803,7 @@ export const en: Record<TranslationKey, string> = {
   'wave.start': 'Start My Wave',
   'wave.startFrom': 'Wave from «{name}»',
   'wave.title': 'My Wave',
+  'wave.tune': 'Tune',
   'wave.settings': 'Wave settings',
   'wave.pickSource': 'Choose source',
   'wave.dislikes': 'Dislikes',
@@ -2844,16 +2828,25 @@ export const en: Record<TranslationKey, string> = {
   'home.hShort': 'h',
   'home.mShort': 'm',
   'home.recent': 'Recently played',
-  'home.charts': 'Charts',
-  'home.newReleases': 'New releases',
+  'home.charts': 'Chart',
+  'home.releases': 'Releases',
+  'home.forYou': 'For you',
+  'home.forYouAll': 'All picks',
+  'chart.up': 'Up {n}',
+  'chart.down': 'Down {n}',
+  'chart.same': 'No change',
+  'chart.new': 'New entry',
+  'chart.newShort': 'new',
+  'home.rel.album': 'album',
+  'home.rel.single': 'single',
+  'home.rel.compilation': 'compilation',
+  'home.rel.podcast': 'podcast',
   'home.minsAgo': '{n} min ago',
   'home.hoursAgo': '{n} h ago',
   'home.daysAgo': '{n} d ago',
   'home.info': 'Details',
   'home.srcLabel': 'Source',
   'home.actLabel': 'Activity',
-  'home.discOnlyCap': 'Available only for',
-  'home.discOnlyVal': 'Yandex Music',
 
   // Wrapped (week/month/year stories)
   'wrapped.watch': 'Watch',
@@ -2969,6 +2962,8 @@ export const en: Record<TranslationKey, string> = {
   'common.delete': 'Delete',
   'common.undo': 'Undo',
   'common.more': 'More',
+  'common.createdOn': 'Created',
+  'common.addedOn': 'Added',
   'share.savePng': 'Save PNG',
   'share.copyLink': 'Copy link',
   'stats.title': 'Statistics',
@@ -2997,7 +2992,6 @@ export const en: Record<TranslationKey, string> = {
   'lib.import.toast.toFavorites': 'Added to liked: {n}',
   'lib.bulk.title': 'Bulk edit',
   'lib.bulk.selected': '{n} tracks selected',
-  'lib.merge.title': 'Merge playlists',
   'lib.tag.editorTitle': 'Tag editor',
   'lib.tag.cover': 'Cover',
   'lib.sidebar.empty': 'No playlists or folders',
@@ -3009,7 +3003,6 @@ export const en: Record<TranslationKey, string> = {
   'lib.sel.edit': 'Edit tracks',
   'lib.sel.exit': 'Exit edit mode',
   'lib.newpl.addCover': 'Add cover',
-  'lib.addModal.allAdded': 'All tracks already in playlist',
 
   // Lyrics
   'lyrics.loading': 'Loading lyrics…',
@@ -3079,6 +3072,7 @@ export const en: Record<TranslationKey, string> = {
 
   // SoundCloud — client errors
   'sc.err.unavailable': 'SoundCloud unavailable (all proxies failed)',
+  'sc.err.rateLimited': 'SoundCloud rate limit reached (429)',
   'sc.err.forbidden': 'SC: access denied (401/403)',
   'sc.err.clientIdInvalid': 'SC: client_id is invalid',
   'sc.err.clientIdExpired': 'SC: client_id expired',

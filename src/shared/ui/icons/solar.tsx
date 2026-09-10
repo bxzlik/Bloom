@@ -1,4 +1,4 @@
-import type { ComponentType, SVGProps } from 'react'
+import type { ComponentType, CSSProperties, SVGProps } from 'react'
 
 // Централизованный набор иконок Solar (480 Design).
 // Базовый стиль — `linear`; `bold` используется для активных состояний
@@ -126,6 +126,7 @@ import BellOffLinear from '~icons/solar/bell-off-linear'
 import SpeakerLinear from '~icons/solar/speaker-linear'
 import HeadphonesLinear from '~icons/solar/headphones-round-linear'
 import BluetoothLinear from '~icons/solar/bluetooth-linear'
+import BoxLinear from '~icons/solar/box-minimalistic-linear'
 
 type SvgComp = ComponentType<SVGProps<SVGSVGElement>>
 
@@ -359,6 +360,7 @@ const ICONS = {
   cursor: { linear: CursorLinear },
   slider: { linear: SliderHLinear },
   bellOff: { linear: BellOffLinear },
+  box: { linear: BoxLinear },
   // Аудиовыходы (карточки выбора устройства в настройках «Аудио»)
   speaker: { linear: SpeakerLinear },
   headphones: { linear: HeadphonesLinear },
@@ -368,6 +370,20 @@ const ICONS = {
 export type IconName = keyof typeof ICONS
 export type IconVariant = 'linear' | 'bold'
 
+/**
+ * Иконки, которые Solar чертит не обводкой, а ЗАЛИТЫМ контуром: толщина 1.5
+ * запечена в координатах, путь обходит линию с двух сторон. Из-за этого по ним
+ * не работает `stroke-width`, и в мелких местах они выглядят бледнее соседей.
+ *
+ * Сами по себе они рисуются как есть; метка `data-ink="filled"` нужна лишь
+ * затем, чтобы CSS мог отличить их и добрать вес тонкой обводкой поверх
+ * заливки (см. контракт `.ci-icon svg` в search-misc.css). Обводить такой
+ * контур целиком нельзя — получится полая трубка вместо линии.
+ */
+const FILLED_INK: ReadonlySet<string> = new Set([
+  'shuffle', 'repeat', 'refresh', 'heart', 'pin', 'eyeOff', 'dislike',
+])
+
 export interface IcoProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName
   /** `bold` — для активных состояний; фолбэк на `linear`, если bold не задан. */
@@ -376,9 +392,50 @@ export interface IcoProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   size?: number | string
 }
 
+// ── Вес штриха под размер отрисовки ──────────────────────────────────────────
+// Solar чертит обводкой 1.5 на сетке 24, то есть на экране она равна
+// 1.5 × размер/24. На мелких иконках это уходит ниже физического пикселя
+// (на 13px — 0.81px) и браузер размазывает штрих в серое.
+//
+// Отсюда правило: вес должен расти по мере уменьшения иконки, а не быть
+// константой — одно и то же число даст на 10px кляксу, а на 20px волосок.
+// Считаем его здесь, где размер известен, и кладём в inline-переменные
+// `--ico-sw-auto` / `--ico-ink-auto`; применяет их глобальный контракт
+// `[data-ico]` в base.css.
+//
+// Суффикс `-auto` не случаен: inline-стиль сильнее любого правила, поэтому
+// места, где размер иконки задаёт CSS (а не JSX), не смогли бы перебить это
+// число. Они задают `--ico-sw`, а контракт читает цепочку
+// `var(--ico-sw, var(--ico-sw-auto, 1.5))` — ручное значение имеет приоритет
+// по построению, без !important.
+const INK_PX = 1.15 // сколько пикселей штриха хотим на экране
+const SW_MIN = 1.5 // штатная толщина Solar: тоньше не делаем никогда
+const SW_MAX = 2.2 // потолок: на 10px и мельче Solar слишком деталeн, глиф залипает
+
 /** Единая точка отрисовки Solar-иконки. Цвет — через `currentColor`. */
-export const Ico = ({ name, variant = 'linear', size = '1em', width, height, ...rest }: IcoProps) => {
+export const Ico = ({ name, variant = 'linear', size = '1em', width, height, style, ...rest }: IcoProps) => {
   const set = ICONS[name]
   const Cmp = variant === 'bold' && 'bold' in set && set.bold ? set.bold : set.linear
-  return <Cmp width={width ?? size} height={height ?? size} {...rest} />
+  const ink = FILLED_INK.has(name) ? 'filled' : undefined
+  // Размер известен только когда он задан числом (у `1em` и прочих строк
+  // считать не от чего) — тогда переменных нет и в CSS сработает фолбэк.
+  const px = typeof (width ?? size) === 'number' ? (width as number) ?? (size as number) : null
+  const sw = px ? Math.min(SW_MAX, Math.max(SW_MIN, (INK_PX * 24) / px)) : null
+  const vars = sw
+    ? ({
+        '--ico-sw-auto': sw.toFixed(2),
+        // Залитым контурам 1.5 уже вшито в геометрию — добираем только разницу.
+        '--ico-ink-auto': (sw - SW_MIN).toFixed(2),
+      } as CSSProperties)
+    : null
+  return (
+    <Cmp
+      width={width ?? size}
+      height={height ?? size}
+      data-ico=""
+      data-ink={ink}
+      style={vars ? { ...vars, ...style } : style}
+      {...rest}
+    />
+  )
 }

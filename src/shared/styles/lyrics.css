@@ -10,8 +10,6 @@
 .lyrics-panel{position:absolute;inset:0;background:color-mix(in srgb,var(--block-color,#0f0f0f) 96%,transparent);display:flex;flex-direction:column;z-index:10;transition:opacity .25s ease,transform .25s ease;border-radius:inherit}
 .lyrics-panel.lyr-hidden{opacity:0;pointer-events:none;transform:scale(.97)}
 .lyrics-panel.lyr-visible{opacity:1;pointer-events:all;transform:scale(1)}
-.lyrics-close{position:absolute;top:8px;right:8px;background:rgba(var(--ovl-rgb),.1);border:none;color:rgba(var(--ovl-rgb),.7);font-size:13px;cursor:pointer;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:.15s;z-index:1;flex-shrink:0}
-.lyrics-close:hover{background:rgba(var(--ovl-rgb),.2);color:var(--text)}
 .lyrics-source-badge{display:none}
 .lyrics-content{flex:1;overflow-y:auto;padding:36px 14px 16px;scroll-behavior:smooth;scrollbar-width:none}
 .lyrics-content::-webkit-scrollbar{display:none}
@@ -137,20 +135,26 @@
 /* Геометрия и отклик — те же, что у `.ctx`/`.ci` (см. search-misc.css): плоские
    пункты 28px без подложки на ховере, только осветление текста. Попап живёт в
    ряду транспорта, но это такое же меню, и выбиваться из общего вида ему незачем. */
-.bloom-dl-inner{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius) * 0.9);padding:5px;display:flex;flex-direction:column;gap:0;min-width:190px;box-shadow:none}
+.bloom-dl-inner{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:calc(var(--radius) * 0.9);padding:5px;display:flex;flex-direction:column;gap:0;min-width:190px;box-shadow:none}
 .bloom-dl-inner button{display:flex;align-items:center;gap:10px;width:100%;padding:5px 10px;background:none;border:none;border-radius:calc(var(--radius) * 0.5);color:rgba(var(--ovl-rgb),.78);font-size:13px;line-height:18px;cursor:pointer;text-align:left;white-space:nowrap;font-family:var(--font);transition:color .1s}
 .bloom-dl-inner button:hover{color:var(--text)}
 .bloom-dl-inner button svg{flex-shrink:0}
+/* Тот же контракт отрисовки иконок, что и у `.ci-icon` в search-misc.css —
+   семейства меню два и они не связаны, правишь одно, проверь второе.
+   Ручки те же: 15px крупность, 1.78 вес (на экране 1.11px), round caps;
+   data-ink — залитые контуры Solar, им вес добирается обводкой поверх заливки
+   (подробности в комментарии у `.ci-icon`).
+   `.bloom-srcp` исключён: там иконочный выбор площадки, и это бренд-логотипы
+   в фирменных цветах — их не масштабируем и вес им не меняем. */
+.bloom-dl-inner:not(.bloom-srcp) button svg{width:15px;height:15px;--ico-sw:1.84;--ico-ink:0.34}
 .bloom-dl-inner button:disabled{opacity:.35;cursor:default;pointer-events:none}
 /* Столбик выбора площадки (плеер + поиск): только иконки, без подписей.
-   Рамка слабее обычного попапа — --ovl-line (та же плёнка, что регулируется
-   настройкой толщины рамок), т.к. столбик узкий и тёмная обводка его «режет».
    Активная площадка отделена .bloom-srcp-div и стоит со стороны анкера.
    Геометрия параметрическая: размер пункта и его скругление наследуются от
    КНОПКИ-АНКЕРА своей страницы (попап открывается прямо из неё, поэтому форма
-   должна совпадать). Рамка попапа — концентрическая: радиус пункта + паддинг. */
+   должна совпадать). Скругление попапа — концентрическое: радиус пункта + паддинг. */
 .bloom-srcp{--srcp-btn:38px;--srcp-r:10px;--srcp-pad:5px;--srcp-div:4px;
-  min-width:0;width:fit-content;padding:var(--srcp-pad);gap:4px;border-color:var(--ovl-line);
+  min-width:0;width:fit-content;padding:var(--srcp-pad);gap:4px;
   border-radius:calc(var(--srcp-r) + var(--srcp-pad))}
 .bloom-srcp button{width:var(--srcp-btn);height:var(--srcp-btn);padding:0;justify-content:center;border-radius:var(--srcp-r)}
 /* Исключение из плоского правила: пункты БЕЗ подписей — осветлять там нечего

@@ -174,7 +174,6 @@ export const TelemetrySection = () => {
           {t('settings.storage.refresh')}
         </button>
       </div>
-
       {/* ХРАНИЛИЩЕ — общий объём (кольцевой индикатор) */}
       <div className="tele-stat-card tele-gauge-card">
         <div className="tele-gauge">
@@ -199,9 +198,9 @@ export const TelemetrySection = () => {
       {/* УПРАВЛЕНИЕ ДАННЫМИ ПРИЛОЖЕНИЯ */}
       <div className="tele-data-head">
         <div className="tele-data-head-title">{t('settings.storage.manage')}</div>
-        <button className="tele-clear-all" onClick={clearAll}>
-          <Ico name="trash" width={12} height={12} />
-          {t('settings.storage.clearAll')}
+        {/* Только иконка: подпись «Очистить всё» дублировала заголовок блока */}
+        <button className="tele-clear-all" onClick={clearAll} aria-label={t('settings.storage.clearAll')}>
+          <Ico name="trash" width={15} height={15} />
         </button>
       </div>
 

@@ -18,8 +18,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;
   font-family:var(--font);-webkit-font-smoothing:antialiased;}
 /* Прозрачные поля окна не реагируют на мышь; интерактивна только сама плашка
    (pointer-events наследуется детьми → кнопки кликабельны). Сам click-through на
-   уровне ОС переключает Rust (overlay_set_interactive) по видимости плашки. */
+   уровне ОС переключает Rust: окно ловит мышь, только когда курсор над плашкой
+   (её габарит шлём в `overlay_set_hit_rect`), иначе клики идут насквозь. */
 body{display:flex;align-items:center;justify-content:center;pointer-events:none}
+/* Курсор вне плашки (окно сейчас click-through). Гасим и её pointer-events:
+   события мыши до вебвью не доходят, и без этого CSS-ховер «залипал» бы на
+   элементе, под которым курсор был в момент переключения. */
+body.nohit .island{pointer-events:none}
 
 /* ── Плашка-«остров» ─────────────────────────────────── */
 .island{
@@ -41,7 +46,7 @@ body{display:flex;align-items:center;justify-content:center;pointer-events:none}
    Обрезает её отдельная обёртка `-clip`, а не `overflow` самой дорожки: у дорожки
    есть невидимый ::before-«язычок» расширенной зоны клика, и overflow срезал бы его. */
 .prog{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(var(--ovl-rgb),.12)}
-.prog-clip,.exp-clip{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
+.prog-clip{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
 .prog-fill{position:absolute;inset:0;background:var(--accent);transform:translateX(-100%);
   will-change:transform}
 /* Перематываемый прогресс: курсор + расширенная зона клика (невидимый «язычок»
@@ -57,6 +62,10 @@ body{display:flex;align-items:center;justify-content:center;pointer-events:none}
   display:flex;align-items:center;justify-content:center;color:var(--muted);
 }
 .cover img{width:100%;height:100%;object-fit:cover;display:block}
+/* Трек без обложки — та же заглушка, что у плейлистов в приложении
+   (shared/ui/EmptyCover.tsx): подложка + знак bloom маской по /logo.png. */
+.cov-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06)}
+.cov-empty i{display:block;width:34%;height:34%;min-width:10px;min-height:10px;flex-shrink:0;background-color:var(--text);opacity:.16;-webkit-mask:url(/logo.png) center/contain no-repeat;mask:url(/logo.png) center/contain no-repeat}
 
 /* ── Текст ───────────────────────────────────────────── */
 .info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
@@ -68,6 +77,12 @@ body{display:flex;align-items:center;justify-content:center;pointer-events:none}
 .title-wrap.scrolling:hover .title{animation-play-state:paused}
 .artist{font-size:12px;color:var(--text2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+/* Hover-marquee строки артистов — порт `useCardMarquee` из приложения: клип
+   (.artist) стоит на месте, внутренний бегунок в покое `inline` (иначе не
+   работает многоточие), на ховере плашки становится `inline-block` и катится
+   на величину переполнения. Кадры — копия `trscroll` из animations.css. */
+@keyframes ov-artscroll{0%,10%{transform:translateX(0)}80%,100%{transform:translateX(var(--tr-off,0))}}
+.artist>.mq-in{display:inline}
 .tra-link{cursor:pointer;transition:color .1s}
 .tra-link:hover{color:var(--text);text-decoration:underline}
 
@@ -76,25 +91,37 @@ body{display:flex;align-items:center;justify-content:center;pointer-events:none}
 .right{display:grid;width:106px;flex-shrink:0;justify-items:end;align-items:center}
 .right>*{grid-area:1/1;transition:opacity .18s ease,transform .18s cubic-bezier(.22,1,.36,1)}
 
-.eq{display:flex;align-items:flex-end;gap:2.5px;height:18px;padding-right:6px}
-/* Столбики растут через scaleY, а не height: height-анимация — это layout на
-   каждом кадре (×5 столбиков), transform уезжает на композитор. */
-.eq i{width:3px;border-radius:2px;background:var(--accent);height:100%;transform:scaleY(.3);
-  transform-origin:bottom;animation:eqb .9s ease-in-out infinite}
-.eq i:nth-child(1){animation-delay:-.2s}
-.eq i:nth-child(2){animation-delay:-.5s}
-.eq i:nth-child(3){animation-delay:-.1s}
-.eq i:nth-child(4){animation-delay:-.7s}
-.eq i:nth-child(5){animation-delay:-.4s}
-@keyframes eqb{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
-body.paused .eq i{animation-play-state:paused}
+/* Эквалайзер — тот же `.bars`, что в приложении на обложках (строки трек-листа,
+   очередь, карточки): три полосы-пилюли на полу, у каждой свой кадр и своя
+   длительность, поэтому группа не синхронизируется. Порт из library.css +
+   animations.css — правишь тут, правь и там, иначе окна разъедутся.
+   Анимируется ВЫСОТА в % от --bars-h, а не scaleY: торцы скруглены с обеих
+   сторон, а scaleY сплющивает радиус.
+   Ручки --bars-* задаются на конкретной поверхности (остров / круг «полосы»);
+   [barsSnap] в оверлей не поднимается, так что значения тут фиксированные — как
+   и в остальных зеркальных окнах.
+   На острове (и в компактном режиме — там та же разметка) полосы крупнее
+   строчных 3/2/17 из приложения: правый слот тут просторнее строки трек-листа, и
+   строчный размер в нём терялся. Увеличиваем ручками, а не transform:scale —
+   масштаб мылит торцы. Ширина в компакте ограничена `.right` (34px). */
+.bars{--bars-w:4px;--bars-gap:3px;--bars-h:21px;--bars-r:999px;
+  display:flex;gap:var(--bars-gap);align-items:flex-end;height:var(--bars-h);padding-right:6px}
+.bars span{width:var(--bars-w);height:44%;flex-shrink:0;background:var(--accent);
+  border-radius:var(--bars-r);animation:npBar1 1.7s ease-in-out infinite}
+.bars span:nth-child(2){animation-name:npBar2;animation-duration:1.35s;animation-delay:-.5s}
+.bars span:nth-child(3){animation-name:npBar3;animation-duration:2s;animation-delay:-1.1s}
+@keyframes npBar1{0%,100%{height:44%}24%{height:80%}48%{height:52%}72%{height:90%}88%{height:62%}}
+@keyframes npBar2{0%,100%{height:76%}20%{height:46%}42%{height:86%}64%{height:54%}82%{height:72%}}
+@keyframes npBar3{0%,100%{height:56%}26%{height:92%}52%{height:42%}74%{height:78%}90%{height:50%}}
+/* На паузе полосы просто замирают — без затухания, как в приложении. */
+body.paused .bars span{animation-play-state:paused}
 /* Плашка спрятана (opacity:0) — глушим её вечные анимации: невидимый элемент
    всё равно анимируется и жжёт кадры. */
-.island:not(.show) .eq i{animation-play-state:paused}
+.island:not(.show) .bars span{animation-play-state:paused}
 .island:not(.show) .title-wrap.scrolling .title{animation-play-state:paused}
 
 .ctrl{display:flex;align-items:center;gap:3px;opacity:0;transform:translateY(4px) scale(.96);pointer-events:none}
-.island:hover .eq{opacity:0;transform:translateY(-4px)}
+.island:hover .bars{opacity:0;transform:translateY(-4px)}
 .island:hover .ctrl{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 
 .cbtn{
@@ -113,7 +140,7 @@ body.paused .eq i{animation-play-state:paused}
    Убираем эквалайзер, отключаем бегущую строку (заголовок обрезается «…») и
    прячем полосу прогресса — остаётся статичная плашка, вообще без анимаций в
    покое. Полоса показывается только при наведении. */
-body.perf .eq{display:none}
+body.perf .bars{display:none}
 body.perf .title{overflow:hidden;text-overflow:ellipsis;max-width:100%}
 body.perf .prog{display:none}
 body.perf .island:hover .prog{display:block}
@@ -158,7 +185,7 @@ body.compact.al .island{margin-left:28px}
    подсказка, а кнопки/прогресс не перехватывают перетаскивание. */
 body.placing .island{cursor:move;outline:2px dashed var(--accent);outline-offset:3px}
 body.placing .island:hover .ctrl,body.placing .ctrl{opacity:0;pointer-events:none}
-body.placing .island:hover .eq{opacity:1;transform:none}
+body.placing .island:hover .bars{opacity:1;transform:none}
 body.placing .prog{pointer-events:none}
 body.placing .bcenter,body.placing .bcircle-play{pointer-events:none}
 /* Живой бейдж с координатами (доли %) во время ручного размещения. */
@@ -213,12 +240,14 @@ body.bar .bar-wrap{display:flex;align-items:center;gap:8px;width:100%;height:100
   font-size:14px;font-weight:700;color:var(--text);text-align:center;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Визуализатор в правом круге — тот же эквалайзер, 5 столбиков. Перебиваем
-   островной кроссфейд `.island:hover .eq{opacity:0}`, чтобы при наведении на
-   полосу визуализатор не гас. */
+/* Визуализатор в правом круге — тот же `.bars`, только крупнее: увеличиваем
+   ручками --bars-*, а НЕ transform:scale (масштаб мылит торцы полос) — ровно
+   как приложение делает на крупных обложках-карточках. Перебиваем островной
+   кроссфейд `.island:hover .bars{opacity:0}`, чтобы при наведении на полосу
+   визуализатор не гас. */
 .bcircle-viz{position:relative;overflow:hidden}
-.bcircle-viz .eq{height:20px;padding:0;gap:3px}
-body.bar .bcircle-viz .eq{opacity:1;transform:none}
+.bcircle-viz .bars{--bars-w:5px;--bars-gap:4px;--bars-h:22px;padding:0}
+body.bar .bcircle-viz .bars{opacity:1;transform:none}
 /* Оптимизация: анимировать эквалайзер дорого (постоянный repaint), но и убирать
    круг жалко — вместо столбиков показываем в нём статичную обложку трека.
    inset:0 не заезжает на рамку круга, так что «стеклянный» кант остаётся. */
@@ -227,101 +256,30 @@ body.bar .bcircle-viz .eq{opacity:1;transform:none}
 .bcover img{width:100%;height:100%;object-fit:cover;display:block}
 body.bar.perf .bcover{display:flex}
 
-/* ── Расширенный режим ───────────────────────────────────
-   Карточка: слева колонка «обложка + сердце», справа три ряда — шапка
-   (лейбл/название/артист), прогресс с таймингами и ряд управления.
-   Сам .island служит фоном карточки (показ/скрытие, drag, масштаб). */
-.exp-wrap{display:none}
-body.expanded .island{
-  width:840px;height:180px;border-radius:38px;padding:13px 22px;gap:0;
-  /* Плоский цвет блока из темы приложения (--block-color), без градиентной
-     подсветки верха: карточка большая, градиент на ней читается как грязь. */
-  background:var(--bg);
-  /* Поп-ап громкости выезжает за верхнюю кромку карточки — в поле под тень. */
-  overflow:visible;
-}
-body.expanded .cover,body.expanded .info,body.expanded .right,body.expanded .prog{display:none}
-body.expanded .island:hover .prog{display:none}
-/* Шапка (обложка + текст) и прогресс живут в правой колонке, а ряд кнопок
-   растянут на обе — иначе он центрировался бы по остатку ширины за обложкой и
-   визуально сидел бы правее середины карточки. */
-body.expanded .exp-wrap{display:grid;
-  grid-template-columns:63px 1fr;grid-template-rows:auto auto auto;
-  column-gap:18px;row-gap:8px;align-content:center;
-  width:100%;height:100%}
-.exp-cover{grid-area:1/1;align-self:start;
-  width:63px;height:63px;border-radius:18px;overflow:hidden;
-  background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted)}
-.exp-cover img{width:100%;height:100%;object-fit:cover;display:block}
-.exp-head{grid-area:1/2}
-.exp-row{grid-area:2/2}
-.exp-ctrl{grid-area:3/1/4/3}
+    /* ===== КОНТРАКТ ОТРИСОВКИ ИКОНОК =====
+       То же, что `[data-ico]` в base.css главного окна, но окно отдельное:
+       React-реестра здесь нет, иконки вписаны сырыми <svg>, поэтому вес не
+       считается, а задан таблицей по размеру. Формула та же:
+       sw = clamp(1.5, 27.6/размер, 2.2) — цель 1.15px штриха на экране.
+       Зашитые в иконку 1.5 при 12px давали 0.63px, то есть субпиксельную кашу.
 
-.exp-head{min-width:0;align-self:center}
-.exp-label{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--text2);opacity:.8;line-height:1}
-.exp-title-wrap{margin-top:7px}
-.exp-title-wrap .title{font-size:20px}
-.exp-artist{margin-top:6px;font-size:12px;font-weight:600;letter-spacing:.11em;
-  text-transform:uppercase;color:var(--text2);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1}
-
-/* Прогресс: капсулы с таймингами по краям, полоса между ними. */
-.exp-row{display:flex;align-items:center;gap:15px;padding:0 12px 0 0;min-width:0}
-.exp-time{flex-shrink:0;min-width:58px;text-align:center;padding:4px 12px;border-radius:11px;
-  background:rgba(var(--ovl-rgb),.07);color:var(--text2);
-  font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.3}
-.exp-prog{position:relative;flex:1;min-width:0;height:6px;border-radius:4px;
-  background:rgba(var(--ovl-rgb),.14)}
-.exp-fill{position:absolute;inset:0;border-radius:4px;background:var(--accent);
-  transform:translateX(-100%);will-change:transform}
-/* Зона клика шире тонкой полосы (невидимые «поля» сверху и снизу). */
-.exp-prog.seekable{cursor:pointer}
-.exp-prog.seekable::before{content:'';position:absolute;left:0;right:0;top:-11px;bottom:-11px}
-.exp-prog.seekable:hover{height:9px}
-
-.exp-ctrl{display:flex;align-items:center;justify-content:center;gap:8px}
-/* Копия кнопок нижнего бара: в покое приглушённый белый, на наведении БЕЗ
-   подложки — иконка просто светлеет. Активный тогл (.ebtn.on) — акцентный. */
-.ebtn{position:relative;width:40px;height:40px;flex-shrink:0;border:none;background:none;
-  color:rgba(var(--ovl-rgb),.55);cursor:pointer;display:flex;align-items:center;justify-content:center;
-  border-radius:calc(var(--radius)*0.7);transition:.15s}
-.ebtn:hover{color:rgba(var(--ovl-rgb),.95)}
-.ebtn.on{color:var(--accent)}
-/* Play — обычная кнопка ряда: тот же габарит, ховер и тинт, что у соседей;
-   отличается крупной иконкой и вжатием scale(.94) при нажатии. */
-.ebtn-play{margin:0 6px;transition:background .12s,color .12s,transform .08s;
-  will-change:transform}
-.ebtn-play:active{transform:scale(.94)}
-.ebtn-play svg{width:26px;height:26px}
-/* Бейджи на кнопках — белый кружок сверху справа, как `.cc-badge` в баре
-   приложения: «1» на повторе одного трека и звёздочка на умной перемешке. */
-.ebtn-badge{display:none;position:absolute;top:3px;right:3px;width:13px;height:13px;
-  border-radius:50%;background:var(--text);color:var(--bg);align-items:center;justify-content:center;
-  line-height:1;pointer-events:none;
-  animation:ebtn-badge-pop .18s ease-out}
-.ebtn-badge.num{font-size:8px;font-weight:700;padding-top:1px}
-@keyframes ebtn-badge-pop{0%{opacity:0}100%{opacity:1}}
-@media (prefers-reduced-motion:reduce){.ebtn-badge{animation:none}}
-.ebtn.one .ebtn-badge,.ebtn.smart .ebtn-badge{display:flex}
-
-/* Поп-ап громкости — вертикальный слайдер над кнопкой (как в плеере приложения). */
-.exp-vol{position:relative;display:flex;align-items:center}
-.volpop{display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
-  flex-direction:column;align-items:center;padding:11px 10px;border-radius:14px;
-  background:var(--bg);border:1px solid rgba(var(--ovl-rgb),.12);
-  z-index:20}
-.exp-vol.open .volpop{display:flex}
-.vol-track{position:relative;width:5px;height:96px;border-radius:3px;
-  background:rgba(var(--ovl-rgb),.15);cursor:pointer;touch-action:none}
-.vol-fill{position:absolute;left:0;right:0;bottom:0;border-radius:3px;
-  background:var(--accent);pointer-events:none}
-.vol-knob{position:absolute;left:50%;transform:translateX(-50%);width:14px;height:14px;
-  border-radius:50%;background:var(--accent);pointer-events:none}
-
-/* Ручное размещение: карточка целиком — drag-ручка, её кнопки не мешают. */
-body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-events:none}
-</style>
+       Ограничено 24-й сеткой: бренд-логотипы живут на своих viewBox и под
+       правило не попадают. svg со СВОИМ stroke-width — это голые «+»/«×»,
+       нарисованные вручную, их вес выверен отдельно. */
+    svg[viewBox="0 0 24 24"]:not([stroke-width]):not([data-ink]),
+    svg[viewBox="0 0 24 24"]:not([stroke-width]):not([data-ink]) *{stroke-width:var(--ico-sw,1.5);stroke-linecap:round;stroke-linejoin:round}
+    /* Залитые контуры Solar (сердце, shuffle, repeat): толщина запечена в
+       координатах, stroke-width по ним не работает — вес добирается тонкой
+       обводкой ПОВЕРХ заливки. */
+    svg[viewBox="0 0 24 24"][data-ink="filled"]{stroke:currentColor;stroke-width:var(--ico-ink,0);stroke-linejoin:round}
+    svg[viewBox="0 0 24 24"][width="12"]{--ico-sw:2.2;--ico-ink:.7}
+    svg[viewBox="0 0 24 24"][width="13"]{--ico-sw:2.12;--ico-ink:.62}
+    svg[viewBox="0 0 24 24"][width="14"]{--ico-sw:1.97;--ico-ink:.47}
+    svg[viewBox="0 0 24 24"][width="15"]{--ico-sw:1.84;--ico-ink:.34}
+    svg[viewBox="0 0 24 24"][width="16"]{--ico-sw:1.72;--ico-ink:.22}
+    svg[viewBox="0 0 24 24"][width="17"]{--ico-sw:1.62;--ico-ink:.12}
+    svg[viewBox="0 0 24 24"][width="18"]{--ico-sw:1.53;--ico-ink:.03}
+  </style>
 </head>
 <body>
 <div class="island" id="island">
@@ -333,7 +291,7 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     <div class="artist" id="artist"></div>
   </div>
   <div class="right">
-    <div class="eq"><i></i><i></i><i></i><i></i></div>
+    <div class="bars"><span></span><span></span><span></span></div>
     <div class="ctrl">
       <button class="cbtn" id="btnPrev">
         <svg width="17" height="17" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7.34 9.353c-1.787 1.154-1.787 4.14 0 5.294l10.79 6.967c1.736 1.122 3.87-.338 3.87-2.647V5.033c0-2.31-2.134-3.769-3.87-2.648z"/><path stroke-linecap="round" d="M2 5v14"/></g></svg>
@@ -358,57 +316,8 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
       <div class="bcenter-title" id="titleBar">—</div>
     </div>
     <div class="bcircle bcircle-viz">
-      <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="bars"><span></span><span></span><span></span></div>
       <div class="bcover" id="barCover"></div>
-    </div>
-  </div>
-
-  <!-- Раскладка расширенного режима (показывается при body.expanded). -->
-  <div class="exp-wrap" id="expWrap">
-    <div class="exp-cover" id="expCover"></div>
-    <div class="exp-head">
-      <div class="exp-label" id="expLabel">PLAYING</div>
-      <div class="title-wrap exp-title-wrap" id="expTitleWrap"><div class="title" id="expTitle">—</div></div>
-      <div class="exp-artist" id="expArtist"></div>
-    </div>
-    <div class="exp-row">
-      <span class="exp-time" id="expCur">0:00</span>
-      <div class="exp-prog" id="expProg"><div class="exp-clip"><div class="exp-fill" id="expFill"></div></div></div>
-      <span class="exp-time" id="expDur">0:00</span>
-    </div>
-    <!-- Порядок как в баре приложения: fav | repeat | prev | PLAY | next | shuffle. -->
-    <div class="exp-ctrl">
-      <button class="ebtn" id="btnFav">
-        <svg id="expFavIcon" width="21" height="21" viewBox="0 0 24 24"></svg>
-      </button>
-      <button class="ebtn" id="btnRepeat">
-        <svg id="expRepIcon" width="21" height="21" viewBox="0 0 24 24"></svg>
-        <span class="ebtn-badge num">1</span>
-      </button>
-      <button class="ebtn" id="btnPrevExp">
-        <svg width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7.34 9.353c-1.787 1.154-1.787 4.14 0 5.294l10.79 6.967c1.736 1.122 3.87-.338 3.87-2.647V5.033c0-2.31-2.134-3.769-3.87-2.648z"/><path stroke-linecap="round" d="M2 5v14"/></g></svg>
-      </button>
-      <button class="ebtn ebtn-play" id="btnPlayExp">
-        <svg id="ovPlayIconExp" width="26" height="26" viewBox="0 0 24 24"></svg>
-      </button>
-      <button class="ebtn" id="btnNextExp">
-        <svg width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16.66 9.353c1.787 1.154 1.787 4.14 0 5.294L5.87 21.614C4.135 22.737 2 21.277 2 18.968V5.033c0-2.31 2.134-3.769 3.87-2.648z"/><path stroke-linecap="round" d="M22 5v14"/></g></svg>
-      </button>
-      <button class="ebtn" id="btnShuffle">
-        <svg id="expShufIcon" width="21" height="21" viewBox="0 0 24 24"></svg>
-        <span class="ebtn-badge" id="expSmartBadge"></span>
-      </button>
-      <div class="exp-vol" id="expVol">
-        <button class="ebtn" id="btnVol">
-          <svg id="expVolIcon" width="22" height="22" viewBox="0 0 24 24"></svg>
-        </button>
-        <div class="volpop" id="volPop">
-          <div class="vol-track" id="volTrack">
-            <div class="vol-fill" id="volFill"></div>
-            <div class="vol-knob" id="volKnob"></div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -418,48 +327,15 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
 (function(){
   'use strict';
   var ti = null;
-  var st = { title:'', artist:'', artwork:'', source:null, playing:false, pos:0, dur:0,
-             shuffle:false, smartShuffle:false, repeat:0, fav:false, volume:80 };
+  var st = { title:'', artist:'', artwork:'', source:null, playing:false, pos:0, dur:0 };
   var pinned = false;
   var hideTimer = null;
   var duration = 4;
-  var ticker = null;
   var seekEnabled = false;   // перемотка по прогресс-бару (из настроек)
   var perfMode = false;      // режим оптимизации: без эквалайзера и бегущей строки
   var scrubbing = false;     // идёт ручной скраб — не снапаем позицию из пушей
-  var volDragging = false;   // тянут ползунок громкости — не снапаем громкость из пушей
 
   function $(id){ return document.getElementById(id); }
-
-  // ── i18n (standalone, как в picture-in-picture.html: локаль из localStorage) ──
-  var I18N = {
-    ru: { playing:'ИГРАЕТ', paused:'ПАУЗА' },
-    en: { playing:'PLAYING', paused:'PAUSED' }
-  };
-  var LOCALE = 'en';
-  function readLocale(){
-    try{ var l = localStorage.getItem('bloom_locale'); if (l === 'ru' || l === 'en') LOCALE = l; }catch(e){}
-  }
-  readLocale();
-  function tr(k){ return (I18N[LOCALE] && I18N[LOCALE][k]) || I18N.en[k] || k; }
-
-  // ── Иконки расширенного режима (Solar, как в трей-попапе) ──
-  var IC = {
-    heart: '<path fill="currentColor" d="m8.962 18.91l.464-.588zM12 5.5l-.54.52a.75.75 0 0 0 1.08 0zm3.038 13.41l.465.59zm-5.612-.588C7.91 17.127 6.253 15.96 4.938 14.48C3.65 13.028 2.75 11.335 2.75 9.137h-1.5c0 2.666 1.11 4.7 2.567 6.339c1.43 1.61 3.254 2.9 4.68 4.024zM2.75 9.137c0-2.15 1.215-3.954 2.874-4.713c1.612-.737 3.778-.541 5.836 1.597l1.08-1.04C10.1 2.444 7.264 2.025 5 3.06C2.786 4.073 1.25 6.425 1.25 9.137zM8.497 19.5c.513.404 1.063.834 1.62 1.16s1.193.59 1.883.59v-1.5c-.31 0-.674-.12-1.126-.385c-.453-.264-.922-.628-1.448-1.043zm7.006 0c1.426-1.125 3.25-2.413 4.68-4.024c1.457-1.64 2.567-3.673 2.567-6.339h-1.5c0 2.198-.9 3.891-2.188 5.343c-1.315 1.48-2.972 2.647-4.488 3.842zM22.75 9.137c0-2.712-1.535-5.064-3.75-6.077c-2.264-1.035-5.098-.616-7.54 1.92l1.08 1.04c2.058-2.137 4.224-2.333 5.836-1.596c1.659.759 2.874 2.562 2.874 4.713zm-8.176 9.185c-.526.415-.995.779-1.448 1.043s-.816.385-1.126.385v1.5c.69 0 1.326-.265 1.883-.59c.558-.326 1.107-.756 1.62-1.16z"/>',
-    heartOn: '<path fill="currentColor" d="M2 9.137C2 14 6.02 16.591 8.962 18.911C10 19.729 11 20.5 12 20.5s2-.77 3.038-1.59C17.981 16.592 22 14 22 9.138S16.5.825 12 5.501C7.5.825 2 4.274 2 9.137"/>',
-    shuffle: '<path fill="currentColor" d="M2 16.25a.75.75 0 0 0 0 1.5zm8.748-2.163l-.643-.386zm2.504-4.174l.643.386zM22 7l.53.53a.75.75 0 0 0 0-1.06zm-2.53 1.47a.75.75 0 0 0 1.06 1.06zm1.06-4a.75.75 0 1 0-1.06 1.06zm-5.31 2.92l-.369-.653zM2 17.75h3.603v-1.5H2zm9.39-3.277l2.505-4.174l-1.286-.772l-2.504 4.174zm7.007-6.723H22v-1.5h-3.603zm3.073-1.28l-2 2l1.06 1.06l2-2zm1.06 0l-2-2l-1.06 1.06l2 2zm-8.635 3.829c.434-.724.734-1.22 1.006-1.589c.263-.355.468-.543.689-.668l-.739-1.305c-.467.264-.82.627-1.155 1.08c-.326.44-.668 1.011-1.087 1.71zm4.502-4.049c-.815 0-1.48 0-2.025.052c-.562.055-1.054.17-1.521.435l.739 1.305c.22-.125.487-.204.927-.247c.456-.044 1.036-.045 1.88-.045zM5.603 17.75c.815 0 1.48 0 2.025-.052c.562-.055 1.054-.17 1.521-.435l-.739-1.305c-.22.125-.487.204-.927.247c-.456.044-1.036.045-1.88.045zm4.502-4.049c-.435.724-.734 1.22-1.006 1.589c-.263.355-.468.543-.689.668l.74 1.305c.466-.264.819-.627 1.154-1.08c.326-.44.668-1.011 1.087-1.71zM2 6.25a.75.75 0 0 0 0 1.5zM22 17l.53.53a.75.75 0 0 0 0-1.06zm-1.47-2.53a.75.75 0 1 0-1.06 1.06zm-1.06 4a.75.75 0 1 0 1.06 1.06zm-3.345-1.525l.144-.736zm-1.682-2.33a.75.75 0 1 0-1.286.77zm.025 1.391l.558-.501zm-6.593-8.95l.143-.737zm1.682 2.33a.75.75 0 0 0 1.286-.772zm-.025-1.393l-.558.502zM2 7.75h4.668v-1.5H2zm15.332 10H22v-1.5h-4.668zm5.198-1.28l-2-2l-1.06 1.06l2 2zm-1.06 0l-2 2l1.06 1.06l2-2zm-4.138-.22c-.645 0-.867-.003-1.063-.041l-.287 1.472c.372.072.765.069 1.35.069zm-4.175-.864c.3.502.5.84.754 1.122l1.115-1.003c-.134-.149-.25-.337-.583-.89zm3.112.823a2.25 2.25 0 0 1-1.243-.704l-1.115 1.003a3.75 3.75 0 0 0 2.071 1.173zM6.668 7.75c.645 0 .867.003 1.063.041l.287-1.472c-.372-.072-.765-.069-1.35-.069zm4.175.864c-.3-.502-.5-.84-.754-1.122L8.974 8.495c.134.149.25.337.583.89zm-3.112-.823c.48.094.916.34 1.243.704l1.115-1.003a3.75 3.75 0 0 0-2.071-1.173z"/>',
-    repeat: '<path fill="currentColor" d="M9.5 19.75a.75.75 0 0 0 0-1.5zM11 5v.75a.75.75 0 0 0 .53-1.28zM9.53 2.47a.75.75 0 0 0-1.06 1.06zM9.5 18.25H9v1.5h.5zM9 5.75h2v-1.5H9zm2.53-1.28l-2-2l-1.06 1.06l2 2zM1.25 12A7.75 7.75 0 0 0 9 19.75v-1.5A6.25 6.25 0 0 1 2.75 12zm1.5 0A6.25 6.25 0 0 1 9 5.75v-1.5A7.75 7.75 0 0 0 1.25 12zM13 19v-.75a.75.75 0 0 0-.53 1.28zm1.47 2.53a.75.75 0 1 0 1.06-1.06zm.03-17.28a.75.75 0 0 0 0 1.5zm.5 14h-2v1.5h2zm-2.53 1.28l2 2l1.06-1.06l-2-2zM14.5 5.75h.5v-1.5h-.5zM21.25 12A6.25 6.25 0 0 1 15 18.25v1.5A7.75 7.75 0 0 0 22.75 12zm1.5 0A7.75 7.75 0 0 0 15 4.25v1.5A6.25 6.25 0 0 1 21.25 12z"/>',
-    volLoud: '<g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.535 10.971c.073-1.208.11-1.813.424-2.394a3.2 3.2 0 0 1 1.38-1.3C3.94 7 4.627 7 6 7c.512 0 .768 0 1.016-.042a3 3 0 0 0 .712-.214c.23-.101.444-.242.871-.524l.22-.144C11.36 4.399 12.632 3.56 13.7 3.925c.205.07.403.17.58.295c.922.648.993 2.157 1.133 5.174A68 68 0 0 1 15.5 12c0 .532-.035 1.488-.087 2.605c-.14 3.018-.21 4.526-1.133 5.175a2.3 2.3 0 0 1-.58.295c-1.067.364-2.339-.474-4.882-2.151L8.6 17.78c-.427-.282-.64-.423-.871-.525a3 3 0 0 0-.712-.213C6.768 17 6.512 17 6 17c-1.374 0-2.06 0-2.66-.277a3.2 3.2 0 0 1-1.381-1.3c-.314-.582-.35-1.186-.424-2.395A17 17 0 0 1 1.5 12c0-.323.013-.671.035-1.029Z"/><path stroke-linecap="round" d="M20 6s1.5 1.8 1.5 6s-1.5 6-1.5 6m-2-9s.5.9.5 3s-.5 3-.5 3"/></g>',
-    volMuted: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" d="M16.659 6c-.14-.798-.37-1.315-.792-1.628a2.1 2.1 0 0 0-.538-.29c-.992-.357-2.172.465-4.533 2.11l-.204.14c-.397.277-.595.415-.809.515a2.7 2.7 0 0 1-.66.21c-.231.04-.469.04-.944.04c-1.276 0-1.914 0-2.47.272c-.509.249-1.017.754-1.283 1.275c-.291.57-.325 1.162-.394 2.348c-.02.35-.032.692-.032 1.008s.012.658.032 1.008c.069 1.186.103 1.778.394 2.348c.266.521.774 1.026 1.282 1.275c.557.272 1.195.272 2.47.272c.476 0 .714 0 .944.04q.343.062.661.21c.214.1.412.238.81.514l.203.142c2.36 1.644 3.542 2.466 4.533 2.109c.19-.069.374-.168.538-.29c.422-.313.652-.83.792-1.628M20 9l-6 6m0-6l6 6"/>',
-    stars: '<g fill="none" stroke="currentColor" stroke-width="1.5"><path d="m9.99 16.5l-.975.474c-1.98.548-2.971.822-3.505.245c-.534-.576-.258-1.62.295-3.71l.142-.54c.157-.595.236-.891.197-1.186c-.04-.294-.193-.553-.499-1.07l-.278-.47C4.29 8.422 3.752 7.512 4.11 6.787c.36-.724 1.379-.783 3.418-.9l.527-.03c.58-.034.869-.05 1.122-.185c.252-.135.439-.372.813-.848l.34-.432c1.316-1.673 1.974-2.509 2.73-2.38s1.11 1.137 1.817 3.154l.183.522c.201.573.302.86.497 1.07c.196.212.464.324 1.001.547l.489.204c1.89.786 2.835 1.18 2.942 1.983c.092.686-.477 1.283-1.64 2.29"/><path d="M15.252 10.689c-.987-1.18-1.48-1.77-2.048-1.68c-.567.091-.832.803-1.362 2.227l-.138.368c-.15.405-.226.607-.373.756c-.146.149-.348.228-.75.386l-.367.143c-1.417.555-2.126.833-2.207 1.4s.52 1.049 1.721 2.011l.31.25c.342.273.513.41.611.597c.1.187.115.404.146.837l.029.394c.11 1.523.166 2.285.683 2.545s1.154-.155 2.427-.983l.329-.215c.362-.235.543-.353.75-.387c.208-.033.42.022.841.132l.385.1c1.485.386 2.228.58 2.629.173s.193-1.144-.221-2.62l-.108-.38c-.117-.42-.176-.63-.147-.837c.03-.208.145-.39.374-.756l.21-.332c.807-1.285 1.21-1.927.94-2.438c-.269-.511-1.033-.553-2.562-.635l-.396-.022c-.434-.023-.652-.035-.841-.13c-.19-.095-.33-.263-.61-.599z"/></g>'
-  };
-
-  /** Секунды → m:ss (как в мини-плеере). */
-  function fmt(sec){
-    if (!isFinite(sec) || sec < 0) sec = 0;
-    var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
-    return m + ':' + (s < 10 ? '0' : '') + s;
-  }
 
   // target = метка окна, а не 'Any': слушатель с 'Any' принимает и адресные
   // emit_to() в ДРУГИЕ окна (см. tauri match_any_or_filter). Broadcast app.emit()
@@ -505,19 +381,6 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
   // Посчитать доминантный цвет обложки и окрасить плашку. CORS-tainted/ошибка →
   // откат к цвету темы.
   function applyCoverColor(){
-    // Расширенная карточка живёт в цветах темы: доминанта обложки перекрашивала бы
-    // её в грязные оттенки (карточка большая, фон занимает пол-экрана).
-    if (document.body.classList.contains('expanded')){
-      if (coverColors || lastArt !== null){
-        coverColors = null; lastArt = null;
-        var r0 = document.documentElement;
-        r0.style.removeProperty('--bg');
-        r0.style.removeProperty('--bg2');
-        r0.style.removeProperty('--accent');
-        applyTheme();
-      }
-      return;
-    }
     var src = st.artwork;
     if (src === lastArt) { applyComputed(); return; }
     lastArt = src;
@@ -584,8 +447,6 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     if (pe) pe.classList.toggle('seekable', seekEnabled);
     var bc = $('barCenter');
     if (bc) bc.classList.toggle('seekable', seekEnabled);
-    var ep = $('expProg');
-    if (ep) ep.classList.toggle('seekable', seekEnabled);
     document.documentElement.style.setProperty('--ov-op', Math.max(0, Math.min(100, op)) / 100);
     // Масштаб плашки. Окно Rust ресайзит синхронно по той же доле.
     $('island').style.zoom = Math.max(50, Math.min(160, size)) / 100;
@@ -593,12 +454,10 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     // Режим оптимизации + компактная плашка (прижатая к якорному краю).
     var compact = p.overlayMode === 'compact';
     var bar = p.overlayMode === 'bar';
-    var expanded = p.overlayMode === 'expanded';
     var body = document.body;
     body.classList.toggle('perf', perfMode);
     body.classList.toggle('compact', compact);
     body.classList.toggle('bar', bar);
-    body.classList.toggle('expanded', expanded);
     var horiz = (typeof p.overlayPos === 'string' ? p.overlayPos.charAt(1) : 'r') || 'r';
     body.classList.toggle('al', compact && horiz === 'l');
     body.classList.toggle('ac', compact && horiz === 'c');
@@ -607,12 +466,12 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     updateMarquee(true);
     // Смена режима может включить/выключить подкраску от обложки.
     applyCoverColor();
-    // …и меняет как раскладку полосы, так и надобность тикера таймингов
-    // (он нужен только расширенной карточке).
-    stopTicker();
+    // …и меняет раскладку полосы прогресса — взводим её заново.
     progDirty = true;
     if (islandShown()) armProgress();
-    startTicker();
+    // Масштаб/режим/якорь двигают саму плашку внутри окна — обновляем габарит
+    // для сторожа курсора (ResizeObserver ловит не всё: например смену полей).
+    if (ti) reportHit();
   }
 
   // Тема (акцент + фон блока) — из настроек главного окна (как у мини-плеера).
@@ -661,9 +520,36 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     var html = parts.map(function(a){
       return '<span class="tra-link" data-artist="' + esc(a) + '">' + esc(a) + '</span>';
     }).join(', ');
-    $('artist').innerHTML = html;
-    var ea = $('expArtist');
-    if (ea) ea.innerHTML = html;
+    // Бегунок .mq-in — обёртка для hover-marquee (см. artScroll ниже).
+    $('artist').innerHTML = '<span class="mq-in">' + html + '</span>';
+    // Курсор мог остаться на плашке (трек сменился сам) — тогда сразу катим
+    // новую строку, иначе она замерла бы до следующего захода.
+    var isl = $('island');
+    if (isl && isl.matches(':hover')) artScrollStart(); else artScrollStop();
+  }
+
+  // Прокрутка не влезшей строки артистов, пока курсор на плашке. Пересчитываем
+  // на каждом заходе, а не при рендере: ширина плашки меняется от ховера
+  // (раскрытие компакта) и масштаба окна.
+  var ART_DURATION = 5, ART_MIN_OVERFLOW = 2;
+  function artScrollStart(){
+    var clip = $('artist'), inner = clip && clip.firstElementChild;
+    if (!inner) return;
+    var overflow = clip.scrollWidth - clip.clientWidth;
+    if (overflow <= ART_MIN_OVERFLOW) return;
+    inner.style.display = 'inline-block';
+    inner.style.willChange = 'transform';
+    inner.style.setProperty('--tr-off', '-' + overflow + 'px');
+    inner.style.animation = 'ov-artscroll ' + ART_DURATION + 's linear infinite';
+  }
+  function artScrollStop(){
+    var clip = $('artist'), inner = clip && clip.firstElementChild;
+    if (!inner) return;
+    inner.style.animation = '';
+    inner.style.transform = 'translateX(0)';
+    inner.style.display = ''; // → inline, многоточие снова работает
+    inner.style.willChange = '';
+    inner.style.removeProperty('--tr-off');
   }
 
   // Бегущая строка как в приложении (MarqueeTitle): бесшовный loop — две копии
@@ -673,13 +559,11 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
   // и после догрузки шрифта/смены масштаба. Видимый DOM/анимацию пересобираем
   // только когда реально изменился результат (step) — иначе частые пуши позиции
   // во время игры рвали бы анимацию рестартом в 0%. `force` — для resize.
-  // Бегунков два (остров и расширенная карточка), у каждого свой кэш и свой
-  // скрытый замерщик; скрытая раскладка (display:none) даёт wrapW=0 → step=0,
-  // то есть её бегущая строка не крутится вхолостую.
-  var _mq = {};
-  function marqueeOne(key, wrap, el, force){
+  var _mq = { text:null, step:-1, measure:null };
+  function updateMarquee(force){
+    var wrap = $('titleWrap'), el = $('title');
     if (!wrap || !el) return;
-    var m = _mq[key] || (_mq[key] = { text:null, step:-1, measure:null });
+    var m = _mq;
     var text = st.title || '—';
     // Замер (scrollWidth/clientWidth) — принудительный layout, а звали нас на
     // каждом пуше состояния. Текст тот же и ширины не менялись (все случаи смены
@@ -713,10 +597,6 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
       wrap.classList.add('scrolling');
     }
   }
-  function updateMarquee(force){
-    marqueeOne('island', $('titleWrap'), $('title'), force);
-    marqueeOne('exp', $('expTitleWrap'), $('expTitle'), force);
-  }
 
   // Обложку пересобираем только при смене артворка: innerHTML с <img> на каждом
   // рендере заставлял вебвью пересоздавать и декодировать картинку.
@@ -731,73 +611,17 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
       _coverKey = key;
       var html = st.artwork
         ? '<img src="' + esc(st.artwork) + '" alt="">'
-        : '<svg width="22" height="22" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19a3 3 0 1 1-6 0a3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM9 19V8m12 9V6"/><path stroke-linecap="round" d="m15.735 3.755l-4 1.333c-1.32.44-1.98.66-2.357 1.184S9 7.492 9 8.882V12l12-4v-.45c0-2.533 0-3.8-.83-4.398c-.831-.599-2.032-.198-4.435.603Z"/></g></svg>';
+        : '<div class="cov-empty"><i></i></div>';
       $('cover').innerHTML = html;
       var bcov = $('barCover');
       if (bcov) bcov.innerHTML = html;
-      var ecov = $('expCover');
-      if (ecov) ecov.innerHTML = html;
     }
     document.body.classList.toggle('paused', !st.playing);
     setPlayIcon();
-    renderExpState();
     applyCoverColor();
     // Полосу трогаем, только если что-то реально сдвинулось: обычный пуш позиции
     // (раз в секунду) не должен перезапускать анимацию.
     if (progDirty) armProgress();
-    if (st.playing) startTicker(); else stopTicker();
-  }
-
-  /** Кнопки/иконки расширенной карточки: лейбл, сердце, шафл, повтор, громкость. */
-  function renderExpState(){
-    var lab = $('expLabel');
-    if (lab) lab.textContent = st.playing ? tr('playing') : tr('paused');
-    setFavIcon();
-    var sh = $('btnShuffle');
-    if (sh){
-      sh.classList.toggle('on', !!st.shuffle);
-      // Звёздочка «умной» перемешки — только при активном shuffle, как в баре.
-      sh.classList.toggle('smart', !!st.shuffle && !!st.smartShuffle);
-    }
-    var rp = $('btnRepeat');
-    if (rp){
-      rp.classList.toggle('on', st.repeat > 0);
-      rp.classList.toggle('one', st.repeat === 2);
-    }
-    setVolume(st.volume, false);
-  }
-
-  var _favIconKey = null;
-  function setFavIcon(){
-    if (st.fav === _favIconKey) return;
-    _favIconKey = st.fav;
-    var i = $('expFavIcon');
-    if (i) i.innerHTML = st.fav ? IC.heartOn : IC.heart;
-    var b = $('btnFav');
-    if (b) b.classList.toggle('on', !!st.fav);
-  }
-
-  // Громкость: иконка + заливка/ручка слайдера. send=true — отдать команду плееру.
-  var _volIconKey = null;
-  var _volShown = null;
-  function setVolume(v, send){
-    v = Math.max(0, Math.min(100, Math.round(v)));
-    st.volume = v;
-    // Тот же уровень — DOM не трогаем (renderExpState зовёт нас на каждом пуше).
-    if (v === _volShown && !send) return;
-    _volShown = v;
-    // Иконка зависит только от «немой/нет» — перерисовываем на переключении.
-    var muted = v === 0;
-    if (muted !== _volIconKey){
-      _volIconKey = muted;
-      var i = $('expVolIcon');
-      if (i) i.innerHTML = muted ? IC.volMuted : IC.volLoud;
-    }
-    var f = $('volFill');
-    if (f) f.style.height = v + '%';
-    var k = $('volKnob');
-    if (k) k.style.bottom = 'calc(' + v + '% - 7px)';
-    if (send){ try{ ti.invoke('miniplayer_cmd', { cmd: 'volume', value: v }); }catch(e){} }
   }
 
   /** Плашка сейчас видна на экране (CSS-класс show ставят reveal/hide). */
@@ -807,7 +631,7 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
   }
 
   // Иконки пересобираем только на смену состояния: innerHTML со свежим SVG на
-  // каждом пуше (раз в секунду, ×3 кнопки) — это парсинг и пересоздание узлов
+  // каждом пуше (раз в секунду, ×2 кнопки) — это парсинг и пересоздание узлов
   // ради того же самого рисунка.
   var _playIconKey = null;
   function setPlayIcon(){
@@ -820,8 +644,6 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     if (pi) pi.innerHTML = html;
     var pib = $('ovPlayIconBar');
     if (pib) pib.innerHTML = html;
-    var pie = $('ovPlayIconExp');
-    if (pie) pie.innerHTML = html;
   }
 
   // ── Прогресс трека ───────────────────────────────────────
@@ -844,7 +666,7 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
   var progDirty = true;
   var _fills = null;
   function fills(){
-    if (!_fills) _fills = [$('progFill'), $('progFillBar'), $('expFill')].filter(Boolean);
+    if (!_fills) _fills = [$('progFill'), $('progFillBar')].filter(Boolean);
     return _fills;
   }
   function armProgress(){
@@ -856,25 +678,17 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
       els[i].style.transition = 'none';
       els[i].style.transform = 'translateX(' + (pct * 100 - 100).toFixed(3) + '%)';
     }
-    paintTimes(pos);
     // Скрытой плашке и во время скраба анимация не нужна (первая — впустую жгла бы
     // кадры, второй — тянется за курсором вручную).
     var left = st.dur - pos;
     if (!st.playing || scrubbing || left <= 0.05 || !islandShown()) return;
-    // Один принудительный reflow на все три заливки — чтобы новая transition
+    // Один принудительный reflow на обе заливки — чтобы новая transition
     // стартовала от только что выставленной точки, а не от старой.
     void els[0].offsetWidth;
     for (var j = 0; j < els.length; j++){
       els[j].style.transition = 'transform ' + left.toFixed(2) + 's linear';
       els[j].style.transform = 'translateX(0%)';
     }
-  }
-  /** Тайминги расширенной карточки (в остальных режимах — в display:none). */
-  function paintTimes(pos){
-    var tc = $('expCur');
-    if (tc) tc.textContent = fmt(pos === undefined ? curPos() : pos);
-    var td = $('expDur');
-    if (td) td.textContent = fmt(st.dur);
   }
 
   // Команда плееру (играть/пауза/пред/след) — через тот же мост, что мини-плеер.
@@ -885,24 +699,43 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
   function seek(pos){
     try{ ti.invoke('miniplayer_cmd', { cmd: 'seek', value: pos }); }catch(e){}
   }
-  // Переключить click-through окна (Rust): плашка видна → ловим мышь.
+  // Плашка показана/скрыта (Rust): пока показана, там крутится сторож курсора.
   function setInteractive(on){
     try{ ti.invoke('overlay_set_interactive', { interactive: on }); }catch(e){}
   }
-  // Единственное, что реально надо тикать, — подписи таймингов расширенной
-  // карточки, и им хватает 1 Гц. В остальных режимах таймер не заводим вовсе:
-  // полосу везде везёт CSS-анимация.
-  function startTicker(){
-    if (ticker) return;
-    if (!document.body.classList.contains('expanded')) return;
-    if (!st.playing || !islandShown()) return;
-    ticker = setInterval(function(){
-      if (scrubbing || !st.playing) return;
-      paintTimes();
-    }, 1000);
+  // Габарит видимой плашки внутри окна → Rust: по нему сторож решает, ловить
+  // мышь или пропускать клики насквозь. Окно всегда больше плашки (поле под
+  // тень, а в компакте — ещё и нераскрытая ширина), поэтому габарит и нужен.
+  // Шлём сразу в физических пикселях (× DPR) — Rust работает в них.
+  var hitRaf = 0;
+  function reportHit(){
+    if (hitRaf) return;
+    hitRaf = requestAnimationFrame(function(){
+      hitRaf = 0;
+      var r = $('island').getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var d = window.devicePixelRatio || 1;
+      try{
+        ti.invoke('overlay_set_hit_rect',
+          { x: r.left * d, y: r.top * d, w: r.width * d, h: r.height * d });
+      }catch(e){}
+    });
   }
-  function stopTicker(){ if (ticker){ clearInterval(ticker); ticker = null; } }
-
+  // Курсор зашёл на плашку / ушёл с неё. Зовётся и DOM-событиями, и сторожем
+  // курсора (`bloom-ov-hit`): при уходе окно становится click-through, и штатный
+  // mouseleave до вебвью может уже не дойти — авто-скрытие бы не перезапустилось.
+  function onPillEnter(){
+    if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
+    // Компакт: после раскрытия (ширина обёртки выросла) пересчитываем бегущую строку.
+    if (document.body.classList.contains('compact')){
+      setTimeout(function(){ updateMarquee(true); }, 280);
+    }
+  }
+  function onPillLeave(){
+    if (pinned || !islandShown()) return;
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = setTimeout(hide, Math.max(1, duration) * 1000);
+  }
   function update(s){
     if (!s) return;
     if (s.source   !== undefined) st.source   = s.source;
@@ -915,13 +748,6 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
       setPos(curPos());
       st.playing = s.playing;
     }
-    if (s.shuffle  !== undefined) st.shuffle  = s.shuffle;
-    if (s.smart_shuffle !== undefined) st.smartShuffle = s.smart_shuffle;
-    if (s.repeat   !== undefined) st.repeat   = s.repeat;
-    if (s.fav      !== undefined) st.fav      = s.fav;
-    // Громкость не снапаем во время перетаскивания ползунка — иначе эхо-пуш
-    // отбрасывал бы ручку назад.
-    if (s.volume   !== undefined && !volDragging) st.volume = s.volume;
     // Длительность — до позиции: от неё зависит и кламп `curPos`, и доля заливки.
     if (s.duration !== undefined && s.duration !== st.dur){ st.dur = s.duration; progDirty = true; }
     // Снап позиции при заметном расхождении (seek/смена трека); мелкий дрейф
@@ -930,7 +756,7 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     if (s.position !== undefined && !scrubbing && Math.abs(s.position - curPos()) > 1.2) setPos(s.position);
     // Плашка спрятана — состояние скопили, DOM не трогаем (reveal отрендерит).
     // Rust и так не пушит скрытой плашке, это страховка на гонки показа/скрытия.
-    if (!islandShown()){ stopTicker(); return; }
+    if (!islandShown()) return;
     render();
   }
 
@@ -948,6 +774,10 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     // Полосу взводим заново: пока плашка была скрыта, её анимация стояла.
     progDirty = true;
     render();
+    // Стартуем «мимо плашки»: перехват мыши включит сторож, когда курсор реально
+    // окажется над ней. В режиме размещения окно ловит мышь целиком.
+    if (!document.body.classList.contains('placing')) document.body.classList.add('nohit');
+    reportHit();
     setInteractive(true);
     // Закрепляем только по явному запросу (хоткей). Авто-показ при смене трека
     // (asPinned=false) НЕ снимает уже стоящее закрепление.
@@ -959,13 +789,9 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
   function hide(){
     if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
     $('island').classList.remove('show');
-    var ev = $('expVol');
-    if (ev) ev.classList.remove('open');
     setInteractive(false);
     pinned = false;
-    // Спрятанной плашке тикер не нужен — прогресс дорисуем при следующем показе.
-    stopTicker();
-    // И останавливаем CSS-анимацию полосы: невидимая, она всё равно жгла бы кадры.
+    // Останавливаем CSS-анимацию полосы: невидимая, она всё равно жгла бы кадры.
     // Позиция при этом не теряется — она считается по часам (curPos).
     armProgress();
   }
@@ -974,95 +800,24 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     ti = window.__TAURI_INTERNALS__;
     // Отключаем браузерное контекстное меню вебвью (как в miniplayer/tray).
     window.addEventListener('contextmenu', function(e){ e.preventDefault(); }, false);
-    document.documentElement.lang = LOCALE;
     applyTheme();
     applyPrefs();
 
     // Кнопки управления.
     $('btnPrev').addEventListener('click', function(){ cmd('prev'); });
     $('btnNext').addEventListener('click', function(){ cmd('next'); });
-    // Оптимистично переключаем иконку/тикер, команду шлём в плеер.
+    // Оптимистично переключаем иконку, команду шлём в плеер.
     function togglePlay(){
       setPos(curPos());          // якорь до смены playing
       st.playing = !st.playing;
       document.body.classList.toggle('paused', !st.playing);
       setPlayIcon();
-      var lab = $('expLabel');
-      if (lab) lab.textContent = st.playing ? tr('playing') : tr('paused');
       armProgress();
-      if (st.playing) startTicker(); else stopTicker();
       cmd('playpause');
     }
     $('btnPlay').addEventListener('click', togglePlay);
     var btnPlayBar = $('btnPlayBar');
     if (btnPlayBar) btnPlayBar.addEventListener('click', togglePlay);
-
-    // ── Расширенная карточка ─────────────────────────────
-    $('expShufIcon').innerHTML = IC.shuffle;
-    $('expRepIcon').innerHTML = IC.repeat;
-    $('expSmartBadge').innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24">' + IC.stars + '</svg>';
-    $('btnPrevExp').addEventListener('click', function(){ cmd('prev'); });
-    $('btnNextExp').addEventListener('click', function(){ cmd('next'); });
-    $('btnPlayExp').addEventListener('click', togglePlay);
-    // Сердце/шафл/повтор — оптимистичный отклик, состояние подтвердит пуш плеера.
-    $('btnFav').addEventListener('click', function(){
-      st.fav = !st.fav; setFavIcon(); cmd('fav');
-    });
-    $('btnShuffle').addEventListener('click', function(){
-      st.shuffle = !st.shuffle;
-      // Выключили перемешку — гасим и звёздочку; вернётся ли она при следующем
-      // включении, решит плеер (пуш состояния).
-      if (!st.shuffle) st.smartShuffle = false;
-      $('btnShuffle').classList.toggle('on', st.shuffle);
-      $('btnShuffle').classList.toggle('smart', st.shuffle && st.smartShuffle);
-      cmd('shuffle');
-    });
-    $('btnRepeat').addEventListener('click', function(){
-      st.repeat = (st.repeat + 1) % 3;
-      $('btnRepeat').classList.toggle('on', st.repeat > 0);
-      $('btnRepeat').classList.toggle('one', st.repeat === 2);
-      cmd('repeat');
-    });
-
-    // Громкость: клик по кнопке раскрывает вертикальный слайдер (как в плеере).
-    var expVol = $('expVol');
-    $('btnVol').addEventListener('click', function(e){
-      e.stopPropagation();
-      expVol.classList.toggle('open');
-    });
-    // Клик мимо поп-апа — закрыть.
-    document.addEventListener('pointerdown', function(e){
-      if (!expVol.classList.contains('open')) return;
-      if (expVol.contains(e.target)) return;
-      expVol.classList.remove('open');
-    });
-    (function(){
-      var track = $('volTrack');
-      function volFromY(e){
-        var r = track.getBoundingClientRect();
-        return (1 - (e.clientY - r.top) / r.height) * 100;
-      }
-      track.addEventListener('pointerdown', function(e){
-        volDragging = true;
-        try{ track.setPointerCapture(e.pointerId); }catch(_){}
-        setVolume(volFromY(e), true); e.preventDefault();
-      });
-      track.addEventListener('pointermove', function(e){
-        if (volDragging) setVolume(volFromY(e), true);
-      });
-      function endVol(e){
-        if (!volDragging) return;
-        volDragging = false;
-        try{ track.releasePointerCapture(e.pointerId); }catch(_){}
-      }
-      track.addEventListener('pointerup', endVol);
-      track.addEventListener('pointercancel', endVol);
-      // Колесо над кнопкой/слайдером — громкость ±2.
-      expVol.addEventListener('wheel', function(e){
-        e.preventDefault();
-        setVolume(st.volume + (e.deltaY < 0 ? 2 : -2), true);
-      }, { passive:false });
-    })();
 
     // Прогресс-бар: перемотка кликом/скрабом (если включена в настройках).
     // Логика как в мини-плеере: визуал ведём за курсором, аудио сикаем на ходу
@@ -1113,37 +868,44 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     }
     attachSeek($('prog'));
     attachSeek($('barCenter'));
-    attachSeek($('expProg'));
 
     // Клик по имени артиста → страница артиста в главном окне (как в мини-плеере).
-    function onArtistClick(e){
+    $('artist').addEventListener('click', function(e){
       var link = e.target.closest && e.target.closest('.tra-link');
       if (!link) return;
       var name = link.getAttribute('data-artist');
       if (!name) return;
       try{ ti.invoke('tray_open_artist', { artist: name }); }catch(err){}
-    }
-    $('artist').addEventListener('click', onArtistClick);
-    $('expArtist').addEventListener('click', onArtistClick);
+    });
 
     // Пересчёт бегущей строки при смене размера окна (меняется масштаб оверлея).
-    window.addEventListener('resize', function(){ updateMarquee(true); });
+    window.addEventListener('resize', function(){ updateMarquee(true); reportHit(); });
 
     // Наведение на плашку держит её открытой (как уведомление); увод — перезапуск
     // авто-скрытия (только если не закреплена).
     var island = $('island');
+    island.addEventListener('mouseenter', onPillEnter);
+    island.addEventListener('mouseleave', onPillLeave);
+
+    // Прокрутка артистов — по ховеру всей плашки (как подписи карточек в
+    // приложении). Старт с задержкой: в компакте ховер СНАЧАЛА раскрывает
+    // плашку, и замер до конца анимации дал бы переполнение от узкой ширины,
+    // т.е. строку увезло бы дальше, чем нужно.
+    var artTimer = 0;
     island.addEventListener('mouseenter', function(){
-      if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
-      // Компакт: после раскрытия (ширина обёртки выросла) пересчитываем бегущую строку.
-      if (document.body.classList.contains('compact')){
-        setTimeout(function(){ updateMarquee(true); }, 280);
-      }
+      clearTimeout(artTimer);
+      artTimer = setTimeout(artScrollStart, 260);
     });
     island.addEventListener('mouseleave', function(){
-      if (pinned) return;
-      if (hideTimer) clearTimeout(hideTimer);
-      hideTimer = setTimeout(hide, Math.max(1, duration) * 1000);
+      clearTimeout(artTimer);
+      artScrollStop();
     });
+
+    // Габарит плашки меняется от ховера (раскрытие компакта), режима и масштаба —
+    // каждый раз пересылаем его сторожу курсора. ResizeObserver ловит размер,
+    // transitionend — конец выезда (там ещё живёт transform: scale).
+    try{ new ResizeObserver(reportHit).observe(island); }catch(_){}
+    island.addEventListener('transitionend', reportHit);
 
     // Режим ручного размещения: вся плашка — drag-ручка. OS-перетаскивание
     // (start_dragging) для этого окна не работает — оно no-activate (focus:false),
@@ -1174,15 +936,20 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
     })();
 
     listenEvent('bloom-mp-state', function(p){ update(p); });
-    // Громкость поменяли в другом окне — двигаем ползунок (кроме своего же drag'а).
-    listenEvent('bloom-mp-volume', function(v){
-      if (typeof v === 'number' && !volDragging) setVolume(v, false);
+    // Сторож курсора: окно только что стало ловить мышь (курсор над плашкой) или
+    // снова пропускает клики насквозь.
+    listenEvent('bloom-ov-hit', function(over){
+      if (document.body.classList.contains('placing')) return;
+      document.body.classList.toggle('nohit', !over);
+      if (over) onPillEnter(); else onPillLeave();
     });
     listenEvent('bloom-ov-place', function(p){
       var on = !!(p && p.on);
       document.body.classList.toggle('placing', on);
-      if (on) reveal(true);   // показать закреплённой, без авто-скрытия
-      else hide();
+      if (on){
+        document.body.classList.remove('nohit');  // окно ловит мышь целиком
+        reveal(true);         // показать закреплённой, без авто-скрытия
+      } else hide();
     });
     // Живые координаты (доли → %) во время перетаскивания.
     listenEvent('bloom-ov-placed', function(p){
@@ -1209,12 +976,6 @@ body.placing .exp-ctrl,body.placing .exp-prog,body.placing .exp-artist{pointer-e
       } else if (e.key === 'bloom_settings'){
         applyTheme();
         applyComputed(); // цвет обложки приоритетнее темы, если посчитан
-      } else if (e.key === 'bloom_locale'){
-        // Окно не перезагружается — язык лейбла «Играет» подхватываем на лету.
-        readLocale();
-        document.documentElement.lang = LOCALE;
-        var lab = $('expLabel');
-        if (lab) lab.textContent = st.playing ? tr('playing') : tr('paused');
       }
     });
 

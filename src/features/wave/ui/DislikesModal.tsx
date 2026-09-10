@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLibStore } from '@features/library/model/store'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
+import { EmptyCover } from '@shared/ui'
 import waveApi from '@/wave'
 import { useDislikesStore } from '../model/dislikesStore'
 
@@ -15,18 +16,26 @@ interface DislikedItem {
 }
 
 /**
- * Модалка «Дизлайки в волне» (#dislikesModalOverlay / openDislikesModal).
- * Объединяет дизлайки библиотеки (t.disliked) и гостевых SC-треков
- * (стор dislikes). Удаление дизлайка построчно через Wave.feedback(undislike).
+ * «Дизлайки в волне» — боковая шторка на общем каркасе `.spanel` (modals.css),
+ * тот же, что у «Достижений» и редактора тегов: затемнение + панель, выезжающая
+ * справа (влево — при настройке `drawerSide`). Шапки-хрома нет: ни крестика, ни
+ * полосы — заголовок со счётчиком это обычный контент тела, а закрывают шторку
+ * кликом по фону или Esc.
  *
- * Открытие/закрытие — модальная конвенция `.open` (см. [[project-modal-style]]).
+ * Объединяет дизлайки библиотеки (t.disliked) и гостевых SC-треков (стор
+ * dislikes). Удаление дизлайка построчно через Wave.feedback(undislike).
  */
+
+/** Длительность slide-out (.spanel transform .42s) перед демонтажем. */
+const ANIM_MS = 440
+
 export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const t = useT()
   const scEntries = useDislikesStore((s) => s.entries)
   const tracks = useLibStore((s) => s.tracks)
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
+  const closeTimer = useRef<number | null>(null)
 
   const items = useMemo<DislikedItem[]>(() => {
     const out: DislikedItem[] = []
@@ -43,13 +52,28 @@ export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () =>
     return out
   }, [tracks, scEntries])
 
-  // Enter-анимация `.open` без «дёрганья» появления (см. runEnterAnimation).
+  // open/close: enter-анимация `.open` + отложенный демонтаж под slide-out
+  // (как в ProfilePanelShell — панель уезжает transform'ом, не opacity).
   useEffect(() => {
     if (open) {
+      if (closeTimer.current !== null) {
+        window.clearTimeout(closeTimer.current)
+        closeTimer.current = null
+      }
       setMounted(true)
       return runEnterAnimation(setOpening)
     }
     setOpening(false)
+    closeTimer.current = window.setTimeout(() => {
+      setMounted(false)
+      closeTimer.current = null
+    }, ANIM_MS)
+    return () => {
+      if (closeTimer.current !== null) {
+        window.clearTimeout(closeTimer.current)
+        closeTimer.current = null
+      }
+    }
   }, [open])
 
   useEffect(() => {
@@ -67,50 +91,43 @@ export const DislikesModal = ({ open, onClose }: { open: boolean; onClose: () =>
 
   return createPortal(
     <div
-      id="dislikesModalOverlay"
-      className={opening ? 'open' : ''}
+      className={`spanel-backdrop${opening ? ' open' : ''}`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
-      onTransitionEnd={(e) => {
-        if (!open && e.target === e.currentTarget) setMounted(false)
-      }}
     >
-      <div className="stats-modal">
-        <div className="stats-modal-head">
-          <div className="stats-modal-title">
-            <Ico name="dislike" width={14} height={14} style={{ opacity: 0.7 }} />
-            {t('wave.dislikesTitle')}
+      <div className="spanel">
+        <div className="ppnl-body">
+          {/* Шапка тела: название раздела слева, счётчик — плашкой справа
+              (та же пара, что у «Достижений»). */}
+          <div className="dlk-head">
+            <span className="dlk-head-title">{t('wave.dislikesTitle')}</span>
+            {items.length > 0 && <span className="ppnl-badge">{items.length}</span>}
           </div>
-          <button className="stats-modal-close" onClick={onClose} aria-label={t('common.close')}>
-            <Ico name="close" width={13} height={13} />
-          </button>
-        </div>
-        <div className="stats-modal-body" id="dislikesModalBody">
-          {items.length === 0 ? (
-            <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text2)', fontSize: 13, opacity: 0.6 }}>
-              {t('wave.noDislikes')}
-            </div>
-          ) : (
-            items.map((t) => (
-              <div className="dlk-row" data-id={t.id} key={t.id}>
-                <div className="dlk-cov">
-                  {t.cover ? (
-                    <img src={t.cover} alt="" />
-                  ) : (
-                    <Ico name="note" width={15} height={15} style={{ opacity: 0.35 }} />
-                  )}
+          <div className="dlk-list">
+            {items.length === 0 ? (
+              <div className="dlk-empty">{t('wave.noDislikes')}</div>
+            ) : (
+              items.map((t) => (
+                <div className="dlk-row" data-id={t.id} key={t.id}>
+                  <div className="dlk-cov">
+                    {t.cover ? (
+                      <img src={t.cover} alt="" />
+                    ) : (
+                      <EmptyCover />
+                    )}
+                  </div>
+                  <div className="dlk-body">
+                    <div className="dlk-name">{t.name}</div>
+                    <div className="dlk-artist">{t.artist}</div>
+                  </div>
+                  <button className="dlk-rm" onClick={() => undislike(t.id)}>
+                    <Ico name="close" width={12} height={12} />
+                  </button>
                 </div>
-                <div className="dlk-body">
-                  <div className="dlk-name">{t.name}</div>
-                  <div className="dlk-artist">{t.artist}</div>
-                </div>
-                <button className="dlk-rm" onClick={() => undislike(t.id)}>
-                  <Ico name="close" width={12} height={12} />
-                </button>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>,

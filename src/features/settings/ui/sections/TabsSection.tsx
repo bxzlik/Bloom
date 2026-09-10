@@ -1,31 +1,23 @@
-import { useState } from 'react'
+import { CardReset, RowReset } from '../controls/SectionReset'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
+import type { TabsTab } from '../subTabs'
 
 /**
  * Раздел «Вкладки» (`#ssec-tabs`). Всё, что связано с сайдбаром и панелью окна:
  * расположение/режим сайдбара, разделители, авто-скрытие, навигационные кнопки и
  * индикатор активной вкладки; набор элементов тайтлбара и его авто-скрытие.
  *
- * Две группы разделены полосой вкладок (`.s-ptabs`) — как в разделе «Страницы»,
+ * Две группы разделены подвкладками (полоса — в шапке панели, см. subTabs.ts),
  * а не заголовками-категориями: «Сайдбар» и «Тайтлбар».
  *
  * Перенесено из раздела «Интерфейс». i18n-ключи карточек остались прежними
  * (`settings.interface.*`); новые ключи — только метка вкладки и названия
  * групп (`settings.tabs.*`).
  */
-type TabsTab = 'sidebar' | 'titlebar'
-
-const TABS: { id: TabsTab; labelKey: TranslationKey; icon: IconName }[] = [
-  { id: 'sidebar', labelKey: 'settings.tabs.cat.sidebar', icon: 'sidebar' },
-  { id: 'titlebar', labelKey: 'settings.tabs.cat.titlebar', icon: 'windowFrame' },
-]
-
-export const TabsSection = () => {
+export const TabsSection = ({ tab }: { tab: TabsTab }) => {
   const t = useT()
-  const p = useUiPrefsStore()
-  const [tab, setTab] = useState<TabsTab>('sidebar')
 
   return (
     <div className="s-section active" id="ssec-tabs">
@@ -34,24 +26,6 @@ export const TabsSection = () => {
           <Ico name="windowFrame" width={15} height={15} />{' '}
           {t('settings.tabs.title')}
         </div>
-        <button className="s-section-reset" onClick={() => p.reset()}>
-          <Ico name="refresh" width={10} height={10} />{' '}
-          {t('common.reset')}
-        </button>
-      </div>
-
-      {/* Переключатель групп — полоса вкладок над карточками раздела. */}
-      <div className="s-ptabs">
-        {TABS.map((tb) => (
-          <button
-            key={tb.id}
-            className={`s-ptab${tab === tb.id ? ' active' : ''}`}
-            onClick={() => setTab(tb.id)}
-          >
-            <Ico name={tb.icon} width={14} height={14} />
-            {t(tb.labelKey)}
-          </button>
-        ))}
       </div>
 
       {tab === 'sidebar' ? <SidebarCards /> : <TitlebarCards />}
@@ -67,7 +41,10 @@ const SidebarCards = () => {
   return (
     <>
       <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.interface.sidebarPos.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.sidebarPos.title')}
+          <CardReset onReset={() => p.resetKeys('sidebarPos', 'sidebarCompact', 'sidebarFloating', 'sidebarPlain')} />
+        </div>
         <div className="sc-desc">{t('settings.interface.sidebarPos.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.sidebarPos === 'left'} onClick={() => p.set('sidebarPos', 'left')}>
@@ -84,23 +61,32 @@ const SidebarCards = () => {
           </OptBtn>
         </div>
         <div className="s-opt-row" style={{ marginTop: 8 }}>
-          <OptBtn active={!p.sidebarCompact && !p.sidebarFloating} onClick={() => { p.set('sidebarFloating', false); p.set('sidebarCompact', false) }}>
+          <OptBtn active={!p.sidebarCompact && !p.sidebarFloating && !p.sidebarPlain} onClick={() => setSbMode(p, null)}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="5" height="18" rx="1" /><rect x="4" y="7" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /><rect x="4" y="11" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /><rect x="4" y="15" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /></svg>
             {t('settings.interface.sidebar.normal')}
           </OptBtn>
-          <OptBtn active={p.sidebarCompact && !p.sidebarFloating} onClick={() => { p.set('sidebarFloating', false); p.set('sidebarCompact', true) }}>
+          <OptBtn active={p.sidebarCompact && !p.sidebarFloating} onClick={() => setSbMode(p, 'sidebarCompact')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="5" height="18" rx="1" /><rect x="4" y="6" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /><rect x="4" y="10" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /><rect x="4" y="14" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /></svg>
             {t('settings.interface.sidebar.compact')}
           </OptBtn>
-          <OptBtn active={p.sidebarFloating} onClick={() => { p.set('sidebarCompact', false); p.set('sidebarFloating', true) }}>
+          <OptBtn active={p.sidebarFloating} onClick={() => setSbMode(p, 'sidebarFloating')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="4" y="6" width="4" height="12" rx="2" /><rect x="11" y="3" width="10" height="18" rx="1" /><circle cx="6" cy="9" r=".6" fill="currentColor" stroke="none" /><circle cx="6" cy="12" r=".6" fill="currentColor" stroke="none" /><circle cx="6" cy="15" r=".6" fill="currentColor" stroke="none" /></svg>
             {t('settings.interface.sidebar.floating')}
+          </OptBtn>
+          {/* «Полный» — та же картинка, что у обычного, но БЕЗ рамки слева: ровно
+              то, что режим и делает (сайдбар без бордера, сливается с фоном). */}
+          <OptBtn active={p.sidebarPlain && !p.sidebarFloating && !p.sidebarCompact} onClick={() => setSbMode(p, 'sidebarPlain')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="11" y="3" width="10" height="18" rx="1" /><rect x="4" y="7" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /><rect x="4" y="11" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /><rect x="4" y="15" width="3" height="2" rx=".5" fill="currentColor" stroke="none" /></svg>
+            {t('settings.interface.sidebar.plain')}
           </OptBtn>
         </div>
       </div>
 
       <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.interface.sidebarView.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.sidebarView.title')}
+          <CardReset onReset={() => p.resetKeys('sidebarView')} />
+        </div>
         <div className="sc-desc">{t('settings.interface.sidebarView.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.sidebarView === 'icons'} onClick={() => p.set('sidebarView', 'icons')}>
@@ -119,31 +105,53 @@ const SidebarCards = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.interface.sidebar.autohide.title')}</div>
+            <div className="sl2">
+              {t('settings.interface.sidebar.autohide.title')}
+              <RowReset onReset={() => p.resetKeys('sidebarAutohide')} />
+            </div>
             <div className="ssub">{t('settings.interface.sidebar.autohide.sub')}</div>
           </div>
           <Toggle checked={p.sidebarAutohide} onChange={(v) => p.set('sidebarAutohide', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.interface.sidebar.lock.title')}</div>
+            <div className="sl2">
+              {t('settings.interface.sidebar.lock.title')}
+              <RowReset onReset={() => p.resetKeys('sbResizeLock')} />
+            </div>
             <div className="ssub">{t('settings.interface.sidebar.lock.sub')}</div>
           </div>
           <Toggle checked={p.sbResizeLock} onChange={(v) => p.set('sbResizeLock', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.interface.sidebar.sep.title')}</div>
+            <div className="sl2">
+              {t('settings.interface.sidebar.sep.title')}
+              <RowReset onReset={() => p.resetKeys('sbSep')} />
+            </div>
             <div className="ssub">{t('settings.interface.sidebar.sep.sub')}</div>
           </div>
           <Toggle checked={p.sbSep} onChange={(v) => p.set('sbSep', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.interface.nav.float.title')}</div>
+            <div className="sl2">
+              {t('settings.interface.nav.float.title')}
+              <RowReset onReset={() => p.resetKeys('navFloatBtn')} />
+            </div>
             <div className="ssub">{t('settings.interface.nav.float.sub')}</div>
           </div>
           <Toggle checked={p.navFloatBtn} onChange={(v) => p.set('navFloatBtn', v)} />
+        </div>
+        <div className="sr">
+          <div>
+            <div className="sl2">
+              {t('settings.interface.nav.homeLogo.title')}
+              <RowReset onReset={() => p.resetKeys('navHomeLogo')} />
+            </div>
+            <div className="ssub">{t('settings.interface.nav.homeLogo.sub')}</div>
+          </div>
+          <Toggle checked={p.navHomeLogo} onChange={(v) => p.set('navHomeLogo', v)} />
         </div>
       </div>
 
@@ -159,9 +167,12 @@ const TitlebarCards = () => {
   return (
     <>
       <div className="sc">
-        <div className="sc-title">{t('settings.interface.titlebar.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.titlebar.title')}
+          <CardReset onReset={() => p.resetKeys('titlebarLabel', 'tbMin', 'tbMax', 'tbPin', 'tbBell', 'tbClose', 'tbLogo', 'tbVersion')} />
+        </div>
         <div className="sc-desc">{t('settings.interface.titlebar.desc')}</div>
-        <div className="tb-chip-grid">
+        <div className="s-chip-grid">
           {TITLEBAR_ITEMS.map((it) => (
             <TbChip
               key={it.key}
@@ -177,14 +188,20 @@ const TitlebarCards = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.interface.titlebar.autohide.title')}</div>
+            <div className="sl2">
+              {t('settings.interface.titlebar.autohide.title')}
+              <RowReset onReset={() => p.resetKeys('titlebarAutohide')} />
+            </div>
             <div className="ssub">{t('settings.interface.titlebar.autohide.sub')}</div>
           </div>
           <Toggle checked={p.titlebarAutohide} onChange={(v) => p.set('titlebarAutohide', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.interface.titlebar.bg.title')}</div>
+            <div className="sl2">
+              {t('settings.interface.titlebar.bg.title')}
+              <RowReset onReset={() => p.resetKeys('titlebarBg')} />
+            </div>
             <div className="ssub">{t('settings.interface.titlebar.bg.sub')}</div>
           </div>
           <Toggle checked={p.titlebarBg} onChange={(v) => p.set('titlebarBg', v)} />
@@ -192,6 +209,17 @@ const TitlebarCards = () => {
       </div>
     </>
   )
+}
+
+/**
+ * Режимы сайдбара — один ряд взаимоисключимых кнопок, но в сторе это три
+ * независимых булевых флага. Хелпер ставит выбранный и гасит остальные
+ * (`null` — «Обычный», когда не поднят ни один).
+ */
+type SbModeKey = 'sidebarCompact' | 'sidebarFloating' | 'sidebarPlain'
+const SB_MODES: SbModeKey[] = ['sidebarCompact', 'sidebarFloating', 'sidebarPlain']
+const setSbMode = (p: { set: (key: SbModeKey, value: boolean) => void }, mode: SbModeKey | null): void => {
+  for (const k of SB_MODES) p.set(k, k === mode)
 }
 
 const OptBtn = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
@@ -222,9 +250,10 @@ const TITLEBAR_ITEMS: { key: TbKey; labelKey: TranslationKey; icon: IconName }[]
   { key: 'tbVersion', labelKey: 'settings.interface.titlebar.item.version', icon: 'code' },
 ]
 
+/** Чип-переключатель элемента панели (общий вид `.s-chip`, см. settings.css). */
 const TbChip = ({ active, icon, label, onClick }: { active: boolean; icon: IconName; label: string; onClick: () => void }) => (
-  <button className={`tb-chip${active ? ' active' : ''}`} onClick={onClick} aria-pressed={active}>
-    <span className="tb-chip-ico"><Ico name={icon} width={15} height={15} /></span>
-    <span className="tb-chip-lbl">{label}</span>
+  <button className={`s-chip${active ? ' active' : ''}`} onClick={onClick} aria-pressed={active}>
+    <span className="s-chip-ico"><Ico name={icon} width={15} height={15} /></span>
+    <span className="s-chip-lbl">{label}</span>
   </button>
 )

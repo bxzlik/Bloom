@@ -76,9 +76,9 @@ export function pickPersonalSeeds(): string[] {
   const rot = getRotation();
   const seeds = new Set<string>();
 
-  // 1) Топ по агрегату прослушиваний — берём 2 трека со сдвигом rot.
+  // 1) Топ по прослушиваниям — берём 2 трека со сдвигом rot.
   const byPlays = [...lib]
-    .map(t => ({ t, plays: (t.playCount ?? 0) + playCountAll(t.id) }))
+    .map(t => ({ t, plays: playCountAll(t.id) }))
     .filter(x => x.plays > 0)
     .sort((a, b) => b.plays - a.plays);
   if (byPlays.length) {
@@ -102,7 +102,7 @@ export function pickPersonalSeeds(): string[] {
   // 3) Случайный из топ-жанров (на каждом запуске — тоже разный).
   const genreScore = new Map<string, number>();
   for (const t of lib) {
-    const plays = (t.playCount ?? 0) + playCountAll(t.id);
+    const plays = playCountAll(t.id);
     if (plays <= 0) continue;
     for (const g of (t.genres ?? [])) {
       if (!g) continue;
@@ -132,11 +132,11 @@ export function pickPersonalSeeds(): string[] {
   return Array.from(seeds).slice(0, 5);
 }
 
-// Витрина «Моей волны» (вид «Кольцо» на главной): кандидаты в обложки вокруг кнопки.
+// Витрина «Моей волны» (коллаж-фон баннера на главной): кандидаты в обложки.
 // Чистый близнец pickPersonalSeeds — те же источники в том же порядке (топ по
 // прослушиваниям → свежие лайки → жанровые → добивка), но БЕЗ bumpRotation:
 // рендер главной не должен прокручивать карусель сидов реальной волны. Текущий
-// rot читаем, чтобы кольцо примерно совпадало с тем, на чём построится волна.
+// rot читаем, чтобы коллаж примерно совпадал с тем, на чём построится волна.
 // Отдаём с запасом: у части треков не резолвится обложка, финальный отбор — в UI.
 export function pickDisplaySeeds(limit = 24): string[] {
   const lib = host.tracks.filter(t => !t._scTemp && !t.disliked);
@@ -157,9 +157,9 @@ export function pickDisplaySeeds(limit = 24): string[] {
     out.push(id);
   };
 
-  // 1) Топ по агрегату прослушиваний (со сдвигом ротации — как у сидов).
+  // 1) Топ по прослушиваниям (со сдвигом ротации — как у сидов).
   const byPlays = lib
-    .map(t => ({ t, plays: (t.playCount ?? 0) + playCountAll(t.id) }))
+    .map(t => ({ t, plays: playCountAll(t.id) }))
     .filter(x => x.plays > 0)
     .sort((a, b) => b.plays - a.plays);
   for (const x of rotate(byPlays, rot * 2).slice(0, 4)) push(x.t.id);

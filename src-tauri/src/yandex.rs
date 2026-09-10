@@ -148,6 +148,12 @@ pub struct YmTrack {
     /// Год релиза (из первого альбома трека) или пусто. Для фильтра по году.
     pub year: String,
     pub available: bool,
+    /// Позиция в чарте, 1-based. 0 — трек пришёл не из чарта (поиск/альбом/…).
+    pub chart_pos: u32,
+    /// Сдвиг позиции за сутки: >0 — поднялся, <0 — опустился, 0 — без изменений.
+    pub chart_shift: i32,
+    /// Новичок чарта (`progress: "new"`) — вместо стрелки показываем «new».
+    pub chart_new: bool,
 }
 
 fn cover_url(cover_uri: Option<&str>) -> String {
@@ -194,6 +200,11 @@ fn parse_track(t: &serde_json::Value) -> Option<YmTrack> {
             .map(|y| y.to_string())
             .unwrap_or_default(),
         available: t["available"].as_bool().unwrap_or(true),
+        // Чартовые поля лежат не в самом треке, а в обёртке элемента чарта —
+        // их проставляет chart() поверх разобранного трека.
+        chart_pos: 0,
+        chart_shift: 0,
+        chart_new: false,
     })
 }
 
@@ -250,6 +261,15 @@ pub struct YmAlbum {
     pub cover: String,
     pub year: String,
     pub track_count: i64,
+    /// Id первого артиста — переход на его страницу из карточки релиза.
+    pub artist_id: String,
+    /// Фото первого артиста (крупный круг карточки релиза). Пусто — фото нет.
+    pub artist_cover: String,
+    /// ISO-дата выхода («2025-08-14T00:00:00+03:00»). Пусто — Яндекс не отдал.
+    pub release_date: String,
+    /// Тип релиза от Яндекса: `single` | `compilation` | `podcast` | …;
+    /// пусто = обычный альбом.
+    pub album_type: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -271,6 +291,7 @@ fn parse_artist(a: &serde_json::Value) -> Option<YmArtist> {
 }
 
 fn parse_album(a: &serde_json::Value) -> Option<YmAlbum> {
+    let first = a["artists"].as_array().and_then(|x| x.first());
     Some(YmAlbum {
         id: id_str(&a["id"])?,
         title: a["title"].as_str().unwrap_or("—").to_string(),
@@ -278,6 +299,15 @@ fn parse_album(a: &serde_json::Value) -> Option<YmAlbum> {
         cover: cover_from(a),
         year: a["year"].as_i64().map(|y| y.to_string()).unwrap_or_default(),
         track_count: a["trackCount"].as_i64().unwrap_or(0),
+        artist_id: first.and_then(|x| id_str(&x["id"])).unwrap_or_default(),
+        // Фото артиста крупнее обложек: в карточке релиза оно ~330px, на
+        // HiDPI 400×400 мылит (cover_from даёт именно 400×400).
+        artist_cover: first
+            .and_then(|x| x["cover"]["uri"].as_str())
+            .map(|u| format!("https://{}", u.replace("%%", "1000x1000")))
+            .unwrap_or_default(),
+        release_date: a["releaseDate"].as_str().unwrap_or_default().to_string(),
+        album_type: a["type"].as_str().unwrap_or_default().to_string(),
     })
 }
 
@@ -316,6 +346,10 @@ pub struct YmEntity {
     /// Год выпуска (альбом). У артиста/плейлиста пусто.
     #[serde(default)]
     pub year: String,
+    /// ISO-дата выхода альбома («2024-10-29T00:00:00+03:00») — блок «Релиз»
+    /// под треклистом. Пусто — Яндекс не отдал (тогда во фронте остаётся год).
+    #[serde(rename = "releaseDate", default)]
+    pub release_date: String,
     /// Аватар владельца/артиста для строки владельца в hero (альбом → artists[0]).
     #[serde(rename = "ownerAvatar", default)]
     pub owner_avatar: String,
@@ -481,6 +515,7 @@ pub async fn album(token: &str, id: &str) -> Result<YmEntity> {
         popular_tracks: Vec::new(),
         albums: Vec::new(),
         year: r["year"].as_i64().map(|y| y.to_string()).unwrap_or_default(),
+        release_date: r["releaseDate"].as_str().unwrap_or_default().to_string(),
         // Аватар первого артиста альбома (у объектов artists есть свой cover).
         owner_avatar: r["artists"]
             .as_array()
@@ -548,6 +583,7 @@ pub async fn artist(token: &str, id: &str) -> Result<YmEntity> {
         popular_tracks,
         albums,
         year: String::new(),
+        release_date: String::new(),
         owner_avatar: String::new(),
         similar_artists,
     })
@@ -583,6 +619,7 @@ fn playlist_entity(r: &serde_json::Value) -> YmEntity {
         popular_tracks: Vec::new(),
         albums: Vec::new(),
         year: String::new(),
+        release_date: String::new(),
         // У плейлиста аватар владельца бывает только в новом формате (owner.avatar*).
         owner_avatar: cover_from(&r["owner"]),
         similar_artists: Vec::new(),
@@ -643,9 +680,11 @@ pub async fn resolve(token: &str, url: &str) -> Result<YmResolved> {
 
 // ======================= Чарты и новинки (главная) =======================
 
-/// Общий чарт Яндекс.Музыки (топ треков) для витрины на главной.
+/// Общий чарт Яндекс.Музыки (топ треков) — витрина на главной и страница чарта.
 /// `/landing3/chart` → `result.chart.tracks[]`, где каждый элемент несёт `.track`
-/// (иногда сам элемент уже трек — обрабатываем оба случая).
+/// (иногда сам элемент уже трек — обрабатываем оба случая) и обёртку `.chart`
+/// с позицией и динамикой. Отдаём весь чарт (у Яндекса это ~100 позиций):
+/// главная режет до 15 сама, странице чарта нужен полный список.
 pub async fn chart(token: &str) -> Result<Vec<YmTrack>> {
     let v = api_get(token, &format!("{API}/landing3/chart"), &[]).await?;
     let arr = v["result"]["chart"]["tracks"]
@@ -654,16 +693,63 @@ pub async fn chart(token: &str) -> Result<Vec<YmTrack>> {
         .unwrap_or_default();
     let tracks = arr
         .iter()
-        .map(|it| if it.get("track").is_some() { &it["track"] } else { it })
-        .filter_map(parse_track)
-        .take(30)
+        .enumerate()
+        .filter_map(|(i, it)| {
+            let raw = if it.get("track").is_some() { &it["track"] } else { it };
+            let mut tr = parse_track(raw)?;
+            // Обёртка чарта лежит на элементе; у «голого» трека её нет — тогда
+            // позиция берётся из порядка, а динамика считается неизвестной.
+            let c = &it["chart"];
+            tr.chart_pos = c["position"].as_u64().unwrap_or(i as u64 + 1) as u32;
+            tr.chart_shift = c["shift"].as_i64().unwrap_or(0) as i32;
+            // progress: "new" | "up" | "down" | "same". Стрелку рисуем по shift,
+            // поэтому от progress нужен только признак новичка.
+            tr.chart_new = c["progress"].as_str() == Some("new");
+            Some(tr)
+        })
         .collect();
     Ok(tracks)
 }
 
-/// Новинки (свежие альбомы) для витрины на главной. Основной путь —
-/// `landing3?blocks=new-releases` (полные альбомы в `entities[].data`). Фолбэк —
-/// `/landing3/new-releases` (id-шники) с добором через `/albums`.
+/// Похожие на трек — источник витрины «Для вас» на главной.
+///
+/// `/tracks/{id}/similar` — именно похожие, а не радио: конечный список, без
+/// подмешивания знакомого и уже слушанного. Rotor (`track:<id>`) отвечает на
+/// другой вопрос — «что играть дальше бесконечно» — поэтому идёт только
+/// фолбэком: у нишевых треков similar бывает пуст, а пустая полоса на главной
+/// хуже слегка размытой подборки.
+pub async fn similar_tracks(token: &str, ym_track_id: &str) -> Result<Vec<YmTrack>> {
+    let v = api_get(token, &format!("{API}/tracks/{ym_track_id}/similar"), &[]).await?;
+    let tracks: Vec<YmTrack> = v["result"]["similarTracks"]
+        .as_array()
+        .map(|arr| arr.iter().filter_map(parse_track).collect())
+        .unwrap_or_default();
+    if !tracks.is_empty() {
+        return Ok(tracks);
+    }
+    // Фолбэк: первый батч станции по этому треку. Сид из выдачи убираем — он
+    // и так стоит в топе пользователя, ради которого подборка и строится.
+    let wave = wave_tracks(token, &format!("track:{ym_track_id}"), "").await?;
+    Ok(wave
+        .tracks
+        .into_iter()
+        .filter(|t| t.id != ym_track_id)
+        .collect())
+}
+
+/// Сколько релизов отдаём фронту. Витрина на главной берёт первые 10, остальное
+/// показывает страница «Релизы» сеткой (обложки там ленивые, длина не бьёт по
+/// памяти). На 60 упирались в этот лимит, а не в площадку: id-список
+/// `/landing3/new-releases` длиннее. Добор идёт пачками по 50 → 2 запроса.
+/// Реально площадка отдаёт ~82 (число плавает по дням), так что это потолок с
+/// запасом, а не ограничение.
+const NEW_RELEASES_MAX: usize = 100;
+
+/// Новинки (свежие альбомы) для витрины на главной и страницы «Релизы».
+/// Основной путь — `landing3?blocks=new-releases` (полные альбомы в
+/// `entities[].data`), но блок лендинга это карусель и коротким бывает почти
+/// всегда — поэтому добираем список до лимита id-шниками из
+/// `/landing3/new-releases` (там же и фолбэк, если блок пуст).
 pub async fn new_releases(token: &str) -> Result<Vec<YmAlbum>> {
     let v = api_get(token, &format!("{API}/landing3"), &[("blocks", "new-releases")]).await?;
     let mut out: Vec<YmAlbum> = Vec::new();
@@ -675,16 +761,63 @@ pub async fn new_releases(token: &str) -> Result<Vec<YmAlbum>> {
                     let data = if e["data"].is_object() { &e["data"] } else { e };
                     if let Some(al) = parse_album(data) {
                         out.push(al);
-                        if out.len() >= 24 {
-                            return Ok(out);
+                        if out.len() >= NEW_RELEASES_MAX {
+                            break;
                         }
                     }
+                }
+            }
+            if out.len() >= NEW_RELEASES_MAX {
+                break;
+            }
+        }
+    }
+    if out.len() < NEW_RELEASES_MAX {
+        // Дубли по id отсеиваем: id-список пересекается с каруселью лендинга.
+        if let Ok(more) = new_releases_by_ids(token).await {
+            for a in more {
+                if out.len() >= NEW_RELEASES_MAX {
+                    break;
+                }
+                if !out.iter().any(|x| x.id == a.id) {
+                    out.push(a);
                 }
             }
         }
     }
     if out.is_empty() {
-        out = new_releases_by_ids(token).await.unwrap_or_default();
+        return Ok(Vec::new());
+    }
+    // Сущности landing3 бывают «худыми»: без фото артиста и даты выхода, а
+    // карточке релиза нужно и то и другое. Добираем полные альбомы одним
+    // запросом; не вышло — остаёмся на том, что дал лендинг.
+    if out
+        .iter()
+        .any(|a| a.artist_cover.is_empty() || a.release_date.is_empty())
+    {
+        let ids: Vec<String> = out.iter().map(|a| a.id.clone()).collect();
+        if let Ok(full) = albums_by_ids(token, &ids).await {
+            for a in full {
+                if let Some(slot) = out.iter_mut().find(|x| x.id == a.id) {
+                    *slot = a;
+                }
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// Полные объекты альбомов по id через `/albums?album-ids=...`. Пачками по 50:
+/// id уходят в query-строку, и на шестидесяти URL уже неприлично длинный.
+/// Порядок ответа сохраняем — он же порядок новинок.
+async fn albums_by_ids(token: &str, ids: &[String]) -> Result<Vec<YmAlbum>> {
+    let mut out: Vec<YmAlbum> = Vec::new();
+    for chunk in ids.chunks(50) {
+        let joined = chunk.join(",");
+        let av = api_get(token, &format!("{API}/albums"), &[("album-ids", joined.as_str())]).await?;
+        if let Some(arr) = av["result"].as_array() {
+            out.extend(arr.iter().filter_map(parse_album));
+        }
     }
     Ok(out)
 }
@@ -695,17 +828,9 @@ async fn new_releases_by_ids(token: &str) -> Result<Vec<YmAlbum>> {
     let v = api_get(token, &format!("{API}/landing3/new-releases"), &[]).await?;
     let ids: Vec<String> = v["result"]["newReleases"]
         .as_array()
-        .map(|a| a.iter().filter_map(id_str).take(24).collect())
+        .map(|a| a.iter().filter_map(id_str).take(NEW_RELEASES_MAX).collect())
         .unwrap_or_default();
-    if ids.is_empty() {
-        return Ok(Vec::new());
-    }
-    let joined = ids.join(",");
-    let av = api_get(token, &format!("{API}/albums"), &[("album-ids", joined.as_str())]).await?;
-    Ok(av["result"]
-        .as_array()
-        .map(|a| a.iter().filter_map(parse_album).collect())
-        .unwrap_or_default())
+    albums_by_ids(token, &ids).await
 }
 
 // ============================ Моя волна (rotor) ============================
@@ -902,4 +1027,46 @@ pub async fn stream_url(token: &str, track_id: &str) -> Result<String> {
     }
 
     Ok(url)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Сетевой smoke против живой Яндекс.Музыки (не для CI):
+    /// `cargo test ym_smoke -- --ignored --nocapture`
+    ///
+    /// Токен берётся из того же `yandex.json`, что и у приложения, поэтому
+    /// тест работает только на машине, где выполнен вход. Без токена он не
+    /// падает, а сообщает об этом и выходит: «не залогинен» — не регрессия.
+    #[tokio::test]
+    #[ignore]
+    async fn ym_smoke() {
+        let token = match crate::config::load_yandex() {
+            Ok(a) if !a.token.is_empty() => a.token,
+            _ => {
+                println!("SKIP: нет токена Яндекс.Музыки (войди в приложении)");
+                return;
+            }
+        };
+
+        // Сид берём из поиска — нужен настоящий id трека площадки.
+        let found = search(&token, "daft punk", 0).await.expect("search");
+        let seed = found.tracks.first().expect("поиск не дал треков");
+        assert!(!seed.id.is_empty() && !seed.title.is_empty());
+        println!("seed: {} — {} (id {})", seed.artist, seed.title, seed.id);
+
+        // Похожие для витрины «Для вас». Пустой ответ — сам по себе провал:
+        // similar_tracks обязан отработать фолбэком на rotor.
+        let similar = similar_tracks(&token, &seed.id).await.expect("similar_tracks");
+        assert!(!similar.is_empty(), "похожих нет даже с фолбэком на rotor");
+        assert!(
+            similar.iter().all(|t| !t.id.is_empty() && !t.title.is_empty()),
+            "similar_tracks отдал неразобранные треки"
+        );
+        println!("similar: {} треков", similar.len());
+        for t in similar.iter().take(3) {
+            println!("  {} — {}", t.artist, t.title);
+        }
+    }
 }

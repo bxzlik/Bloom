@@ -51,10 +51,20 @@ const read = (): Record<TeleCategory, TtlPolicy> => {
 export interface TelemetryState {
   ttl: Record<TeleCategory, TtlPolicy>
   setTtl: (cat: TeleCategory, policy: TtlPolicy) => void
+  /** Сброс сроков хранения к значениям по умолчанию. */
+  reset: () => void
 }
 
 export const useTelemetryStore = create<TelemetryState>((set, get) => ({
   ttl: read(),
+  reset: () => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(DEFAULTS))
+    } catch {
+      /* ignore */
+    }
+    set({ ttl: { ...DEFAULTS } })
+  },
   setTtl: (cat, policy) => {
     const next = { ...get().ttl, [cat]: policy }
     try {

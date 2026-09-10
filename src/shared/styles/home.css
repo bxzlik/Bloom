@@ -1,184 +1,159 @@
 /* ===== NEW HOME LAYOUT ===== */
-.home-scroll{flex:1;overflow-y:auto;padding:20px 24px 40px;display:flex;flex-direction:column;gap:10px;scrollbar-width:none}
+/* overflow-x:hidden — из-за full-bleed баннера «Моей волны» (отрицательные поля
+   −24px, см. .home-wave-bar) контент шире коробки; без этого появляется
+   прокрутка вбок. */
+.home-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px 24px 40px;display:flex;flex-direction:column;gap:10px;scrollbar-width:none}
 .home-scroll::-webkit-scrollbar{display:none}
 .home-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
-.home-greeting{display:flex;align-items:center;gap:12px}
-.home-wave{width:38px;height:38px;border-radius:calc(var(--radius) * 0.7);background:rgba(var(--ovl-rgb),.05);display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0}
 .home-kaomoji{width:auto;min-width:38px;height:38px;padding:0 10px;border-radius:calc(var(--radius)*0.7);background:rgba(var(--ovl-rgb),.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;line-height:1;white-space:nowrap;cursor:default;transition:background .2s}
 .home-kaomoji:hover{background:rgba(var(--ovl-rgb),.09)}
 #homeKaomojiText{transition:opacity .35s,transform .35s;display:inline-block}
 #homeKaomojiText.kao-fade{opacity:0;transform:translateY(4px)}
-.home-hello{font-size:18px;font-weight:800;line-height:1.2}
-.home-nick{color:var(--accent)}
-.home-sub{font-size:12px;color:var(--text2);margin-top:3px}
 
 .home-actions{display:flex;flex-direction:column;gap:10px}
 
-/* ===== MY WAVE HERO ===== */
-/* НЕ карточка: фаербол парит прямо на фоне главной — без рамки/заливки/обрезки.
-   Края свечения гасятся радиальной маской на .hwb-aura, поэтому прямоугольного
-   обреза нет. Цвета орбов — в --wave-1/2/3 (акцент темы либо тон обложки трека,
-   см. WaveCard.tsx). */
-.home-wave-bar{position:relative;height:440px;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;--wave-1:#fff;--wave-2:#fff;--wave-3:#fff}
-/* Фолбэк до того, как React проставит инлайн-палитру: белый по белому не виден. */
-:root.theme-light .home-wave-bar{--wave-1:#a8a8a8;--wave-2:#a8a8a8;--wave-3:#a8a8a8}
+/* ===== MY WAVE HERO =====
+   Широкий баннер во всю ширину контента: фон — полоса обложек того, что волна
+   играла бы сейчас (WaveCollage), поверх — затемнение слева направо, слева
+   кнопка запуска + заголовок, справа снизу «Настроить».
 
-/* Турбулентное пламя (SVG). Градиенты сами затухают в прозрачность к краям —
-   отдельная маска не нужна, прямоугольного обреза нет. CSS-масштаб добавляет
-   выраженную пульсацию поверх «дыхания» язычков (feDisplacementMap.scale). */
-.home-wave-bar .hwb-aura{position:absolute;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
-.home-wave-bar .hwb-fire{width:540px;height:540px;overflow:visible;transform-origin:50% 50%;animation:hwbFirePulse 8s ease-in-out infinite}
-/* Вращение — на группе (отдельный элемент), чтобы не конфликтовать с scale-пульсом
-   .hwb-fire. Обе — чистый CSS, поэтому не сбрасываются при ре-рендере/repaint. */
-.home-wave-bar .hwb-fire-g{isolation:isolate;transform-box:fill-box;transform-origin:50% 50%;animation:hwbFireSpin 120s linear infinite}
-body.bars-hidden .home-wave-bar .hwb-fire,
-body.bars-hidden .home-wave-bar .hwb-fire-g,
-/* Пока листаем главную — замораживаем фаербол: SVG-фильтр не композитится на
-   GPU и перерисовывает вьюпорт каждый кадр, из-за чего скролл «плывёт». Класс
-   .is-scrolling вешает/снимает HomePage по простою скролла. */
-.home-scroll.is-scrolling .home-wave-bar .hwb-fire,
-.home-scroll.is-scrolling .home-wave-bar .hwb-fire-g{animation-play-state:paused}
-/* Круги пламени слитаются screen-блендом → бело-горячее ядро поверх тела/флейра */
-.home-wave-bar .hwb-fire-g circle{mix-blend-mode:screen}
-/* Светлая тема: screen тянет ядро в белый → на светлом фоне шар пропадает
-   целиком. Зеркалим — multiply, ядро становится самым ПЛОТНЫМ местом. Сам тон
-   тоже уходит темнее/насыщеннее (paletteFromHsl, WaveCard.tsx). */
-:root.theme-light .home-wave-bar .hwb-fire-g circle{mix-blend-mode:multiply}
-/* Цвета стопов — из палитры (акцент / тон обложки), см. WaveCard.tsx */
-.home-wave-bar .hwb-s-outer0{stop-color:var(--wave-1);stop-opacity:.95}
-.home-wave-bar .hwb-s-outer1{stop-color:var(--wave-1);stop-opacity:.4}
-.home-wave-bar .hwb-s-body0{stop-color:var(--wave-2);stop-opacity:.98}
-.home-wave-bar .hwb-s-body1{stop-color:var(--wave-2);stop-opacity:.45}
-.home-wave-bar .hwb-s-core0{stop-color:var(--wave-3);stop-opacity:1}
-.home-wave-bar .hwb-s-core1{stop-color:var(--wave-3);stop-opacity:.5}
-.home-wave-bar .hwb-s-trans{stop-color:var(--wave-1);stop-opacity:0}
+   FULL-BLEED: гасим паддинги .home-scroll (20px сверху / 24px по бокам)
+   отрицательными полями. Из-за этого блок ШИРЕ контентной коробки — горизонт
+   скролла у .home-scroll отключён (overflow-x:hidden), иначе появляется
+   прокрутка вбок на 24px.
 
-.home-wave-bar .hwb-hero{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px}
-.home-wave-bar .hwb-hero-main{display:flex;align-items:center;gap:16px}
-.home-wave-bar .hwb-play{position:relative;width:64px;height:64px;border:none;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;font-family:var(--font)}
-.home-wave-bar .hwb-play svg{width:56px;height:56px;transition:transform .15s ease,opacity .22s ease;will-change:transform,opacity;filter:drop-shadow(0 2px 14px rgba(0,0,0,.4))}
-.home-wave-bar .hwb-play:hover svg{transform:scale(1.1)}
-.home-wave-bar .hwb-play:active svg{transform:scale(0.92)}
-.home-wave-bar .hwb-play.is-loading{cursor:default}
-.home-wave-bar .hwb-play.is-loading svg{opacity:0;transform:scale(0.6)}
-.home-wave-bar .hwb-play .hwb-spinner{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:3px solid rgba(var(--ovl-rgb),.2);border-top-color:#fff;opacity:0;transition:opacity .22s ease;pointer-events:none}
-.home-wave-bar .hwb-play.is-loading .hwb-spinner{opacity:1;animation:hwbSpin .8s linear infinite}
-.home-wave-bar .hwb-title{font-size:40px;font-weight:900;color:var(--text);letter-spacing:-1.5px;white-space:nowrap;line-height:1;text-shadow:0 2px 28px rgba(0,0,0,.5)}
-/* Герой лежит на ядре фаербола, а в светлой теме оно тёмное (multiply) — это
-   «тёмный остров», поэтому текст и кнопка остаются белыми, а не var(--text). */
-:root.theme-light .home-wave-bar .hwb-title,
-:root.theme-light .home-wave-bar .hwb-play{color:#fff}
+   Ручки вида — тут же, в первом правиле:
+     --hwb-h     высота баннера
+     --hwb-play  диаметр кнопки запуска
+     --hwb-pad   отступ слева до кнопки
+   Все три растут по ширине окна (clamp+vw), поэтому на узком окне баннер не
+   съедает пол-экрана, а на широком не превращается в полоску. */
+.home-wave-bar{
+  --hwb-h:clamp(362px,38.5vw,522px);
+  --hwb-play:clamp(66px,8.4vw,104px);
+  --hwb-pad:clamp(26px,3.8vw,52px);
+  position:relative;box-sizing:border-box;height:var(--hwb-h);margin:-20px -24px 0;
+  isolation:isolate;display:flex;align-items:center;padding:0 var(--hwb-pad) clamp(68px,7.9vw,109px);overflow:hidden
+}
 
-/* ===== MY WAVE — ВИД «КОЛЬЦО» =====
-   Второй вид блока (uiPrefs.waveView='ring', см. WaveCard/WaveRing): обложки
-   сидов по эллипсу вокруг кнопки запуска, герой (кнопка + заголовок) — в
-   центре кольца.
+/* Фон целиком (обложки + затемнение): маска снизу растворяет его в фон
+   страницы — жёсткой кромки у баннера нет, как у шапки детального вида поиска.
+   Тёмная подложка нужна на случай, когда обложек нет вовсе: белый текст должен
+   читаться и на пустом баннере, в том числе в светлой теме.
 
-   Ручки вида: слоты (смещение/размер/форма/период качания) — в RING_SLOTS
-   (WaveRing.tsx), здесь — только масштаб и оформление. Все размеры — БЕЗРАЗМЕРНЫЕ
-   числа в px «дизайн-бокса» 620×400; каждое множится на --hwr-k = длина одной
-   такой px. Считает её КОНТЕЙНЕРНЫЙ запрос (100cqw = ширина самого блока): он
-   живёт в логических px контейнера и переживает зум webview, в отличие от @media
-   по ширине вьюпорта.
+   ГОЧА: затухание должно быть ДЛИННЫМ и с пологим хвостом — линейный градиент
+   в две-три стопы даёт видимый излом и читается как обрыв полос. Стопы ниже —
+   ручная ease-out кривая: до 37% полосы в полную силу, дальше плавно в ноль,
+   производная у самого низа ~0 (кромки нет вовсе). Это плато — главная ручка:
+   чем оно МЕНЬШЕ, тем выше от низа поднимается затемнение. */
+.hwb-bg{position:absolute;inset:0;z-index:0;pointer-events:none;background:#111;overflow:hidden;
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 37%,rgba(0,0,0,.96) 45%,rgba(0,0,0,.89) 52%,rgba(0,0,0,.79) 59%,rgba(0,0,0,.66) 66%,rgba(0,0,0,.51) 73%,rgba(0,0,0,.36) 80%,rgba(0,0,0,.22) 86%,rgba(0,0,0,.12) 91%,rgba(0,0,0,.05) 95%,rgba(0,0,0,.015) 98%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0%,#000 37%,rgba(0,0,0,.96) 45%,rgba(0,0,0,.89) 52%,rgba(0,0,0,.79) 59%,rgba(0,0,0,.66) 66%,rgba(0,0,0,.51) 73%,rgba(0,0,0,.36) 80%,rgba(0,0,0,.22) 86%,rgba(0,0,0,.12) 91%,rgba(0,0,0,.05) 95%,rgba(0,0,0,.015) 98%,transparent 100%)}
 
-   ГОЧА: --hwr-k — именно ДЛИНА, а не коэффициент. clamp(.46, calc(100cqw/612), 1)
-   смешивает число и длину → правило невалидно, вид схлопывается в кучу обложек
-   в углу. Поэтому все три аргумента clamp в px, а множители безразмерны. */
-.home-wave-bar.hwb-view-ring{height:auto;padding:6px 0;gap:0;container-type:inline-size}
-/* 612 — полная ширина кольца (2×250 радиус + 96 крайняя плитка) + запас. На
-   широком окне кольцо НЕ растягивается дальше дизайн-размера (масштаб упирается
-   в 1px). Ниже .46 обложки перестают читаться — это дно масштаба. */
-.hwb-view-ring .hwb-stage{--hwr-k:clamp(.46px,calc((100cqw - 16px) / 612),1px);position:relative;width:100%;height:calc(404 * var(--hwr-k))}
-
-.hwr-ring{position:absolute;inset:0;z-index:1}
-/* Позиция слота — margin'ами (а не translate), чтобы transform остался целиком
-   под качание; hover-масштаб живёт на вложенной плитке, две анимации не дерутся
-   за одно свойство. */
-.hwr-slot{position:absolute;left:calc(50% + var(--x) * var(--hwr-k));top:calc(50% + var(--y) * var(--hwr-k));width:calc(var(--sz) * var(--hwr-k));height:calc(var(--sz) * var(--hwr-k));margin-left:calc(var(--sz) * var(--hwr-k) / -2);margin-top:calc(var(--sz) * var(--hwr-k) / -2);animation:hwrFloat var(--dur) ease-in-out infinite;animation-delay:var(--delay);will-change:transform}
-/* Скрытый блок / листание главной — качание на паузу (как у фаербола). */
-body.bars-hidden .hwr-slot,
-.home-scroll.is-scrolling .hwr-slot{animation-play-state:paused}
-
-/* Ни свечения, ни падающих теней — плитки лежат прямо на фоне страницы. */
-.hwr-tile{position:relative;display:block;width:100%;height:100%;padding:0;border:none;background:rgba(var(--ovl-rgb),.06);border-radius:calc(var(--sz) * var(--hwr-k) * .3);overflow:hidden;cursor:pointer;transition:transform .2s ease}
-.hwr-slot.is-round .hwr-tile{border-radius:50%}
-.hwr-tile img{display:block;width:100%;height:100%;object-fit:cover}
-.hwr-tile:hover{transform:scale(1.07)}
-.hwr-tile:active{transform:scale(.98)}
-/* Плитка-заглушка: обложек меньше, чем слотов (почти пустая библиотека). */
-.hwr-tile.is-empty{display:flex;align-items:center;justify-content:center;color:var(--text2);opacity:.32;cursor:default}
-.hwr-tile.is-empty:hover{transform:none}
+/* Полоса обложек — ровно по блоку, без движения: живость даёт перетасовка
+   плиток кроссфейдом (см. WaveCollage). Был ещё медленный дрейф всей полосы
+   вбок, но при полпикселя в секунду его попросту не видно — снят вместе с
+   запасом по ширине, который был нужен только под ход. */
+.hwb-collage{position:absolute;inset:0;display:flex}
+/* Плитка — контейнер под ДВА слоя обложки: раз в несколько секунд одна из них
+   кроссфейдом меняется на следующую из запаса (см. WaveCollage). Подмены src
+   на месте не хватило бы — картинка моргает белым между кадрами. */
+.hwb-ct{position:relative;flex:1 1 0;min-width:0;height:100%;overflow:hidden;background:#151515}
+.hwb-ct.is-empty{background:rgba(255,255,255,.045)}
 /* Ждём ответа площадки — заглушки мягко дышат. */
-.hwr-tile.is-load{animation:hwrBusy 1.4s ease-in-out infinite}
+.hwb-ct.is-load{animation:hwbBusy 1.4s ease-in-out infinite}
+.hwb-ct-l{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+/* both — чтобы уходящий слой остался прозрачным до снятия из DOM, а приходящий
+   не мигнул полной непрозрачностью до старта анимации. */
+.hwb-ct-l.is-in{animation:hwbFadeIn 1.1s ease both}
+.hwb-ct-l.is-out{animation:hwbFadeOut 1.1s ease both}
 
-/* Плей на hover'е плитки — тем же акцентом, что и центральная кнопка. */
-.hwr-tile-ovl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.42);color:var(--accent);opacity:0;transition:opacity .18s ease}
-.hwr-tile:hover .hwr-tile-ovl{opacity:1}
-/* Волна с этого трека уже стартует — держим оверлей и мигаем. */
-.hwr-tile.is-busy .hwr-tile-ovl{opacity:1;animation:hwrBusy 1s ease-in-out infinite}
+/* Затемнение: сильное слева (под текст) → почти прозрачное справа, плюс вуаль
+   по вертикали. Нижняя половина вуали работает в пару с маской .hwb-bg: маска
+   растворяет фон, а вуаль ДОтемняет то, что ещё видно, — вместе затемнение
+   заходит заметно выше от низа, чем от одной маски. */
+.hwb-scrim{position:absolute;inset:0;
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.97) 0%,rgba(0,0,0,.93) 22%,rgba(0,0,0,.72) 46%,rgba(0,0,0,.4) 72%,rgba(0,0,0,.24) 100%),
+    linear-gradient(180deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,.1) 46%,rgba(0,0,0,.24) 62%,rgba(0,0,0,.4) 80%,rgba(0,0,0,.5) 100%)}
 
-/* Герой по центру кольца. До нижней плитки ~120px дизайн-бокса — кнопка и
-   заголовок помещаются, не задевая обложки. */
-.hwb-view-ring .hwb-hero{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;gap:calc(11 * var(--hwr-k))}
-.hwb-view-ring .hwb-hero-main{flex-direction:column;gap:calc(11 * var(--hwr-k))}
-/* Кнопка — залитый кружок АКЦЕНТОМ (а не «голая» иконка, как у фаербола);
-   глиф внутри — var(--accent-text), контрастная пара акцента. */
-.hwb-view-ring .hwb-play{width:calc(84 * var(--hwr-k));height:calc(84 * var(--hwr-k));border-radius:50%;background:var(--accent);color:var(--accent-text);box-shadow:none;transition:transform .15s ease}
-.hwb-view-ring .hwb-play svg{width:calc(28 * var(--hwr-k));height:calc(28 * var(--hwr-k));margin-left:calc(3 * var(--hwr-k));filter:none}
-/* Масштабируем кнопку целиком, а не глиф внутри (иначе прыгает один треугольник). */
-.hwb-view-ring .hwb-play:hover svg,.hwb-view-ring .hwb-play:active svg{transform:none}
-.hwb-view-ring .hwb-play:hover{transform:scale(1.06)}
-.hwb-view-ring .hwb-play:active{transform:scale(.94)}
-.hwb-view-ring .hwb-play .hwb-spinner{width:calc(60 * var(--hwr-k));height:calc(60 * var(--hwr-k));margin:calc(-30 * var(--hwr-k)) 0 0 calc(-30 * var(--hwr-k));border-color:rgba(var(--ovl-rgb),.25);border-top-color:var(--accent-text)}
-.hwb-view-ring .hwb-title{font-size:calc(23 * var(--hwr-k));font-weight:800;letter-spacing:-.4px;text-shadow:none}
-/* В кольце герой лежит на ФОНЕ СТРАНИЦЫ, а не на тёмном ядре фаербола, —
-   правило «тёмного острова» (белый текст в светлой теме) здесь не действует. */
-:root.theme-light .home-wave-bar.hwb-view-ring .hwb-title{color:var(--text)}
-:root.theme-light .home-wave-bar.hwb-view-ring .hwb-play{color:var(--accent-text)}
+.home-wave-bar .hwb-hero{position:relative;z-index:2;display:flex;align-items:center;gap:clamp(16px,2.2vw,30px);min-width:0}
+/* Кнопка — белый кружок с тёмным глифом (на обложках акцент темы может
+   потеряться, а белое читается всегда). */
+.home-wave-bar .hwb-play{position:relative;width:var(--hwb-play);height:var(--hwb-play);border:none;border-radius:50%;background:#fff;color:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;font-family:var(--font);box-shadow:0 6px 26px rgba(0,0,0,.35);transition:transform .15s ease,background .15s ease}
+.home-wave-bar .hwb-play svg{width:34%;height:34%;--ico-sw:1.5;--ico-ink:0;margin-left:6%;transition:opacity .22s ease}
+.home-wave-bar .hwb-play:hover{transform:scale(1.06)}
+.home-wave-bar .hwb-play:active{transform:scale(.94)}
+.home-wave-bar .hwb-play.is-loading{cursor:default;transform:none}
+.home-wave-bar .hwb-play.is-loading svg{opacity:0}
+/* Центрируем через inset+margin, НЕ transform: hwbSpin крутит transform:rotate
+   и затёр бы translate(-50%,-50%) — спиннер уезжал углом в центр кнопки. */
+.home-wave-bar .hwb-play .hwb-spinner{position:absolute;inset:0;margin:auto;width:42%;height:42%;box-sizing:border-box;border-radius:50%;border:3px solid rgba(0,0,0,.18);border-top-color:#111;opacity:0;transition:opacity .22s ease;pointer-events:none}
+.home-wave-bar .hwb-play.is-loading .hwb-spinner{opacity:1;animation:hwbSpin .8s linear infinite}
+
+/* Заголовок — по слову в строке (span'ы ставит WaveCard). Баннер тёмный в
+   ОБЕИХ темах («тёмный остров»), поэтому текст всегда белый, не var(--text). */
+.home-wave-bar .hwb-title{margin:0;font-size:clamp(40px,6.2vw,78px);font-weight:900;color:#fff;letter-spacing:-.035em;line-height:.94;text-shadow:0 2px 30px rgba(0,0,0,.45);min-width:0}
+.home-wave-bar .hwb-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* «Настроить» — капсула в правом нижнем углу: тот же попап, что и по ПКМ. */
+/* Держим кнопку в ещё НЕ растворившейся части баннера (маска гасит фон с 46%),
+   иначе капсула висит на голом фоне страницы. */
+.home-wave-bar .hwb-tune{position:absolute;z-index:2;right:clamp(18px,2.4vw,32px);bottom:clamp(30px,4.4vw,64px);
+  display:flex;align-items:center;gap:9px;height:44px;padding:0 20px;border:none;border-radius:999px;
+  background:rgba(20,20,20,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  color:#fff;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;
+  transition:background .16s ease,transform .16s ease}
+.home-wave-bar .hwb-tune:hover{background:rgba(48,48,48,.82)}
+.home-wave-bar .hwb-tune:active{transform:scale(.96)}
 
 /* ===== WAVE TUNE POPUP =====
-   Попап настройки волны: открывается по ПКМ в зоне блока, у курсора (портал
-   в body, см. WaveCard). Площадки — ряд
+   Попап настройки волны: открывается кнопкой «Настроить» (под ней, по правому
+   краю) и по ПКМ в зоне блока — у курсора (портал в body, см. WaveCard).
+   Площадки — ряд
    чипов без подложки: у выбранной прозрачно-серый кружок, а лого красится
    БРЕНДОВЫМ цветом площадки (приходит инлайном через --src-fg); невыбранные —
    приглушённо-серые. Анимации нажатия нет — только смена цвета/фона. */
-.wave-menu{display:flex;flex-direction:column;gap:9px;min-width:214px;padding:10px;box-sizing:border-box;transform-origin:top left;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*.7);box-shadow:none}
+.wave-menu{display:flex;flex-direction:column;gap:9px;min-width:214px;padding:10px;box-sizing:border-box;transform-origin:top left;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:calc(var(--radius)*.7);box-shadow:none}
 .wave-src-row{display:flex;align-items:center;justify-content:center;gap:4px;background:none}
 .wave-src{width:38px;height:38px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:50%;background:none;color:var(--text2);opacity:.55;cursor:pointer;transition:background .18s ease,color .18s ease,opacity .18s ease}
 .wave-src:hover{opacity:.9;background:rgba(var(--ovl-rgb),.05)}
 /* Выбранная: прозрачно-серый кружок, лого внутри — бренд-цветом площадки. */
 .wave-src.is-on,.wave-src.is-on:hover{background:rgba(var(--ovl-rgb),.1);color:var(--src-fg,var(--accent));opacity:1}
-.wave-dislikes{display:flex;align-items:center;gap:9px;width:100%;box-sizing:border-box;padding:10px 12px;border-radius:calc(var(--radius)*.6);background:rgba(var(--ovl-rgb),.02);border:1px solid rgba(var(--ovl-rgb),.08);color:var(--text2);cursor:pointer;transition:.15s;font-family:var(--font);font-size:13px;font-weight:600;text-align:left}
-.wave-dislikes:hover{background:rgba(var(--ovl-rgb),.06);border-color:rgba(var(--ovl-rgb),.13);color:var(--text)}
+/* Второстепенная кнопка диалогов — та же формула, что у «Отмены» редактора
+   профиля (.pedit-btn-cancel в modals.css): мягкая заливка без обводки,
+   светлеющая по наведению. */
+.wave-dislikes{display:flex;align-items:center;gap:9px;width:100%;box-sizing:border-box;padding:10px 12px;border-radius:calc(var(--radius)*.6);background:rgba(var(--ovl-rgb),.05);border:none;color:var(--text2);cursor:pointer;transition:.15s;font-family:var(--font);font-size:13px;font-weight:600;text-align:left}
+.wave-dislikes:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
 
 /* ===== DISLIKED IN QUEUE ===== */
 .tr.is-disliked .trn,.tr.is-disliked .tra,.tr.is-disliked .trd{text-decoration:line-through;color:var(--text2);opacity:.55}
 .tr.is-disliked .trcov{opacity:.4}
 
 /* ===== DISLIKE BTN ACTIVE ===== */
-#dislikeBtn.lyr-active{color:#e03030!important;background:rgba(224,48,48,.12)!important}
+#dislikeBtn.lyr-active{color:#e03030!important;background:transparent!important}
 
 /* ===== CONTINUE CARD ===== */
 /* Карточка «Продолжить» больше не кликабельна целиком (нет бордера/hover):
    продолжить трек можно кликом по полосе прогресса или кнопке play, открыть
    плеер — по обложке. Источник/активность спрятаны в попап кнопки «!». */
 .home-continue-card{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);position:relative;overflow:hidden}
-.hcc-source,.hcc-state{display:flex;align-items:center;gap:5px;min-width:0;max-width:50%;height:26px;box-sizing:border-box;font-size:11px;font-weight:600;line-height:1;color:var(--text2);background:transparent;border:1px solid rgba(var(--ovl-rgb),.07);padding:4px 8px;border-radius:calc(var(--radius) * 0.95)}
-.hcc-source span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hcc-state{justify-content:center;flex-shrink:0;white-space:nowrap;padding-left:8px;padding-right:8px}
-.hcc-state.is-playing{gap:6px}
-.hcc-state.is-playing::before{content:'';display:block;width:6px;height:6px;min-width:6px;border-radius:50%;background:var(--accent);flex:0 0 auto}
 .hcc-row{display:flex;align-items:center;gap:10px;position:relative;z-index:1}
 .hcc-cover{width:44px;height:44px;border-radius:calc(var(--radius)*.6);flex-shrink:0;overflow:hidden;background:rgba(var(--ovl-rgb),.06);display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;transition:filter .15s}
 .hcc-cover:hover{filter:brightness(1.12)}
 .hcc-cover img{width:100%;height:100%;object-fit:cover}
-.hcc-play-btn{width:44px;height:44px;border-radius:50%;background:rgba(var(--ovl-rgb),.1);color:var(--text);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;position:relative;z-index:2}
-.hcc-play-btn:hover{background:rgba(var(--ovl-rgb),.16)}
+/* Плёнка нейтральных плашек карточки (play, хвост полосы, круглые кнопки)
+   держится НАМЕРЕННО низкой: рядом лежит заливка прогресса в тоне обложки, и
+   на её фоне светло-серые кружки читались отдельными «дырками». Плашки должны
+   сидеть у фона карточки, а не подниматься над ним. Ступени: .05 покой / .1
+   ховер для крупных, .03 / .07 для мелких. */
+.hcc-play-btn{width:44px;height:44px;border-radius:50%;background:rgba(var(--ovl-rgb),.05);color:var(--text);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;position:relative;z-index:2}
+.hcc-play-btn:hover{background:rgba(var(--ovl-rgb),.1)}
 .hcc-play-btn svg{margin-left:0}
 
 /* Полоса-пилюля с названием внутри + заливкой прогресса (перематываемая) */
-.hcc-seek{flex:1;min-width:0;position:relative;height:44px;border-radius:min(22px,calc(var(--radius)*1.5));background:rgba(var(--ovl-rgb),.06);overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer}
+.hcc-seek{flex:1;min-width:0;position:relative;height:44px;border-radius:min(22px,calc(var(--radius)*1.5));background:rgba(var(--ovl-rgb),.03);overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer}
 .hcc-seek.is-seekable{touch-action:none}
 /* Заливка акцентом (как режим «Полоса» в оверлее). Без своего скругления —
    левый край режется overflow пилюли, правый ровный. Во время драга transition
@@ -187,9 +162,9 @@ body.bars-hidden .hwr-slot,
 .hcc-seek-label{position:absolute;inset:0;pointer-events:none}
 .hcc-seek-main,.hcc-seek-times{position:absolute;left:14px;right:42px;top:50%;transform:translateY(-50%);transition:opacity .15s}
 /* «!» внутри полосы (справа): открывает попап источник/активность */
-.hcc-seek-info{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:none;background:rgba(var(--ovl-rgb),.08);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;transition:.15s;font-family:var(--font)}
-.hcc-seek-info:hover{background:rgba(var(--ovl-rgb),.16);color:var(--text)}
-.hcc-seek-info.active{background:rgba(var(--ovl-rgb),.2);color:var(--text)}
+.hcc-seek-info{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:none;background:rgba(var(--ovl-rgb),.04);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;transition:.15s;font-family:var(--font)}
+.hcc-seek-info:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
+.hcc-seek-info.active{background:rgba(var(--ovl-rgb),.12);color:var(--text)}
 .hcc-seek-main{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
 .hcc-seek-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hcc-seek-artist{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;max-width:42%}
@@ -198,12 +173,14 @@ body.bars-hidden .hwr-slot,
 .hcc-seek.is-seekable:hover .hcc-seek-times{opacity:1}
 
 /* Круглые кнопки справа: лайк + контекстное меню (три точки) */
-.hcc-icon-btn{width:36px;height:36px;border-radius:50%;background:rgba(var(--ovl-rgb),.06);border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;font-family:var(--font)}
-.hcc-icon-btn:hover{background:rgba(var(--ovl-rgb),.12);color:var(--text)}
-.hcc-like.active,.hcc-like.active:hover{color:var(--accent)}
+.hcc-icon-btn{width:36px;height:36px;border-radius:50%;background:rgba(var(--ovl-rgb),.03);border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;font-family:var(--font)}
+.hcc-icon-btn:hover{background:rgba(var(--ovl-rgb),.07);color:var(--text)}
+/* Лайк — тем же красным «избранного», что сердечки в строках и на обложке
+   (--sys-fav-ico), а не акцентом: акцент тут уже занят волной/прогрессом. */
+.hcc-like.active,.hcc-like.active:hover{color:var(--sys-fav-ico)}
 
 /* Попап кнопки «!» — источник + активность (стек), портал в body, открыт вверх */
-.hcc-info-pop{display:flex;flex-direction:column;gap:4px;padding:6px;min-width:196px;transform-origin:bottom center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*.7);box-shadow:none}
+.hcc-info-pop{display:flex;flex-direction:column;gap:4px;padding:6px;min-width:196px;transform-origin:bottom center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:calc(var(--radius)*.7);box-shadow:none}
 .hcc-info-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(var(--radius)*.55);background:rgba(var(--ovl-rgb),.035);min-width:0}
 .hcc-info-ico{width:30px;height:30px;flex-shrink:0;border-radius:calc(var(--radius)*.5);background:rgba(var(--ovl-rgb),.06);display:flex;align-items:center;justify-content:center;color:var(--text2)}
 .hcc-info-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -212,13 +189,6 @@ body.bars-hidden .hwr-slot,
 /* Статус-точка активности: акцентная с ореолом при воспроизведении */
 .hcc-info-dot{width:9px;height:9px;border-radius:50%;background:var(--text2);opacity:.5}
 .hcc-info-dot.is-playing{background:var(--accent);opacity:1;box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18),0 0 8px 1px rgba(var(--accent-rgb),.55)}
-
-/* ===== RANDOM MIX BUTTON ===== */
-.home-btn-secondary{display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:var(--radius);background:var(--block-bg,#2a2a2a);color:var(--text2);border:1px solid var(--ovl-line);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font);width:100%}
-.home-btn-secondary:hover{filter:brightness(1.1)}
-.home-btn-secondary .hbs-icon{width:30px;height:30px;border-radius:calc(var(--radius)*.6);background:rgba(var(--ovl-rgb),.06);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.home-btn-secondary .hbs-label{flex:1;text-align:left}
-.home-btn-secondary .hbs-arrow{display:none}
 
 /* Sections */
 /* content-visibility: офскрин-секции не красятся при скролле. contain-intrinsic-size
@@ -230,7 +200,6 @@ body.bars-hidden .hwr-slot,
 .home-cards{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
 .home-cards::-webkit-scrollbar{display:none}
 .home-card{width:140px;flex-shrink:0;cursor:pointer;transition:.15s}
-.home-card:hover .hc-cover{}
 .hc-cover{width:140px;height:140px;border-radius:var(--radius);background:var(--card);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.15s;margin-bottom:8px;position:relative}
 .hc-cover img{width:100%;height:100%;object-fit:cover}
 .hc-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;border-radius:var(--radius)}
@@ -239,33 +208,57 @@ body.bars-hidden .hwr-slot,
 .home-card:hover .hc-play-btn{transform:scale(1)}
 .hc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hc-artist{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
-.home-empty-hint{font-size:12px;color:var(--muted);padding:8px 0}
+
+/* «Вся подборка» — первая карточка полосы «Для вас»: стопка из трёх обложек,
+   запускает всю подборку очередью. Верхняя обложка — обычный .hc-cover (плёнка
+   play и зум на ховере достаются даром), две задние выглядывают из-под неё.
+   Ручки: --fy-w ширина карточки, --fy-h высота стопки, --fy-front / --fy-back
+   стороны обложек, --fy-shift вынос задних от центра, --fy-tilt их наклон,
+   --fy-dim затемнение.
+   Высота: подпись у стопки в одну строку (у соседей две — название + артист),
+   поэтому стопка выше обложки соседа ровно на вторую строку (140 + ~18) — низ
+   карточек в ряду остаётся на одном уровне.
+   Предел: --fy-shift + (--fy-back × (cos+sin наклона)) / 2 ≤ --fy-w / 2, иначе
+   на ховере задняя обложка первой карточки режется краем полосы. */
+.home-card.fy-all{--fy-w:272px;--fy-h:158px;--fy-front:158px;--fy-back:138px;--fy-shift:52px;--fy-tilt:7deg;--fy-dim:.55;width:var(--fy-w)}
+.fy-stack{position:relative;height:var(--fy-h);margin-bottom:8px}
+.fy-title{text-align:center}
+.fy-back{position:absolute;top:50%;left:50%;width:var(--fy-back);height:var(--fy-back);border-radius:var(--radius);overflow:hidden;background:var(--card);filter:brightness(var(--fy-dim));box-shadow:0 4px 14px rgba(0,0,0,.35);transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.fy-back img{width:100%;height:100%;object-fit:cover;display:block}
+.fy-back.l{transform:translate(calc(-50% - var(--fy-shift)),-50%) rotate(calc(var(--fy-tilt) * -1))}
+.fy-back.r{transform:translate(calc(-50% + var(--fy-shift)),-50%) rotate(var(--fy-tilt))}
+.fy-all:hover .fy-back.l{transform:translate(calc(-50% - var(--fy-shift) - 4px),-50%) rotate(calc(var(--fy-tilt) * -1 - 2deg))}
+.fy-all:hover .fy-back.r{transform:translate(calc(-50% + var(--fy-shift) + 4px),-50%) rotate(calc(var(--fy-tilt) + 2deg))}
+.fy-all .hc-cover.fy-front{position:absolute;top:50%;left:50%;width:var(--fy-front);height:var(--fy-front);margin:0;transform:translate(-50%,-50%);box-shadow:0 8px 22px rgba(0,0,0,.5)}
 
 /* Playlist grid */
 .home-pl-grid{display:flex;flex-wrap:wrap;gap:10px}
 .home-pl-card{width:140px;cursor:pointer;transition:.15s}
-.home-pl-card:hover .hpc-cover{}
 .hpc-cover{width:140px;height:140px;border-radius:var(--radius);background:var(--card);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.15s;margin-bottom:7px;position:relative}
 .hpc-cover img{width:100%;height:100%;object-fit:cover}
-.hpc-cover.fav-cover{background:linear-gradient(135deg,#c0144e,#7a0030)}
 .hpc-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;border-radius:var(--radius)}
 .hpc-play-overlay .hpc-play-btn{width:44%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;transform:scale(.85);transition:transform .28s cubic-bezier(.22,1,.36,1);will-change:transform}
 .home-pl-card:hover .hpc-play-overlay{opacity:1}
 .home-pl-card:hover .hpc-play-btn{transform:scale(1)}
 .hpc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 .hpc-sub{font-size:10px;color:var(--text2);text-align:center;margin-top:2px}
-.home-pl-new{width:140px;height:140px;border-radius:var(--radius);background:rgba(var(--ovl-rgb),.04);border:1px dashed rgba(var(--ovl-rgb),.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font);transition:.15s}
-.home-pl-new:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
+/* Одежда как у зоны обложки в редакторе плейлиста (.pl-cov-zone в modals.css):
+   прозрачный фон, пунктир по --ovl-rgb, на ховере всё уходит в акцент. */
+.home-pl-new{width:140px;height:140px;border-radius:var(--radius);background:transparent;border:1.5px dashed rgba(var(--ovl-rgb),.16);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-family:var(--font);transition:.2s}
+.home-pl-new svg{opacity:.7;transition:.2s}
+.home-pl-new:hover{background:rgba(var(--accent-rgb),.05);border-color:rgba(var(--accent-rgb),.7);color:var(--accent)}
 /* ===== LIB SIDEBAR SYSTEM ITEM COVERS =====
-   Плоская тинт-подложка + цветная иконка — как у папок (--folder-tint),
-   но каждый пункт держит свой смысловой цвет (синий/красный/золотой). */
+   Подложка — нейтральная поверхность приложения (--card, как у плейлиста без
+   обложки в этом же списке), цветной остаётся только иконка: три цветных
+   плашки подряд в узком сайдбаре перетягивали внимание на себя. Смысловой
+   цвет (синий/красный/золотой) держат сами иконки. */
 .lib-item-sys{position:relative;isolation:isolate}
 .lib-item-sys .lib-icon,.lib-item-sys .lib-item-info{position:relative;z-index:1}
-#libItemAll .lib-icon{background:var(--sys-all-tint)!important}
+/* Рамка — inset box-shadow, а не border: у .lib-icon фиксированные width/height,
+   настоящий бордер сдвинул бы иконку внутри и разъехался с обложками соседей. */
+#libItemAll .lib-icon,#libItemFav .lib-icon,#libItemHistory .lib-icon{background:var(--sys-cov-bg)!important;box-shadow:inset 0 0 0 1px var(--sys-cov-bd)}
 #libItemAll .lib-icon svg{color:var(--sys-all-ico)}
-#libItemFav .lib-icon{background:var(--sys-fav-tint)!important}
 #libItemFav .lib-icon svg{color:var(--sys-fav-ico)!important}
-#libItemHistory .lib-icon{background:var(--sys-hist-tint)!important}
 #libItemHistory .lib-icon svg{color:var(--sys-hist-ico)}
 /* ===== HOME QUICK CARDS (История / Любимые) =====
    Раскладка: крупная иконка слева + текст справа. Фон — коллаж 2×2 из 4
@@ -324,8 +317,10 @@ body.bars-hidden .hwr-slot,
    scale, и translate: они складываются в ту же матрицу на композиторе. */
 .home-quick-card:hover .hqc-bg{scale:var(--hqc-hover-scale)}
 .home-quick-card .hqc-icon,.home-quick-card .hqc-info{position:relative;z-index:2}
-.hqc-img-wrap{display:none}
 .hqc-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+/* Сердечко «Любимых» — красное, как везде (у пустой карточки ниже перебивается
+   нейтральным: там 3 класса против двух, порядок правил ни при чём). */
+.home-quick-card-fav .hqc-icon{color:var(--sys-fav-ico)}
 .hqc-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hqc-title{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
 .hqc-sub{font-size:12px;color:rgba(var(--ovl-rgb),0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -337,24 +332,135 @@ body.bars-hidden .hwr-slot,
 .home-quick-card.is-empty .hqc-sub{color:rgba(var(--ovl-rgb),0.3)}
 
 /* ===== HOME EXTRAS ===== */
-.home-time{font-size:11px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.02em;background:rgba(var(--accent-rgb),.1);padding:2px 8px;border-radius:min(20px,calc(var(--radius) * 0.95));margin-left:auto;flex-shrink:0}
 .home-recent-hdr{display:flex;align-items:center;gap:7px;font-size:28px;font-weight:700;color:var(--text);text-transform:none;letter-spacing:-.3px}
 
-/* ===== HOME DISCOVER (Чарты / Новинки) ===== */
-.home-disc-hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-/* Кнопка-инфо «(i)» в заголовке (вместо переключателя площадок). */
-.home-disc-info{appearance:none;border:0;width:28px;height:28px;border-radius:50%;background:rgba(var(--ovl-rgb),.08);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
-.home-disc-info:hover{background:rgba(var(--ovl-rgb),.16);color:var(--text)}
-.home-disc-info.active{background:rgba(var(--ovl-rgb),.2);color:var(--text)}
+/* ===== HOME RELEASES (витрина «Релизы») =====
+   Карточка релиза: крупный круг с фото артиста (имя — поверх его низа) и
+   плашка релиза внахлёст (мини-обложка, название, «альбом · 14 августа», play).
+
+   Ручки: --rel-w (ширина карточки), --rel-circle (диаметр круга), --rel-overlap
+   (насколько плашка залезает на круг). --rel-tint ставит JS по доминанте
+   обложки (см. ReleaseCard); фолбэк — тёмный нейтральный, а не var(--card):
+   плашка остаётся «тёмным островом» и в светлой теме, текст на ней белый. */
+.rel-sec{contain-intrinsic-size:auto 350px}
+.rel-row{--rel-w:320px;--rel-circle:262px;--rel-overlap:38px;gap:15px;padding-bottom:6px;align-items:flex-start}
+.rel-card{width:var(--rel-w);flex-shrink:0;display:flex;flex-direction:column}
+
+/* Шапка карточки — слой круга: имя лежит НАД ним, а не внутри (круг режет по
+   overflow), поэтому длинному имени доступна вся ширина карточки. */
+.rel-head{position:relative;width:100%;height:var(--rel-circle)}
+.rel-photo{width:var(--rel-circle);height:var(--rel-circle);margin:0 auto;border-radius:50%;overflow:hidden;position:relative;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.rel-photo.clickable{cursor:pointer}
+.rel-photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.rel-photo.clickable:hover img{transform:scale(1.04)}
+/* Плёнка снизу — под имя: на светлом фото белый текст иначе пропадает. */
+/* Низ круга: два слоя. Сверху — тёмная плёнка под белое имя, под ней цвет
+   плашки (--rel-tint), который «заходит» на аватарку снизу, как в референсе.
+   Круг режет оба по overflow, так что заливка ложится ровно по дуге. */
+.rel-shade{position:absolute;inset:auto 0 0;height:64%;pointer-events:none;background:
+  linear-gradient(to top,rgba(0,0,0,.5),rgba(0,0,0,.16) 46%,transparent),
+  linear-gradient(to top,var(--rel-tint,#1b1c20),rgba(0,0,0,0) 74%)}
+/* Имя прибито к низу: длинное переносится на вторую строку и растёт ВВЕРХ по
+   кругу (как в референсе), а не ужимается в многоточие. Больше двух строк
+   отрезаем — иначе подпись съедает фото. */
+.rel-artist{position:absolute;left:50%;transform:translateX(-50%);width:calc(var(--rel-circle) - 22px);bottom:calc(var(--rel-overlap) + 7px);text-align:center;font-size:22px;font-weight:800;letter-spacing:-.35px;line-height:1.32;color:#fff;pointer-events:none;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;padding-bottom:2px}
+
+.rel-tile{position:relative;margin-top:calc(var(--rel-overlap) * -1);display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:calc(var(--radius) + 2px);background:var(--rel-tint,#1b1c20);cursor:pointer;transition:filter .16s,transform .16s;box-shadow:0 6px 20px rgba(0,0,0,.28)}
+.rel-tile:hover{filter:brightness(1.14)}
+.rel-mini{width:48px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5)}
+.rel-mini img{width:100%;height:100%;object-fit:cover;display:block}
+/* Название и подпись — плотная пара по центру плашки: строки жмутся друг к
+   другу (line-height 1.25, без зазора), а не разъезжаются к краям обложки. */
+.rel-meta{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px}
+.rel-title{font-size:13.5px;font-weight:650;line-height:1.25;color:#fff}
+.rel-sub{font-size:11.5px;line-height:1.25;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rel-play{width:32px;height:32px;flex-shrink:0;border:none;border-radius:50%;background:rgba(255,255,255,.92);color:#111;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0 0 0 2px;transition:.14s;font-family:var(--font)}
+.rel-play:hover{background:#fff;transform:scale(1.07)}
+.rel-play:active{transform:scale(.93)}
+
+/* ===== HOME CHART (витрина «Чарт») =====
+   Карточка: обложка, цифра места внахлёст слева и плашка «название · артист ·
+   play» снизу. Тон плашки — доминанта обложки (--ch-tint ставит JS, см.
+   ChartCard), фолбэк тёмный нейтральный, а не var(--card): плашка обязана
+   остаться «тёмным островом» и в светлой теме (текст на ней белый).
+
+   Ручки: --ch-w (ширина карточки), --ch-rank (кегль цифры), --ch-overlap
+   (насколько плашка залезает на обложку), --ch-gutter (полоса слева под цифру). */
+.ch-sec{contain-intrinsic-size:auto 290px}
+.ch-row{--ch-w:190px;--ch-rank:72px;--ch-overlap:34px;--ch-gutter:16px;gap:14px;padding-bottom:6px;align-items:flex-start}
+.ch-card{width:var(--ch-w);flex-shrink:0;display:flex;flex-direction:column;cursor:pointer}
+
+/* Слой обложки: цифра — СЕСТРА обложки, а не потомок (обложка режет по
+   overflow), поэтому она свободно вылезает за её левый край. */
+.ch-head{position:relative;padding-left:var(--ch-gutter)}
+.ch-cover{width:calc(var(--ch-w) - var(--ch-gutter));height:calc(var(--ch-w) - var(--ch-gutter));border-radius:var(--radius);overflow:hidden;position:relative;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.ch-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.ch-card:hover .ch-cover img{transform:scale(1.04)}
+/* Цифра: у топ-3 сплошная белая, дальше — контурная (заливка в цвет фона +
+   светлая обводка), иначе ряд превращается в частокол белых цифр. */
+.ch-rank{position:absolute;left:-10px;bottom:calc(var(--ch-overlap) - 6px);z-index:2;font-size:var(--ch-rank);font-weight:800;line-height:.8;letter-spacing:-.06em;font-variant-numeric:tabular-nums;color:var(--bg);-webkit-text-stroke:2px rgba(255,255,255,.92);pointer-events:none;text-shadow:0 6px 18px rgba(0,0,0,.55)}
+.ch-card.is-top .ch-rank{color:#fff;-webkit-text-stroke:0}
+/* Контурная цифра читается на любой обложке за счёт пары «светлая заливка +
+   тёмная обводка» (в тёмной теме пара обратная), сплошная белая у топ-3 — за
+   счёт тени. Угловой плёнки на обложке НЕТ намеренно: она складывалась с
+   плёнкой загрузки (.trcov-loading) в неровное пятно.
+   Светлая тема: белый контур на светлом фоне пропадает — меняем заливку и
+   обводку местами. Топ-3 тоже становятся контурными: сплошная тёмная цифра
+   утонула бы в тёмной обложке, а сплошная белая — в светлом фоне страницы. */
+:root.theme-light .ch-rank,
+:root.theme-light .ch-card.is-top .ch-rank{color:var(--bg);-webkit-text-stroke:2px rgba(0,0,0,.72);text-shadow:0 4px 14px rgba(0,0,0,.18)}
+
+/* Ожидание после клика по play — спиннер в самой кнопке (чарт и релизы). Плёнки
+   поверх обложки на карточке чарта нет намеренно: тёмный прямоугольник поверх
+   картинки читался как заплатка, а ховер-плёнки, которая на других карточках
+   готовит глаз к затемнению, здесь нет. Кнопка светлая, поэтому и спиннер
+   тёмный — общий `--accent` на белом круге терялся бы. */
+.ch-play.is-busy,.rel-play.is-busy{padding:0;background:rgba(255,255,255,.6);cursor:default}
+.ch-play.is-busy:hover,.rel-play.is-busy:hover{transform:none;background:rgba(255,255,255,.6)}
+.ch-play .sc-spinner,.rel-play .sc-spinner{border-color:rgba(0,0,0,.25);border-top-color:#111}
+
+.ch-tile{position:relative;z-index:3;margin:calc(var(--ch-overlap) * -1) 0 0 var(--ch-gutter);display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:calc(var(--radius) - 2px);background:var(--ch-tint,#1b1c20);box-shadow:0 6px 20px rgba(0,0,0,.34);transition:filter .16s}
+.ch-card:hover .ch-tile{filter:brightness(1.14)}
+.ch-meta{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px}
+.ch-title{font-size:13px;font-weight:650;line-height:1.25;color:#fff}
+.ch-artist{font-size:11.5px;line-height:1.25;color:rgba(255,255,255,.62)}
+.ch-artist a{color:inherit}
+.ch-play{width:28px;height:28px;flex-shrink:0;border:none;border-radius:50%;background:rgba(255,255,255,.92);color:#111;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0 0 0 2px;transition:.14s;font-family:var(--font)}
+.ch-play:hover{background:#fff;transform:scale(1.07)}
+.ch-play:active{transform:scale(.93)}
+
+/* Заголовок-ссылка «Чарт ›» — тот же кегль, что у обычного заголовка секции. */
+.home-section-hdr.is-link{background:none;border:none;padding:0;margin:0;font-family:var(--font);cursor:pointer;align-self:flex-start;color:var(--text);transition:opacity .14s}
+.home-section-hdr.is-link svg{margin-top:3px;opacity:.55;transition:transform .16s,opacity .16s}
+.home-section-hdr.is-link:hover svg{transform:translateX(3px);opacity:1}
+
+/* Динамика позиции: пилюля поверх обложки (витрина) и голый бейдж под номером
+   (страница чарта). Цвета — семантические, к акценту приложения отношения не
+   имеют, поэтому заданы литералами и одинаковы в обеих темах. */
+.ctrend{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:700;line-height:1;letter-spacing:-.1px;font-variant-numeric:tabular-nums}
+.ctrend-up{color:#4ec98a}
+.ctrend-down{color:#e0655f}
+.ctrend-new{color:#e8c15a;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase}
+.ctrend-same{color:var(--muted)}
+.ctrend-ar{font-size:9px;transform:translateY(-.5px)}
+.ctrend.is-chip{position:absolute;top:8px;right:8px;z-index:2;padding:4px 7px;border-radius:999px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px)}
+
+/* ===== HOME DISCOVER (Чарты / Релизы) ===== */
 /* Секция монтируется только с готовыми данными → появление смягчаем фейдом,
    чтобы поздний ответ сети не «дёргал» страницу резким блоком. */
 .home-disc{animation:home-disc-in .3s ease both}
 @keyframes home-disc-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.home-disc{animation:none}}
 
-/* ===== DISLIKES MODAL ===== */
-#dislikesModalOverlay{position:fixed;inset:0;z-index:992;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s}
-#dislikesModalOverlay.open{opacity:1;pointer-events:all}
+/* ===== DISLIKES DRAWER =====
+   «Дизлайки в волне» — боковая шторка на общем каркасе `.spanel` (modals.css),
+   тот же, что у «Достижений»: тело `.ppnl-body`, шапка-строка с заголовком и
+   плашкой-счётчиком `.ppnl-badge`, горизонтальные поля — общий `--pstat-pad`.
+   Шапки-хрома с крестиком нет. */
+.dlk-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 var(--pstat-pad,16px) 12px}
+.dlk-head-title{font-size:17px;font-weight:800;letter-spacing:-.3px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlk-list{display:flex;flex-direction:column;gap:2px;padding:0 calc(var(--pstat-pad,16px) - 8px)}
+.dlk-empty{padding:44px 16px;text-align:center;color:var(--text2);font-size:13px;opacity:.6}
 
 /* Dislikes list row */
 .dlk-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;transition:.12s;cursor:default}
@@ -368,13 +474,4 @@ body.bars-hidden .hwr-slot,
 .dlk-row:hover .dlk-rm{opacity:1}
 .dlk-rm:hover{color:#e03030;background:rgba(224,48,48,.1)}
 .dlk-rm:active{transform:scale(.93)}
-.stats-modal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:var(--radius);width:440px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
-#dislikesModalOverlay.open .stats-modal{transform:translateY(0)}
-.stats-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 14px;border-bottom:1px solid rgba(var(--ovl-rgb),.07);flex-shrink:0}
-.stats-modal-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
-.stats-modal-close{width:26px;height:26px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-family:var(--font)}
-.stats-modal-close:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
-.stats-modal-body{overflow-y:auto;padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px}
-.stats-modal-body::-webkit-scrollbar{width:2px}
-.stats-modal-body::-webkit-scrollbar-thumb{background:rgba(var(--ovl-rgb),.12);border-radius:2px}
 /* ===== END HOME LAYOUT ===== */

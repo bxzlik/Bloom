@@ -1,6 +1,6 @@
 /* ===== PLAYLIST DESCRIPTION IN HERO ===== */
-.lib-hero-desc{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.45;opacity:.8;max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ctx{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius) * 0.9);padding:5px;z-index:100000;min-width:195px;box-shadow:none;display:none}
+.lib-hero-desc{font-size:14px;color:var(--text2);margin-top:5px;line-height:1.45;opacity:.8;max-width:480px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctx{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:calc(var(--radius) * 0.9);padding:5px;z-index:100000;min-width:195px;box-shadow:none;display:none}
 .ctx.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 /* Пункт меню. Плоский: НИКАКОЙ подложки на ховере — как в референсе (Яндекс),
    отклик даёт только осветление текста/иконки (--ovl .78 → 1). Высоту строки
@@ -9,7 +9,27 @@
 .ci{padding:5px 10px;font-size:13px;cursor:pointer;border-radius:calc(var(--radius) * 0.5);display:flex;align-items:center;gap:10px;color:rgba(var(--ovl-rgb),.78);transition:color .1s}
 .ci:hover{color:var(--text)}
 .ci-icon{width:18px;height:18px;border-radius:5px;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:inherit;transition:color .1s}
-.ci-icon svg{width:15px;height:15px}
+/* ── Контракт отрисовки иконок в меню ──────────────────────────────────────
+   Solar чертит обводкой 1.5 на сетке 24. При мелком размере это уходит в
+   субпиксель (на 15px = 0.94px) и браузер размазывает штрих в серое, поэтому
+   вес задаётся здесь: он зависит от РАЗМЕРА отрисовки, а не от иконки, и
+   правится одним местом на все меню сразу.
+
+   Ручки: 15px — крупность (рисунок Solar занимает 20 из 24 единиц, то есть
+   12.5px), 1.78 — вес (на экране 1.78 × 15/24 = 1.11px, выше физического
+   пикселя). Меняешь размер — пересчитай вес, чтобы держаться выше 1px.
+
+   Зашитый в иконку stroke-width — presentation attribute, он слабее любого
+   CSS-правила, поэтому переопределяется без !important. Селектор бьёт и по
+   самому svg (там сидят наши голые «+»/«×»/«✓»), и по потомкам (там сидит
+   Solar). Иконки с data-ink исключены — см. следующее правило. */
+.ci-icon svg{width:15px;height:15px;--ico-sw:1.84;--ico-ink:0.34}
+/* Часть иконок Solar (shuffle/repeat/refresh/heart/pin) начерчена не штрихом,
+   а ЗАЛИТЫМ контуром: толщина 1.5 запечена в координатах, и stroke-width по
+   ним не работает — обводить такой контур нельзя, он обойдёт линию с двух
+   сторон и выйдет полая трубка. Поэтому вес им добирается тонкой обводкой
+   ПОВЕРХ заливки: она раздувает фигуру, итог 1.5 + 0.28 = те же 1.78.
+   Метку data-ink проставляет реестр (см. solar.tsx). */
 .ci.red{color:rgba(224,48,48,.82)}
 .ci.red:hover{color:#e03030}
 /* Активный пункт (включённый режим) — тоже без плашки: только акцентный цвет. */
@@ -30,16 +50,11 @@
 /* Разделитель групп в меню. --ovl-line2 (а не жёсткий --border): следует
    настройке прозрачности рамок и плёнке светлой темы, как и остальные линии. */
 .cx-sep{height:1px;background:var(--ovl-line2);margin:3px}
-.cx-label{padding:4px 10px 2px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);opacity:.55;pointer-events:none}
-.ctx--peek{display:block!important;visibility:hidden!important;pointer-events:none!important;animation:none!important}
-#cxPlFlyout{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius) * 0.9);padding:5px;z-index:100000;min-width:185px;max-width:240px;box-shadow:none;display:none;max-height:320px;overflow-y:auto}
+#cxPlFlyout{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:calc(var(--radius) * 0.9);padding:5px;z-index:100000;min-width:185px;max-width:240px;box-shadow:none;display:none;max-height:320px;overflow-y:auto}
 #cxPlFlyout.open{display:block;animation:ctxIn .15s cubic-bezier(.34,1.25,.64,1)}
 /* Со списком плейлистов (крупные обложки) попапу нужно чуть больше ширины —
    иначе названию остаётся ~80px. Только для попапа с `.ci-pl`. */
 #cxPlFlyout:has(.ci-pl){min-width:218px;max-width:260px}
-.pl-popup.open{animation:ctxIn .15s cubic-bezier(.34,1.25,.64,1)}
-/* Пункт с открытым флайаутом — как и ховер, без подложки: только полный цвет. */
-#cxadd.flyout-open{color:var(--text)}
 /* ===== ТОСТЫ =====
    Вид перенесён с телефона (`bloom-phone/lib/shared/ui/bloom_toast.dart`):
    не карточка, а КАПСУЛА поверхности всплывающего оверлея (та же, что у меню —
@@ -50,7 +65,9 @@
    Место — по-прежнему сверху по центру (на телефоне снизу, там свои бары).
    --tk — цвет вида: от него и значок, и кольцо, и полоса. */
 #toast{--tk:var(--accent);position:fixed;top:48px;left:50%;transform:translate(-50%,-10px) scale(.94);transform-origin:top center;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid var(--ovl-line2);border-radius:999px;padding:6px 18px 6px 6px;font-size:13px;color:var(--text);z-index:9500;transition:opacity .3s cubic-bezier(.34,1.4,.64,1),transform .3s cubic-bezier(.34,1.4,.64,1);pointer-events:none;opacity:0;display:flex;align-items:center;gap:10px;max-width:min(460px,calc(100vw - 48px));box-shadow:none}
-#toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+/* Видимый тост ловит клики: клик по капсуле убирает его досрочно. Скрытый
+   остаётся pointer-events:none, чтобы невидимая плашка не перехватывала клики. */
+#toast.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto;cursor:pointer}
 #toast.toast-success{--tk:#2fbf6c}
 #toast.toast-warn{--tk:#e0a52e}
 #toast.toast-error{--tk:#e0494a}
@@ -94,27 +111,20 @@
 #dltoast .dlt-fill{height:100%;background:var(--tk);border-radius:3px;transition:width .25s ease}
 body.dl-toast #toast{top:112px}
 @keyframes dlToastIn{from{opacity:0;transform:translate(-50%,-10px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
-.sbox{display:flex;align-items:center;gap:5px;background:var(--card-solid,var(--card));border:1px solid var(--border);border-radius:var(--radius);padding:5px 11px;transition:border-color .15s}
-.sbox input{background:none;border:none;outline:none;color:var(--text);font-size:12px;width:110px;font-family:var(--font)}
-.sbox:focus-within{border-color:var(--border-focus)}
-.sbox input::placeholder{color:var(--muted)}
-/* Library search bar */
-.lib-search-wrap{padding:0 12px 8px;flex-shrink:0}
-.lib-search{display:flex;align-items:center;gap:6px;background:transparent;border:none;border-radius:calc(var(--radius)*0.6);padding:0;transition:.15s}
-.lib-search:focus-within{border-color:var(--border-focus);background:var(--sni-hover)}
-.lib-search input{background:none;border:none;outline:none;color:var(--text);font-size:12px;width:100%;font-family:var(--font)}
-.lib-search input::placeholder{color:var(--muted)}
 
 /* ===== CONTEXT MENU PREVIEW ===== */
-#cxPreview{position:relative;overflow:hidden;padding:8px 11px 9px;display:none;align-items:center;gap:10px;pointer-events:none;margin:0 0 3px;border-radius:calc(var(--radius) * 0.7)}
+/* Колонка из двух рядов, как у #plMenuHeader (верхний ряд .cx-head-top, ниже —
+   дата под волосяной линией). display:flex приходит инлайном из TrackCtxMenu —
+   в закрытом состоянии шапка display:none, поэтому направление задаём здесь. */
+#cxPreview{position:relative;overflow:hidden;padding:8px 11px 9px;display:none;flex-direction:column;align-items:stretch;pointer-events:none;margin:0 0 3px;border-radius:calc(var(--radius) * 0.7)}
 /* Размытая обложка фоном шапки + затемняющий градиент поверх для читаемости. */
 #cxPreview::before{content:'';position:absolute;inset:0;z-index:0;background-image:var(--cx-cover,none);background-size:cover;background-position:center;filter:blur(20px) saturate(1.4) brightness(.6);transform:scale(1.5)}
 #cxPreview::after{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.6))}
 #cxPreview>*{position:relative;z-index:1}
-#cxPreviewCov{width:38px;height:38px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+#cxPreviewCov{width:38px;height:38px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
 #cxPreviewCov img{width:100%;height:100%;object-fit:cover}
-#cxPreviewName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
-#cxPreviewArtist{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#cxPreviewName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff}
+#cxPreviewArtist{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px}
 /* Шапка целиком pointer-events:none (клики идут «сквозь» неё), но имя артиста —
    ссылка на страницу артиста, поэтому мышь ей возвращаем точечно. */
 #cxPreviewArtist .tra-link{pointer-events:auto}
@@ -122,16 +132,10 @@ body.dl-toast #toast{top:112px}
 
 /* ===== PARALLAX COVER ===== */
 .ps-cover{transform-style:preserve-3d}
-#psCovIn{transition:transform .08s ease;position:absolute;inset:0}
 
-.viz-mode-btn{background:rgba(0,0,0,.45);border:1px solid rgba(var(--ovl-rgb),.15);border-radius:calc(var(--radius) * 0.35);padding:3px 5px;color:rgba(var(--ovl-rgb),.45);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
-.viz-mode-btn:hover{color:rgba(var(--ovl-rgb),.8)}
-.viz-mode-btn.active{background:rgba(var(--ovl-rgb),.15);color:var(--text);border-color:rgba(var(--ovl-rgb),.3)}
 /* Multi-select */
 .tr.tr-selected{background:var(--hover);outline:1.5px solid var(--accent);outline-offset:-1px}
 /* Bulk-операции живут в шапке (.lib-hero-btns → SelActions), см. library.css */
-.tr-handle{display:none}
-.tr-reorder-ghost{position:fixed;pointer-events:none;z-index:9999;top:0;left:0;will-change:transform;transition:none!important}
 .trcov[data-draggable]{cursor:grab;touch-action:none;user-select:none}
 .trcov[data-draggable]:active{cursor:grabbing}
 .pl-icon{cursor:grab;touch-action:none;user-select:none}
@@ -139,5 +143,3 @@ body.dl-toast #toast{top:112px}
 .lib-folder-item .lib-icon{cursor:grab;touch-action:none;user-select:none}
 .lib-folder-item .lib-icon:active{cursor:grabbing}
 .qp-list .trcov[data-draggable]{cursor:grab;touch-action:none}
-/* Crossfade indicator */
-.cf-indicator{font-size:9px;color:var(--accent);font-weight:700;position:absolute;top:-4px;right:-4px;background:var(--card-solid,var(--card));border-radius:999px;padding:1px 3px;border:1px solid var(--border);pointer-events:none}

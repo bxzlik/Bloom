@@ -1,7 +1,16 @@
 import { create } from 'zustand'
 import { useNavStore, type PageId } from '@app/navigationStore'
 
-export type DetailKind = 'artist' | 'album' | 'playlist'
+/**
+ * `chart` — общий чарт площадки (открывается заголовком витрины на главной).
+ * Своей сущности у него нет: `id` не используется, треки берутся из
+ * `getCharts()`, а hero собирается на лету (см. DetailView).
+ */
+/**
+ * `releases` — витрина новинок площадки целиком, сеткой карточек альбомов.
+ * Тоже без своей сущности: данные берутся из `getNewReleases()`.
+ */
+export type DetailKind = 'artist' | 'album' | 'playlist' | 'chart' | 'releases'
 
 /**
  * Что открыто в детальном виде. `id` — id сущности (`sc_artist_<id>` /

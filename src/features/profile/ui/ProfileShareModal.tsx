@@ -4,7 +4,8 @@ import { invoke } from '@shared/tauri'
 import { toast } from '@shared/ui'
 import { useT, t as tt } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
-import { useLibStore, useHistoryStore } from '@features/library'
+import { useLibStore } from '@features/library'
+import { usePlayEntries } from '../lib/usePlayEntries'
 import { trackRegistry, type Track } from '@entities/track'
 import { useProfileStore } from '../model/profileStore'
 import { parseDur, fmtDurLong } from '../lib/formatStats'
@@ -31,7 +32,7 @@ export const ProfileShareModal = () => {
   const shareOpen = useProfileStore((s) => s.shareOpen)
   const closeShare = useProfileStore((s) => s.closeShare)
   const tracks = useLibStore((s) => s.tracks)
-  const entries = useHistoryStore((s) => s.entries)
+  const entries = usePlayEntries()
 
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)

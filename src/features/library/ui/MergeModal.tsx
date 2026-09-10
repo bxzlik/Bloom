@@ -41,7 +41,7 @@ export const MergeModal = () => {
   const liveSrc = srcId ? playlists.find((p) => p.id === srcId) ?? null : null
   // Держим последний валидный src на время slide-out: close() обнуляет srcId
   // → liveSrc=null, и без этого `if (!src) return null` размонтировал бы панель
-  // мгновенно, до анимации закрытия (как в AddFromLibModal с actId).
+  // мгновенно, до анимации закрытия.
   const [heldSrc, setHeldSrc] = useState<Playlist | null>(null)
   const src = liveSrc ?? heldSrc
 
@@ -152,10 +152,6 @@ export const MergeModal = () => {
             ))}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="mpl-htitle">
-              <Ico name="merge" width={11} height={11} />
-              {t('lib.merge.title')}
-            </div>
             <input
               className="mpl-name-input"
               type="text"
@@ -253,8 +249,8 @@ export const MergeModal = () => {
                 ? t('lib.merge.hint.willCreateDelete', { n: sel.size + 1 })
                 : t('lib.merge.hint.willCreate')}
           </div>
-          <button className="mpl-btn ghost" onClick={close}>{t('common.cancel')}</button>
           <button className="mpl-btn primary" onClick={doMerge} disabled={!sel.size}>{t('lib.merge.merge')}</button>
+          <button className="mpl-btn ghost" onClick={close}>{t('common.cancel')}</button>
         </div>
       </div>
     </div>,

@@ -2,7 +2,7 @@
 
 import { t as i18nT } from "@shared/i18n";
 import { host } from "./host";
-import { classifyCompletion, stampLastHistoryRatio, bumpSkip } from "../db/history";
+import { classifyCompletion, bumpSkip } from "../db/history";
 import { markDisliked, unmarkDisliked, normalizeArtist } from "../db/track-meta";
 import * as session from "./session";
 import { maybeRefill } from "./engine";
@@ -17,9 +17,6 @@ export function onPlayStart(trackId: string): void {
 export function onPlayEnd(ev: { trackId: string; playedSec: number; durSec: number }): void {
   if (!session.isActive()) return;
   const verdict = classifyCompletion(ev.playedSec, ev.durSec);
-  const ratio = ev.durSec > 0 ? ev.playedSec / ev.durSec : 0;
-  stampLastHistoryRatio(ev.trackId, ratio);
-
   const t = host.trackById(ev.trackId);
   const artistKey = normalizeArtist(t?.artist);
 

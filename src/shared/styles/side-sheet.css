@@ -1,0 +1,210 @@
+/* ===== SIDE SHEET — боковые панели «в полокна» =====================================
+   Единый каркас для всех выезжающих панелей (профиль, теги, объединение,
+   конвертер, авто-обновление, добавление треков; позже — настройки).
+   Заменяет старую пару каркасов «#peditBackdrop/#peditModal» и «.spanel-backdrop/
+   .spanel» (плавающая карточка 420px поверх затемнения).
+
+   Идея (референс — Dotify):
+     • панель прижата к краю окна ВПРИТЫК, во всю высоту под тайтлбаром, без
+       радиуса и отступов; drawer'ы всегда справа, настройки — слева;
+     • само приложение (.app) не прячется под чёрным слоем, а «уходит в глубину»:
+       уменьшается и отъезжает в сторону от панели, приглушается scrim'ом и
+       становится некликабельным; клик по нему в любом месте = закрыть/назад.
+
+   Ручки (крутить здесь, в :root):
+     --sheet-w / --sheet-w-wide  ширина панели (drawer / настройки)
+     --sheet-scale               масштаб «ушедшего» приложения
+     --sheet-tilt-a              угол разворота в перспективу
+     --sheet-persp               сила перспективы (меньше = резче)
+     --sheet-gap                 зазор между приложением и панелью
+     --sheet-pad                 внутренние отступы панели от кромок окна
+     --sheet-radius              скругление края «ушедшего» приложения
+                                 (цвет края — --ovl-line, как у рамок блоков)
+     --sheet-dim                 сила затемнения приложения (0 = не затемнять)
+     --sheet-dur / --sheet-ease  длительность и кривая (общие на выезд и уход)
+
+   ВАЖНО: transform на .app делает его containing block'ом для потомков с
+   position:fixed. Все глобальные оверлеи (меню, модалки, тосты, сама панель)
+   рендерятся порталом в body — они ВНЕ .app и не страдают. Не переносить их
+   внутрь .app. */
+
+:root {
+  --sheet-w: 45vw;
+  --sheet-w-wide: 55vw;
+  --sheet-scale: 0.88;
+  --sheet-tilt-a: 9deg;
+  --sheet-persp: 1200px;
+  --sheet-gap: 18px;
+  --sheet-pad: 26px;
+  --sheet-radius: 14px;
+  /* Приложение НЕ затемняем: глубину даёт отъезд+масштаб, а не чёрная плёнка.
+     Scrim остаётся прозрачной ловушкой кликов «назад». */
+  --sheet-dim: 0;
+  --sheet-dur: 0.42s;
+  --sheet-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Ширина текущей панели — на body, потому что её знают ОБА участника: сама
+   панель (width) и формула сдвига приложения (ниже). Источник один. */
+body {
+  --sheet-cur: clamp(340px, var(--sheet-w), 100vw);
+}
+body.sheet-wide {
+  --sheet-cur: clamp(340px, var(--sheet-w-wide), 100vw);
+}
+
+/* ── «Уход в глубину» ───────────────────────────────────────────────────────
+   Приложение не просто уменьшается, а разворачивается в перспективу: дальний
+   (обращённый к панели) край уходит вглубь и становится короче, ближний —
+   вырастает и уезжает за кромку окна. Так и в референсе.
+
+   Точка отсчёта — та кромка, что смотрит на панель (`transform-origin`): при
+   повороте и масштабе она остаётся на месте, поэтому сдвиг считается просто —
+   «ширина панели + зазор», без поправок на угол. */
+body.sheet-from-right {
+  --sheet-origin: right center;
+  --sheet-shift: calc(-1 * (var(--sheet-cur) + var(--sheet-gap)));
+  --sheet-tilt: var(--sheet-tilt-a);
+}
+body.sheet-from-left {
+  --sheet-origin: left center;
+  --sheet-shift: calc(var(--sheet-cur) + var(--sheet-gap));
+  --sheet-tilt: calc(-1 * var(--sheet-tilt-a));
+}
+
+/* Переходы объявлены вне .sheet-open, иначе возврат происходил бы рывком.
+   Край карточки — outline, а не border: он не влезает в раскладку (.app
+   box-sizing:border-box, бордер съел бы пиксель и подвинул содержимое).
+   В покое он прозрачный, чтобы цвет успевал проявиться вместе с уходом. */
+.app {
+  border-radius: 0;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+  transition:
+    height 0.15s,
+    transform var(--sheet-dur) var(--sheet-ease),
+    border-radius var(--sheet-dur) var(--sheet-ease),
+    outline-color var(--sheet-dur) ease;
+}
+body.sheet-open .app {
+  transform: perspective(var(--sheet-persp)) translateX(var(--sheet-shift)) scale(var(--sheet-scale))
+    rotateY(var(--sheet-tilt));
+  transform-origin: var(--sheet-origin);
+  border-radius: var(--sheet-radius);
+  /* Тот же токен, что у рамок блоков приложения (алфа --wb — из слайдера
+     «яркость рамок»), иначе край карточки жил своей яркостью. */
+  outline-color: var(--ovl-line);
+  pointer-events: none;
+  will-change: transform;
+}
+/* Ловушка кликов «назад» — ВНУТРИ приложения, поэтому повторяет его форму вместе
+   с перспективой: рука и возврат только над самой карточкой, пустое место вокруг
+   неё кликов не ловит. Сам .app инертен (pointer-events:none), псевдоэлемент
+   включает события обратно только для себя; клик приходит с target = .app,
+   его и слушает SideSheet. */
+body.sheet-open .app::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Заведомо выше всего внутри приложения (панель это не задевает: transform
+     делает .app своим stacking context'ом, наружу z-index не протекает) —
+     иначе редкие «живые» слои вроде панели текста перехватывали бы клик. */
+  z-index: 9999;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* ── Слой панели ────────────────────────────────────────────────────────────
+   Ниже тайтлбара (#winTitlebar z1001): он остаётся видимым и кликабельным. */
+.sheet-layer {
+  position: fixed;
+  top: var(--tb-h, 32px);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 995;
+  pointer-events: none;
+}
+/* Сам слой событий НЕ ловит никогда: он растянут на всё окно и иначе накрывал бы
+   приложение, забирая клики у ловушки «назад». Кликабельна только панель. */
+.sheet-layer.open .sheet {
+  pointer-events: auto;
+}
+
+/* Scrim — только затемнение «ушедшего» приложения. Кликов не ловит: «назад»
+   срабатывает строго по самому приложению (ловушка на .app::after ниже), а не
+   по пустому месту вокруг него. */
+.sheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--sheet-dur) ease;
+}
+.sheet-layer.open .sheet-scrim {
+  opacity: var(--sheet-dim);
+}
+
+/* Собственной поверхности у панели нет: ни фона, ни тени, ни бордера — контент
+   лежит прямо на фоне окна, отделяясь от приложения только зазором. */
+.sheet {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--sheet-cur);
+  box-sizing: border-box;
+  /* Внутренние отступы — на самой панели, а не на её содержимом: иначе поля
+     любой шторки упирались бы в кромку окна. */
+  padding-inline: var(--sheet-pad);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--sheet-dur) var(--sheet-ease);
+}
+.sheet-right .sheet {
+  right: 0;
+  transform: translateX(100%);
+}
+.sheet-left .sheet {
+  left: 0;
+  transform: translateX(-100%);
+}
+.sheet-layer.open .sheet {
+  transform: none;
+}
+
+/* ── Внутренности ───────────────────────────────────────────────────────────
+   Шапки у панели нет: ни заголовка, ни крестика — закрывают кликом по фону или
+   Esc. Тело скроллится без видимой полосы; контент держим колонкой ограниченной
+   ширины по центру, иначе на 45% окна поля растягиваются на всю панель. */
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.sheet-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+/* Ширина колонки — простым значением, без var()-фолбэка внутри min(): в живом
+   WebView такая запись отваливалась целиком, и колонка растягивалась на панель. */
+.sheet-col {
+  max-width: 520px;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+.sheet-foot {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(var(--ovl-rgb), 0.09);
+  padding: 14px 0;
+}
+
+
+/* Полос прокрутки внутри панели нет вообще — ни у тела шторки, ни у вложенных
+   списков (настройки, хоткеи и пр.): прокрутка остаётся, ползунок не рисуется. */
+.sheet *{scrollbar-width:none}
+.sheet ::-webkit-scrollbar{width:0;height:0}

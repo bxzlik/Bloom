@@ -18,7 +18,7 @@ import { useQueueStore } from '../model/queueStore'
 import { useGrpStore } from '../model/grpStore'
 import { useLyricsBtnVisible } from '@features/lyrics'
 import { useBigPicStore } from '../model/bigPicStore'
-import { usePlayerViewStore, extractMpBgColor, useOptStore } from '@features/settings'
+import { usePlayerViewStore, extractMpBgColor, extractMpTint, useOptStore } from '@features/settings'
 import {
   prevTr,
   nextTr,
@@ -34,8 +34,10 @@ import { MarqueeTitle } from './MarqueeTitle'
 import { PlayPauseButton } from './PlayPauseButton'
 import { AddPopup } from './AddPopup'
 import { TrackSwap } from './TrackSwap'
+import { ArtistAvatars } from './ArtistAvatars'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
+import { CardMarquee, EmptyCover } from '@shared/ui'
 
 /**
  * Нижний #miniPlayer в main окне — (≈2897-2960).
@@ -170,6 +172,27 @@ export const PlayerBar = () => {
       cancelled = true
     }
   }, [mpBgMode, artwork])
+
+  // «Цвет трека» для прогресса (тоггл mpProgressTint): яркий акцент из обложки
+  // вместо --accent. Считаем только когда тоггл включён и есть что красить.
+  const mpProgressTint = usePlayerViewStore((s) => s.mpProgressTint)
+  const mpAnyProgress = usePlayerViewStore(
+    (s) => s.mpProgress.line || s.mpProgress.bg || s.mpProgress.circle,
+  )
+  const [trackTint, setTrackTint] = useState<string | null>(null)
+  useEffect(() => {
+    if (!mpProgressTint || !mpAnyProgress || !artwork) {
+      setTrackTint(null)
+      return
+    }
+    let cancelled = false
+    void extractMpTint(artwork).then((hex) => {
+      if (!cancelled) setTrackTint(hex)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [mpProgressTint, mpAnyProgress, artwork])
 
   // Компактный бар: ширина фиксированная (MP_COMPACT_W), считаем только ширину
   // центра (--mp-cw) — симметричную, `2 × max(repeat, shuffle) + трио`. Она нужна,
@@ -319,7 +342,7 @@ export const PlayerBar = () => {
       {/* Прогресс-бар (линия 2px / фон-заливка) + drag/click-seek + wheel-seek.
           Изолирован в подкомпонент: тик timeupdate перерисовывает только его,
           а не весь PlayerBar (иначе при игре лагали бы тогглы/интеракции). */}
-      <MpProgress tint={coverColor} />
+      <MpProgress tint={coverColor} trackTint={trackTint} />
 
       <div
         className="mp-inner"
@@ -345,7 +368,7 @@ export const PlayerBar = () => {
             style={{ position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             {/* Кольцо прогресса вокруг обложки. */}
-            <MpCircleRing />
+            <MpCircleRing trackTint={trackTint} />
             <div
               id="mpCover"
               data-nav
@@ -371,7 +394,7 @@ export const PlayerBar = () => {
                 {artwork ? (
                   <img src={artwork} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <NoteSvg size={16} />
+                  <EmptyCover />
                 )}
               </TrackSwap>
               {/* Иконка «на весь экран» по центру обложки (появляется по наведению) — Solar bigpic. */}
@@ -405,6 +428,7 @@ export const PlayerBar = () => {
               </div>
               <div
                 id="mpArtist"
+                className="mqh"
                 style={{
                   fontSize: 11,
                   // Ярче обычного --text2 (#999): на тонированном фоне бара он
@@ -421,24 +445,29 @@ export const PlayerBar = () => {
                   gap: 5,
                 }}
               >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                {/* Аватарки артистов — стопкой перед именем (см. ArtistAvatars).
+                    Стопка вне клипа: она приклеена к обложке и не должна уезжать
+                    вместе с именами. */}
+                <ArtistAvatars track={curTrack} />
+                {/* Имена — hover-marquee карточек (`.mqh` на строке, клип `.mq`):
+                    длинный список соавторов раньше просто обрезался многоточием.
+                    Заголовок над ним катится сам (MarqueeTitle), артист — по
+                    наведению, как подписи карточек. */}
+                <CardMarquee style={{ flex: '0 1 auto' }}>
                   <ArtistLinks artist={artist} scId={curTrack?.artistScId} permalink={curTrack?.artistPermalink} artistId={curTrack?.artistId} provider={curTrack?.artistProvider} />
-                </span>
+                </CardMarquee>
               </div>
             </TrackSwap>
             {!mpHide.fav && (
               <button
                 id="mpFav"
-                className="cc"
+                className={`cc${isFav ? ' fav' : ''}`}
                 onClick={toggleCurFav}
                 aria-label={isFav ? t('player.aria.favRemove') : t('player.aria.favAdd')}
-                style={{
-                  width: 28,
-                  height: 28,
-                  flexShrink: 0,
-                  // Цвет/ховер — от `.cc` (как транспорт бара); красный только «в избранном».
-                  ...(isFav ? { color: '#e03030' } : null),
-                }}
+                // Цвет/ховер — от `.cc` (как транспорт бара); красный «в избранном»
+                // даёт `#miniPlayer .cc.fav` (overrides-main.css): инлайн-цветом его
+                // было не удержать — `#miniPlayer .cc:hover` идёт с !important.
+                style={{ width: 28, height: 28, flexShrink: 0 }}
               >
                 <HeartSvg size={14} filled={isFav} />
               </button>
@@ -599,8 +628,10 @@ const fmt = (sec: number): string => {
 /**
  * @param tint Фон бара в режиме «Цвет обложки» (доминант обложки) либо null.
  *   Заливка прогресса строится от него — осветлённый тон того же трека.
+ * @param trackTint Акцент трека при включённом «красить цветом трека»
+ *   (mpProgressTint) либо null → красим общим --accent.
  */
-const MpProgress = ({ tint }: { tint: string | null }) => {
+const MpProgress = ({ tint, trackTint }: { tint: string | null; trackTint: string | null }) => {
   const position = usePlayerStore((s) => s.position)
   const duration = usePlayerStore((s) => s.duration)
   const showLine = usePlayerViewStore((s) => s.mpProgress.line)
@@ -656,8 +687,13 @@ const MpProgress = ({ tint }: { tint: string | null }) => {
             // В режиме «Цвет обложки» заливка строится от тона самого трека
             // (осветлённый доминант) — акцент приложения там смотрелся чужеродно:
             // синяя полоса поверх красного бара. В остальных режимах фон не
-            // тонирован, и акцент по-прежнему уместен.
-            background: tint ? `color-mix(in srgb, ${tint} 95%, #fff)` : 'rgba(var(--accent-rgb),0.18)',
+            // тонирован: красим либо акцентом трека (mpProgressTint), либо общим
+            // --accent.
+            background: tint
+              ? `color-mix(in srgb, ${tint} 95%, #fff)`
+              : trackTint
+                ? `color-mix(in srgb, ${trackTint} 18%, transparent)`
+                : 'rgba(var(--accent-rgb),0.18)',
             pointerEvents: 'none',
             zIndex: 0,
             transition: dragFrac != null ? 'none' : 'width .08s linear',
@@ -691,10 +727,11 @@ const MpProgress = ({ tint }: { tint: string | null }) => {
             style={{
               height: '100%',
               width: `${pct}%`,
-              // Тот же цвет, что у кольца вокруг обложки: акцент, приглушённый
-              // общей MP_PROGRESS_OP. Через opacity, а не rgba — акцент задан
-              // токеном --accent, разложить его на каналы в inline-стиле нельзя.
-              background: 'var(--accent)',
+              // Тот же цвет, что у кольца вокруг обложки: акцент (общий либо
+              // трека, если включён mpProgressTint), приглушённый общей
+              // MP_PROGRESS_OP. Через opacity, а не rgba — акцент задан токеном
+              // --accent, разложить его на каналы в inline-стиле нельзя.
+              background: trackTint ?? 'var(--accent)',
               opacity: MP_PROGRESS_OP,
               pointerEvents: 'none',
               transition: dragFrac != null ? 'none' : 'width .08s linear',
@@ -742,8 +779,10 @@ const MpProgress = ({ tint }: { tint: string | null }) => {
 /**
  * Кольцо прогресса вокруг обложки. Форма зависит от mpCoverShape (круг/скруг.квадрат).
  * Подписано на position внутри (лист) — тик перерисовывает только кольцо.
+ *
+ * @param trackTint Акцент трека при включённом mpProgressTint либо null → --accent.
  */
-const MpCircleRing = () => {
+const MpCircleRing = ({ trackTint }: { trackTint: string | null }) => {
   const position = usePlayerStore((s) => s.position)
   const duration = usePlayerStore((s) => s.duration)
   const show = usePlayerViewStore((s) => s.mpProgress.circle)
@@ -779,7 +818,7 @@ const MpCircleRing = () => {
           <path
             d={shape.d}
             fill="none"
-            stroke="var(--accent)"
+            stroke={trackTint ?? 'var(--accent)'}
             /* Приглушено: на автоакценте от обложки кольцо в полную силу
                полыхает вокруг картинки и перетягивает внимание с самого бара. */
             strokeOpacity={MP_PROGRESS_OP}
@@ -799,7 +838,7 @@ const MpCircleRing = () => {
             cy={RING_BOX / 2}
             r={RING_BOX / 2 - RING_INSET - 1}
             fill="none"
-            stroke="var(--accent)"
+            stroke={trackTint ?? 'var(--accent)'}
             strokeOpacity={MP_PROGRESS_OP}
             strokeWidth={2.5}
             strokeLinecap="round"
@@ -1019,7 +1058,6 @@ const VertVolPopup = ({
 // Тонкие обёртки над централизованным набором Solar (см. @shared/ui/icons/solar).
 // Сигнатуры сохранены, чтобы не трогать места вызова.
 
-const NoteSvg = ({ size }: { size: number }) => <Ico name="note" size={size} />
 const HeartSvg = ({ size, filled }: { size: number; filled: boolean }) => (
   <Ico name="heart" variant={filled ? 'bold' : 'linear'} size={size} />
 )

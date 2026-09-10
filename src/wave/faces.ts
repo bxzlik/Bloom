@@ -1,7 +1,7 @@
-// «Лица волны» — обложки для кольца «Моей волны» на главной (вид `ring`).
+// «Лица волны» — обложки для фона баннера «Моей волны» на главной (WaveCollage).
 //
 // Это НЕ библиотека: показываем то, что реально играло бы в волне ВЫБРАННОЙ
-// площадки, поэтому переключатель SC/Яндекс меняет и содержимое кольца:
+// площадки, поэтому переключатель SC/Яндекс меняет и содержимое коллажа:
 //   • sc → related-треки нескольких личных сидов (тот же источник, из которого
 //     движок собирает батч);
 //   • ym → батч rotor'а `user:onyourwave` (та же станция, что и «Моя волна»).
@@ -19,7 +19,7 @@ import { toTrack as ymToTrack } from "@features/yandex/model/mappers";
 import { ymWaveTracks, ymIsAuthed } from "@features/yandex/api/ymClient";
 import type { ScRawTrack } from "./types";
 
-/** Плитка кольца: id для запуска волны + обложка и название для подписи. */
+/** Плитка коллажа: id трека + обложка и название. */
 export interface WaveFace {
   id: string;
   cover: string;
@@ -37,9 +37,9 @@ const cache = new Map<string, { at: number; faces: WaveFace[] }>();
 const inflight = new Map<string, Promise<WaveFace[]>>();
 
 /**
- * Обложки для кольца выбранной площадки. Пустой массив = не удалось получить
- * (нет сети / не залогинен / у сидов нет scId) — вызывающий сам решает, что
- * показать вместо них.
+ * Обложки выбранной площадки. Пустой массив = не удалось получить (нет сети /
+ * не залогинен / у сидов нет scId) — вызывающий сам решает, что показать
+ * вместо них.
  */
 export function fetchWaveFaces(source: "sc" | "ym", limit = 8): Promise<WaveFace[]> {
   const hit = cache.get(source);
@@ -54,7 +54,7 @@ export function fetchWaveFaces(source: "sc" | "ym", limit = 8): Promise<WaveFace
     })
     .then((faces) => {
       // Пустой результат не кэшируем: почти всегда это транзиентный сбой сети,
-      // иначе кольцо застряло бы пустым на весь TTL.
+      // иначе коллаж застрял бы пустым на весь TTL.
       if (faces.length) cache.set(source, { at: Date.now(), faces });
       inflight.delete(source);
       return faces;
@@ -90,7 +90,7 @@ async function scFaces(limit: number): Promise<WaveFace[]> {
 
   const batches = await Promise.all(seeds.map((s) => scRelated(s).catch(() => [] as ScRawTrack[])));
 
-  // Чередуем сиды по кругу: иначе всё кольцо соберётся из related одного трека.
+  // Чередуем сиды по кругу: иначе весь коллаж соберётся из related одного трека.
   const out: WaveFace[] = [];
   const seen = new Set<string>();
   const deepest = Math.max(0, ...batches.map((b) => b.length));

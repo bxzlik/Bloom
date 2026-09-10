@@ -1,3 +1,4 @@
+import { CardReset, RowReset } from '../controls/SectionReset'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useSettingsStore } from '../../model/settingsStore'
 import { useT } from '@shared/i18n'
@@ -6,8 +7,8 @@ import { Ico } from '@shared/ui/icons/solar'
 /**
  * Карточки вкладки «Библиотека» раздела «Страницы» (`PagesSection`). Раньше это
  * был самостоятельный раздел «Библиотека»: вид библиотеки (список/сетка),
- * плотность треклиста, видимость колонок «Альбом» / «Добавлено», режим хранения
- * локальных файлов.
+ * плотность треклиста, видимость колонки «Альбом», режим хранения локальных
+ * файлов.
  *
  * i18n-ключи вида библиотеки остались в namespace `settings.interface.lib*`
  * (см. dict.ts) — их не переносили, чтобы не плодить дубликаты; поиск по
@@ -22,7 +23,10 @@ export const LibraryCards = () => {
   return (
     <>
       <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.library.import.title')}</div>
+        <div className="sc-title">
+          {t('settings.library.import.title')}
+          <CardReset onReset={() => void setImportMode('inPlace')} />
+        </div>
         <div className="sc-desc">{t('settings.library.import.desc')}</div>
         <div className="s-opt-row">
           <TipBtn
@@ -45,7 +49,10 @@ export const LibraryCards = () => {
       </div>
 
       <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.interface.libView.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.libView.title')}
+          <CardReset onReset={() => p.resetKeys('libView')} />
+        </div>
         <div className="sc-desc">{t('settings.interface.libView.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.libView === 'list'} onClick={() => p.set('libView', 'list')}>
@@ -59,7 +66,10 @@ export const LibraryCards = () => {
         </div>
       </div>
       <div className="sc sc-keep" style={{ display: p.libView === 'list' ? undefined : 'none' }}>
-        <div className="sc-title">{t('settings.interface.libSidebar.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.libSidebar.title')}
+          <CardReset onReset={() => p.resetKeys('sbView', 'libSbHover')} />
+        </div>
         <div className="sc-desc">{t('settings.interface.libSidebar.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.sbView === 'full'} onClick={() => p.set('sbView', 'full')}>
@@ -84,7 +94,10 @@ export const LibraryCards = () => {
         </div>
       </div>
       <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.interface.libHeroBtns.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.libHeroBtns.title')}
+          <CardReset onReset={() => p.resetKeys('libHeroBtns')} />
+        </div>
         <div className="sc-desc">{t('settings.interface.libHeroBtns.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.libHeroBtns === 'right'} onClick={() => p.set('libHeroBtns', 'right')}>
@@ -109,7 +122,10 @@ export const LibraryCards = () => {
         </div>
       </div>
       <div className="sc sc-keep">
-        <div className="sc-title">{t('settings.interface.libDensity.title')}</div>
+        <div className="sc-title">
+          {t('settings.interface.libDensity.title')}
+          <CardReset onReset={() => p.resetKeys('libDensity')} />
+        </div>
         <div className="sc-desc">{t('settings.interface.libDensity.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.libDensity === 'comfortable'} onClick={() => p.set('libDensity', 'comfortable')}>
@@ -125,19 +141,13 @@ export const LibraryCards = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.interface.libCols.album')}</div>
+            <div className="sl2">
+              {t('settings.interface.libCols.album')}
+              <RowReset onReset={() => p.resetKeys('libColAlbum')} />
+            </div>
             <div className="ssub">{t('settings.interface.libCols.albumSub')}</div>
           </div>
           <Toggle checked={p.libColAlbum} onChange={(v) => p.set('libColAlbum', v)} />
-        </div>
-      </div>
-      <div className="sc">
-        <div className="sr">
-          <div>
-            <div className="sl2">{t('settings.interface.libCols.date')}</div>
-            <div className="ssub">{t('settings.interface.libCols.dateSub')}</div>
-          </div>
-          <Toggle checked={p.libColDate} onChange={(v) => p.set('libColDate', v)} />
         </div>
       </div>
     </>

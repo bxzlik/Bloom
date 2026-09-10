@@ -1,5 +1,6 @@
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
+import { EmptyAvatar } from '@features/profile'
 
 /** Слайд «Финал»: приветствие по имени. Оболочка сама уводит его в fade-out. */
 interface Props {
@@ -15,7 +16,7 @@ export const FinalSlide = ({ name, avatar }: Props) => {
         {avatar ? (
           <img src={avatar} alt="" />
         ) : (
-          <Ico name="user" variant="bold" width={40} height={40} style={{ color: 'var(--text)', opacity: 0.22 }} />
+          <EmptyAvatar style={{ width: '100%', height: '100%' }} />
         )}
       </div>
       <div className="ob-final-title">{t('onb.welcome', { name })}</div>

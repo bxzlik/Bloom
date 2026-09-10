@@ -25,17 +25,6 @@ export const tracksLabel = (n: number): string => {
   return `${n} треков`
 }
 
-/** Склонение «N записей / записи / запись» (ru) либо «N record(s)» (en). */
-export const recordsLabel = (n: number): string => {
-  if (loc() !== 'ru') return `${n} ${n === 1 ? 'record' : 'records'}`
-  const abs = Math.abs(n) % 100
-  const last = abs % 10
-  if (abs >= 11 && abs <= 14) return `${n} записей`
-  if (last === 1) return `${n} запись`
-  if (last >= 2 && last <= 4) return `${n} записи`
-  return `${n} записей`
-}
-
 /** Парсит «M:SS» / «H:MM:SS» в секунды. Пустые/невалидные → 0. */
 export const parseDurSec = (d: string | undefined): number => {
   if (!d || d === '—') return 0
@@ -98,6 +87,17 @@ export const historyLabel = (ts: number, now: number = Date.now()): string => {
   if (days < 14) return ru ? 'Неделю назад' : 'A week ago'
   return new Date(ts).toLocaleDateString(ru ? 'ru' : 'en', { day: 'numeric', month: 'long' })
 }
+
+/**
+ * Дата события: «2 сент. 2026 г.» / «Sep 2, 2026». Без времени — это метка
+ * «когда завели», а не запись истории, где важен час.
+ */
+export const stampDate = (ts: number): string =>
+  new Date(ts).toLocaleDateString(loc() === 'ru' ? 'ru' : 'en', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 
 /** «18:32» — час и минуты по локальной зоне. */
 export const historyTime = (ts: number): string =>

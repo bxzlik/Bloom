@@ -1,3 +1,4 @@
+import { RowReset, SectionReset } from '@features/settings/ui/controls/SectionReset'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { toast } from '@shared/ui'
@@ -6,21 +7,40 @@ import { usePopupOpenAnimation } from '@shared/hooks'
 import { useMediaLibStore } from '../model/mediaLibStore'
 import { useCustomizationStore } from '../model/customizationStore'
 import { usePresetsStore, resolvePresetImg, type Preset } from '../model/presetsStore'
-import { BackgroundCards } from './BackgroundCards'
+import { BackgroundSliders } from './BackgroundSliders'
 import type { MediaItem } from '../lib/mediaIdb'
-import { Ico, type IconName } from '@shared/ui/icons/solar'
+import { Ico } from '@shared/ui/icons/solar'
+// Глубокий путь (не barrel @features/player) — избегаем цикла с player/ui.
+import { downloadImageFile } from '@features/player/lib/download'
 
 /**
- * Раздел «Кастомизация» (`ssec-medialib`) — две вкладки в полосе `.s-ptabs`:
+ * Раздел «Кастомизация» (`ssec-medialib`), одна страница сверху вниз:
  *
- * - «Кастомизация» — медиа-библиотека картинок + применение к 5 контекстам
- *   (Фон / Обложка / Визуализатор / Курсор / Слайдер) + пресеты (снимок
- *   контекстов, presetsStore);
- * - «Фон» — параметры фонового слоя (blur/dim/обложка-как-фон, BackgroundCards).
- *   Раньше это был отдельный раздел сайдбара настроек.
+ * - плашки 5 контекстов (Фон / Обложка / Визуализатор / Курсор / Слайдер) —
+ *   картинка ставится перетаскиванием из библиотеки, клик снимает;
+ * - сегмент «Библиотека / Пресеты» с общей сеткой карточек (presetsStore);
+ * - за разделительной полосой — параметры фонового слоя (BackgroundSliders).
+ *
+ * Вкладки `.s-ptabs` («Кастомизация»/«Фон») убраны: фон больше не отдельная
+ * вкладка. Тоггл «обложка трека как фон» переехал в раздел «Интерфейс».
  */
 
 type Ctx = 'bg' | 'cover' | 'viz' | 'cursor' | 'slider'
+
+/** Панель под сегментом: медиа-библиотека или пресеты. */
+type Pane = 'lib' | 'presets'
+
+/** Длительность схлопывания строки добавления — держим в паре с `cz-addrow-out`. */
+const ADD_ROW_EXIT_MS = 260
+
+/** Плашки контекстов слева направо. */
+const CTXS: { id: Ctx; labelKey: TranslationKey; icon: React.ReactNode }[] = [
+  { id: 'bg', labelKey: 'settings.custom.ctx.bg', icon: <Ico name="galleryWide" width={24} height={24} /> },
+  { id: 'cover', labelKey: 'settings.custom.ctx.cover', icon: <Ico name="gallery" width={24} height={24} /> },
+  { id: 'viz', labelKey: 'settings.custom.ctx.viz', icon: <Ico name="wave" width={24} height={24} /> },
+  { id: 'cursor', labelKey: 'settings.custom.ctx.cursor', icon: <Ico name="cursor" width={24} height={24} /> },
+  { id: 'slider', labelKey: 'settings.custom.ctx.slider', icon: <Ico name="slider" width={24} height={24} /> },
+]
 
 // ── Лёгкое контекстное меню (стиль `.ctx`/`.ci`) ───────────────────────────
 interface CtxMenuItem {
@@ -79,18 +99,9 @@ const CtxMenu = ({ pos, items, onClose }: { pos: { x: number; y: number } | null
   )
 }
 
-/** Вкладки раздела: сама медиа-библиотека и параметры фонового слоя. */
-type CustTab = 'media' | 'bg'
-
-const TABS: { id: CustTab; labelKey: TranslationKey; icon: IconName }[] = [
-  { id: 'media', labelKey: 'settings.nav.customization', icon: 'album' },
-  { id: 'bg', labelKey: 'settings.nav.background', icon: 'gallery' },
-]
-
 export const CustomizationSection = () => {
   const t = useT()
   const resetBg = useCustomizationStore((s) => s.resetBg)
-  const [tab, setTab] = useState<CustTab>('media')
 
   return (
     <div className="s-section active" id="ssec-medialib">
@@ -99,36 +110,17 @@ export const CustomizationSection = () => {
           <Ico name="album" width={15} height={15} />{' '}
           {t('settings.nav.customization')}
         </div>
-        {/* Сброс есть только у фона (resetBg): у медиа-библиотеки сбрасывать
-            нечего — картинки удаляются поштучно. */}
-        {tab === 'bg' && (
-          <button className="s-section-reset" onClick={resetBg}>
-            <Ico name="refresh" width={10} height={10} />{' '}
-            {t('common.reset')}
-          </button>
-        )}
+        {/* Сброс относится к параметрам фона (resetBg): картинки библиотеки
+            удаляются поштучно, сбрасывать там нечего. */}
       </div>
+      <SectionReset onReset={resetBg} />
 
-      {/* Переключатель групп — полоса вкладок над карточками раздела. */}
-      <div className="s-ptabs">
-        {TABS.map((tb) => (
-          <button
-            key={tb.id}
-            className={`s-ptab${tab === tb.id ? ' active' : ''}`}
-            onClick={() => setTab(tb.id)}
-          >
-            <Ico name={tb.icon} width={14} height={14} />
-            {t(tb.labelKey)}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'media' ? <MediaCards /> : <BackgroundCards />}
+      <MediaCards />
     </div>
   )
 }
 
-/** Вкладка «Кастомизация»: контексты, галерея, пресеты. */
+/** Содержимое раздела: контексты, галерея/пресеты, параметры фона. */
 const MediaCards = () => {
   const t = useT()
   const items = useMediaLibStore((s) => s.items)
@@ -146,9 +138,11 @@ const MediaCards = () => {
   const setViz = useCustomizationStore((s) => s.setViz)
   const setCursor = useCustomizationStore((s) => s.setCursor)
   const setSlider = useCustomizationStore((s) => s.setSlider)
+  const coverMode = useCustomizationStore((s) => s.coverMode)
+  const setCoverMode = useCustomizationStore((s) => s.setCoverMode)
+  const coverAsBg = useCustomizationStore((s) => s.coverAsBg)
 
   const [urlVal, setUrlVal] = useState('')
-  const [selCtx, setSelCtx] = useState<Ctx | null>(null)
   const [imgMenu, setImgMenu] = useState<{ pos: { x: number; y: number }; item: MediaItem } | null>(null)
 
   const applyToCtx = (ctx: Ctx, data: string) => {
@@ -188,54 +182,150 @@ const MediaCards = () => {
     }
   }
 
-  const onGalleryClick = (item: MediaItem) => {
-    if (!selCtx) {
-      toast(t('settings.custom.toast.selectCard'))
-      return
-    }
-    applyToCtx(selCtx, item.data)
-  }
-
   const addUrlAndClear = () => {
     addUrl(urlVal)
     setUrlVal('')
   }
 
+  // ── Перетаскивание картинки на плашку контекста ───────────────────────
+  // Нативный HTML5 drag'n'drop в этом окне не работает: у главного окна
+  // включён `dragDropEnabled` (нужен для приёма аудиофайлов из проводника,
+  // см. LibPage), а на Windows он вешает на webview OLE-drop-target и глушит
+  // внутристраничные dragover/drop. Поэтому drag свой, на pointer events —
+  // как в useSortable.
+  const [drag, setDrag] = useState<{ item: MediaItem; x: number; y: number } | null>(null)
+  const [overCtx, setOverCtx] = useState<Ctx | null>(null)
+
+  /** Плашка под точкой (превью-призрак прозрачен для хит-теста). */
+  const ctxUnder = (x: number, y: number): Ctx | null => {
+    const el = (document.elementFromPoint(x, y) as HTMLElement | null)?.closest('.mls-card')
+    const id = (el as HTMLElement | null)?.dataset.ctx
+    return (id as Ctx | undefined) ?? null
+  }
+
+  const onCardPointerDown = (e: React.PointerEvent, it: MediaItem) => {
+    if (e.button !== 0) return
+    // Кнопки на карточке (скачать/удалить) — не ручки перетаскивания.
+    if ((e.target as HTMLElement).closest('.cz-card-acts')) return
+    e.preventDefault() // гасим нативный drag картинки и выделение текста
+    const sx = e.clientX
+    const sy = e.clientY
+    let active = false
+    const move = (ev: PointerEvent) => {
+      if (!active) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return
+        active = true
+      }
+      setDrag({ item: it, x: ev.clientX, y: ev.clientY })
+      setOverCtx(ctxUnder(ev.clientX, ev.clientY))
+    }
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+      if (active) {
+        const target = ctxUnder(ev.clientX, ev.clientY)
+        if (target) applyToCtx(target, it.data)
+      }
+      setDrag(null)
+      setOverCtx(null)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+  }
+
   const ctxCurrent: Record<Ctx, string | null> = { bg: bgUrl, cover: coverUrl, viz: vizUrl, cursor: cursorUrl, slider: sliderUrl }
+
+  // Что показывать в блоке настроек под сеткой.
+  const showCoverMode = !!coverUrl
+  const showBgOpts = !!bgUrl || coverAsBg
+
+  // ── Пресеты (живут в той же панели — второй таб) ──────────────────────
+  const presets = usePresetsStore((s) => s.presets)
+  const savePreset = usePresetsStore((s) => s.savePreset)
+  const applyPreset = usePresetsStore((s) => s.applyPreset)
+  const deletePreset = usePresetsStore((s) => s.deletePreset)
+  const exportPreset = usePresetsStore((s) => s.exportPreset)
+  const importPresets = usePresetsStore((s) => s.importPresets)
+
+  const [pane, setPane] = useState<Pane>('lib')
+  /** Куда переключились: 1 — вправо (к «Пресетам»), -1 — влево. */
+  const [paneDir, setPaneDir] = useState<1 | -1>(1)
+  const [adding, setAdding] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [presetName, setPresetName] = useState('')
+  const [presetMenu, setPresetMenu] = useState<{ pos: { x: number; y: number }; id: string } | null>(null)
+
+  // Строка добавления живёт ещё ~200мс после закрытия — доигрывает анимацию
+  // схлопывания. Поля чистим по её окончании, чтобы текст не пропадал раньше.
+  const openAdd = () => {
+    setClosing(false)
+    setAdding(true)
+  }
+  const cancelAdd = () => {
+    if (!adding) return
+    setAdding(false)
+    setClosing(true)
+  }
+  useEffect(() => {
+    if (!closing) return
+    const id = setTimeout(() => {
+      setClosing(false)
+      setUrlVal('')
+      setPresetName('')
+    }, ADD_ROW_EXIT_MS)
+    return () => clearTimeout(id)
+  }, [closing])
+
+  const switchPane = (p: Pane) => {
+    if (p === pane) return
+    // Смена вкладки закрывает строку без анимации: у другой вкладки в ней
+    // другое поле, доигрывать старое бессмысленно.
+    setAdding(false)
+    setClosing(false)
+    setUrlVal('')
+    setPresetName('')
+    setPaneDir(p === 'presets' ? 1 : -1)
+    setPane(p)
+  }
+  const onSavePreset = () => {
+    if (savePreset(presetName)) cancelAdd()
+  }
 
   return (
     <>
-      {/* Контексты (5 карточек) — без обёртки */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10 }}>
-        <CtxCard ctx="bg" label={t('settings.custom.ctx.bg')} current={ctxCurrent.bg} selected={selCtx === 'bg'} onSelect={() => setSelCtx('bg')} onClear={() => clearCtx('bg')} icon={<BgIcon />} />
-        <CtxCard ctx="cover" label={t('settings.custom.ctx.cover')} current={ctxCurrent.cover} selected={selCtx === 'cover'} onSelect={() => setSelCtx('cover')} onClear={() => clearCtx('cover')} icon={<CoverIcon />} />
-        <CtxCard ctx="viz" label={t('settings.custom.ctx.viz')} current={ctxCurrent.viz} selected={selCtx === 'viz'} onSelect={() => setSelCtx('viz')} onClear={() => clearCtx('viz')} icon={<VizIcon />} />
-        <CtxCard ctx="cursor" label={t('settings.custom.ctx.cursor')} current={ctxCurrent.cursor} selected={selCtx === 'cursor'} onSelect={() => setSelCtx('cursor')} onClear={() => clearCtx('cursor')} icon={<CursorIcon />} />
-        <CtxCard ctx="slider" label={t('settings.custom.ctx.slider')} current={ctxCurrent.slider} selected={selCtx === 'slider'} onSelect={() => setSelCtx('slider')} onClear={() => clearCtx('slider')} icon={<SliderIcon />} />
+      {/* Контексты — плашки без бордера и подписей (одна иконка).
+          Картинка ставится только перетаскиванием, клик — снимает её. */}
+      <div className="cz-chips">
+        {CTXS.map(({ id, labelKey, icon }) => (
+          <CtxCard
+            key={id}
+            ctx={id}
+            label={t(labelKey)}
+            current={ctxCurrent[id]}
+            dropOver={overCtx === id}
+            onClear={() => clearCtx(id)}
+            icon={icon}
+          />
+        ))}
       </div>
 
-      {/* Ваша библиотека (галерея) */}
-      <div className="s-cat-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {t('settings.custom.library')}
-        </span>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flex: 1, minWidth: 0, maxWidth: 360, marginLeft: 'auto' }}>
-          <input
-            type="text"
-            placeholder="https://example.com/image.gif"
-            maxLength={2048}
-            value={urlVal}
-            onChange={(e) => setUrlVal(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addUrlAndClear()}
-            style={{ flex: 1, minWidth: 0, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*0.5)', color: 'var(--text)', fontFamily: 'var(--font)', fontSize: 12, fontWeight: 400, textTransform: 'none', letterSpacing: 0, padding: '7px 10px', outline: 'none' }}
-          />
-          {urlVal.trim() ? (
-            <button className="mlm-icon-btn" onClick={addUrlAndClear}>
-              <Ico name="check" width={15} height={15} />
-            </button>
-          ) : (
-            <label className="mlm-icon-btn" style={{ cursor: 'pointer' }}>
-              <Ico name="gallery" width={15} height={15} />
+      {/* Сегмент «Библиотека / Пресеты» + инструменты справа */}
+      <div className="cz-bar">
+        <div className="cz-seg">
+          <button className={`cz-seg-btn${pane === 'lib' ? ' active' : ''}`} onClick={() => switchPane('lib')}>
+            {t('settings.custom.library')}
+          </button>
+          <button className={`cz-seg-btn${pane === 'presets' ? ' active' : ''}`} onClick={() => switchPane('presets')}>
+            {t('settings.custom.presets')}
+          </button>
+        </div>
+        <div className="cz-tools">
+          {/* Первая кнопка не зависит от режима добавления; «+» превращается в «✕». */}
+          {pane === 'lib' ? (
+            <label className="cz-tool" aria-label={t('settings.custom.addFiles')}>
+              <Ico name="export" width={16} height={16} />
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
@@ -247,37 +337,168 @@ const MediaCards = () => {
                 }}
               />
             </label>
+          ) : (
+            <button className="cz-tool" aria-label={t('settings.custom.presets.import')} onClick={() => void importPresets()}>
+              <Ico name="import" width={16} height={16} />
+            </button>
           )}
+          {/* «+» — переключатель строки добавления; в открытом состоянии
+              доворачивается на 45° и читается как крестик. */}
+          <button
+            className={`cz-tool cz-tool-plus${adding ? ' is-close' : ''}`}
+            aria-label={
+              adding
+                ? t('settings.custom.presets.cancel')
+                : pane === 'lib'
+                  ? t('settings.custom.addUrl')
+                  : t('settings.custom.presets.new')
+            }
+            onClick={() => (adding ? cancelAdd() : openAdd())}
+          >
+            <Ico name="add" width={16} height={16} />
+          </button>
         </div>
       </div>
-      <div className="sc">
-        {items.length === 0 ? (
-          <div className="ssub" style={{ padding: '20px 0', textAlign: 'center' }}>{t('settings.custom.library.empty')}</div>
+
+      {/* Строка добавления: ссылка (библиотека) / имя (пресет) */}
+      {(adding || closing) && (
+        <div className={`cz-addrow${closing ? ' out' : ''}`}>
+          <div className="cz-field">
+            <input
+              className="cz-input"
+              type="text"
+              autoFocus
+              maxLength={pane === 'lib' ? 2048 : 40}
+              placeholder={pane === 'lib' ? t('settings.custom.addUrl.placeholder') : t('settings.custom.presets.namePlaceholder')}
+              value={pane === 'lib' ? urlVal : presetName}
+              onChange={(e) => (pane === 'lib' ? setUrlVal(e.target.value) : setPresetName(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (pane === 'lib') addUrlAndClear()
+                  else onSavePreset()
+                } else if (e.key === 'Escape') cancelAdd()
+              }}
+            />
+            {/* Второй путь добавления прямо из строки — выбрать файлы с диска. */}
+            {pane === 'lib' && (
+              <label className="cz-field-btn" aria-label={t('settings.custom.addFiles')}>
+                <Ico name="export" width={15} height={15} />
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    if (e.target.files) void addFiles(e.target.files)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            )}
+          </div>
+          <button
+            className="cz-btn"
+            disabled={pane === 'lib' ? !urlVal.trim() : false}
+            onClick={() => (pane === 'lib' ? addUrlAndClear() : onSavePreset())}
+          >
+            {pane === 'lib' ? t('settings.custom.add') : t('common.save')}
+          </button>
+        </div>
+      )}
+
+      {/* key={pane} перемонтирует обёртку на каждом переключении — так CSS-
+          анимация проигрывается заново; направление сдвига зависит от того, в
+          какую сторону переключились. */}
+      <div key={pane} className={`cz-pane ${paneDir === 1 ? 'from-right' : 'from-left'}`}>
+      {pane === 'lib' ? (
+        items.length === 0 ? (
+          <EmptyBox title={t('settings.custom.library.empty')} sub={t('settings.custom.library.emptySub')} />
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 9, marginTop: 8 }}>
+          <div className="cz-grid">
             {items.map((it) => (
               <div
                 key={it.id}
-                className="mlm-card"
-                onClick={() => onGalleryClick(it)}
+                className={`cz-card${drag?.item.id === it.id ? ' dragging' : ''}`}
+                onPointerDown={(e) => onCardPointerDown(e, it)}
                 onContextMenu={(e) => { e.preventDefault(); setImgMenu({ pos: { x: e.clientX, y: e.clientY }, item: it }) }}
               >
-                <img src={it.data} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.opacity = '0.2' }} />
-                <button
-                  className="mlm-card-del"
-                  onClick={(e) => { e.stopPropagation(); removeItem(it.id) }}
-                >
-                  <Ico name="close" width={11} height={11} />
-                </button>
-                <div className="mlm-card-info">{it.name}</div>
+                <img src={it.data} alt="" loading="lazy" draggable={false} onError={(e) => { e.currentTarget.style.opacity = '0.2' }} />
+                <div className="cz-card-name">{it.name}</div>
+                <div className="cz-card-acts">
+                  <button className="cz-act" aria-label={t('player.aria.download')} onClick={(e) => { e.stopPropagation(); void downloadImageFile(it.data, it.name) }}>
+                    <Ico name="download" width={15} height={15} />
+                  </button>
+                  <button className="cz-act danger" aria-label={t('settings.custom.ctxmenu.delete')} onClick={(e) => { e.stopPropagation(); removeItem(it.id) }}>
+                    <Ico name="trash" width={15} height={15} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
-        )}
+        )
+      ) : presets.length === 0 ? (
+        <EmptyBox title={t('settings.custom.presets.empty')} sub={t('settings.custom.presets.emptySub')} />
+      ) : (
+        <div className="cz-grid">
+          {presets.map((p) => (
+            <div
+              key={p.id}
+              className="cz-card"
+              onClick={() => applyPreset(p.id)}
+              onContextMenu={(e) => { e.preventDefault(); setPresetMenu({ pos: { x: e.clientX, y: e.clientY }, id: p.id }) }}
+            >
+              <PresetThumb p={p} />
+              <div className="cz-card-name">{p.name || t('settings.custom.presets.untitled')}</div>
+              <div className="cz-card-acts">
+                <button className="cz-act" aria-label={t('settings.custom.ctxmenu.export')} onClick={(e) => { e.stopPropagation(); void exportPreset(p.id) }}>
+                  <Ico name="download" width={15} height={15} />
+                </button>
+                <button className="cz-act danger" aria-label={t('settings.custom.ctxmenu.delete')} onClick={(e) => { e.stopPropagation(); deletePreset(p.id) }}>
+                  <Ico name="trash" width={15} height={15} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       </div>
 
-      {/* Пресеты */}
-      <PresetsCard />
+      {/* Настройки под сеткой — за такой же полосой, как у плашек контекстов.
+          Каждая появляется только когда есть что настраивать: режим — при
+          поставленной обложке, размытие/затемнение — при фоне (своя картинка
+          или включённая «обложка трека как фон»). */}
+      {(showCoverMode || showBgOpts) && (
+        <div className="cz-sub">
+          {showCoverMode && (
+            <div className="sc">
+              <div className="sr">
+                <div>
+                  <div className="sl2">
+                    {t('settings.custom.coverMode')}
+                    <RowReset onReset={() => setCoverMode('always')} />
+                  </div>
+                  <div className="ssub">{t('settings.custom.coverMode.sub')}</div>
+                </div>
+                <div className="cz-modes">
+                  <button
+                    className={`s-opt-btn ${coverMode === 'always' ? 'bta' : 'btg'}`}
+                    onClick={() => setCoverMode('always')}
+                  >
+                    {t('settings.custom.coverMode.always')}
+                  </button>
+                  <button
+                    className={`s-opt-btn ${coverMode === 'fallback' ? 'bta' : 'btg'}`}
+                    onClick={() => setCoverMode('fallback')}
+                  >
+                    {t('settings.custom.coverMode.fallback')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {showBgOpts && <BackgroundSliders />}
+        </div>
+      )}
 
       {/* Контекстное меню фото */}
       <CtxMenu
@@ -287,117 +508,37 @@ const MediaCards = () => {
           { label: t('settings.custom.ctxmenu.delete'), icon: <Ico name="trash" width={13} height={13} />, danger: true, onClick: () => removeItem(imgMenu.item.id) },
         ] : []}
       />
-    </>
-  )
-}
-
-// ── Пресеты (снимок 4-х контекстов) ───────────────────────────────────────
-const PresetsCard = () => {
-  const t = useT()
-  const presets = usePresetsStore((s) => s.presets)
-  const savePreset = usePresetsStore((s) => s.savePreset)
-  const applyPreset = usePresetsStore((s) => s.applyPreset)
-  const deletePreset = usePresetsStore((s) => s.deletePreset)
-  const exportPresets = usePresetsStore((s) => s.exportPresets)
-  const exportPreset = usePresetsStore((s) => s.exportPreset)
-  const importPresets = usePresetsStore((s) => s.importPresets)
-  const [name, setName] = useState('')
-  const [adding, setAdding] = useState(false)
-  const [menu, setMenu] = useState<{ pos: { x: number; y: number }; id: string } | null>(null)
-
-  const onSave = () => {
-    if (savePreset(name)) {
-      setName('')
-      setAdding(false)
-    }
-  }
-  const cancelAdd = () => {
-    setAdding(false)
-    setName('')
-  }
-
-  return (
-    <>
-      <div className="s-cat-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          {t('settings.custom.presets')}
-        </span>
-        {adding ? (
-          <button className="mlm-icon-btn" onClick={cancelAdd}>
-            <Ico name="close" width={14} height={14} />
-          </button>
-        ) : (
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button className="mlm-icon-btn" onClick={() => void importPresets()}>
-              <Ico name="import" width={14} height={14} />
-            </button>
-            <button className="mlm-icon-btn" onClick={() => void exportPresets()}>
-              <Ico name="export" width={14} height={14} />
-            </button>
-            <button className="mlm-icon-btn" onClick={() => setAdding(true)}>
-              <Ico name="add" width={14} height={14} />
-            </button>
-          </div>
-        )}
-      </div>
-      <div className="sc">
-      {adding ? (
-        <div className="presets-empty-box" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: '26px 20px' }}>
-          <input
-            className="preset-name-inp"
-            type="text"
-            placeholder={t('settings.custom.presets.namePlaceholder')}
-            maxLength={40}
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onSave(); else if (e.key === 'Escape') cancelAdd() }}
-            style={{ maxWidth: 360 }}
-          />
-          <button className="mlm-icon-btn" onClick={onSave}>
-            <Ico name="check" width={15} height={15} />
-          </button>
-        </div>
-      ) : presets.length === 0 ? (
-        <div className="presets-empty-box">{t('settings.custom.presets.empty')}</div>
-      ) : (
-        <div className="presets-grid">
-          {presets.map((p) => {
-            const badges = [p.bg && t('settings.custom.badge.bg'), p.cover && t('settings.custom.badge.cover'), p.viz && t('settings.custom.badge.viz'), p.cursor && t('settings.custom.badge.cursor'), p.slider && t('settings.custom.badge.slider')].filter(Boolean) as string[]
-            return (
-              <div
-                key={p.id}
-                className="preset-card"
-                onClick={() => applyPreset(p.id)}
-                onContextMenu={(e) => { e.preventDefault(); setMenu({ pos: { x: e.clientX, y: e.clientY }, id: p.id }) }}
-              >
-                <PresetThumb p={p} />
-                <div className="preset-badges">
-                  {badges.map((b) => <span key={b} className="preset-badge">{b}</span>)}
-                </div>
-                <div className="preset-name">{p.name || t('settings.custom.presets.untitled')}</div>
-                <button className="preset-del-btn" onClick={(e) => { e.stopPropagation(); deletePreset(p.id) }}>
-                  <Ico name="close" width={9} height={9} />
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      )}
-      </div>
 
       {/* Контекстное меню пресета */}
       <CtxMenu
-        pos={menu?.pos ?? null}
-        onClose={() => setMenu(null)}
-        items={menu ? [
-          { label: t('settings.custom.ctxmenu.export'), icon: <Ico name="export" width={13} height={13} />, onClick: () => void exportPreset(menu.id) },
-          { label: t('settings.custom.ctxmenu.delete'), icon: <Ico name="trash" width={13} height={13} />, danger: true, onClick: () => deletePreset(menu.id) },
+        pos={presetMenu?.pos ?? null}
+        onClose={() => setPresetMenu(null)}
+        items={presetMenu ? [
+          { label: t('settings.custom.ctxmenu.export'), icon: <Ico name="export" width={13} height={13} />, onClick: () => void exportPreset(presetMenu.id) },
+          { label: t('settings.custom.ctxmenu.delete'), icon: <Ico name="trash" width={13} height={13} />, danger: true, onClick: () => deletePreset(presetMenu.id) },
         ] : []}
       />
+
+      {/* Превью, летящее за курсором. В body — чтобы не обрезалось прокруткой
+          настроек; pointer-events:none, иначе перекроет хит-тест плашек. */}
+      {drag && createPortal(
+        <div className="cz-drag-ghost" style={{ left: drag.x, top: drag.y }}>
+          <img src={drag.item.data} alt="" />
+        </div>,
+        document.body,
+      )}
     </>
   )
 }
+
+/** Пустое состояние панели: иконка-коробка + заголовок + подпись. */
+const EmptyBox = ({ title, sub }: { title: string; sub: string }) => (
+  <div className="cz-empty">
+    <Ico name="box" width={40} height={40} className="cz-empty-ico" />
+    <div className="cz-empty-title">{title}</div>
+    <div className="cz-empty-sub">{sub}</div>
+  </div>
+)
 
 // ── Превью пресета (карусель) ──────────────────────────────────────────────
 // Все картинки пресета листаются авто-сменой (как страницы превью обновы);
@@ -422,7 +563,7 @@ const PresetThumb = ({ p }: { p: Preset }) => {
     return (
       <div className="preset-thumb">
         <div className="preset-thumb-empty">
-          <Ico name="gallery" width={18} height={18} style={{ opacity: 0.3 }} />
+          <Ico name="box" width={30} height={30} />
         </div>
       </div>
     )
@@ -455,51 +596,39 @@ const PresetThumb = ({ p }: { p: Preset }) => {
   )
 }
 
-// ── Карточка контекста ────────────────────────────────────────────────────
+// ── Плашка контекста ──────────────────────────────────────────────────────
+// Только иконка: без бордера и без подписей (название уходит в aria-label).
 const CtxCard = ({
+  ctx,
   label,
   current,
-  selected,
   disabled,
-  onSelect,
+  dropOver,
   onClear,
   icon,
 }: {
   ctx: Ctx
   label: string
   current: string | null
-  selected?: boolean
   disabled?: boolean
-  onSelect?: () => void
+  /** Курсор с перетаскиваемой картинкой сейчас над этой плашкой. */
+  dropOver?: boolean
   onClear?: () => void
   icon: React.ReactNode
-}) => {
-  const t = useT()
-  return (
+}) => (
   <div
-    className={`mls-card${selected ? ' active' : ''}`}
-    onClick={disabled ? undefined : onSelect}
+    // data-ctx читает хит-тест перетаскивания (elementFromPoint → closest).
+    data-ctx={ctx}
+    className={`mls-card${current ? ' has-img' : ''}${dropOver ? ' drop-over' : ''}`}
+    role="button"
+    aria-label={label}
+    onClick={() => { if (!disabled && current) onClear?.() }}
     style={disabled ? { opacity: 0.45, cursor: 'default' } : undefined}
   >
     <div className="mls-card-preview">
-      {current && <img src={current} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
-      <div className="mls-card-icon-wrap">
-        {icon}
-        <span className="mls-icon-label">{label}</span>
-        {!current && <span className="mls-icon-sub">{disabled ? t('settings.custom.ctx.soon') : t('settings.custom.ctx.tap')}</span>}
-      </div>
+      {current && <img src={current} alt="" draggable={false} onError={(e) => { e.currentTarget.style.display = 'none' }} />}
+      <div className="mls-card-icon-wrap">{icon}</div>
     </div>
-    {current && !disabled && (
-      <button className="mls-del-btn" style={{ opacity: 1 }} onClick={(e) => { e.stopPropagation(); onClear?.() }}>
-        <Ico name="close" width={10} height={10} />
-      </button>
-    )}
   </div>
-  )
-}
+)
 
-const BgIcon = () => <Ico name="galleryWide" width={24} height={24} />
-const CoverIcon = () => <Ico name="gallery" width={24} height={24} />
-const VizIcon = () => <Ico name="wave" width={24} height={24} />
-const CursorIcon = () => <Ico name="cursor" width={24} height={24} />
-const SliderIcon = () => <Ico name="slider" width={24} height={24} />

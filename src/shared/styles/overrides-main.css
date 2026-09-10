@@ -25,8 +25,13 @@
        --ov-card        карточки .sc/.sr внутри модалки настроек;
        --ov-card-hover  их наведение;
        --ov-opt-hover   наведение на кнопку-опцию .s-opt-btn.
-     Подсветка ослаблена по запросу: было 1 / 4 / 6 / 11. */
-  --ov-lift: 0.5%;
+     Подсветка ослаблена по запросу: было 1 / 4 / 6 / 11.
+     --ov-lift подобран под дефолтную тёмную тему (--block-color #0a0a0a):
+     10 + 1.25% × (255 − 10) ≈ 13, то есть ровно #0d0d0d. Значение НЕ фиксирует
+     цвет — оно фиксирует ДОЛЮ подмеса, поэтому на другой теме результат другой
+     (AMOLED #000 → #030303, светлая тема темнеет на ту же долю). Если менять
+     ради конкретного hex, считать заново от block-color этой темы. */
+  --ov-lift: 1.25%;
   --ov-card: 3%;
   --ov-card-hover: 4.5%;
   --ov-opt-hover: 8%;
@@ -57,13 +62,10 @@
   --color-accent-2: var(--accent2);
   --color-accent-text: var(--accent-text);
   --color-text: var(--text);
-  --color-text-2: var(--text2);
   --color-text-muted: var(--text2);
-  --color-muted: var(--muted);
   --color-bg2: var(--bg2);
-  /* surface — subtle hover-подсветка (как .lib-item:hover); elevated — плашка. */
+  /* surface — subtle hover-подсветка (как .lib-item:hover). */
   --color-surface: var(--hover);
-  --color-surface-elevated: var(--card);
 
   /* Легаси-правила (sp-*, sc-*) местами используют var(--fg) без фолбэка —
      в root.css его нет (есть --text). Алиасим, чтобы не было «бесцветного» текста. */
@@ -86,11 +88,7 @@ body {
 .sidebar,
 .main,
 .lib-block,
-.lib-block-search,
-.lib-block-btns,
-.lib-block-pl,
 .lib-block-combined,
-.lib-block-folders,
 .lib-content-head,
 .lib-tracklist,
 .pl-edit-body,
@@ -100,8 +98,7 @@ body {
 #lyricsQueueBlock,
 #grpLyricsBlock,
 .home-continue-card,
-.home-quick-card,
-.home-btn-secondary {
+.home-quick-card {
   background: var(--block-color) !important;
 }
 
@@ -144,7 +141,7 @@ body {
    карточки + наведение ниже. Осветляем адаптивно через color-mix с var(--text)
    (белый для тёмных тем → светлее, тёмный для Light → темнее).
    --bg2: «вторичные» поверхности раздела «Кастомизация» (карточки контекстов
-   .mls-card, поле URL, .mlm-icon-btn, .preset-card, пикер темы .tp-current и пр.)
+   .mls-card, поле URL, .preset-card, пикер темы .tp-current и пр.)
    тянут var(--bg2) из палитры темы. У кастомных тем палитра пустая → --bg2
    сбрасывается к root.css #141414 (= цвет карточек при block #0a0a0a). Чтобы
    совпасть с «правильным» видом и при этом читаться от блоков — приравниваем
@@ -174,7 +171,6 @@ body {
    карточки (.sc-keep и обычные без вложенного .sr) и панели-строки .sr внутри
    тогл-карточек (там видимая плашка — именно .sr, сам .sc прозрачный). */
 #settingsOverlay .sc,
-#settingsOverlay .sc-url-wrap,
 #settingsOverlay .tele-stat-card,
 #settingsOverlay .s-section .sc:has(> .sr):not(.sc-keep) > .sr {
   transition: background .15s;
@@ -184,12 +180,10 @@ body {
 #settingsOverlay .sc:has(> .sr):not(.sc-keep) > .sr:hover,
 #settingsOverlay .sc:has(> .tele-toggle-row):not(.sc-keep) > .tele-toggle-row:hover,
 #settingsOverlay .tele-stat-card:hover,
-#settingsOverlay .tele-data-row:hover,
-#settingsOverlay .sc-url-wrap:hover {
+#settingsOverlay .tele-data-row:hover {
   /* Подсвечиваем только настоящие панели:
      - сплошные карточки .sc (без вложенных строк) и .sc-keep — целиком;
-     - флэт-строки .sr / .tele-toggle-row (имеют свой фон+скругление) — по строке;
-     - .sc-url-wrap (Яндекс/Last.fm) — целиком (инлайн-фон → нужен !important).
+     - флэт-строки .sr / .tele-toggle-row (имеют свой фон+скругление) — по строке.
      Сырые .sr внутри .sc-keep НЕ трогаем (нет своей плашки → кривой прямоугольник);
      там подсвечивается вся карточка. */
   background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-card-hover)) !important;
@@ -210,6 +204,12 @@ body {
   background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-opt-hover)) !important;
   color: var(--text) !important;
 }
+/* Чипы-переключатели (.s-chip — «Отображать на панели», «Секции главной»)
+   раскрашены как .s-opt-btn — наведение на выключенный чип подсвечиваем так же. */
+#settingsOverlay .s-chip:not(.active):hover {
+  background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-opt-hover)) !important;
+  color: var(--text) !important;
+}
 
 /* Карточки Все треки / Любимые / История — прозрачный фон.
    В старом CSS получают `background: var(--block-bg, #2a2a2a)` (тёмно-серая
@@ -217,12 +217,6 @@ body {
    радиальный градиент через ::before. */
 .lib-item-sys {
   background: transparent !important;
-}
-
-/* Последний системный пункт (История) несёт `margin-bottom:6px` от .lib-item —
-   гасим, чтобы нижний отступ совпадал с боковыми/верхним (по 4px). */
-.lib-item-sys-hist {
-  margin-bottom: 0 !important;
 }
 
 /* Единая ЗАМЕТНАЯ полупрозрачная подсветка пунктов библиотеки (плейлисты, папки,
@@ -237,19 +231,25 @@ body {
    Решение: скоупим под `.lib-sidebar` → специфичность (0,3,0) бьёт и, и
    glass-правило; значения делаем заметнее (hover 6%, active 12%), оставаясь
    полупрозрачными (сквозь стекло видно). Правило `.lib-item.active` ловит и
-   системные пункты — у них тоже есть класс `.lib-item`. */
+   системные пункты — у них тоже есть класс `.lib-item`.
+
+   С переходом на поведение «как в сайдбаре приложения» плашки не осталось
+   вообще: ни на hover, ни на `.active` (гасим их именно тут — иначе фон вернул
+   бы `!important` из glass-правила выше). Состояние несёт название строки:
+   наведение — `--text`, выбранный раздел — `--accent`. Порядок правил важен:
+   active идёт после hover при равной специфичности (0,3,0). */
 .lib-sidebar .lib-item:hover {
-  background: rgba(var(--ovl-rgb), 0.06) !important;
+  background: transparent !important;
+}
+.lib-sidebar .lib-item:hover .lib-item-name {
+  color: var(--text);
 }
 .lib-sidebar .lib-item.active {
-  background: rgba(var(--ovl-rgb), 0.08) !important;
+  background: transparent !important;
 }
-
-/* Play-кнопка в пунктах sidebar (.lib-item-play) — убираем color-change на
-   :hover. Сама кнопка появляется на hover родителя .lib-item, но при наведении
-   на саму кнопку цвет фона не меняется. */
-.lib-item-play:hover {
-  background: var(--text) !important;
+.lib-sidebar .lib-item.active .lib-item-name,
+.lib-sidebar .lib-item.active:hover .lib-item-name {
+  color: var(--accent);
 }
 
 /* Кнопки .cc плеера (страница #playerContent + нижний #miniPlayer) — hover БЕЗ
@@ -276,6 +276,16 @@ body {
    !important. Подсветка — brightness, как у `.cc.on:hover` в player.css. */
 #miniPlayer .cc.on:hover {
   color: var(--accent) !important;
+  filter: brightness(1.15);
+}
+/* ♥ «в избранном» в баре — общий красный (--sys-fav-ico), как в строке трека
+   (.ib.fav) и на обложке плеера, в том числе под курсором: `#miniPlayer .cc:hover`
+   выше и в base.css идут с !important, поэтому нужен свой !important. */
+#miniPlayer .cc.fav,
+#miniPlayer .cc.fav:hover {
+  color: var(--sys-fav-ico) !important;
+}
+#miniPlayer .cc.fav:hover {
   filter: brightness(1.15);
 }
 
@@ -322,21 +332,6 @@ body {
   :is(.sp-tc-cover, .sp-ac-av, .hc-cover, .hpc-cover)
   > *:not(.sp-tc-play, .hc-play-overlay, .hpc-play-overlay, .cov-badge, .trcov-loading, .tr-playing-overlay) {
   scale: var(--cov-zoom, 1.08);
-}
-
-/* Недавнее (.sp-recent-item) — hover-подсветка. Legacy hover = var(--card),
-   а в bloom --card == --bg → было невидимо. */
-.sp-recent-item:hover { background: var(--hover); }
-/* Фон иконки недавнего: var(--card) == --bg (невидим) → видимый тинт. */
-.sp-recent-item-icon { background: var(--hover); }
-
-/* BigPicture: очередь полностью прозрачна (фон — размытая обложка), со
-   старого bp-q-wrap. Перебивает block-color + инлайн рамку/блюр QueueBlock
-   (2 id + !important > всё). */
-#bigPicOverlay #playerQueueBlock {
-  background: transparent !important;
-  border: none !important;
-  backdrop-filter: none !important;
 }
 
 /* BigPicture: выравнивание заголовка/артиста/текста песни следует настройке

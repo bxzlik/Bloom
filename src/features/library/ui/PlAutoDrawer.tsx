@@ -142,16 +142,12 @@ export const PlAutoDrawer = () => {
       }}
     >
       <div className="spanel">
-        {/* HERO: иконка + заголовок + чипы состояния */}
+        {/* HERO: иконка (крутится на время прохода) + заголовок + чипы состояния */}
         <div className="mpl-hero">
           <div className={`pau-hero-ico${running ? ' spin' : ''}`}>
             <Ico name="refresh" width={26} height={26} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="mpl-htitle">
-              <Ico name="queue" width={11} height={11} />
-              {t('lib.plauto.kicker')}
-            </div>
             <div
               style={{
                 fontSize: 18,
@@ -302,15 +298,15 @@ export const PlAutoDrawer = () => {
                 ? `${t('lib.plauto.lastSweep')} ${agoLabel(lastRun)}`
                 : t('lib.plauto.neverRun')}
           </div>
-          <button className="mpl-btn ghost" onClick={closeDrawer}>
-            {t('common.close')}
-          </button>
           <button
             className="mpl-btn primary"
             disabled={running || selected.length === 0}
             onClick={() => void runPlAutoRefresh()}
           >
             {running ? t('lib.plauto.updating') : t('lib.plauto.refreshNow')}
+          </button>
+          <button className="mpl-btn ghost" onClick={closeDrawer}>
+            {t('common.close')}
           </button>
         </div>
       </div>

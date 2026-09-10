@@ -226,7 +226,7 @@ export const IntegrationCard = ({
     className="intg-card"
     style={{
       background: 'var(--card)',
-      border: '1px solid var(--border)',
+      border: 'none',
       borderRadius: 'var(--radius)',
       padding: '14px 16px',
       margin: '0 2px',

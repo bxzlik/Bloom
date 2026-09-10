@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 /** Какая боковая панель открыта внутри BigPicture (или ничего). */
-export type BpPanel = 'none' | 'queue' | 'lyrics'
+export type BpPanel = 'none' | 'lyrics'
 
 /**
  * Раскладка зоны текста: «Всё» (обложка + текст), «Обложка» (только обложка),
@@ -23,19 +23,20 @@ export const BP_FONT_SIZES: { normal: number; active: number }[] = [
 
 /**
  * Полноэкранный режим обложки (#bigPicOverlay).
- * `openBigPic`/`closeBigPic` + `toggleBpQueue`/`toggleBpLyr` + шрифт/оффсет
+ * `openBigPic`/`closeBigPic` + `toggleBpLyr` + шрифт/оффсет
  *.
- *
- * Одновременно открыта максимум ОДНА боковая панель (очередь ИЛИ текст):
- * `toggleQueue`/`toggleLyrics` взаимно закрывают друг друга,.
  */
 export interface BigPicState {
   /** Оверлей открыт. */
   open: boolean
-  /** Активная боковая панель (очередь/текст/ничего). */
+  /** Активная боковая панель (текст/ничего). */
   panel: BpPanel
-  /** Открыт попап настроек шрифта/оффсета (правый верхний угол). */
-  fontPanelOpen: boolean
+  /**
+   * Попап настроек шрифта/вида/оффсета: координаты курсора, где он открыт, или
+   * `null` — закрыт. Отдельной кнопки нет — попап вызывается ПКМ по любому
+   * месту фуллскрина (кроме обложки, там своё меню трека).
+   */
+  fontPanelPos: { x: number; y: number } | null
   /** Раскладка зоны текста в режиме текста ('all' | 'text'); 'cover' = panel 'none'. */
   lyrView: 'all' | 'text'
   /** Индекс размера шрифта текста (0..3, см. BP_FONT_SIZES). */
@@ -52,9 +53,10 @@ export interface BigPicState {
 
   openBig: () => void
   closeBig: () => void
-  toggleQueue: () => void
   toggleLyrics: () => void
-  toggleFontPanel: () => void
+  /** Открыть попап настроек в точке курсора (ПКМ). */
+  openFontPanel: (x: number, y: number) => void
+  closeFontPanel: () => void
   /** Переключить вид зоны текста (см. BpView). */
   setView: (v: BpView) => void
   setFontSize: (n: number) => void
@@ -65,7 +67,7 @@ export interface BigPicState {
 export const useBigPicStore = create<BigPicState>((set) => ({
   open: false,
   panel: 'none',
-  fontPanelOpen: false,
+  fontPanelPos: null,
   lyrView: 'all',
   fontSize: 3,
   offset: 0,
@@ -73,13 +75,11 @@ export const useBigPicStore = create<BigPicState>((set) => ({
 
   // Каждый заход — чистая раскладка + разрешённое авто-открытие текста.
   openBig: () =>
-    set({ open: true, panel: 'none', fontPanelOpen: false, lyrView: 'all', autoLyr: true }),
+    set({ open: true, panel: 'none', fontPanelPos: null, lyrView: 'all', autoLyr: true }),
   // Раскладку сбрасывает openBig, а не закрытие: оверлей ещё ~0.3с уезжает вниз
-  // (BigPicture.tsx), и сброс panel здесь схлопнул бы текст/очередь прямо в
+  // (BigPicture.tsx), и сброс panel здесь схлопнул бы текст прямо в
   // кадре анимации выхода.
   closeBig: () => set({ open: false, autoLyr: false }),
-  toggleQueue: () =>
-    set((s) => ({ panel: s.panel === 'queue' ? 'none' : 'queue', autoLyr: false })),
   // Открытие текста через кнопку всегда даёт раскладку «Всё».
   toggleLyrics: () =>
     set((s) =>
@@ -87,7 +87,8 @@ export const useBigPicStore = create<BigPicState>((set) => ({
         ? { panel: 'none', autoLyr: false }
         : { panel: 'lyrics', lyrView: 'all', autoLyr: false },
     ),
-  toggleFontPanel: () => set((s) => ({ fontPanelOpen: !s.fontPanelOpen })),
+  openFontPanel: (x, y) => set({ fontPanelPos: { x, y } }),
+  closeFontPanel: () => set({ fontPanelPos: null }),
   // «Обложка» = просто без боковой панели; «Всё»/«Текст» открывают текст с нужной раскладкой.
   setView: (v) =>
     set(v === 'cover' ? { panel: 'none', autoLyr: false } : { panel: 'lyrics', lyrView: v, autoLyr: false }),

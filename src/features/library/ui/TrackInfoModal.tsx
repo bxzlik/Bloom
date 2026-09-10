@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Track } from '@entities/track'
-import { useThemeStore } from '@features/settings'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { useT } from '@shared/i18n'
-import { ExpandDesc, PathLine } from '@shared/ui'
+import { ExpandDesc, PathLine, EmptyCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -16,13 +15,16 @@ import { Ico } from '@shared/ui/icons/solar'
  * Паблишер / Жанры) + описание, которое по клику разворачивается попапом,
  * если не влезло в две строки (shared/ui/ExpandDesc).
  *
- * Открытие/закрытие — модальная конвенция: класс `.open` (opacity .26s + scale
- * /translate .32s, см. [[project-modal-style]]). Unmount после transition.
- *
- * `--ti-r/g/b` ставим из текущего цвета блока (`--block-color`) —
- * (там из blockR/G/B настроек). Без них CSS падает на дефолт rgb(15,15,15).
- * На :root, а не на модалке, т.к. .ti-overlay — не предок всех потребителей.
+ * Открытие/закрытие — как у модалки «Статистика» (`.smodal`): подложка гаснет
+ * за .22s, сама карточка выезжает из-за кромки окна за .42s. Демонтаж поэтому
+ * по таймеру (ANIM_MS), а не по transitionEnd подложки — тот приходил бы на
+ * середине выезда. Поверхность и рамки — общие токены приложения, своего цвета
+ * по обложке у модалки больше нет.
  */
+
+// Длительность slide-out (.ti-modal transform .42s) перед демонтажем.
+const ANIM_MS = 440
+
 export const TrackInfoModal = ({
   track,
   onClose,
@@ -31,10 +33,10 @@ export const TrackInfoModal = ({
   onClose: () => void
 }) => {
   const tr = useT()
-  const blockColor = useThemeStore((s) => s.blockColor)
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
   const [shownTrack, setShownTrack] = useState<Track | null>(null)
+  const closeTimer = useRef<number | null>(null)
 
   const open = track !== null
 
@@ -44,25 +46,29 @@ export const TrackInfoModal = ({
     if (track) setShownTrack(track)
   }, [track])
 
-  // Enter-анимация `.open` без «дёрганья» появления (см. runEnterAnimation).
+  // Enter-анимация `.open` без «дёрганья» появления (см. runEnterAnimation);
+  // на закрытии — отложенный демонтаж под slide-out.
   useEffect(() => {
     if (open) {
+      if (closeTimer.current !== null) {
+        window.clearTimeout(closeTimer.current)
+        closeTimer.current = null
+      }
       setMounted(true)
       return runEnterAnimation(setOpening)
-    } else {
-      setOpening(false)
+    }
+    setOpening(false)
+    closeTimer.current = window.setTimeout(() => {
+      setMounted(false)
+      closeTimer.current = null
+    }, ANIM_MS)
+    return () => {
+      if (closeTimer.current !== null) {
+        window.clearTimeout(closeTimer.current)
+        closeTimer.current = null
+      }
     }
   }, [open])
-
-  // --ti-r/g/b из цвета блока.
-  useEffect(() => {
-    if (!mounted) return
-    const { r, g, b } = hexToRgb(blockColor)
-    const root = document.documentElement
-    root.style.setProperty('--ti-r', String(r))
-    root.style.setProperty('--ti-g', String(g))
-    root.style.setProperty('--ti-b', String(b))
-  }, [mounted, blockColor])
 
   // Esc → закрыть.
   useEffect(() => {
@@ -90,16 +96,8 @@ export const TrackInfoModal = ({
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose()
         }}
-        onTransitionEnd={(e) => {
-          if (!open && e.target === e.currentTarget) setMounted(false)
-        }}
       >
         <div className="ti-modal" id="tiModal">
-          <div className="ti-head">
-            <button className="ti-close" onClick={onClose} aria-label={tr('common.close')}>
-              <Ico name="close" width={12} height={12} />
-            </button>
-          </div>
           <div className="ti-hero">
             <div
               className="ti-hero-bg"
@@ -111,7 +109,7 @@ export const TrackInfoModal = ({
               {t?.cover ? (
                 <img src={t.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <Ico name="note" width={24} height={24} style={{ opacity: 0.3 }} />
+                <EmptyCover />
               )}
             </div>
             <div className="ti-hero-info">
@@ -213,15 +211,15 @@ export const TrackInfoModal = ({
               </div>
             )}
           </div>
+          <div className="ti-foot">
+            <button className="stats-tool-btn" onClick={onClose}>
+              <Ico name="arrowLeft" width={13} height={13} />
+              {tr('common.back')}
+            </button>
+          </div>
         </div>
       </div>
     </>,
     document.body,
   )
-}
-
-const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim())
-  if (!m) return { r: 15, g: 15, b: 15 }
-  return { r: parseInt(m[1]!, 16), g: parseInt(m[2]!, 16), b: parseInt(m[3]!, 16) }
 }

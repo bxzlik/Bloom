@@ -63,6 +63,11 @@ export interface ThemeState {
   fontFamily: string
   /** Авто-акцент из обложки трека. */
   autoAccent: boolean
+  /**
+   * Авто-тема: из обложки берётся не только акцент, но и поверхность
+   * (фон + блоки). Живёт в списке тем как псевдо-пресет `AUTO_THEME_ID`.
+   */
+  autoTheme: boolean
   /** Яркость авто-акцента (центр коридора светлоты, 0.1–0.6). См. coverAccent.ts. */
   autoAccentL: number
   /** Ручной акцент — точка восстановления при выключении авто-акцента. */
@@ -84,7 +89,9 @@ export interface ThemeState {
   setAutoAccentL: (v: number) => void
   /** Применить извлечённый из обложки акцент (авто-акцент остаётся вкл). */
   applyAutoAccent: (v: string) => void
-  /** Применить пресет темы (встроенный или пользовательский). */
+  /** Применить все три цвета, вычисленные из обложки (авто-тема остаётся вкл). */
+  applyAutoTheme: (c: { bg: string; blockColor: string; accent: string }) => void
+  /** Применить пресет темы (встроенный, пользовательский или `AUTO_THEME_ID`). */
   applyTheme: (id: string) => void
   /** Сохранить текущий вид как пользовательский пресет. */
   saveAsPreset: (name: string) => void
@@ -95,17 +102,29 @@ export interface ThemeState {
   resetAll: () => void
 }
 
+/**
+ * id темы по умолчанию — первый пресет (`THEME_PRESETS[0]`, Dark). Строкой, а не
+ * ссылкой: DEFAULTS считается выше объявления списка.
+ */
+export const DEFAULT_THEME_ID = 'dark'
+
+/**
+ * Значения по умолчанию — нужны точечному сбросу карточек настроек и первому
+ * запуску. Три цвета обязаны совпадать с пресетом `DEFAULT_THEME_ID`, иначе
+ * стартовый (и сброшенный) вид — «Своя тема», которой пользователь не создавал.
+ */
 const DEFAULTS = {
   bg: '#0a0a0a',
   blockColor: '#0a0a0a',
-  accent: '#3b82f6',
+  accent: '#ffffff',
   radius: 14,
   fontFamily: 'Inter, system-ui, sans-serif',
   autoAccent: false,
+  autoTheme: false,
   autoAccentL: AUTO_ACCENT_L_DEFAULT,
-  accentManual: '#3b82f6',
+  accentManual: '#ffffff',
   palette: {} as ThemePalette,
-  activeThemeId: '',
+  activeThemeId: DEFAULT_THEME_ID,
 }
 
 const clampAccentL = (v: number): number =>
@@ -140,6 +159,13 @@ export const THEME_PRESETS: ThemePreset[] = [
   { id: 'warm', name: 'Warm', bg: '#1c1610', blockColor: '#1c1610', accent: '#d4875a', palette: {} },
   { id: 'light', name: 'Light', bg: '#e8e8e8', blockColor: '#e8e8e8', accent: '#333333', palette: {} },
 ]
+
+/**
+ * id авто-темы. В `THEME_PRESETS` её нет намеренно: это режим (цвета приходят с
+ * обложки, см. autoAccentBridge), а не набор цветов, — но в списке тем она стоит
+ * такой же карточкой, поэтому и выбирается через `applyTheme`.
+ */
+export const AUTO_THEME_ID = 'auto'
 
 const LS_KEY = 'bloom_theme'
 const LS_CUSTOM_KEY = 'bloom_custom_themes'
@@ -207,7 +233,7 @@ const paletteClashes = (palette: ThemePalette, light: boolean): boolean => {
 
 type Snapshot = Pick<
   ThemeState,
-  'bg' | 'blockColor' | 'accent' | 'radius' | 'fontFamily' | 'autoAccent' | 'autoAccentL' | 'accentManual' | 'palette' | 'activeThemeId'
+  'bg' | 'blockColor' | 'accent' | 'radius' | 'fontFamily' | 'autoAccent' | 'autoTheme' | 'autoAccentL' | 'accentManual' | 'palette' | 'activeThemeId'
 >
 
 const loadCustomThemes = (): ThemePreset[] => {
@@ -240,6 +266,7 @@ const loadFromLs = (): Snapshot => {
       radius: typeof p.radius === 'number' ? p.radius : DEFAULTS.radius,
       fontFamily: typeof p.fontFamily === 'string' ? p.fontFamily : DEFAULTS.fontFamily,
       autoAccent: !!p.autoAccent,
+      autoTheme: !!p.autoTheme,
       autoAccentL: typeof p.autoAccentL === 'number' ? clampAccentL(p.autoAccentL) : DEFAULTS.autoAccentL,
       accentManual: typeof p.accentManual === 'string' ? p.accentManual : (typeof p.accent === 'string' ? p.accent : DEFAULTS.accentManual),
       palette: p.palette && typeof p.palette === 'object' ? (p.palette as ThemePalette) : {},
@@ -409,23 +436,36 @@ export const useThemeStore = create<ThemeState>((set, get) => {
   return {
     ...initial,
     customThemes: initialCustoms,
-    setBg: (v) => set((s) => ({ ...persist({ ...s, bg: v, activeThemeId: 'custom' }) })),
-    setBlockColor: (v) => set((s) => ({ ...persist({ ...s, blockColor: v, activeThemeId: 'custom' }) })),
+    // Ручные пикеры гасят оба авто-режима: иначе следующая же обложка
+    // затёрла бы только что выбранный вручную цвет.
+    setBg: (v) => set((s) => ({ ...persist({ ...s, bg: v, autoTheme: false, activeThemeId: 'custom' }) })),
+    setBlockColor: (v) => set((s) => ({ ...persist({ ...s, blockColor: v, autoTheme: false, activeThemeId: 'custom' }) })),
     // Ручной выбор акцента — выключает авто-акцент, помечает тему как custom.
-    setAccent: (v) => set((s) => ({ ...persist({ ...s, accent: v, accentManual: v, autoAccent: false, activeThemeId: 'custom' }) })),
+    setAccent: (v) => set((s) => ({ ...persist({ ...s, accent: v, accentManual: v, autoAccent: false, autoTheme: false, activeThemeId: 'custom' }) })),
     setRadius: (v) => set((s) => ({ ...persist({ ...s, radius: v }) })),
     setFontFamily: (v) => set((s) => ({ ...persist({ ...s, fontFamily: v }) })),
     setAutoAccent: (v) =>
       set((s) => ({
         ...(v
-          ? persist({ ...s, autoAccent: true, accentManual: s.accent })
+          // Авто-тема шире авто-акцента — включение второго снимает первую,
+          // и тема перестаёт быть «Авто» (поверхность больше не пересчитывается).
+          ? persist({ ...s, autoAccent: true, accentManual: s.accent, autoTheme: false, activeThemeId: s.autoTheme ? 'custom' : s.activeThemeId })
           : persist({ ...s, autoAccent: false, accent: s.accentManual })),
       })),
     setAutoAccentL: (v) => set((s) => ({ ...persist({ ...s, autoAccentL: clampAccentL(v) }) })),
     // Извлечённый из обложки цвет: меняем только эффективный accent, авто остаётся.
     applyAutoAccent: (v) => set((s) => ({ ...persist({ ...s, accent: v }) })),
+    // То же для авто-темы: три цвета с обложки, режим остаётся включённым.
+    applyAutoTheme: (c) =>
+      set((s) => ({ ...persist({ ...s, bg: c.bg, blockColor: c.blockColor, accent: c.accent }) })),
     applyTheme: (id) =>
       set((s) => {
+        // Авто-тема — режим: своих цветов у неё нет, их принесёт первая же
+        // обложка (autoAccentBridge подписан на переключение). До этого момента
+        // остаёмся на текущих цветах — перекрашивать не из чего.
+        if (id === AUTO_THEME_ID) {
+          return persist({ ...s, autoAccent: false, autoTheme: true, palette: {}, activeThemeId: AUTO_THEME_ID })
+        }
         const t = getAllThemes().find((x) => x.id === id)
         if (!t) return s
         return persist({
@@ -435,6 +475,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
           accent: t.accent,
           accentManual: t.accent,
           autoAccent: false,
+          autoTheme: false,
           palette: { ...t.palette },
           activeThemeId: id,
         })
@@ -453,7 +494,8 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         }
         const customThemes = [...s.customThemes, theme]
         saveCustomThemes(customThemes)
-        return { ...persist({ ...s, activeThemeId: id }), customThemes }
+        // Снимок — уже фиксированные цвета, авто-тема на нём заканчивается.
+        return { ...persist({ ...s, autoTheme: false, activeThemeId: id }), customThemes }
       }),
     createCustomTheme: (name, colors) =>
       set((s) => {
@@ -478,6 +520,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
             accent: theme.accent,
             accentManual: theme.accent,
             autoAccent: false,
+            autoTheme: false,
             palette: {},
             activeThemeId: id,
           }),
@@ -498,6 +541,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
               accent: dark.accent,
               accentManual: dark.accent,
               autoAccent: false,
+              autoTheme: false,
               palette: { ...dark.palette },
               activeThemeId: dark.id,
             }),
@@ -527,4 +571,6 @@ export const useThemeBootstrap = (): void => {
   }, [])
 }
 
-export const THEME_DEFAULTS = DEFAULTS
+
+/** Значения по умолчанию — нужны точечному сбросу карточек настроек. */
+export { DEFAULTS as THEME_DEFAULTS }

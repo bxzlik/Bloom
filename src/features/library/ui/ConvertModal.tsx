@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { providerBrandColor, type Track } from '@entities/track'
 import { getProviders } from '@features/providers'
 import { providerLogo } from '@features/player'
-import { toast } from '@shared/ui'
+import { toast, EmptyCover } from '@shared/ui'
 import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
 import { Ico } from '@shared/ui/icons/solar'
@@ -40,7 +40,7 @@ const Cov = ({ t }: { t: Track }) =>
   t.cover ? (
     <img src={t.cover} alt="" />
   ) : (
-    <Ico name="note" width={12} height={12} style={{ opacity: 0.5 }} />
+    <EmptyCover />
   )
 
 export const ConvertModal = () => {
@@ -234,10 +234,6 @@ export const ConvertModal = () => {
             )}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="mpl-htitle">
-              <Ico name="arrowRightStraight" width={11} height={11} />
-              {t('lib.convert.title')}
-            </div>
             {phase === 'pick' ? (
               <div className="cvt-hero-name">{pl.name}</div>
             ) : (
@@ -494,9 +490,6 @@ export const ConvertModal = () => {
                 ? t('lib.convert.hint.scanning')
                 : t('lib.convert.hint.willCreate', { n: stats.total - stats.skipped })}
           </div>
-          <button className="mpl-btn ghost" onClick={close}>
-            {t('common.cancel')}
-          </button>
           {phase === 'pick' && (
             <button
               className="mpl-btn primary"
@@ -515,6 +508,9 @@ export const ConvertModal = () => {
               {t('lib.convert.create')}
             </button>
           )}
+          <button className="mpl-btn ghost" onClick={close}>
+            {t('common.cancel')}
+          </button>
         </div>
       </div>
     </div>,

@@ -51,6 +51,12 @@ export interface OptState {
   setVizPaused: (v: boolean) => void
   setFrozenCover: (v: string | null) => void
   setFrozenViz: (v: string | null) => void
+  /** Сброс раздела «Эффективность» к значениям по умолчанию. */
+  reset: () => void
+  /** Сброс ОТДЕЛЬНЫХ переключателей — для кнопки сброса на карточке. */
+  resetKeys: (...keys: ('unfocusSimplify' | 'minimizedSmart')[]) => void
+  /** Сброс сетки эффектов ОДНОГО режима — вторая половина сброса группы. */
+  resetEffects: (mode: OptMode) => void
 }
 
 const LS_KEY = 'bloom_opt'
@@ -139,5 +145,23 @@ export const useOptStore = create<OptState>((set, get) => {
     setVizPaused: (v) => set({ vizPaused: v }),
     setFrozenCover: (v) => set({ frozenCover: v }),
     setFrozenViz: (v) => set({ frozenViz: v }),
+    resetKeys: (...keys) => {
+      keys.forEach((k) => set({ [k]: DEFAULTS[k] }))
+      persist()
+    },
+    resetEffects: (mode) => {
+      set((s) => ({ effects: { ...s.effects, [mode]: defaultEffects() } }))
+      persist()
+    },
+    // Эффекты пересобираем через defaultEffects(): DEFAULTS.effects — общий
+    // объект модуля, и присвоить его напрямую значило бы связать стор с ним.
+    reset: () => {
+      set({
+        unfocusSimplify: DEFAULTS.unfocusSimplify,
+        minimizedSmart: DEFAULTS.minimizedSmart,
+        effects: { unfocus: defaultEffects(), minimized: defaultEffects() },
+      })
+      persist()
+    },
   }
 })

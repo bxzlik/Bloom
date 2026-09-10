@@ -1,7 +1,7 @@
 import type { Track } from '@entities/track'
 import { trackRegistry, coverCache, trackCache } from '@entities/track'
 import { invoke } from '@shared/tauri'
-import { useLibStore, useFavStore, useHistoryStore, useActivityStore, saveTrackToLibrary, replaceLibTrack, usePlaylistStore, useNewPlModalStore } from '@features/library'
+import { useLibStore, useFavStore, useActivityStore, saveTrackToLibrary, replaceLibTrack, usePlaylistStore, useNewPlModalStore } from '@features/library'
 import { toast, notify } from '@shared/ui'
 import { t as i18nT } from '@shared/i18n'
 import { requestLyrics, useLyricsStore } from '@features/lyrics'
@@ -9,7 +9,8 @@ import waveApi from '@/wave'
 import { smartShuffleWeight } from '@/db/history'
 // Глубокий импорт (не через barrel) — barrel фичи тянет её UI, а тот импортирует
 // плеер: получился бы цикл.
-import { logPlay } from '@features/wrapped/model/playLog'
+import { logPlay } from '@/db/playLog'
+import { notePlay } from '@/db/playStats'
 import { getProvider } from '@features/providers'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore, type PlaySource } from '../model/queueStore'
@@ -143,12 +144,16 @@ let _playCredited = false
 export const creditPlay = (id: string): void => {
   if (_playCredited) return
   _playCredited = true
-  useHistoryStore.getState().add(id) // _histAdd
+  // Список «История» отдельно вести не надо: он выводится из журнала, а тот
+  // пополняется ниже (`logPlay` + `notePlay`) и сам уведомляет подписчиков.
   useActivityStore.getState().add() // _activityAdd
-  // Журнал «Итогов»: поток событий с таймстампами (история хранит по одной
-  // записи на трек и не годится для разбивки по неделям/месяцам). Не ждём —
-  // сбой записи не должен мешать воспроизведению.
+  // Журнал прослушиваний: поток событий с таймстампами (история хранит по одной
+  // записи на трек и не годится ни для разбивки по неделям, ни для честного
+  // «сколько раз»). Не ждём — сбой записи не должен мешать воспроизведению.
   void logPlay(id, findTrack(id))
+  // ...и та же запись в память, синхронно: `db/playStats` читают из горячих
+  // мест (фильтр волны, умная перемешка), ждать записи в IDB там нельзя.
+  notePlay(id)
   // Обложку кладём в переживающий рестарт кеш: история хранит только id, а
   // trackRegistry живёт в памяти — иначе коллаж «История» на главной после
   // перезапуска не из чего собрать.
@@ -664,6 +669,7 @@ export const switchTrackPlatform = async (
     ...match,
     _scTemp: false,
     _ymTemp: false,
+    _ytmTemp: false,
     addedAt: track.addedAt ?? match.addedAt ?? Date.now(),
     url: null,
   }

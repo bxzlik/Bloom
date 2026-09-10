@@ -1,41 +1,34 @@
-import { useState } from 'react'
+import { CardReset, CatReset, RowReset } from '../controls/SectionReset'
 import {
   usePlayerViewStore,
   matchMpPreset,
+  PLAYER_VIEW_DEFAULTS,
   type TrackAnimCfg,
   type TrackAnimKind,
   type LyricsFill,
   type LyricsFx,
   type LyricsStyleCfg,
 } from '../../model/playerViewStore'
-import { useT, type TranslationKey } from '@shared/i18n'
-import { Ico, type IconName } from '@shared/ui/icons/solar'
+import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
+import type { ViewTab } from '../subTabs'
 
 /**
- * Раздел «Плеер» (`#ssec-view`). Группы разнесены по полосе вкладок
- * (`.s-ptabs`, как в разделах «Страницы» и «Вкладки»), а не идут одной
- * простынёй с заголовками-категориями:
+ * Раздел «Плеер» (`#ssec-view`). Группы разнесены по подвкладкам, а не идут
+ * одной простынёй с заголовками-категориями:
  *
  * - «Плеер» — выравнивание заголовка, стиль, слайдер, кнопки на обложке;
  * - «Очередь и текст» — позиция и вид очереди, текст и караоке;
  * - «Мини-плеер» — пресеты, фон, прогресс, форма, элементы, позиция, раскладка;
  * - «Анимации» — смена трека на трёх поверхностях.
  *
+ * Сама полоса вкладок живёт в шапке панели (SettingsNav + subTabs.ts) — сюда
+ * приходит только активная вкладка.
+ *
  * Кнопка сброса в шапке общая (сбрасывает playerViewStore целиком, как и раньше).
  */
-type ViewTab = 'player' | 'queue' | 'mini' | 'anim'
-
-const TABS: { id: ViewTab; labelKey: TranslationKey; icon: IconName }[] = [
-  { id: 'player', labelKey: 'settings.view.cat.player', icon: 'note' },
-  { id: 'queue', labelKey: 'settings.view.cat.queueLyrics', icon: 'lyrics' },
-  { id: 'mini', labelKey: 'settings.view.cat.miniPlayer', icon: 'widget' },
-  { id: 'anim', labelKey: 'settings.view.cat.anim', icon: 'stars' },
-]
-
-export const ViewSection = () => {
+export const ViewSection = ({ tab }: { tab: ViewTab }) => {
   const t = useT()
-  const reset = usePlayerViewStore((s) => s.reset)
-  const [tab, setTab] = useState<ViewTab>('player')
 
   return (
     <div className="s-section active" id="ssec-view">
@@ -44,24 +37,6 @@ export const ViewSection = () => {
           <Ico name="note" width={15} height={15} />{' '}
           {t('settings.nav.player')}
         </div>
-        <button className="s-section-reset" onClick={() => reset()}>
-          <Ico name="refresh" width={10} height={10} />{' '}
-          {t('common.reset')}
-        </button>
-      </div>
-
-      {/* Переключатель групп — полоса вкладок над карточками раздела. */}
-      <div className="s-ptabs">
-        {TABS.map((tb) => (
-          <button
-            key={tb.id}
-            className={`s-ptab${tab === tb.id ? ' active' : ''}`}
-            onClick={() => setTab(tb.id)}
-          >
-            <Ico name={tb.icon} width={14} height={14} />
-            {t(tb.labelKey)}
-          </button>
-        ))}
       </div>
 
       {tab === 'player' && <PlayerCards />}
@@ -85,7 +60,10 @@ const PlayerCards = () => {
   return (
     <>
       <div className="sc">
-        <div className="sc-title">{t('settings.view.titleAlign')}</div>
+        <div className="sc-title">
+          {t('settings.view.titleAlign')}
+          <CardReset onReset={() => p.resetKeys('titleAlign')} />
+        </div>
         <div className="sc-desc">{t('settings.view.titleAlign.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.titleAlign === 'left'} onClick={() => p.set('titleAlign', 'left')}>
@@ -104,7 +82,10 @@ const PlayerCards = () => {
       </div>
 
       <div className="sc">
-        <div className="sc-title">{t('settings.view.style')}</div>
+        <div className="sc-title">
+          {t('settings.view.style')}
+          <CardReset onReset={() => p.resetKeys('playerStyle')} />
+        </div>
         <div className="sc-desc">{t('settings.view.style.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.playerStyle === 'standard'} onClick={() => p.set('playerStyle', 'standard')}>
@@ -143,7 +124,10 @@ const PlayerCards = () => {
       </div>
 
       <div className="sc">
-        <div className="sc-title">{t('settings.view.slider')}</div>
+        <div className="sc-title">
+          {t('settings.view.slider')}
+          <CardReset onReset={() => p.resetKeys('sliderType')} />
+        </div>
         <div className="sc-desc">{t('settings.view.slider.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.sliderType === 'default'} onClick={() => p.set('sliderType', 'default')}>
@@ -175,7 +159,10 @@ const PlayerCards = () => {
       <div className="sc">
         <div className="sr">
           <div style={covBtnsLocked ? { opacity: 0.45 } : undefined}>
-            <div className="sl2">{t('settings.view.covBtns')}</div>
+            <div className="sl2">
+              {t('settings.view.covBtns')}
+              <RowReset onReset={() => p.resetKeys('covBtnsInBar')} />
+            </div>
             <div className="ssub">{t('settings.view.covBtns.sub')}</div>
           </div>
           <Toggle
@@ -190,7 +177,10 @@ const PlayerCards = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.view.viz')}</div>
+            <div className="sl2">
+              {t('settings.view.viz')}
+              <RowReset onReset={() => p.resetKeys('vizEnabled', 'vizType')} />
+            </div>
             <div className="ssub">{t('settings.view.viz.sub')}</div>
           </div>
           <Toggle checked={p.vizEnabled} onChange={(v) => p.set('vizEnabled', v)} />
@@ -211,8 +201,11 @@ const PlayerCards = () => {
         </div>
       )}
 
+      <div className="s-cat-label">
+        {t('settings.view.moreEffects')}
+        <CatReset onReset={() => p.resetKeys('ambientGlow', 'parallax')} />
+      </div>
       <div className="sc">
-        <h3>{t('settings.view.moreEffects')}</h3>
         <div className="sr">
           <div>
             <div className="sl2">Ambient Glow</div>
@@ -243,8 +236,20 @@ const QueueLyricsCards = () => {
 
   return (
     <>
+      <div className="s-cat-label">
+        {t('settings.view.cat.queue')}
+        <CatReset
+          onReset={() =>
+            p.resetKeys('queuePos', 'queueView', 'hideQueue', 'lyricsInQueue', 'showNextTrack')
+          }
+        />
+      </div>
+
       <div className="sc">
-        <div className="sc-title">{t('settings.view.queuePos')}</div>
+        <div className="sc-title">
+          {t('settings.view.queuePos')}
+          <CardReset onReset={() => p.resetKeys('queuePos')} />
+        </div>
         <div className="sc-desc">{t('settings.view.queuePos.desc')}</div>
         <div className="s-opt-row">
           {/* При скрытой очереди выбор позиции недоступен. */}
@@ -268,7 +273,10 @@ const QueueLyricsCards = () => {
       </div>
 
       <div className="sc">
-        <div className="sc-title">{t('settings.view.queueView')}</div>
+        <div className="sc-title">
+          {t('settings.view.queueView')}
+          <CardReset onReset={() => p.resetKeys('queueView')} />
+        </div>
         <div className="sc-desc">{t('settings.view.queueView.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.queueView === 'normal'} disabled={p.hideQueue} onClick={() => p.set('queueView', 'normal')}>
@@ -283,18 +291,28 @@ const QueueLyricsCards = () => {
       </div>
 
       <div className="sc">
+        {/* Заголовок и описание этой карточки скрыты правилом для обёрток с
+            тумблерами (`.sc:has(>.sr)` в settings.css): каждая строка внутри
+            становится отдельной карточкой, а сама обёртка — прозрачной. Кнопка
+            сброса поэтому живёт не здесь, а на каждой строке. */}
         <div className="sc-title">{t('settings.view.lyrics')}</div>
         <div className="sc-desc">{t('settings.view.lyrics.desc')}</div>
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.view.lyricsInQueue')}</div>
+            <div className="sl2">
+              {t('settings.view.lyricsInQueue')}
+              <RowReset onReset={() => p.resetKeys('lyricsInQueue')} />
+            </div>
             <div className="ssub">{t('settings.view.lyricsInQueue.sub')}</div>
           </div>
           <Toggle checked={p.lyricsInQueue} onChange={(v) => p.set('lyricsInQueue', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">{t('settings.view.hideQueue')}</div>
+            <div className="sl2">
+              {t('settings.view.hideQueue')}
+              <RowReset onReset={() => p.resetKeys('hideQueue')} />
+            </div>
             <div className="ssub">{t('settings.view.hideQueue.sub')}</div>
           </div>
           {/* Выключение скрытия очереди сбрасывает «след. трек». */}
@@ -311,12 +329,20 @@ const QueueLyricsCards = () => {
         {p.hideQueue && p.playerStyle !== 'large' && p.playerStyle !== 'cinema' && (
           <div className="sr">
             <div>
-              <div className="sl2">{t('settings.view.showNext')}</div>
+              <div className="sl2">
+              {t('settings.view.showNext')}
+              <RowReset onReset={() => p.resetKeys('showNextTrack')} />
+            </div>
               <div className="ssub">{t('settings.view.showNext.sub')}</div>
             </div>
             <Toggle checked={p.showNextTrack} onChange={(v) => p.set('showNextTrack', v)} />
           </div>
         )}
+      </div>
+
+      <div className="s-cat-label">
+        {t('settings.view.cat.lyricsStyle')}
+        <CatReset onReset={() => p.set('lyricsStyle', PLAYER_VIEW_DEFAULTS.lyricsStyle)} />
       </div>
 
       {/* Оформление текста — своя карточка на каждую поверхность. */}
@@ -327,6 +353,7 @@ const QueueLyricsCards = () => {
           sub={t(`settings.view.lyricsStyle.${surface}.sub`)}
           cfg={p.lyricsStyle[surface]}
           onChange={(next) => p.set('lyricsStyle', { ...p.lyricsStyle, [surface]: next })}
+          onReset={() => p.set('lyricsStyle', { ...p.lyricsStyle, [surface]: PLAYER_VIEW_DEFAULTS.lyricsStyle[surface] })}
         />
       ))}
     </>
@@ -342,6 +369,11 @@ const MiniPlayerCards = () => {
     p.set('mpProgress', { ...p.mpProgress, [key]: !p.mpProgress[key] })
   const toggleHide = (key: keyof typeof p.mpHide) =>
     p.set('mpHide', { ...p.mpHide, [key]: !p.mpHide[key] })
+  // «Цвет трека» имеет смысл, только если есть что перекрашивать. Заливка «Фоном»
+  // при фоне «Цвет обложки» и так строится от тона трека → сам по себе этот режим
+  // тоггл не оправдывает, в отличие от линии и кольца (те красятся --accent всегда).
+  const tintUseful =
+    p.mpProgress.line || p.mpProgress.circle || (p.mpProgress.bg && p.mpBgMode !== 'coverColor')
 
   return (
     <>
@@ -375,7 +407,10 @@ const MiniPlayerCards = () => {
       {p.mpEnabled && (
         <>
           <div className="sc">
-            <div className="sc-title">{t('settings.view.mpBg')}</div>
+            <div className="sc-title">
+              {t('settings.view.mpBg')}
+              <CardReset onReset={() => p.resetKeys('mpBgMode')} />
+            </div>
             <div className="sc-desc">{t('settings.view.mpBg.desc')}</div>
             <div className="s-opt-row" style={{ marginTop: 12 }}>
               <OptBtn active={p.mpBgMode === 'theme'} onClick={() => p.set('mpBgMode', 'theme')}>
@@ -393,8 +428,13 @@ const MiniPlayerCards = () => {
             </div>
           </div>
 
-          <div className="sc">
-            <div className="sc-title">{t('settings.view.mpProgress')}</div>
+          {/* sc-keep: карточка с .sr внутри иначе рассыпается на плитки-строки
+              (см. `.sc:has(>.sr)` в settings.css) и теряет заголовок. */}
+          <div className="sc sc-keep">
+            <div className="sc-title">
+              {t('settings.view.mpProgress')}
+              <CardReset onReset={() => p.resetKeys('mpProgress')} />
+            </div>
             <div className="sc-desc">{t('settings.view.mpProgress.desc')}</div>
             <div className="s-opt-row" style={{ marginTop: 12 }}>
               <OptBtn active={p.mpProgress.line} onClick={() => setProgress('line')}>
@@ -410,10 +450,23 @@ const MiniPlayerCards = () => {
                 {t('settings.view.mpProgress.circle')}
               </OptBtn>
             </div>
+            {/* Красить цветом трека — только когда есть что красить. */}
+            {tintUseful && (
+              <div className="sr" style={{ marginTop: 14 }}>
+                <div>
+                  <div className="sl2">{t('settings.view.mpProgress.tint')}</div>
+                  <div className="ssub">{t('settings.view.mpProgress.tint.sub')}</div>
+                </div>
+                <Toggle checked={p.mpProgressTint} onChange={(v) => p.set('mpProgressTint', v)} />
+              </div>
+            )}
           </div>
 
           <div className="sc">
-            <div className="sc-title">{t('settings.view.mpCover')}</div>
+            <div className="sc-title">
+              {t('settings.view.mpCover')}
+              <CardReset onReset={() => p.resetKeys('mpCoverShape')} />
+            </div>
             <div className="sc-desc">{t('settings.view.mpCover.desc')}</div>
             <div className="s-opt-row" style={{ marginTop: 12 }}>
               <OptBtn active={p.mpCoverShape === 'default'} onClick={() => p.set('mpCoverShape', 'default')}>
@@ -428,7 +481,10 @@ const MiniPlayerCards = () => {
           </div>
 
           <div className="sc">
-            <div className="sc-title">{t('settings.view.mpShape')}</div>
+            <div className="sc-title">
+              {t('settings.view.mpShape')}
+              <CardReset onReset={() => p.resetKeys('mpRounded')} />
+            </div>
             <div className="sc-desc">{t('settings.view.mpShape.desc')}</div>
             <div className="s-opt-row" style={{ marginTop: 12 }}>
               <OptBtn active={!p.mpRounded} onClick={() => p.set('mpRounded', false)}>
@@ -443,7 +499,10 @@ const MiniPlayerCards = () => {
           </div>
 
           <div className="sc">
-            <div className="sc-title">{t('settings.view.mpElements')}</div>
+            <div className="sc-title">
+              {t('settings.view.mpElements')}
+              <CardReset onReset={() => p.resetKeys('mpHide')} />
+            </div>
             <div className="sc-desc">{t('settings.view.mpElements.desc')}</div>
             <div className="s-opt-row" style={{ flexWrap: 'wrap', marginTop: 12 }}>
               <OptBtn active={!p.mpHide.fav} onClick={() => toggleHide('fav')}>
@@ -482,7 +541,10 @@ const MiniPlayerCards = () => {
           </div>
 
           <div className="sc">
-            <div className="sc-title">{t('settings.view.mpPos')}</div>
+            <div className="sc-title">
+              {t('settings.view.mpPos')}
+              <CardReset onReset={() => p.resetKeys('playerBarPos')} />
+            </div>
             <div className="sc-desc">{t('settings.view.mpPos.desc')}</div>
             <div className="s-opt-row" id="miniPlayerPosRow" style={{ marginTop: 12 }}>
               <OptBtn active={p.playerBarPos === 'bottom'} onClick={() => p.set('playerBarPos', 'bottom')}>
@@ -510,7 +572,10 @@ const MiniPlayerCards = () => {
           {(p.playerBarPos === 'bottom' || p.playerBarPos === 'top') && (
             <>
               <div className="sc">
-                <div className="sc-title">{t('settings.view.mpLayout')}</div>
+                <div className="sc-title">
+                  {t('settings.view.mpLayout')}
+                  <CardReset onReset={() => p.resetKeys('mpFloating', 'mpFullWidth')} />
+                </div>
                 <div className="sc-desc">{t('settings.view.mpLayout.desc')}</div>
                 <div className="s-opt-row" style={{ marginTop: 12 }}>
                   {/* Обычный — оба флага сняты (стандартный бар в потоке). */}
@@ -547,7 +612,10 @@ const MiniPlayerCards = () => {
                 <div className="sc">
                   <div className="sr">
                     <div>
-                      <div className="sl2">{t('settings.view.mpFlush')}</div>
+                      <div className="sl2">
+              {t('settings.view.mpFlush')}
+              <RowReset onReset={() => p.resetKeys('mpFlush')} />
+            </div>
                       <div className="ssub">{t('settings.view.mpFlush.sub')}</div>
                     </div>
                     <Toggle checked={p.mpFlush} onChange={(v) => p.set('mpFlush', v)} />
@@ -556,7 +624,10 @@ const MiniPlayerCards = () => {
               )}
 
               <div className="sc">
-                <div className="sc-title">{t('settings.view.mpWidth')}</div>
+                <div className="sc-title">
+                  {t('settings.view.mpWidth')}
+                  <CardReset onReset={() => p.resetKeys('mpCompact')} />
+                </div>
                 <div className="sc-desc">{t('settings.view.mpWidth.desc')}</div>
                 <div className="s-opt-row" style={{ marginTop: 12 }}>
                   <OptBtn active={!p.mpCompact} onClick={() => p.set('mpCompact', false)}>
@@ -598,6 +669,7 @@ const AnimCards = () => {
           sub={t(`settings.view.trackAnim.${surface}.sub`)}
           cfg={p.trackAnim[surface]}
           onChange={(next) => p.set('trackAnim', { ...p.trackAnim, [surface]: next })}
+          onReset={() => p.set('trackAnim', { ...p.trackAnim, [surface]: PLAYER_VIEW_DEFAULTS.trackAnim[surface] })}
         />
       ))}
     </>
@@ -614,16 +686,21 @@ const TrackAnimCard = ({
   sub,
   cfg,
   onChange,
+  onReset,
 }: {
   label: string
   sub: string
   cfg: TrackAnimCfg
   onChange: (next: TrackAnimCfg) => void
+  onReset: () => void
 }) => {
   const t = useT()
   return (
     <div className="sc">
-      <div className="sc-title">{label}</div>
+      <div className="sc-title">
+        {label}
+        <CardReset onReset={onReset} />
+      </div>
       <div className="sc-desc">{sub}</div>
       <TrackAnimRow
         icon="gallery"
@@ -692,16 +769,21 @@ const LyricsStyleCard = ({
   sub,
   cfg,
   onChange,
+  onReset,
 }: {
   label: string
   sub: string
   cfg: LyricsStyleCfg
   onChange: (next: LyricsStyleCfg) => void
+  onReset: () => void
 }) => {
   const t = useT()
   return (
     <div className="sc">
-      <div className="sc-title">{label}</div>
+      <div className="sc-title">
+        {label}
+        <CardReset onReset={onReset} />
+      </div>
       <div className="sc-desc">{sub}</div>
       <div className="sc-desc" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
         <Ico name="lyrics" width={13} height={13} />

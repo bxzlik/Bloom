@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 @font-face{font-family:'Monocraft';src:url('https://cdn.jsdelivr.net/gh/IdreesInc/Monocraft@main/dist/Monocraft-ttf/Monocraft.ttf') format('truetype');}
-:root{--bg:#0f0f0f;--bg2:#141414;--border:#2a2a2a;--accent:#888;--accent2:#666;--glow:rgba(136,136,136,.2);--text:#fff;--text2:#999;--muted:#555;--font:-apple-system,'SF Pro Display','SF Pro Text','Segoe UI','Roboto',system-ui,sans-serif;--radius:14px;--accent-rgb:136,136,136;--accent-text:#fff;--icon-bg:rgba(var(--ovl-rgb),0.06);--sni-hover:rgba(var(--ovl-rgb),0.05);--wb:.06;--wb2:.13;
+:root{--bg:#0f0f0f;--bg2:#141414;--border:#2a2a2a;--accent:#888;--accent2:#666;--glow:rgba(136,136,136,.2);--text:#fff;--text2:#999;--muted:#555;--font:-apple-system,'SF Pro Display','SF Pro Text','Segoe UI','Roboto',system-ui,sans-serif;--radius:14px;--accent-rgb:136,136,136;--accent-text:#fff;--icon-bg:rgba(var(--ovl-rgb),0.06);--wb:.06;--wb2:.13;
   /* ── Оверлеи ──────────────────────────────────────────────────────────────
      Вся вёрстка строится на полупрозрачной «плёнке» поверх фона: рамки блоков,
      заливки карточек, ховеры. Исторически они были белыми (rgba 255,255,255),
@@ -80,13 +80,21 @@
   /* Подложка иконки папки. Одна переменная на сайдбар, сетку, шапку и пилюлю
      очереди — иначе четыре копии цвета неизбежно разъезжаются. */
   --folder-tint:rgba(var(--accent-rgb),.12);
-  /* Обложки системных разделов (Все треки / Любимые / История). Плоский
-     тинт + цветная иконка «как у папки», но каждый со своим смыслом-цветом.
-     Одна пара переменных на сайдбар, шапку, сетку, очередь и меню — иначе
-     семь копий цвета разъезжаются. */
-  --sys-all-tint:rgba(45,131,168,.16);--sys-all-ico:#4fb2d8;
-  --sys-fav-tint:rgba(224,52,84,.16);--sys-fav-ico:#ff5578;
-  --sys-hist-tint:rgba(255,180,0,.15);--sys-hist-ico:#ffb400}
+  /* Обложки системных разделов (Все треки / Любимые / История). Подложка у
+     всех трёх ОДНА и нейтральная — поверхность приложения плюс тонкая рамка
+     (--sys-cov-*), как у плейлиста без обложки; смысловой цвет несёт только
+     иконка (--sys-*-ico). Одна связка переменных на сайдбар, шапку, сетку,
+     очередь и меню — иначе семь копий вида разъезжаются.
+     Цветные --sys-*-tint остались для точечных подсветок (ховер кнопки в
+     редакторе плейлиста), но НЕ для обложек. */
+  --sys-cov-bg:var(--card);--sys-cov-bd:var(--ovl-line);
+  --sys-all-ico:#4fb2d8;
+  /* --sys-fav-ico — ОДИН красный «избранного» на всё приложение: сердечко в
+     строке трека (.ib.fav), на обложке плеера, в «Кино», в шапке/сайдбаре/сетке
+     библиотеки и в меню. Раньше библиотека была розовой (#ff5578), а строки
+     треков красными — разъезжалось. Меняешь тут — меняется везде. */
+  --sys-fav-ico:#e03030;
+  --sys-hist-ico:#ffb400}
 
 /* ── Светлая тема ───────────────────────────────────────────────────────────
    Класс вешает themeStore.applyToRoot по светлоте --block-color (значит,
@@ -120,7 +128,6 @@
      .ps-cover      обложка и кнопки ♥/+ на ней (все стили плеера)
      .sl-cover-wrap «Кино»/«Большой»: прогресс, транспорт, тайтл поверх обложки
      #mpCover       обложка в баре с hover-кнопкой ⤢
-     .lib-content-head.has-cover — шапка плейлиста с размытой обложкой
      #plMenuHeader, #cxPreview   — шапка ctx-меню и превью в поиске
      #bigPicOverlay — Big Picture (сам big-picture.css вообще не тронут)
      .home-quick-card:not(.is-empty) — «Любимые треки»/«История»: коллаж 2×2 со
@@ -135,23 +142,21 @@
 :root.theme-light .ps-cover,
 :root.theme-light .sl-cover-wrap,
 :root.theme-light #mpCover,
-:root.theme-light .lib-content-head.has-cover,
 :root.theme-light #plMenuHeader,
 :root.theme-light #cxPreview,
 :root.theme-light #bigPicOverlay,
-:root.theme-light .home-quick-card:not(.is-empty),
-:root.theme-light .theme-card-del,
-:root.theme-light .mlm-size-badge,
-:root.theme-light .preset-del-btn,
-:root.theme-light .mls-del-btn{
+:root.theme-light .home-quick-card:not(.is-empty){
   --ovl-rgb:255,255,255;
   --ovl-line:rgba(var(--ovl-rgb),var(--wb));
   --ovl-line2:rgba(var(--ovl-rgb),var(--wb2));
+  /* Рамка системной обложки — из того же набора: она объявлена на :root через
+     --ovl-line, то есть внутрь острова приехала бы уже посчитанной «по-светлому»
+     (чёрная линия на тёмной шапке меню). */
+  --sys-cov-bd:rgba(var(--ovl-rgb),var(--wb));
   --ovl-bg:rgba(var(--ovl-rgb),.03);
   --border-focus:color-mix(in srgb,var(--border),rgb(var(--ovl-rgb)) 20%);
   --track:rgba(var(--ovl-rgb),.04);
   --icon-bg:rgba(var(--ovl-rgb),.06);
-  --sni-hover:rgba(var(--ovl-rgb),.05);
   --hover:rgba(var(--ovl-rgb),.05);
   --icon-fg:#d0d0d0;
   --icon-fg-sb:#a8a8a8;

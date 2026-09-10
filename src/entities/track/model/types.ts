@@ -52,6 +52,16 @@ export interface Track {
   ymTrackId?: string
   ymAvailable?: boolean
 
+  /**
+   * Место в чарте площадки (1-based) и его динамика за сутки: `chartShift` >0 —
+   * поднялся, <0 — опустился, 0 — без изменений; `chartNew` — новичок чарта.
+   * Проставляются ТОЛЬКО у треков из `getCharts()` (витрина на главной и
+   * страница чарта), у остальных треков поля отсутствуют.
+   */
+  chartPos?: number
+  chartShift?: number
+  chartNew?: boolean
+
   // YouTube Music-специфика. `ytmVideoId` — id видео YouTube. Воспроизведение/
   // скачивание — нативный поток (см. ytm.rs), бридж на SoundCloud — запасной.
   _ytm?: boolean

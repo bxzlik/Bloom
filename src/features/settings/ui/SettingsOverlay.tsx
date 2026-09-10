@@ -1,15 +1,14 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
-} from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavStore } from '@app/navigationStore'
-import { runEnterAnimation } from '@shared/lib/enterAnimation'
+import { SideSheet } from '@shared/ui'
 import { SettingsNav, type SectionId } from './SettingsNav'
+import {
+  defaultSubTab,
+  type IfaceTab,
+  type PageTab,
+  type TabsTab,
+  type ViewTab,
+} from './subTabs'
 import { InterfaceSection } from './sections/InterfaceSection'
 import { PagesSection } from './sections/PagesSection'
 import { TabsSection } from './sections/TabsSection'
@@ -26,95 +25,42 @@ import { ScClientIdCard } from '@features/soundcloud'
 import { LastfmSection } from '@features/lastfm'
 import { YandexSection } from '@features/yandex'
 import { YtmSection } from '@features/ytmusic'
-import { useUiPrefsStore, SM_NAV_W_MIN, SM_NAV_W_MAX, SM_NAV_W_DEFAULT } from '../model'
 
 /**
- * Разделитель между сайдбаром настроек и контентом: тянется мышью, меняя
- * `--sm-nav-w` на `.sm-cat-view`; Shift+ЛКМ — сброс к дефолту (185px).
+ * Настройки — боковая панель «в полокна» (SideSheet, слева, широкая).
  *
- * Во время перетаскивания пишем переменную напрямую в DOM (без стора), чтобы не
- * ре-рендерить весь список вкладок на каждом кадре; в стор коммитим один раз на
- * pointerup — там же persist в localStorage.
- */
-const SmNavResizer = () => {
-  const width = useUiPrefsStore((s) => s.smNavW)
-  const setPref = useUiPrefsStore((s) => s.set)
-  const ref = useRef<HTMLDivElement>(null)
-
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return
-    e.preventDefault()
-    if (e.shiftKey) {
-      setPref('smNavW', SM_NAV_W_DEFAULT)
-      return
-    }
-    const el = ref.current
-    const view = el?.parentElement
-    if (!el || !view) return
-    const startX = e.clientX
-    let last = width
-    const clamp = (v: number) => Math.min(SM_NAV_W_MAX, Math.max(SM_NAV_W_MIN, Math.round(v)))
-    const onMove = (ev: PointerEvent) => {
-      last = clamp(width + ev.clientX - startX)
-      view.style.setProperty('--sm-nav-w', `${last}px`)
-    }
-    const onUp = () => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-      document.body.classList.remove('sm-nav-resizing')
-      setPref('smNavW', last)
-    }
-    document.body.classList.add('sm-nav-resizing')
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-  }
-
-  return <div ref={ref} className="sm-nav-resizer" onPointerDown={onPointerDown} />
-}
-
-/**
- * Модалка настроек `#settingsOverlay`.
+ * Каркас — общий с drawer'ами (см. shared/styles/side-sheet.css): панель
+ * впритык к левой кромке, приложение уходит в перспективу вправо. Обёртка
+ * `#settingsOverlay` осталась ВНУТРИ панели, хотя оверлеем больше не является:
+ * на этот id завязаны цвета карточек, --card-solid и ховеры в overrides-main.css
+ * и transparency.css. Её оверлейные свойства гасятся в settings.css
+ * (блок «Настройки внутри боковой панели»).
  *
  * Иерархия классов из CSS:
  *   #settingsOverlay.open
  *     .settings-modal
- *       .settings-modal-close-abs (✕ в правом верхнем углу, абсолютно)
  *       .settings-modal-body
- *         .sm-cat-view (sidebar + content)
- *           .settings-modal-nav#smNav (--sm-nav-w, .s-nav-search + .s-nav-group + .s-nav-item)
- *           .sm-nav-resizer (перетаскивание ширины сайдбара)
+ *         .sm-cat-view (колонка: навигация сверху, контент снизу)
+ *           .sm-topnav#smNav (.sm-gtabs — группы, .sm-ptabs — секции,
+ *                             .s-ptabs — подвкладки раздела)
  *           .settings-modal-content#smContent (.s-section.active с .sc-карточками)
  *
  * Поведение:
  *   - Открытие через `useNavStore.openSettings()` (sidebar gear)
- *   - Esc + backdrop click — закрытие
- *   - Анимация .open class (opacity .26s + scale/translate .32s) — CSS
- *   - smGrid (главный экран категорий) отключён в CSS правилом
- *     `.sm-grid-view{display:none!important}` — сразу cat-view.
+ *   - Esc (свой обработчик, с preventDefault) + клик по ушедшему приложению
+ *   - Выезд и демонтаж — на SideSheet
  */
 export const SettingsOverlay = () => {
   const open = useNavStore((s) => s.settingsOpen)
   const close = useNavStore((s) => s.closeSettings)
   const [section, setSection] = useState<SectionId>('system')
-  const [mounted, setMounted] = useState(false)
-  const [opening, setOpening] = useState(false)
-  // Текст поискового запроса, по которому открыли секцию — чтобы подсветить и
-  // прокрутить к найденной настройке внутри. null → обычная навигация.
-  const [highlight, setHighlight] = useState<string | null>(null)
+  // Подвкладка раздела («Плеер» → Очередь и текст и т.п.) живёт здесь, а ряд
+  // рисует SettingsNav: внутри раздела он прокручивался и анимировался вместе
+  // с карточками (см. subTabs.ts). Запоминаем по разделу — возврат открывает ту
+  // вкладку, на которой раздел оставили.
+  const [subTabs, setSubTabs] = useState<Partial<Record<SectionId, string>>>({})
+  const sub = subTabs[section] ?? defaultSubTab(section)
   const contentRef = useRef<HTMLDivElement>(null)
-  // Ширина сайдбара (тянется за .sm-nav-resizer) — CSS-переменная на .sm-cat-view.
-  const navW = useUiPrefsStore((s) => s.smNavW)
-
-  // Enter-анимация `.open` без «дёрганья» появления (см. runEnterAnimation).
-  useEffect(() => {
-    if (open) {
-      setMounted(true)
-      return runEnterAnimation(setOpening)
-    } else {
-      setOpening(false)
-      setHighlight(null)
-    }
-  }, [open])
 
   // Esc → закрыть.
   useEffect(() => {
@@ -129,76 +75,11 @@ export const SettingsOverlay = () => {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
 
-  // При смене секции сбрасываем прокрутку контента наверх — иначе новая вкладка
-  // открывается «пролистанной» на позиции предыдущей. Если открыли секцию через
-  // поиск (highlight) — не трогаем: ниже свой скролл к найденной настройке.
+  // При смене секции (и подвкладки) сбрасываем прокрутку контента наверх — иначе
+  // новая вкладка открывается «пролистанной» на позиции предыдущей.
   useEffect(() => {
-    if (highlight) return
     contentRef.current?.scrollTo({ top: 0 })
-  }, [section, highlight])
-
-  // Подсветка + скролл к настройке, найденной поиском. После рендера секции ищем
-  // первый текстовый узел, содержащий запрос, и подсвечиваем ИМЕННО совпавший
-  // текст (а не блок) через CSS Custom Highlight API — без мутации DOM, чтобы не
-  // ломать React. Фолбэк (если API недоступен) — класс на строке-подписи.
-  useEffect(() => {
-    if (!highlight) return
-    const root = contentRef.current
-    if (!root) return
-    const q = highlight.toLowerCase()
-    const labels = root.querySelectorAll<HTMLElement>(
-      '.sl2, .sc-title, .s-cat-label, h3, .tele-toggle-title, .tele-data-name, .tele-gauge-label',
-    )
-    let node: Text | null = null
-    let el: HTMLElement | null = null
-    let idx = -1
-    for (const cand of labels) {
-      const walker = document.createTreeWalker(cand, NodeFilter.SHOW_TEXT)
-      let n = walker.nextNode()
-      while (n) {
-        const i = (n.textContent ?? '').toLowerCase().indexOf(q)
-        if (i >= 0) {
-          node = n as Text
-          el = cand
-          idx = i
-          break
-        }
-        n = walker.nextNode()
-      }
-      if (node) break
-    }
-    if (!node || !el) return
-
-    const card = (el.closest('.sc, .tele-data-row, .tele-stat-card') as HTMLElement | null) ?? el
-    card.scrollIntoView({ block: 'center', behavior: 'smooth' })
-
-    const HL = 'settings-search'
-    const highlights = (window as unknown as { CSS?: { highlights?: Map<string, unknown> } }).CSS
-      ?.highlights
-    const HighlightCtor = (window as unknown as { Highlight?: new (...r: Range[]) => unknown }).Highlight
-    if (highlights && HighlightCtor) {
-      const range = document.createRange()
-      range.setStart(node, idx)
-      range.setEnd(node, idx + q.length)
-      highlights.set(HL, new HighlightCtor(range))
-      const tm = setTimeout(() => highlights.delete(HL), 2200)
-      return () => {
-        clearTimeout(tm)
-        highlights.delete(HL)
-      }
-    }
-
-    // Фолбэк: подсветить строку-подпись целиком.
-    el.classList.add('s-hl')
-    const target = el
-    const tm = setTimeout(() => target.classList.remove('s-hl'), 1900)
-    return () => {
-      clearTimeout(tm)
-      target.classList.remove('s-hl')
-    }
-  }, [highlight, section])
-
-  if (!mounted) return null
+  }, [section, sub])
 
   // Маппинг secId → component. Сохраняем имена SM_CATS:
   //   system → PlaybackSection (запуск/трей/окно)
@@ -212,11 +93,11 @@ export const SettingsOverlay = () => {
     efficiency: <OptimizationSection />,
     audio: <AudioSection />,
     hotkeys: <HotkeysSection />,
-    // Оформление
-    view: <ViewSection />,
-    interface: <InterfaceSection />,
-    pages: <PagesSection />,
-    tabs: <TabsSection />,
+    // Оформление (разделы с подвкладками получают активную пропом из шапки)
+    view: <ViewSection tab={sub as ViewTab} />,
+    interface: <InterfaceSection tab={sub as IfaceTab} />,
+    pages: <PagesSection tab={sub as PageTab} />,
+    tabs: <TabsSection tab={sub as TabsTab} />,
     medialib: <CustomizationSection />,
     // Интеграции
     soundcloud: <ScClientIdCard />,
@@ -228,44 +109,25 @@ export const SettingsOverlay = () => {
     'tele-storage': <TelemetrySection />,
   }
 
-  return createPortal(
-    <div
-      id="settingsOverlay"
-      className={opening ? 'open' : ''}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) close()
-      }}
-      onTransitionEnd={(e) => {
-        if (!open && e.target === e.currentTarget) setMounted(false)
-      }}
-    >
-      <div className="settings-modal">
-        <div className="settings-modal-body">
-          <div
-            className="sm-cat-view"
-            style={{ '--sm-nav-w': `${navW}px` } as CSSProperties}
-          >
-            <SettingsNav
-              active={section}
-              onSelect={(id, query) => {
-                setSection(id)
-                setHighlight(query ?? null)
-              }}
-            />
-            <SmNavResizer />
-            <div
-              className="settings-modal-content"
-              id="smContent"
-              ref={contentRef}
-              onMouseEnter={(e) => e.currentTarget.classList.add('sb-active')}
-              onMouseLeave={(e) => e.currentTarget.classList.remove('sb-active')}
-            >
-              {sectionMap[section]}
+  return (
+    <SideSheet open={open} onClose={close} side="left" wide escClose={false}>
+      <div id="settingsOverlay" className="open sm-in-sheet">
+        <div className="settings-modal">
+          <div className="settings-modal-body">
+            <div className="sm-cat-view">
+              <SettingsNav
+                active={section}
+                onSelect={setSection}
+                activeSub={sub}
+                onSelectSub={(id) => setSubTabs((prev) => ({ ...prev, [section]: id }))}
+              />
+              <div className="settings-modal-content" id="smContent" ref={contentRef}>
+                {sectionMap[section]}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>,
-    document.body,
+    </SideSheet>
   )
 }

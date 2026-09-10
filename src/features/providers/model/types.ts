@@ -91,7 +91,7 @@ export interface ArtistPageData {
  * автоподписки сетевых провайдеров на тот резолвер при регистрации.
  */
 export interface MusicProvider {
-  /** Технический id источника: 'local' | 'soundcloud' | 'yandex'. В UI не показывается. */
+  /** Технический id источника: 'soundcloud' | 'yandex' | 'ytmusic'. В UI не показывается. */
   id: string
   /** Человекочитаемая метка (для бейджа/настроек, не для разделения дизайна). */
   label: string
@@ -102,13 +102,10 @@ export interface MusicProvider {
    */
   isEnabled?: () => boolean
 
-  /**
-   * Поиск. Возвращает частичную выдачу — отсутствующие секции просто пустые.
-   * `sort`: 'relevance' (по умолчанию) или 'new' (сначала новые — у SC `&sort=created_at`).
-   */
+  /** Поиск. Возвращает частичную выдачу — отсутствующие секции просто пустые. */
   search(
     query: string,
-    opts?: { signal?: AbortSignal; sort?: 'relevance' | 'new' },
+    opts?: { signal?: AbortSignal },
   ): Promise<Partial<SearchResults>>
 
   /**
@@ -118,7 +115,6 @@ export interface MusicProvider {
   loadMoreTracks?(
     query: string,
     offset: number,
-    opts?: { sort?: 'relevance' | 'new' },
   ): Promise<{ tracks: Track[]; hasMore: boolean }>
 
   /** Резолв вставленной ссылки этого источника в трек/сущность (опц.). */
@@ -152,6 +148,15 @@ export interface MusicProvider {
    * Провайдер регистрирует треки/хэндлы альбомов, как в поиске.
    */
   getNewReleases?(): Promise<NewReleases>
+
+  /**
+   * Похожие на трек — сырьё витрины «Для вас». `seedId` — id трека В ФОРМАТЕ
+   * ПРИЛОЖЕНИЯ (`sc_123`/`ym_456`), провайдер снимает свой префикс сам: сиды
+   * приходят из журнала прослушиваний, где лежат только id, и резолвить их в
+   * `Track` ради одного числа не из чего (реестр площадок живёт в памяти).
+   * Чужой префикс — вернуть пустой массив, а не бросать.
+   */
+  getSimilarTracks?(seedId: string): Promise<Track[]>
 
   // ── Страницы (опциональны пока; добавляются по мере готовности фич) ──
   getArtist?(id: string): Promise<ArtistPageData>

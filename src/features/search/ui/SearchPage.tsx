@@ -18,7 +18,7 @@ import type { Playlist } from '@entities/playlist'
 import { playSingleTrack, AddPopup, PlayStateOverlay } from '@features/player'
 import { getAllProviders, getProvider, type ProfileData } from '@features/providers'
 import { useProfileStore } from '@features/profile'
-import { CardMarquee, ExpandDesc, toast, WindowedRows } from '@shared/ui'
+import { CardMarquee, EmptyCover, ExpandDesc, PillTabs, toast, WindowedRows } from '@shared/ui'
 import { useT, useLocale, t as tt, type TranslationKey } from '@shared/i18n'
 import {
   TrackCtxMenu,
@@ -59,8 +59,8 @@ const OpenBadge = () => (
     </div>
   </div>
 )
-const PhTrack = () => <Ico name="note" width={22} height={22} style={{ opacity: 0.3 }} />
-const PhArtist = () => <Ico name="user" width={24} height={24} />
+const PhTrack = () => <EmptyCover />
+const PhArtist = () => <EmptyCover />
 
 /** Обложка с защитой от onerror-цикла (см. project_idle_cpu_backdrop): при
  *  ошибке — один раз падаем на плейсхолдер, без `src=''` ре-триггера. */
@@ -194,17 +194,6 @@ const TrackListRow = ({
       </div>
       <div className="trtime">
         {track.dur && <span className="trd">{track.dur}</span>}
-        <button
-          className="ib trmore"
-          type="button"
-          aria-label={tr('common.more')}
-          onClick={(e) => {
-            e.stopPropagation()
-            onCtxMenu(e)
-          }}
-        >
-          <Ico name="kebab" width={15} height={15} />
-        </button>
       </div>
     </div>
   )
@@ -222,24 +211,21 @@ const TABS: { id: SearchTab; labelKey: TranslationKey; icon: IconName }[] = [
 const FilterTabs = ({ tab, onTab }: { tab: SearchTab; onTab: (t: SearchTab) => void }) => {
   const tr = useT()
   return (
-  <div className="sp-filter-tabs" id="spFilterTabs">
-    {TABS.map((it) => (
-      <button
-        key={it.id}
-        className={cn('sp-filter-btn', tab === it.id && 'active')}
-        data-filter={it.id}
-        onClick={() => onTab(it.id)}
-      >
-        <Ico name={it.icon} width={12} height={12} />
-        {tr(it.labelKey)}
-      </button>
-    ))}
-  </div>
+    <PillTabs
+      id="spFilterTabs"
+      className="sp-filter-tabs"
+      active={tab}
+      onSelect={onTab}
+      tabs={TABS.map((it) => ({
+        id: it.id,
+        label: tr(it.labelKey),
+        icon: <Ico name={it.icon} width={13} height={13} />,
+      }))}
+    />
   )
 }
 
 /* ── Дропдаун выбора источника ────────────────── */
-const LibLogo = () => <Ico name="folder" width={16} height={16} />
 const AllLogo = () => <Ico name="grid" width={16} height={16} />
 
 /**
@@ -268,7 +254,7 @@ const sourceIcon = (id: string, accentText = false, brand = false): ReactNode =>
       </span>
     )
   }
-  return id === 'local' ? <LibLogo /> : <AllLogo />
+  return <AllLogo />
 }
 const sourceLabel = (id: string, providerLabel?: string): string =>
   id === 'all' ? tt('search.allSources') : providerLabel ?? id
@@ -297,12 +283,12 @@ export const SourceDropdown = ({ source, onSource }: { source: string; onSource:
   // показываем как «Все источники» — иначе кнопка светит иконкой «all», но ни один
   // пункт не подсвечен, а поиск (через searchAll-фолбэк) и так идёт по всем.
   const effSource = options.includes(source) ? source : 'all'
-  // Столбик только иконок: отдельной группой «все источники» + «моя библиотека»,
-  // затем площадки в порядке реестра, и отдельной строкой у кнопки-анкера —
-  // ВЫБРАННЫЙ источник, отделённый линией (она же индикатор выбора, подсветки
-  // фоном нет). Сторона зависит от раскладки, см. `flip`.
-  const meta = ['all', 'local'].filter((id) => options.includes(id) && id !== effSource)
-  const plat = providers.map((p) => p.id).filter((id) => id !== 'local' && id !== effSource)
+  // Столбик только иконок: отдельной группой «все источники», затем площадки в
+  // порядке реестра, и отдельной строкой у кнопки-анкера — ВЫБРАННЫЙ источник,
+  // отделённый линией (она же индикатор выбора, подсветки фоном нет). Сторона
+  // зависит от раскладки, см. `flip`.
+  const meta = ['all'].filter((id) => id !== effSource)
+  const plat = providers.map((p) => p.id).filter((id) => id !== effSource)
 
   const srcBtn = (id: string, active: boolean) => (
     <button
@@ -389,11 +375,9 @@ export const SourceDropdown = ({ source, onSource }: { source: string; onSource:
 
 /* ── Выпадающая история поиска (.sp-hist) ─ */
 const RecentDel = () => <Ico name="close" width={13} height={13} />
-/** Плейсхолдер-иконка недавнего по типу. */
-export const RecentKindIcon = ({ kind }: { kind: string }) => {
-  const name: IconName = kind === 'artist' ? 'user' : kind === 'album' ? 'album' : kind === 'track' ? 'note' : 'list'
-  return <Ico name={name} width={16} height={16} style={{ opacity: 0.5 }} />
-}
+/** Плейсхолдер недавнего: это слот обложки, поэтому заглушка общая, а не
+ *  иконка типа. `kind` остался в сигнатуре — вызовы его передают. */
+export const RecentKindIcon = ({ kind: _kind }: { kind: string }) => <EmptyCover />
 
 /** Строка истории: недавний запрос ИЛИ недавно открытая сущность. */
 export type RecentRow =
@@ -481,86 +465,6 @@ export const SearchHistoryDropdown = ({
     </div>
   )
 }
-
-/* ── Мета-фильтры треков (.sp-dd дропдауны) ───────────────────────────── */
-type DdOption = { id: string; label: string }
-
-const Chev = () => <Ico name="arrowDown" className="sp-dd-chev" width={10} height={10} />
-
-const SpDropdown = ({
-  icon,
-  label,
-  value,
-  options,
-  onPick,
-}: {
-  icon: ReactNode
-  label: string
-  value: string
-  options: DdOption[]
-  onPick: (id: string) => void
-}) => {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-  usePopupOpenAnimation(menuRef, open)
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    window.addEventListener('mousedown', onDown)
-    return () => window.removeEventListener('mousedown', onDown)
-  }, [open])
-  const isDefault = value === options[0]?.id
-  const cur = options.find((o) => o.id === value)
-  return (
-    <div ref={ref} className={cn('sp-dd', open && 'open')}>
-      <button className={cn('sp-dd-btn', !isDefault && 'active')} onClick={() => setOpen((o) => !o)}>
-        {icon}
-        <span>{isDefault ? label : cur?.label ?? label}</span>
-        <Chev />
-      </button>
-      <div className="sp-dd-menu" ref={menuRef} style={{ transformOrigin: 'top left' }}>
-        {options.map((o) => (
-          <button
-            key={o.id}
-            className={cn('sp-dd-opt', o.id === value && 'active')}
-            onClick={() => {
-              onPick(o.id)
-              setOpen(false)
-            }}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const DUR_OPTS: { id: string; labelKey: TranslationKey }[] = [
-  { id: 'all', labelKey: 'search.opt.anyF' },
-  { id: 'short', labelKey: 'search.dur.short' },
-  { id: 'mid', labelKey: 'search.dur.mid' },
-  { id: 'long', labelKey: 'search.dur.long' },
-]
-const YEAR_OPTS: { id: string; labelKey?: TranslationKey; label?: string }[] = [
-  { id: 'all', labelKey: 'search.opt.any' },
-  { id: 'new', label: '2020+' },
-  { id: '2010', labelKey: 'search.year.2010s' },
-  { id: '2000', labelKey: 'search.year.2000s' },
-  { id: 'old', labelKey: 'search.year.old' },
-]
-const SORT_OPTS: { id: string; labelKey: TranslationKey }[] = [
-  { id: 'relevance', labelKey: 'search.sort.relevance' },
-  { id: 'new', labelKey: 'search.sort.new' },
-]
-
-const IcoClock = () => <Ico name="clock" width={11} height={11} />
-const IcoCal = () => <Ico name="calendar" width={11} height={11} />
-const IcoSort = () => <Ico name="sort" width={11} height={11} />
-const IcoGenre = () => <Ico name="note" width={11} height={11} />
 
 /* ── Профиль по ссылке /username (hero + плейлисты + лайки) ── */
 const ProfileView = ({
@@ -817,14 +721,6 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const setSource = useSearchStore((s) => s.setSource)
   const tab = useSearchStore((s) => s.tab)
   const setTab = useSearchStore((s) => s.setTab)
-  const durFilter = useSearchStore((s) => s.durFilter)
-  const yearFilter = useSearchStore((s) => s.yearFilter)
-  const genreFilter = useSearchStore((s) => s.genreFilter)
-  const sortOrder = useSearchStore((s) => s.sortOrder)
-  const setDurFilter = useSearchStore((s) => s.setDurFilter)
-  const setYearFilter = useSearchStore((s) => s.setYearFilter)
-  const setGenreFilter = useSearchStore((s) => s.setGenreFilter)
-  const setSortOrder = useSearchStore((s) => s.setSortOrder)
   const loadMoreTracks = useSearchStore((s) => s.loadMoreTracks)
   const loadingMore = useSearchStore((s) => s.loadingMore)
   const recentSearches = useSearchStore((s) => s.recentSearches)
@@ -969,39 +865,6 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   const playTrackFromSearch = playSearchTrack
   const onRecentItem = openRecentItem
 
-  // ── Client-side мета-фильтры треков (dur/year/genre) ──
-  const trackSec = (dur?: string): number => {
-    if (!dur) return 0
-    const p = dur.split(':').map((x) => parseInt(x, 10))
-    if (p.some((n) => Number.isNaN(n))) return 0
-    return p.length === 2 ? p[0]! * 60 + p[1]! : p.length === 3 ? p[0]! * 3600 + p[1]! * 60 + p[2]! : 0
-  }
-  const passDur = (t: Track) => {
-    if (durFilter === 'all') return true
-    const s = trackSec(t.dur)
-    return durFilter === 'short' ? s < 180 : durFilter === 'mid' ? s >= 180 && s <= 420 : s > 420
-  }
-  const passYear = (t: Track) => {
-    if (yearFilter === 'all') return true
-    const y = parseInt(t.year ?? '', 10)
-    if (Number.isNaN(y)) return false
-    return yearFilter === 'new' ? y >= 2020
-      : yearFilter === '2010' ? y >= 2010 && y < 2020
-      : yearFilter === '2000' ? y >= 2000 && y < 2010
-      : y < 2000
-  }
-  const trackGenre = (t: Track): string => (t.genres && t.genres[0]) || ''
-  const passGenre = (t: Track) =>
-    !genreFilter || trackGenre(t).toLowerCase() === genreFilter.toLowerCase()
-  const filteredTracks = tracks.filter((t) => passDur(t) && passYear(t) && passGenre(t))
-  // Опции жанра — уникальные основные жанры из выдачи.
-  const genreOptions: DdOption[] = [
-    { id: 'all', label: t('search.opt.any') },
-    ...Array.from(new Set(tracks.map(trackGenre).filter(Boolean)))
-      .slice(0, 12)
-      .map((g) => ({ id: g, label: g })),
-  ]
-
   // Что показываем в теле — по ОТПРАВЛЕННОМУ запросу, а не по тексту в поле:
   // пока не нажали Enter, набор текста не двигает вёрстку и не гасит выдачу.
   const hasQuery = submitted.trim().length > 0
@@ -1021,12 +884,10 @@ export const SearchPage = ({ active }: SearchPageProps) => {
   // История прячется, как только в поле что-то набрали (даже до Enter).
   const showHistory = focused && !query.trim() && !detailOpen && mergedRecents.length > 0
   // Фильтрация секций по активному табу.
-  const showTracks = (tab === 'all' || tab === 'tracks') && filteredTracks.length > 0
+  const showTracks = (tab === 'all' || tab === 'tracks') && tracks.length > 0
   const showArtists = (tab === 'all' || tab === 'artists') && artists.length > 0
   const showPlaylists = (tab === 'all' || tab === 'playlists') && playlists.length > 0
   const showAlbums = (tab === 'all' || tab === 'albums') && albums.length > 0
-  // Мета-фильтры показываем когда видим треки (таб «Все»/«Треки» и они есть).
-  const showMeta = showResults && (tab === 'all' || tab === 'tracks') && tracks.length > 0
   // Раскладка по табу: 'tracks' → вертикальный список; одиночные арт/пл/альб → wrap;
   // 'all' → горизонтальные ряды (.sp-filter-list / .sp-filter-wrap).
   const layoutClass =
@@ -1081,30 +942,6 @@ export const SearchPage = ({ active }: SearchPageProps) => {
           <div className={cn('sp-filter-zone', filtersHover && 'open')}>
             <div className="sp-filter-zone-in">
             <FilterTabs tab={tab} onTab={setTab} />
-
-            {showMeta && (
-              <div
-                id="spMetaFilters"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  padding: '2px 28px 10px',
-                  flexShrink: 0, flexWrap: 'wrap',
-                }}
-              >
-                <SpDropdown icon={<IcoClock />} label={t('search.dd.duration')} value={durFilter} options={DUR_OPTS.map((o) => ({ id: o.id, label: t(o.labelKey) }))} onPick={(v) => setDurFilter(v as never)} />
-                <SpDropdown icon={<IcoCal />} label={t('lib.ti.year')} value={yearFilter} options={YEAR_OPTS.map((o) => ({ id: o.id, label: o.labelKey ? t(o.labelKey) : o.label! }))} onPick={(v) => setYearFilter(v as never)} />
-                <SpDropdown icon={<IcoSort />} label={t('lib.plmenu.sort')} value={sortOrder} options={SORT_OPTS.map((o) => ({ id: o.id, label: t(o.labelKey) }))} onPick={(v) => setSortOrder(v as never)} />
-                {genreOptions.length > 1 && (
-                  <SpDropdown
-                    icon={<IcoGenre />}
-                    label={t('search.dd.genre')}
-                    value={genreFilter ?? 'all'}
-                    options={genreOptions}
-                    onPick={(v) => setGenreFilter(v === 'all' ? null : v)}
-                  />
-                )}
-              </div>
-            )}
             </div>
           </div>
         )}
@@ -1148,9 +985,9 @@ export const SearchPage = ({ active }: SearchPageProps) => {
                       {tab === 'tracks'
                         ? (
                             <WindowedRows
-                              items={filteredTracks}
+                              items={tracks}
                               scrollRef={spScrollRef}
-                              estimate={68}
+                              estimate={77}
                               renderItem={(t, i) => (
                                 <TrackListRow
                                   key={t.id}
@@ -1163,7 +1000,7 @@ export const SearchPage = ({ active }: SearchPageProps) => {
                               )}
                             />
                           )
-                        : filteredTracks.map((t) => (
+                        : tracks.map((t) => (
                             <TrackCard
                               key={t.id}
                               track={t}

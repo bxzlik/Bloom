@@ -20,6 +20,7 @@ export interface AppEvents {
   'bloom-set-title': string
   'bloom-mp-state': MpState
   'bloom-mp-closed': void
+  'bloom-mp-opened': void
   'bloom-mp-seek': number
   'bloom-mp-volume': number
   'bloom-mp-add-to-lib': void

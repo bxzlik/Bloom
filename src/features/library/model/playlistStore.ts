@@ -30,6 +30,7 @@ const saveToStorage = (playlists: Playlist[]): void => {
       desc: p.desc,
       cover: p.cover,
       sources: p.sources,
+      createdAt: p.createdAt,
     }))
     localStorage.setItem(LS_KEY, JSON.stringify(slim))
   } catch {
@@ -94,6 +95,7 @@ export const usePlaylistStore = create<PlaylistState>((set) => {
         id: newPlaylistId(),
         name,
         trs: [],
+        createdAt: Date.now(),
         ...(desc ? { desc } : {}),
         ...(cover ? { cover } : {}),
         ...(opts?.sources?.length ? { sources: opts.sources } : {}),

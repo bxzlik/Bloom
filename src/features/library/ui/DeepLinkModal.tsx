@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { playFromSource, type PlaySource } from '@features/player'
+import { playFromSource, resolvePlayableUrl, trackProviderId, type PlaySource } from '@features/player'
+import { getProvider } from '@features/providers'
+import type { Track } from '@entities/track'
 import { useNavStore } from '@app/navigationStore'
-import { toast } from '@shared/ui'
+import { toast, EmptyCover } from '@shared/ui'
 import { PlCover } from './PlCover'
 import { useT } from '@shared/i18n'
 import { runEnterAnimation } from '@shared/lib/enterAnimation'
@@ -24,12 +26,54 @@ import { Ico } from '@shared/ui/icons/solar'
  * fav/lib/playlist «промоутят» эфемерный трек в библиотеку (saveTrackToLibrary,
  * _scPromoteTemp) — иначе id не зарезолвится после закрытия модалки.
  *
- * CSS: `#dlinkMover`/`#dlinkModal`/`.dlink-*` (modals.css:98-154).
+ * Чрома как у прочих модалок: без внешней рамки, z-index ниже оконного
+ * тайтлбара (#winTitlebar z1001) — кнопки окна и перетаскивание остаются
+ * доступны; закрывают широкой кнопкой в футере (`.dlink-foot`), крестика в
+ * шапке нет.
+ *
+ * CSS: `#dlinkMover`/`#dlinkModal`/`.dlink-*` (modals.css).
  */
+
+/**
+ * Дотянуть полный трек площадки по данным ссылки.
+ *
+ * Из deep-link приходит заглушка, собранная из query-параметров: ни длительности
+ * и метаданных, ни `scMedia`. Без этого «Воспроизвести» шло по холодной цепочке
+ * (полный трек по id → signed-URL → и только потом сам поток), а в библиотеку
+ * сохранялся обрезок без длительности и альбома.
+ *
+ * Площадка берётся из самого трека (`trackProviderId` по флагам `_sc`/`_ym`/`_ytm`,
+ * их проставил мост по префиксу id) — резолв по id умеют все три провайдера.
+ * Ссылка с одним permalink (SC без числового id) идёт через `resolveUrl`
+ * (/resolve): там и id окажется настоящим, а не `sc_tmp_<permalink>`.
+ */
+const enrichLinkTrack = async (t: Track): Promise<Track | null> => {
+  const prov = getProvider(trackProviderId(t))
+  if (!prov) return null
+  try {
+    if (prov.resolveTrackById) {
+      const full = await prov.resolveTrackById(t.id)
+      if (full) return full
+    }
+    if (t.scPermalink && prov.resolveUrl) {
+      const r = await prov.resolveUrl(t.scPermalink)
+      return r?.type === 'track' ? r.track : null
+    }
+  } catch (e) {
+    console.warn('[deeplink] enrich failed', e)
+  }
+  return null
+}
+
 export const DeepLinkModal = () => {
   const t = useT()
-  const track = useDeepLinkStore((s) => s.track)
+  const linkTrack = useDeepLinkStore((s) => s.track)
   const close = useDeepLinkStore((s) => s.close)
+  // Полный трек, догруженный по ссылке; до его прихода работаем с заглушкой.
+  // Ветку `linkTrack ?` не свернуть в `full ?? linkTrack`: после close() стор
+  // обнуляется, а `full` — нет, и модалка осталась бы висеть смонтированной.
+  const [full, setFull] = useState<Track | null>(null)
+  const track = linkTrack ? full ?? linkTrack : null
   const playlists = usePlaylistStore((s) => s.playlists)
   const addTrackToPl = usePlaylistStore((s) => s.addTrackToPl)
   const toggleFav = useFavStore((s) => s.toggleFav)
@@ -37,14 +81,30 @@ export const DeepLinkModal = () => {
   const [opening, setOpening] = useState(false)
   const [plView, setPlView] = useState(false)
 
+  // Открытие: enter-анимация + догрузка полного трека и прогрев стрима. Пока
+  // пользователь читает карточку, signed-URL успевает лечь в кеш площадки
+  // (streamCache, TTL 4 мин) — «Воспроизвести» стартует почти мгновенно.
   useEffect(() => {
-    if (!track) return
+    if (!linkTrack) return
     setPlView(false)
-    return runEnterAnimation(setOpening)
-  }, [track?.id])
+    setFull(null)
+    let cancelled = false
+    void enrichLinkTrack(linkTrack).then((t) => {
+      if (cancelled || !t) return
+      setFull(t)
+      void resolvePlayableUrl(t).catch(() => {})
+    })
+    const stopAnim = runEnterAnimation(setOpening)
+    return () => {
+      cancelled = true
+      stopAnim()
+    }
+  }, [linkTrack?.id])
 
+  // Ключ — id ссылки, а не показанного трека: догрузка полного трека меняет id
+  // (sc_tmp_<permalink> → sc_<id>), перевешивать слушатель из-за этого незачем.
   useEffect(() => {
-    if (!track) return
+    if (!linkTrack) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -54,7 +114,7 @@ export const DeepLinkModal = () => {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [track?.id])
+  }, [linkTrack?.id])
 
   const handleClose = () => {
     setOpening(false)
@@ -111,42 +171,39 @@ export const DeepLinkModal = () => {
             {track.cover ? (
               <img src={track.cover} alt="" />
             ) : (
-              <Ico name="note" width={20} height={20} style={{ opacity: 0.3 }} />
+              <EmptyCover />
             )}
           </div>
           <div className="dlink-info">
-            <div className="dlink-title" id="dlinkTitle">{track.name || 'SC Track'}</div>
+            <div className="dlink-title" id="dlinkTitle">{track.name || t('lib.deeplink.untitled')}</div>
             <div className="dlink-artist" id="dlinkArtist">{track.artist || ''}</div>
           </div>
-          <button className="dlink-close-btn" onClick={handleClose} aria-label={t('common.close')}>
-            <Ico name="close" width={12} height={12} />
-          </button>
         </div>
 
         {!plView ? (
           <div className="dlink-actions" id="dlinkActions" style={{ display: 'block' }}>
             <div className="dlink-act" id="dlinkActPlay" onClick={onPlay}>
               <div className="dlink-act-icon">
-                <Ico name="play" width={11} height={11} />
+                <Ico name="play" width={18} height={18} />
               </div>
               <span className="dlink-act-label">{t('lib.deeplink.play')}</span>
             </div>
             <div className="dlink-sep" />
             <div className="dlink-act" id="dlinkActLib" onClick={onAddLib}>
               <div className="dlink-act-icon">
-                <Ico name="download" width={12} height={12} />
+                <Ico name="download" width={18} height={18} />
               </div>
               <span className="dlink-act-label">{t('lib.deeplink.toLib')}</span>
             </div>
             <div className="dlink-act" id="dlinkActFav" onClick={onFav}>
               <div className="dlink-act-icon">
-                <Ico name="heart" width={13} height={13} />
+                <Ico name="heart" width={18} height={18} />
               </div>
               <span className="dlink-act-label">{t('lib.deeplink.toFav')}</span>
             </div>
             <div className="dlink-act" id="dlinkActPl" onClick={() => setPlView(true)}>
               <div className="dlink-act-icon">
-                <Ico name="note" width={11} height={11} />
+                <Ico name="note" width={18} height={18} />
               </div>
               <span className="dlink-act-label">{t('lib.deeplink.toPl')}</span>
               <Ico name="arrowRight" className="dlink-act-chevron" width={10} height={10} />
@@ -185,6 +242,13 @@ export const DeepLinkModal = () => {
             </div>
           </div>
         )}
+
+        <div className="dlink-foot">
+          <button className="stats-tool-btn" onClick={handleClose}>
+            <Ico name="close" width={13} height={13} />
+            {t('common.close')}
+          </button>
+        </div>
       </div>
     </div>,
     document.body,

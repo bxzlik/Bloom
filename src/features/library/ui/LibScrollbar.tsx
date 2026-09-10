@@ -37,7 +37,6 @@ export const LibScrollbar = () => {
   )
   const density = useUiPrefsStore((s) => s.libDensity)
   const colAlbum = useUiPrefsStore((s) => s.libColAlbum)
-  const colDate = useUiPrefsStore((s) => s.libColDate)
 
   const trackRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -83,7 +82,7 @@ export const LibScrollbar = () => {
       ro.disconnect()
       mo.disconnect()
     }
-  }, [mode, plId, folderPath, searchQuery, tracksLen, plTrsLen, density, colAlbum, colDate])
+  }, [mode, plId, folderPath, searchQuery, tracksLen, plTrsLen, density, colAlbum])
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!geom.scrollable) return

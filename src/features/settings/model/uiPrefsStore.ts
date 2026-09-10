@@ -32,26 +32,6 @@ export type SidebarPos = 'left' | 'top' | 'right'
  * - `full`  — иконка + подпись вкладки, широкий сайдбар (`--sb-w-full`)
  */
 export type SidebarView = 'icons' | 'full'
-/**
- * Вид поиска — что открывает КЛИК по вкладке «Поиск» в сайдбаре:
- * - `page`    — отдельная страница `#page-search` (по умолчанию)
- * - `overlay` — всплывающий ввод по центру поверх текущей страницы
- *               (`SearchOverlay`); Enter из него уводит на страницу с выдачей
- *
- * Хоткей Ctrl+T (`searchHotkey`) — независимая ось: он всегда открывает
- * всплывающий ввод, при любом виде. Прежний третий вид `both` = `page` +
- * включённый хоткей (миграция в `load`).
- */
-export type SearchView = 'page' | 'overlay'
-/**
- * Вид блока «Моя волна» на главной:
- * - `fire` — турбулентный фаербол во весь блок (по умолчанию)
- * - `ring` — кольцо обложек-сидов вокруг кнопки запуска
- *
- * Ось независимая от `homeWave` (тот отвечает за саму видимость блока). Новые
- * виды добавляются сюда + в WAVE_VIEWS (PagesSection) + в WaveCard.
- */
-export type WaveView = 'fire' | 'ring'
 export type LibView = 'list' | 'grid'
 /**
  * Раскладка ряда действий в шапке библиотеки (`.lib-content-hero`):
@@ -83,6 +63,12 @@ export interface UiPrefs {
   sidebarCompact: boolean
   /** Плавающий сайдбар — капсула overlay поверх контента (взаимоисключим с compact). */
   sidebarFloating: boolean
+  /**
+   * «Полный» режим — сайдбар без рамки: ни бордера, ни скругления, ни своего
+   * фона/блюра, поэтому иконки висят прямо на фоне окна (`.app.sidebar-plain`).
+   * Четвёртый пункт ряда режимов → взаимоисключим с compact и floating.
+   */
+  sidebarPlain: boolean
   /** Авто-скрытие сайдбара — спрятан за краем, выезжает при наведении на край. */
   sidebarAutohide: boolean
   /** Авто-скрытие тайтлбара — спрятан за верхним краем, выезжает при наведении. */
@@ -94,10 +80,6 @@ export interface UiPrefs {
   libView: LibView
   /** Раскладка кнопок шапки библиотеки: справа от названия или под ним. */
   libHeroBtns: LibHeroBtns
-  /** Вид поиска: что открывает клик по вкладке — страница или всплывающий ввод. */
-  searchView: SearchView
-  /** Ctrl+T показывает всплывающий поиск (независимо от вида). */
-  searchHotkey: boolean
   /** Вид строк сайдбара библиотеки: полный / только текст / только обложки. */
   sbView: SbView
   /** Скрывать сайдбар библиотеки и разворачивать его при наведении на левый край. */
@@ -106,13 +88,9 @@ export interface UiPrefs {
   libDensity: LibDensity
   /** Показывать колонку «Альбом» в треклисте (на широком окне). */
   libColAlbum: boolean
-  /** Показывать колонку «Дата добавления» в треклисте (на широком окне). */
-  libColDate: boolean
   // ── Секции главной страницы (что показывать на «Главной») ──
   /** Блок «Моя волна». */
   homeWave: boolean
-  /** Вид блока «Моя волна»: фаербол / кольцо обложек. */
-  waveView: WaveView
   /** Карточка «Продолжить». */
   homeContinue: boolean
   /** Быстрая карточка «Любимые треки». */
@@ -123,6 +101,8 @@ export interface UiPrefs {
   homeNew: boolean
   /** Витрина «Чарты». */
   homeCharts: boolean
+  /** Витрина «Для вас» — похожие на самое слушаемое. */
+  homeForYou: boolean
   /** Секция «Недавно слушали». */
   homeRecent: boolean
   /** Секция «Плейлисты». */
@@ -132,6 +112,8 @@ export interface UiPrefs {
   /** Название текущей вкладки по центру тайтлбара (`#winTitleCenter`). */
   titlebarLabel: boolean
   navFloatBtn: boolean
+  /** Вместо иконки «Главная» в сайдбаре — знак Bloom (маска по /logo.png). */
+  navHomeLogo: boolean
   // ── Элементы тайтлбара (что показывать на панели окна) ──
   /** Логотип Bloom слева (`.win-icon`). */
   tbLogo: boolean
@@ -155,8 +137,6 @@ export interface UiPrefs {
   fullZoom: number
   /** Оконный зум (масштаб окна), % 70..130. */
   winZoom: number
-  /** Ширина сайдбара модалки настроек, px (тянется мышью за разделитель). */
-  smNavW: number
   /** Ширина сайдбара приложения в режиме «С подписями», px (тянется мышью). */
   sbFullW: number
   /** Запретить растягивание сайдбара приложения мышью. */
@@ -166,11 +146,6 @@ export interface UiPrefs {
   /** Запретить растягивание боковой панели мышью. */
   grpResizeLock: boolean
 }
-
-/** Границы ширины сайдбара настроек (px). Дефолт — SM_NAV_W_DEFAULT. */
-export const SM_NAV_W_MIN = 150
-export const SM_NAV_W_MAX = 340
-export const SM_NAV_W_DEFAULT = 185
 
 /**
  * Растягивание сайдбара приложения (`SbResizer`).
@@ -198,31 +173,30 @@ const DEFAULTS: UiPrefs = {
   sidebarView: 'icons',
   sidebarCompact: false,
   sidebarFloating: false,
+  sidebarPlain: false,
   sidebarAutohide: false,
   titlebarAutohide: false,
   titlebarBg: false,
   sbSep: true,
   libView: 'list',
   libHeroBtns: 'right',
-  searchView: 'page',
-  searchHotkey: true,
   sbView: 'full',
   libSbHover: false,
   libDensity: 'comfortable',
   libColAlbum: true,
-  libColDate: true,
   homeWave: true,
-  waveView: 'fire',
   homeContinue: true,
   homeFav: true,
   homeHistory: true,
   homeNew: true,
   homeCharts: true,
+  homeForYou: true,
   homeRecent: true,
   homePlaylists: true,
   drawerSide: 'right',
   titlebarLabel: true,
   navFloatBtn: true,
+  navHomeLogo: false,
   tbLogo: true,
   tbVersion: true,
   tbMin: true,
@@ -234,7 +208,6 @@ const DEFAULTS: UiPrefs = {
   borderAlpha: 6,
   fullZoom: 100,
   winZoom: 100,
-  smNavW: SM_NAV_W_DEFAULT,
   sbFullW: SB_FULL_W_DEFAULT,
   sbResizeLock: false,
   grpW: GRP_W_DEFAULT,
@@ -255,15 +228,13 @@ const load = (): UiPrefs => {
       sidebarView: p.sidebarView === 'full' ? 'full' : 'icons',
       sidebarCompact: !!p.sidebarCompact,
       sidebarFloating: !!p.sidebarFloating,
+      sidebarPlain: !!p.sidebarPlain,
       sidebarAutohide: !!p.sidebarAutohide,
       titlebarAutohide: !!p.titlebarAutohide,
       titlebarBg: !!p.titlebarBg,
       sbSep: p.sbSep !== false,
       libView: p.libView === 'grid' ? 'grid' : 'list',
       libHeroBtns: p.libHeroBtns === 'below' ? 'below' : 'right',
-      searchView: p.searchView === 'overlay' ? 'overlay' : 'page',
-      // Миграция: третий вид `both` был «страница по клику + хоткей».
-      searchHotkey: p.searchView === 'both' ? true : p.searchHotkey !== false,
       // Миграция: раньше вид сайдбара жил в отдельном ключе `bloom_lib_sbview`.
       sbView:
         p.sbView === 'text' || p.sbView === 'covers'
@@ -275,19 +246,19 @@ const load = (): UiPrefs => {
       libSbHover: !!p.libSbHover,
       libDensity: p.libDensity === 'compact' ? 'compact' : 'comfortable',
       libColAlbum: p.libColAlbum !== false,
-      libColDate: p.libColDate !== false,
       homeWave: p.homeWave !== false,
-      waveView: p.waveView === 'ring' ? 'ring' : 'fire',
       homeContinue: p.homeContinue !== false,
       homeFav: p.homeFav !== false,
       homeHistory: p.homeHistory !== false,
       homeNew: p.homeNew !== false,
       homeCharts: p.homeCharts !== false,
+      homeForYou: p.homeForYou !== false,
       homeRecent: p.homeRecent !== false,
       homePlaylists: p.homePlaylists !== false,
       drawerSide: p.drawerSide === 'left' ? 'left' : 'right',
       titlebarLabel: p.titlebarLabel !== false,
       navFloatBtn: p.navFloatBtn !== false,
+      navHomeLogo: !!p.navHomeLogo,
       tbLogo: p.tbLogo !== false,
       tbVersion: p.tbVersion !== false,
       tbMin: p.tbMin !== false,
@@ -299,7 +270,6 @@ const load = (): UiPrefs => {
       borderAlpha: typeof p.borderAlpha === 'number' ? p.borderAlpha : 6,
       fullZoom: typeof p.fullZoom === 'number' ? p.fullZoom : 100,
       winZoom: typeof p.winZoom === 'number' ? p.winZoom : 100,
-      smNavW: clampNum(p.smNavW, SM_NAV_W_MIN, SM_NAV_W_MAX, SM_NAV_W_DEFAULT),
       sbFullW: clampNum(p.sbFullW, SB_FULL_W_MIN, SB_FULL_W_MAX, SB_FULL_W_DEFAULT),
       sbResizeLock: !!p.sbResizeLock,
       grpW: clampNum(p.grpW, GRP_W_MIN, GRP_W_MAX, GRP_W_DEFAULT),
@@ -344,6 +314,12 @@ const applyPinned = (on: boolean): void => {
 interface UiPrefsState extends UiPrefs {
   set: <K extends keyof UiPrefs>(key: K, value: UiPrefs[K]) => void
   reset: () => void
+  /**
+   * Сброс ПОДМНОЖЕСТВА ключей к значениям по умолчанию — для кнопки сброса
+   * раздела: разделы делят один стор, и полный `reset` снёс бы чужие настройки.
+   * Идёт через `set`, чтобы отработали побочные эффекты (zoom, рамки и т.д.).
+   */
+  resetKeys: (...keys: (keyof UiPrefs)[]) => void
 }
 
 const persist = (s: UiPrefs): void => {
@@ -355,31 +331,30 @@ const persist = (s: UiPrefs): void => {
         sidebarView: s.sidebarView,
         sidebarCompact: s.sidebarCompact,
         sidebarFloating: s.sidebarFloating,
+        sidebarPlain: s.sidebarPlain,
         sidebarAutohide: s.sidebarAutohide,
         titlebarAutohide: s.titlebarAutohide,
         titlebarBg: s.titlebarBg,
         sbSep: s.sbSep,
         libView: s.libView,
         libHeroBtns: s.libHeroBtns,
-        searchView: s.searchView,
-        searchHotkey: s.searchHotkey,
         sbView: s.sbView,
         libSbHover: s.libSbHover,
         libDensity: s.libDensity,
         libColAlbum: s.libColAlbum,
-        libColDate: s.libColDate,
         homeWave: s.homeWave,
-        waveView: s.waveView,
         homeContinue: s.homeContinue,
         homeFav: s.homeFav,
         homeHistory: s.homeHistory,
         homeNew: s.homeNew,
         homeCharts: s.homeCharts,
+        homeForYou: s.homeForYou,
         homeRecent: s.homeRecent,
         homePlaylists: s.homePlaylists,
         drawerSide: s.drawerSide,
         titlebarLabel: s.titlebarLabel,
         navFloatBtn: s.navFloatBtn,
+        navHomeLogo: s.navHomeLogo,
         tbLogo: s.tbLogo,
         tbVersion: s.tbVersion,
         tbMin: s.tbMin,
@@ -391,7 +366,6 @@ const persist = (s: UiPrefs): void => {
         borderAlpha: s.borderAlpha,
         fullZoom: s.fullZoom,
         winZoom: s.winZoom,
-        smNavW: s.smNavW,
         sbFullW: s.sbFullW,
         sbResizeLock: s.sbResizeLock,
         grpW: s.grpW,
@@ -426,6 +400,10 @@ export const useUiPrefsStore = create<UiPrefsState>((set, get) => ({
     applySbFullW(DEFAULTS.sbFullW)
     applyGrpW(DEFAULTS.grpW)
   },
+  resetKeys: (...keys) => {
+    const { set: setKey } = get()
+    keys.forEach((k) => setKey(k, DEFAULTS[k]))
+  },
 }))
 
 /** Список классов для `.app` из текущих префов (навешивает App.tsx). */
@@ -436,10 +414,11 @@ export const appClassesFromPrefs = (p: UiPrefs): string[] => {
   // Подписи вкладок — независимая ось: работает и с compact, и с floating,
   // и в любой позиции (расширяет `--sb-w`, см. base.css «SIDEBAR FULL MODE»).
   if (p.sidebarView === 'full') out.push('sidebar-full')
-  // Плавающий и компактный взаимоисключимы — floating имеет приоритет в рендере,
-  // даже если оба флага оказались true (старый persist).
+  // Плавающий, компактный и полный взаимоисключимы (один ряд кнопок) — порядок
+  // здесь задаёт приоритет на случай, если из старого persist пришло несколько.
   if (p.sidebarFloating) out.push('sidebar-floating')
   else if (p.sidebarCompact) out.push('sidebar-compact')
+  else if (p.sidebarPlain) out.push('sidebar-plain')
   // Авто-скрытие совместимо с обычным/компактным/плавающим режимом — CSS
   // разруливает позиционирование для каждого случая.
   if (p.sidebarAutohide) out.push('sidebar-autohide')

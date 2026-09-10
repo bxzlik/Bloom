@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
-import { loadPlayLog } from './playLog'
+import { loadPlayLog } from '@/db/playLog'
 import { buildWrapped, type WrappedData } from '../lib/aggregate'
 import {
   inYearWindow,
   inMonthWindow,
+  inMonthHintWindow,
   isPeriodSeen,
   PERIOD_ORDER,
   periodRange,
@@ -89,6 +90,13 @@ export interface WrappedEntries {
    * возвращается к статистике до следующего месяца.
    */
   monthTakeover: boolean
+  /**
+   * Первая неделя месяца: карточка статистики чередует своё число с надписью
+   * «Итоги месяца». В отличие от подмены, это работает и ПОСЛЕ просмотра —
+   * подсказка, а не вход: клик по карточке всё так же открывает статистику,
+   * а сами итоги — кнопкой в её футере.
+   */
+  monthHint: boolean
   /** Год ещё не смотрели — метка «Новое» на плашке. */
   yearUnseen: boolean
 }
@@ -112,7 +120,8 @@ export const useWrappedEntries = (): WrappedEntries => {
     return () => window.removeEventListener('focus', check)
   }, [refresh])
 
-  if (!ready) return { month: null, year: null, monthTakeover: false, yearUnseen: false }
+  if (!ready)
+    return { month: null, year: null, monthTakeover: false, monthHint: false, yearUnseen: false }
 
   void seenTick // «просмотрено» читается из localStorage — пересчитываем по тику
 
@@ -123,6 +132,7 @@ export const useWrappedEntries = (): WrappedEntries => {
     month,
     year,
     monthTakeover: !!month && inMonthWindow() && !isPeriodSeen(month.range),
+    monthHint: !!month && inMonthHintWindow(),
     yearUnseen: !!year && !isPeriodSeen(year.range),
   }
 }

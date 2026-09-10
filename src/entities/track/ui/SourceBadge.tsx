@@ -134,6 +134,10 @@ const SourcePlaque = ({
   const accentBadges = useBadgePrefs((s) => s.accentBadges)
   const useBrand = !accentBadges && !!brand
   const color = useBrand ? (brand as string) : 'var(--accent)'
+  // Кружок поверх обложки чуть шире номинала, а лого внутри считается от size —
+  // так у логотипа появляется воздух до края плашки, и размер иконки не поехал.
+  // Обычной (квадратной) плашки это не касается: она сидит в потоке.
+  const plaque = cover ? size + 2 : size
   return (
     <span
       className="src-badge"
@@ -141,8 +145,8 @@ const SourcePlaque = ({
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        width: size,
-        height: size,
+        width: plaque,
+        height: plaque,
         flexShrink: 0,
         ...(cover
           ? {
@@ -151,7 +155,6 @@ const SourcePlaque = ({
               color,
               backdropFilter: 'blur(3px)',
               WebkitBackdropFilter: 'blur(3px)',
-              boxShadow: 'inset 0 0 0 1px rgba(var(--ovl-rgb),.14)',
             }
           : {
               borderRadius: 'calc(var(--radius) * 0.35)',

@@ -18,6 +18,8 @@
 @import './settings.css';
 @import './sliders-telemetry.css';
 @import './modals.css';
+/* после modals.css: каркас боковых панелей «в полокна» перебивает старый .spanel */
+@import './side-sheet.css';
 @import './search-misc.css';
 @import './home.css';
 @import './wrapped.css';

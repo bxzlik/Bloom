@@ -178,6 +178,22 @@ export const downloadCover = async (
   }
 }
 
+/** Сохранить произвольную картинку (data:/http) на диск через нативный диалог.
+ *  Использует ту же нативную команду, что и обложка трека; расширение Rust
+ *  подставляет сам по сигнатуре байтов — своё из имени убираем. */
+export const downloadImageFile = async (src: string, filename: string): Promise<void> => {
+  if (!src) return
+  await ensureListener()
+  const base = sanitize(filename).replace(/\.[a-z0-9]{2,4}$/i, '').trim() || 'image'
+  _ctx = { kind: 'cover', name: base }
+  const isData = src.startsWith('data:')
+  await invoke('cover_download', {
+    dataUrl: isData ? src : null,
+    url: isData ? null : src,
+    filename: base,
+  })
+}
+
 /**
  * Скачать все треки плейлиста площадок в выбранную папку (создаётся подпапка с
  * именем плейлиста). Качаются только SC/YM-треки; локальные/загруженные

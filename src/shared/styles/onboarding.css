@@ -147,8 +147,9 @@
 .ob-btn-primary { background: var(--accent, #fff); color: var(--accent-text, #000) }
 .ob-btn-primary:hover { background: var(--accent-hover) }
 .ob-btn-block { width: 100% }
-.ob-btn-ghost { background: transparent; color: var(--text2, #999); padding: 11px 14px }
-.ob-btn-ghost:hover { background: var(--hover, #222); color: var(--text, #fff) }
+/* Второстепенная кнопка — заливкой, а не прозрачная (см. .pedit-btn-cancel). */
+.ob-btn-ghost { background: rgba(var(--ovl-rgb),.05); color: var(--text2, #999); padding: 11px 14px }
+.ob-btn-ghost:hover { background: rgba(var(--ovl-rgb),.09); color: var(--text, #fff) }
 .ob-btn-outline {
   background: transparent;
   border: 1px dashed var(--border, #2a2a2a);

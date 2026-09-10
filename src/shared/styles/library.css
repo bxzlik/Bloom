@@ -1,60 +1,43 @@
 /* ===== PLAYLIST / FOLDER DRAG & DROP ===== */
-.lib-item.pl-dragging{opacity:.35;background:var(--hover)!important}
-.lib-item.pl-drag-over{background:rgba(var(--accent-rgb),.12)!important;outline:1.5px solid rgba(var(--accent-rgb),.35);border-radius:calc(var(--radius)*0.55)}
-.pl-drag-handle{display:none}
-.ro-ghost-lib{position:fixed;pointer-events:none;z-index:9999;opacity:.92;background:var(--card-solid,var(--card));border-radius:var(--radius);box-shadow:0 16px 48px rgba(0,0,0,.85),0 4px 16px rgba(0,0,0,.6);left:0;top:0;min-width:200px;transition:none!important;will-change:transform}
-/* ===== PLAYLIST CONTEXT MENU ===== */
-#plCtxMenuHeader{display:flex;align-items:center;gap:10px;padding:10px 12px 11px;border-bottom:1px solid var(--border);margin-bottom:3px;pointer-events:none}
-#plCtxMenuHeaderCov{width:40px;height:40px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.35)}
-#plCtxMenuHeaderCov img{width:100%;height:100%;object-fit:cover}
-#plCtxMenuHeaderName{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:125px;line-height:1.3}
-#plCtxMenuHeaderSub{font-size:11px;color:var(--text2);margin-top:2px}
-#plCtxMenu,#folderCtxMenu,#artistCtxMenu{position:fixed;z-index:8000;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*.9);padding:5px;min-width:185px;box-shadow:none;display:none}
-#plCtxMenu.open,#folderCtxMenu.open,#artistCtxMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
 .lib-pin-dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:1.5px solid var(--bg);pointer-events:none;z-index:1}
 #libGridOverview .lib-pin-dot{width:12px;height:12px;border-width:2px}
-.plctx-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:calc(var(--radius)*.5);font-size:13px;font-weight:500;color:var(--text);cursor:pointer;transition:background .1s,box-shadow .1s;white-space:nowrap}
-.plctx-item:hover{background:var(--hover);box-shadow:inset 2.5px 0 0 var(--accent)}
-.plctx-item:hover .ci-icon{background:rgba(var(--ovl-rgb),.11)}
-.plctx-item.danger{color:#e03030}
-.plctx-item.danger .ci-icon{background:rgba(224,48,48,.12)}
-.plctx-item.danger:hover{background:rgba(224,48,48,.08);box-shadow:inset 2.5px 0 0 #e03030;color:#e03030}
-.plctx-item.danger:hover .ci-icon{background:rgba(224,48,48,.18)}
-.plctx-sep{height:1px;background:var(--border);margin:4px 3px;opacity:.65}
-#plMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.07);border-radius:calc(var(--radius)*0.9);padding:5px;z-index:8000;min-width:210px;box-shadow:none;display:none}
+/* ===== PLAYLIST CONTEXT MENU ===== */
+#plMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:calc(var(--radius)*0.9);padding:5px;z-index:8000;min-width:210px;box-shadow:none;display:none}
 #plMenu.open{display:block;animation:ctxIn .18s cubic-bezier(.34,1.25,.64,1)}
-#plMenuHeader{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:8px 11px 9px;margin:0 0 3px;border-radius:calc(var(--radius)*0.7);pointer-events:none}
+/* Шапка — колонка: верхний ряд (обложка + название/подпись) и, если есть дата,
+   вторая строка под волосяной линией (.cx-head-top / .cx-head-meta ниже). */
+#plMenuHeader{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;padding:8px 11px 9px;margin:0 0 3px;border-radius:calc(var(--radius)*0.7);pointer-events:none}
 /* Размытая обложка фоном шапки + затемняющий градиент поверх для читаемости. */
 #plMenuHeader::before{content:'';position:absolute;inset:0;z-index:0;background-image:var(--cx-cover,none);background-size:cover;background-position:center;filter:blur(20px) saturate(1.4) brightness(.6);transform:scale(1.5)}
 #plMenuHeader::after{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.6))}
 #plMenuHeader>*{position:relative;z-index:1}
 /* Системные разделы — нейтральная панель (как у папки/плейлиста без обложки);
-   всё опознаётся по тинт-квадрату с цветной иконкой, как в сайдбаре. */
-#plMenuHeader.sys-all #plMenuHeaderCov{background:var(--sys-all-tint)}
-#plMenuHeader.sys-fav #plMenuHeaderCov{background:var(--sys-fav-tint)}
-#plMenuHeader.sys-hist #plMenuHeaderCov{background:var(--sys-hist-tint)}
+   опознаются по цветной иконке на нейтральном квадрате с рамкой, как в
+   сайдбаре. */
 #plMenuHeader.sys-all #plMenuHeaderCov svg{color:var(--sys-all-ico)}
 #plMenuHeader.sys-fav #plMenuHeaderCov svg{color:var(--sys-fav-ico)}
 #plMenuHeader.sys-hist #plMenuHeaderCov svg{color:var(--sys-hist-ico)}
-#plMenuHeader[class*="sys-"] #plMenuHeaderCov{box-shadow:0 2px 10px rgba(0,0,0,.5),inset 0 0 0 1px rgba(var(--ovl-rgb),.14)}
-#plMenuHeaderCov{width:38px;height:38px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+#plMenuHeader[class*="sys-"] #plMenuHeaderCov{background:var(--sys-cov-bg);box-shadow:inset 0 0 0 1px var(--sys-cov-bd)}
+#plMenuHeaderCov{width:38px;height:38px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
 #plMenuHeaderCov img{width:100%;height:100%;object-fit:cover}
-#plMenuHeaderName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
-#plMenuHeaderSub{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#plMenuHeaderName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff}
+#plMenuHeaderSub{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px}
 /* Верхняя строка меню плейлиста: одна пилюля с широкой «Воспроизвести» и
    секцией перемешивания справа (собственных рамок у секций нет, они отделены
    вертикальной линией). Рамка — --ovl-line/--ovl-line2, т.е. следует настройке
    «прозрачность рамок» (borderAlpha → --wb/--wb2), как у .tr и блоков. */
 .plmenu-playrow{display:flex;align-items:stretch;margin:2px 0 3px;border:1px solid var(--ovl-line);border-radius:999px;overflow:hidden;transition:border-color .12s}
 .plmenu-playrow:hover{border-color:var(--ovl-line2)}
-.plmenu-play,.plmenu-shuffle{display:flex;align-items:center;justify-content:center;gap:7px;height:30px;padding:0 12px;border:0;background:transparent;color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
+.plmenu-play,.plmenu-shuffle{display:flex;align-items:center;justify-content:center;gap:7px;height:30px;padding:0 12px;border:0;background:transparent;color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:color .12s}
 .plmenu-play{flex:1;min-width:0}
 .plmenu-play span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Разделитель — псевдоэлемент, а не border-left: линия короче пилюли и не
    упирается в её верх/низ. */
 .plmenu-shuffle{position:relative;width:36px;padding:0;flex-shrink:0;color:var(--text2)}
 .plmenu-shuffle::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:1px;background:var(--ovl-line2)}
-.plmenu-play:hover,.plmenu-shuffle:hover{background:rgba(var(--ovl-rgb),.06);color:var(--text)}
+/* Ховер без подложки — как у остальных пунктов плоского меню: меняется
+   только цвет текста/иконки. */
+.plmenu-play:hover,.plmenu-shuffle:hover{color:var(--text)}
 .ci.sort-active .ci-icon{background:transparent!important;color:var(--accent)}
 .ci.sort-active{color:var(--accent)}
 #plMenuPage1,#plMenuPage2{animation-fill-mode:forwards}
@@ -62,27 +45,41 @@
 #plMenuPage2.active{display:block;animation:plPageIn .15s ease}
 .pl-menu-back{display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;border-top:1px solid var(--ovl-line2);margin-top:3px;font-size:12px;color:var(--text2);cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:color .1s}
 .pl-menu-back:hover{color:var(--text)}
-.pl-sort-group{margin-bottom:2px}
 /* position:relative — точка отсчёта для плавающей кнопки «Сейчас играет»
    (.lib-jump): она висит НАД трек-листом, а не внутри его скролла. */
-.lib-content{position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;margin:var(--page-pad) var(--page-pad) var(--page-pad) 10px;gap:10px}
-.lib-content-head{position:relative;padding:16px;flex-shrink:0;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75)}
-.lib-content-hero{display:flex;align-items:center;gap:14px}
-/* Шапка плейлиста с обложкой — размытая обложка фоном + затемняющий градиент,
-   как в шапке контекстного меню (#plMenuHeader). */
-.lib-content-head.has-cover{position:relative;overflow:hidden;background:transparent}
-.lib-content-head.has-cover::before{content:'';position:absolute;inset:0;z-index:0;background-image:var(--hero-cover,none);background-size:cover;background-position:center;filter:blur(40px) saturate(1.4) brightness(.55);transform:scale(1.5)}
-.lib-content-head.has-cover::after{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.62))}
-.lib-content-head.has-cover>*{position:relative;z-index:1}
-.lib-content-head.has-cover .lib-hero-name{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.lib-content-head.has-cover .lib-hero-sub,.lib-content-head.has-cover .lib-hero-desc{color:rgba(var(--ovl-rgb),.82);text-shadow:0 1px 3px rgba(0,0,0,.55)}
+/* margin слева 10px — зазор до .lib-sidebar; сверху/справа/снизу 0: контент
+   стоит вплотную к краям .main (рамки у неё в библиотеке нет, см. base.css). */
+.lib-content{position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;margin:0 0 0 10px;gap:10px}
+/* Размер шапки задают три ручки: --lh-cov (сторона обложки/иконки), --lh-pad
+   (боковой отступ) и --lh-pad-y (вертикальный). По --lh-pad же выравнивается
+   скруббер внизу шапки.
+   Высоту шапки целиком диктует обложка: --lh-cov + --lh-pad-y*2 = 180px. Ручки
+   вертикали связаны — растёт обложка, на столько же ужимается отступ, иначе
+   шапка отъедает высоту у трек-листа. Боковой отступ в эту сумму не входит и
+   живёт своей жизнью. */
+.lib-content-head{--lh-cov:150px;--lh-pad:20px;--lh-pad-y:15px;position:relative;padding:var(--lh-pad-y) var(--lh-pad);flex-shrink:0;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:var(--radius)}
+.lib-content-hero{display:flex;align-items:center;gap:20px}
+/* У шапки с обложкой своего фона нет: раньше под ней лежала размытая обложка с
+   затемняющим градиентом (как в #plMenuHeader), теперь она — обычная панель
+   .lib-content-head, одинаковая для плейлистов и системных разделов. Поэтому же
+   тут нет перекраски текста в белый: цвета берутся из темы. */
 /* Текстовая колонка шапки: название/описание/подпись, а в раскладке «Под
    названием» (настройка libHeroBtns) — ещё и ряд действий под ними. */
 .lib-hero-main{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
-.lib-hero-main>.lib-hero-edit{flex:none;width:100%;max-width:420px}
-.lib-hero-btns{display:flex;gap:8px;align-items:center;flex-shrink:0;margin-left:auto}
+.lib-hero-main>.lib-hero-edit{flex:none;width:100%}
+.lib-hero-btns{display:flex;gap:9px;align-items:center;flex-shrink:0;margin-left:auto}
+/* Ряд действий шапки крупнее общих кнопок (.btn-play-all/.btn-icon — 34px):
+   шапка плейлиста — главный экран библиотеки, действия в ней основные.
+   Размеры переопределяем только внутри шапки, чтобы не тянуть за собой
+   .btn-icon по всему приложению. Иконки задаются в JSX атрибутами svg —
+   CSS их перебивает, отдельных пропов на каждую кнопку не нужно. */
+.lib-hero-btns .btn-play-all{height:38px;padding:0 20px;font-size:14px;gap:7px}
+.lib-hero-btns .btn-play-all svg{width:17px;height:17px;--ico-sw:1.62;--ico-ink:0.12}
+.lib-hero-btns>.btn-icon{width:38px;height:38px}
+.lib-hero-btns .lib-btn-group .btn-icon{width:32px;height:32px}
+.lib-hero-btns .btn-icon svg{width:16px;height:16px;--ico-sw:1.72;--ico-ink:0.22}
 /* Ряд действий под названием: прижат влево, переносится на узком окне. */
-.lib-hero-main>.lib-hero-btns{margin:14px auto 0 0;flex-wrap:wrap;row-gap:8px;max-width:100%}
+.lib-hero-main>.lib-hero-btns{margin:16px auto 0 0;flex-wrap:wrap;row-gap:8px;max-width:100%}
 /* Иконочные кнопки шапки собраны в капсулы с тонкой рамкой — как на странице
    артиста/плейлиста в поиске (.sp-am-btn-group, onboarding-search.css).
    Внутри капсулы кнопки без подложки: на hover подсвечивается только иконка. */
@@ -96,19 +93,45 @@
 /* Открытый поиск занимает место левой капсулы иконок — та же высота (34px),
    ширина резиновая и ограничена, чтобы название рядом не схлопывалось. Базовые
    стили капсулы — .lib-isp-wrap в onboarding-search.css. */
-.lib-hero-btns .lib-isp-wrap{height:34px;flex:0 0 auto;width:clamp(150px,24vw,300px);max-width:none;padding:0 6px 0 14px;gap:7px}
+.lib-hero-btns .lib-isp-wrap{height:38px;flex:0 0 auto;width:clamp(150px,24vw,300px);max-width:none;padding:0 6px 0 14px;gap:7px}
 .lib-hero-main>.lib-hero-btns .lib-isp-wrap{width:clamp(180px,30vw,340px)}
 .lib-isp-clr{width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text2);border-radius:50%;cursor:pointer;transition:.15s}
 .lib-isp-clr:hover{background:rgba(var(--ovl-rgb),.1);color:var(--text)}
-/* На обложечной шапке рамка капсулы светлее — иначе тонет в затемнении. */
-.lib-content-head.has-cover .lib-btn-group,
-.lib-content-head.has-cover .lib-isp-wrap{border-color:rgba(var(--ovl-rgb),.14)}
-.lib-content-head.has-cover .lib-isp-wrap:focus-within{border-color:rgba(var(--ovl-rgb),.26)}
-.lib-hero-icon{width:110px;height:110px;border-radius:calc(var(--radius) * 0.85);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
-.lib-hero-icon.off-icon{background:var(--sys-all-tint)}
-.lib-hero-icon.fav-icon{background:var(--sys-fav-tint)}
-.lib-hero-icon.folder-icon{background:var(--folder-tint)}.lib-hero-name{font-size:20px;font-weight:800}
-.lib-hero-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.lib-hero-icon{width:var(--lh-cov);height:var(--lh-cov);border-radius:calc(var(--radius) * 0.85);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0}
+/* Системные разделы: нейтральная подложка + рамка, цветная только иконка.
+   Рамкой служит inset box-shadow — border съел бы 2px из фиксированной стороны
+   (--lh-cov) и квадрат перестал бы совпадать с обложкой плейлиста рядом. */
+.lib-hero-icon.off-icon,.lib-hero-icon.fav-icon,.lib-hero-icon.hist-icon{background:var(--sys-cov-bg);box-shadow:inset 0 0 0 1px var(--sys-cov-bd)}
+.lib-hero-icon.folder-icon{background:var(--folder-tint)}.lib-hero-name{font-size:30px;font-weight:800}
+/* Флекс, а не строка текста: в подписи соседствуют обычный текст и офлайн-тег
+   (inline-flex с иконкой). В инлайн-потоке он вставал по vertical-align, а текст
+   — по базовой линии, и куски подписи оказывались на разной высоте. Флекс с
+   align-items:center ставит все части на одну ось. */
+.lib-hero-sub{font-size:13px;color:var(--text2);margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;min-width:0}
+#plMenuHeaderSub{display:flex;align-items:center;flex-wrap:wrap;min-width:0}
+/* Дата события («Создан 2 сент. 2026 г.» / «Добавлен …») — в подписи шапки и в
+   шапках меню. Метка приглушена, дата идёт цветом самой подписи: читается
+   именно дата, а слово перед ней уходит на второй план. */
+.meta-date{white-space:nowrap;display:inline-flex;align-items:center}
+/* inline-flex съедает пробел между меткой и датой (текстовые куски становятся
+   отдельными flex-элементами) — зазор задаём отступом, а не пробелом в разметке. */
+.meta-date-lbl{opacity:.62;margin-right:.32em}
+/* Тот же зазор, что у точки офлайн-тега (.pl-offline-tag), — разделители в
+   подписи должны стоять одинаково. */
+.meta-date-dot{margin:0 3px}
+/* В шапках меню (поверх размытой обложки) подпись и так белёсая — там дату
+   поднимаем весом, а не цветом, иначе она сливается с «12 треков». */
+#plMenuHeaderMeta,#cxPreviewMeta{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;max-width:135px;overflow:hidden;text-overflow:ellipsis}
+#plMenuHeaderMeta .meta-date,#cxPreviewMeta .meta-date{font-weight:600;color:rgba(var(--ovl-rgb),.95)}
+#plMenuHeaderMeta .meta-date-lbl,#cxPreviewMeta .meta-date-lbl{font-weight:400;opacity:.75}
+/* Шапки меню (плейлист/трек) состоят из двух рядов. Верхний — обложка и текст,
+   нижний — дата во всю ширину шапки, отделённая ВОЛОСЯНОЙ линией: ручка силы —
+   --cx-head-line на самой шапке (.055 = «читается только как смена плотности»).
+   Плёнка тут всегда белая: шапки — «тёмные острова», см. список в root.css. */
+.cx-head-top{display:flex;align-items:center;gap:10px;min-width:0}
+/* max-width уже не 135px колонки, а мягкий кап: меню position:fixed, т.е. по
+   ширине shrink-to-fit — без капа длинная дата растащила бы всё меню. */
+#plMenuHeaderMeta.cx-head-meta,#cxPreviewMeta.cx-head-meta{max-width:200px;margin-top:7px;padding-top:7px;border-top:1px solid rgba(var(--ovl-rgb),var(--cx-head-line,.055))}
 /* Inline-редактирование плейлиста прямо в шапке (вместо модалки). */
 /* Смена веток шапки (просмотр ↔ редактор) ремоунтит эти узлы — мягкий fade.
    Обычная смена раздела элементы не пересоздаёт, так что там не мигает.
@@ -118,18 +141,22 @@
 .lib-hero-icon,#libHeroNameWrap,.lib-hero-btns.is-anim>*{animation:bloom-fade-in .2s ease}
 .lib-hero-cov-edit{position:relative;background:transparent;overflow:visible;cursor:default}
 .lib-hero-cov-edit .pl-cov-zone{border-radius:inherit;border-width:1.5px}
-.lib-hero-edit{display:flex;flex-direction:column;justify-content:center;gap:7px;flex:0 1 420px;min-width:0}
-.lib-hero-name-inp,.lib-hero-desc-inp{width:100%;box-sizing:border-box;font-family:var(--font);background:rgba(0,0,0,.28);border:1px solid rgba(var(--ovl-rgb),.14);border-radius:7px;color:var(--text);outline:none;transition:border-color .15s,background .15s}
-.lib-hero-name-inp{font-size:15px;font-weight:800;padding:6px 10px}
-.lib-hero-desc-inp{font-size:12px;font-weight:500;padding:5px 10px;color:rgba(var(--ovl-rgb),.85)}
-.lib-hero-name-inp::placeholder,.lib-hero-desc-inp::placeholder{color:rgba(var(--ovl-rgb),.4);font-weight:500}
-.lib-hero-name-inp:focus,.lib-hero-desc-inp:focus{border-color:rgba(var(--ovl-rgb),.28);background:rgba(0,0,0,.42)}
+/* Колонка редактора повторяет обычную текстовую колонку шапки: те же строки на
+   тех же местах (имя, описание, подпись), меняется только редактируемость. */
+.lib-hero-edit{display:flex;flex-direction:column;justify-content:center;min-width:0;width:100%}
+/* Поля «без коробки»: ни подложки, ни рамки, ни падов — выглядят ровно как текст
+   шапки, кликнул и печатаешь. Метрики совпадают с .lib-hero-name/.lib-hero-desc,
+   иначе при входе в редактор строки бы прыгали. */
+.lib-hero-name-inp,.lib-hero-desc-inp{width:100%;box-sizing:border-box;font-family:var(--font);background:transparent;border:none;border-radius:0;padding:0;color:var(--text);outline:none}
+.lib-hero-name-inp{font-size:30px;font-weight:800;line-height:normal}
+.lib-hero-desc-inp{font-size:14px;font-weight:400;line-height:1.45;margin-top:5px;max-width:480px;color:var(--text2);opacity:.8}
+.lib-hero-name-inp::placeholder,.lib-hero-desc-inp::placeholder{color:rgba(var(--ovl-rgb),.35);font-weight:inherit}
 /* Большой редактор плейлиста — на месте трек-листа, пока идёт редактирование.
    Вход/выход — лёгкий fade+slide; на выходе редактор держится смонтированным
    ~180мс (класс is-closing из LibContent), потом монтируется трек-лист. */
 @keyframes plEditIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes plEditOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px)}}
-.pl-edit-body{flex:1;overflow-y:auto;padding:22px 24px 80px;scrollbar-width:none;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);animation:plEditIn .22s ease}
+.pl-edit-body{flex:1;overflow-y:auto;padding:22px 24px 80px;scrollbar-width:none;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:var(--radius);animation:plEditIn .22s ease}
 .pl-edit-body.is-closing{animation:plEditOut .18s ease forwards;pointer-events:none}
 .pl-edit-body::-webkit-scrollbar{display:none}
 .pl-src-head{font-size:13px;font-weight:800;letter-spacing:.02em}
@@ -172,71 +199,43 @@
 .btn-sel-count:disabled{opacity:.5;cursor:default;filter:none}
 /* Fade на маунт: заметен при возврате из большого редактора (секции его не
    ремоунтят — там анимация не дёргается). */
-.lib-tracklist{flex:1;overflow-y:auto;padding:8px 12px 80px;scrollbar-width:none;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);animation:bloom-fade-in .22s ease}
+.lib-tracklist{flex:1;overflow-y:auto;padding:8px 8px 80px;scrollbar-width:none;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:var(--radius);animation:bloom-fade-in .22s ease}
 .lib-tracklist::-webkit-scrollbar{display:none}
 /* ── Кнопка «Сейчас играет» (LibTracklist) ────────────────────────────────
-   Круг с обложкой играющего трека в правом нижнем углу трек-листа. Всплывает,
-   когда трек уехал далеко за край видимой области; клик возвращает скролл к
-   нему. Обложка залита на весь круг, поверх — затемнение с эквалайзером (он
-   же говорит, играет трек или на паузе), в углу бейдж со стрелкой: трек выше
-   или ниже. Поверхность бейджа и подложки — как у всплывающих меню:
-   color-mix(block-color + ov-lift), без тени, поэтому круг попадает и в
-   стекло оверлеев.
-   Ручки: --lib-jump-size — диаметр, --lib-jump-badge — размер бейджа. */
-.lib-jump{--lib-jump-size:44px;--lib-jump-badge:18px;position:absolute;right:16px;bottom:16px;z-index:6;width:var(--lib-jump-size);height:var(--lib-jump-size);padding:0;border-radius:50%;border:1px solid rgba(var(--ovl-rgb),.09);background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));color:var(--text);font-family:var(--font);cursor:pointer;box-shadow:none;animation:libJumpIn .2s ease;transition:border-color .15s ease}
-.lib-jump:hover{border-color:rgba(var(--ovl-rgb),.22)}
-.lib-jump-cov{position:absolute;inset:0;border-radius:50%;overflow:hidden;background:var(--hover);display:flex;align-items:center;justify-content:center}
-/* На hover зумится ОБЛОЖКА ВНУТРИ круга, а не сам круг: если трансформ повесить
-   на .lib-jump, Chromium пересчитывает клип (border-radius + overflow:hidden)
-   по прямоугольнику — круг «квадратится» и края срезаются. Тот же приём, что у
-   .preset-card в settings.css. */
-.lib-jump-cov img{width:100%;height:100%;object-fit:cover;transition:transform .18s ease}
-.lib-jump:hover .lib-jump-cov img{transform:scale(1.08)}
-.lib-jump-eq{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
-/* Бейдж со стрелкой свисает за край круга — поэтому у .lib-jump нет
-   overflow:hidden, обложку режет по кругу сам .lib-jump-cov. */
-.lib-jump-badge{position:absolute;right:-3px;bottom:-3px;width:var(--lib-jump-badge);height:var(--lib-jump-badge);border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.09);color:var(--text2);transition:color .15s ease}
-.lib-jump:hover .lib-jump-badge{color:var(--text)}
-/* Только сдвиг и прозрачность, без scale: масштабировать сам круг нельзя —
-   см. комментарий у .lib-jump-cov img. */
-@keyframes libJumpIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+   Пилюля по центру у нижнего края трек-листа. Всплывает, когда трек уехал
+   далеко за край видимой области; клик возвращает скролл к нему.
+   Вид — как в мобильной `NowPlayingJump`: пилюля с эквалайзером (он же
+   говорит, играет трек или на паузе), подписью и стрелкой — трек выше или
+   ниже. Поверхность — как у всплывающих меню: color-mix(block-color +
+   ov-lift), без тени, поэтому пилюля попадает и в стекло оверлеев.
+   Обводка — общие токены рамки (--ovl-line / --ovl-line2 на ховере), как у
+   блоков приложения: своя альфа делала пилюлю ярче остальной обводки.
+   Ручка: --lib-jump-h — высота пилюли. */
+.lib-jump{--lib-jump-h:36px;position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:9px;height:var(--lib-jump-h);padding:0 11px 0 13px;border-radius:999px;border:1px solid var(--ovl-line);background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));color:var(--text);font-family:var(--font);font-size:13px;font-weight:700;line-height:1;white-space:nowrap;cursor:pointer;box-shadow:none;animation:libJumpIn .2s ease;transition:border-color .15s ease}
+.lib-jump:hover{border-color:var(--ovl-line2)}
+.lib-jump .bars{flex-shrink:0}
+.lib-jump-txt{flex-shrink:0}
+/* Стрелка прижата к подписи теснее эквалайзера (7px против 9) — как в
+   мобильной пилюле, где это два разных SizedBox. */
+.lib-jump-arw{flex-shrink:0;margin-left:-2px;color:var(--text2);transition:color .15s ease}
+.lib-jump:hover .lib-jump-arw{color:var(--text)}
+/* Только сдвиг и прозрачность, без scale — как в мобильной пилюле, где вход
+   тоже слайд снизу + fade. translateX(-50%) в кадрах обязателен: пилюля стоит
+   по центру именно им, и кадр с одним translateY сбросил бы центровку. */
+@keyframes libJumpIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 /* Индикатор прокрутки на нижней границе шапки (LibScrollbar): тонкая линия +
    акцентный бегунок, отражающий позицию вертикального скролла `.lib-tracklist`.
    Absolute — вне потока, на раскладку не влияет; появляется только когда список
    реально прокручивается (класс is-on). */
-.lib-content-head .lib-scrubber{position:absolute;left:16px;right:16px;bottom:0;height:2px;z-index:3;opacity:0;pointer-events:none;transition:opacity .15s ease}
+.lib-content-head .lib-scrubber{position:absolute;left:var(--lh-pad);right:var(--lh-pad);bottom:0;height:2px;z-index:3;opacity:0;pointer-events:none;transition:opacity .15s ease}
 .lib-content-head .lib-scrubber.is-on{opacity:1;pointer-events:auto}
 .lib-scrubber-track{position:relative;width:100%;height:100%;border-radius:2px;background:transparent;cursor:pointer;touch-action:none}
 .lib-scrubber-thumb{position:absolute;top:0;left:0;height:100%;border-radius:2px;background:var(--accent);cursor:grab;transition:filter .15s ease}
 .lib-scrubber-track:hover .lib-scrubber-thumb{background:var(--accent-hover)}
-.lib-album-hdr{display:flex;align-items:center;gap:12px;padding:16px 8px 7px;margin-top:2px}
-.lib-album-hdr-cov{width:50px;height:50px;border-radius:calc(var(--radius)*.7);background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(var(--ovl-rgb),.07)}
-.lib-album-hdr-cov img{width:100%;height:100%;object-fit:cover}
-.lib-album-hdr-info{flex:1;min-width:0}
-.lib-album-hdr-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lib-album-hdr-meta{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lib-album-hdr-play{width:28px;height:28px;border-radius:50%;background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:.15s;padding:0}
-.lib-album-hdr:hover .lib-album-hdr-play{opacity:1}
-.lib-album-hdr-play:hover{background:var(--accent-hover)}
-.lib-album-gap{height:10px;border-bottom:1px solid rgba(var(--ovl-rgb),.05);margin:0 4px 6px}
-.lib-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;background:var(--accent);color:var(--accent-text);border:none;cursor:pointer;transition:.15s;font-family:var(--font);width:100%;box-sizing:border-box;text-align:center}
-.lib-upload-btn:hover{background:var(--accent2)}
-.lib-block-folders{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.75);padding:0 0 8px;display:flex;flex-direction:column;overflow:hidden}
 
 #libGridOverview{display:none;padding:8px 12px 80px;overflow-y:auto;scrollbar-width:none;flex:1}
 #libGridOverview::-webkit-scrollbar{display:none}
 #libGridOverview.active{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start}
-.lib-grid-card{border-radius:var(--radius);cursor:pointer;transition:.15s;position:relative;background:var(--block-color,var(--hover))}
-.lib-grid-card:hover{transform:translateY(-2px)}
-.lib-grid-card .sp-tc-cover{border-radius:var(--radius)}
-.lib-grid-card:hover .sp-tc-play{opacity:1}
-.lib-grid-card:hover .sp-tc-play-btn{transform:scale(1)}
-.lib-grid-card .sp-tc-info{padding:10px 10px 12px}
-.lib-grid-card .sp-tc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lib-grid-card .sp-tc-artist{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.lib-grid-card-folder .sp-tc-cover{background:rgba(var(--accent-rgb),.1)}
-.lib-grid-card-artist .sp-tc-cover{border-radius:50%}
-.lib-grid-card-artist .sp-tc-play{border-radius:50%}
 #libGridOverview .home-pl-card{width:100%}
 #libGridOverview .hpc-cover{width:100%;height:auto;aspect-ratio:1}
 .lib-grid-section{grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;padding:6px 2px 2px;margin-top:4px}
@@ -247,6 +246,9 @@
 .lib-grid-sys-card-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-grid-sys-card-sub{font-size:11px;color:var(--text2)}
 .lib-grid-sys-card-icon{flex-shrink:0;margin-left:12px;opacity:.8}
+/* Карточки обзора-сетки живут по своим правилам (цветной радиальный градиент
+   на всю карточку), а не по --sys-cov-*: нейтральная подложка с цветной иконкой
+   — вид МЕЛКИХ обложек (сайдбар, шапка, очередь, меню). Не сводить их вместе. */
 .lib-grid-sys-card-all,.lib-grid-sys-card-fav,.lib-grid-sys-card-hist{flex-direction:column;justify-content:space-between;align-items:flex-start;isolation:isolate;overflow:hidden;position:relative}
 .lib-grid-sys-card-all{background:var(--block-bg,#2a2a2a)}
 .lib-grid-sys-card-all::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#1a5fb4 0%,transparent 100%);pointer-events:none;z-index:0}
@@ -267,115 +269,151 @@
 /* Видимостью #libBackToGrid в bloom управляет условный рендер React
    (показан только в grid-виде вне обзора). Жёсткий display:none тут перекрывал
    бы его и кнопка «назад» никогда не появлялась. */
-.folder-settings-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.folder-settings-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:calc(var(--radius)*.7)}
-.folder-settings-path{flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-family:monospace}
-.folder-settings-del{width:24px;height:24px;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s;padding:0}
-.folder-settings-del:hover{color:#e03030;background:rgba(224,48,48,.12)}
-.folder-settings-scan{font-size:11px;color:var(--text2);background:var(--hover);border:none;border-radius:calc(var(--radius)*.6);padding:4px 10px;cursor:pointer;transition:.12s;font-family:var(--font)}
-.folder-settings-scan:hover{color:var(--text);background:rgba(var(--ovl-rgb),.1)}
-.folder-add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;background:transparent;color:var(--text2);border:1px solid var(--border);cursor:pointer;transition:.15s;font-family:var(--font);width:100%;box-sizing:border-box;justify-content:center}
-.folder-add-btn:hover{background:var(--hover);color:var(--text);border-color:rgba(var(--ovl-rgb),.15)}
 /* БЕЗ content-visibility: списки виртуализированы окном (useWindowedList) —
    в DOM только видимый срез. contain-intrinsic-size с border-box давал skipped-
-   строкам высоту контента 63 + паддинги/бордер = 75px против реальных 63 —
-   12px рассинхрона на строку ломали спейсерную математику окна (прыжки скролла
-   при drag-расширении, дрейф при скролле во время drag). */
-.tr{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:calc(var(--radius) * 0.7);cursor:pointer;transition:.15s;margin-bottom:5px;border:1px solid var(--ovl-line);min-height:63px}
-.tr:hover{background:rgba(var(--ovl-rgb),.04);border-color:var(--ovl-line2)}
-.tr.playing{background:rgba(var(--accent-rgb),.04);border-color:rgba(var(--accent-rgb),calc(var(--wb)*2))}
+   строкам высоту контента min-height + паддинги/бордер вместо самой min-height —
+   рассинхрон в 12px на строку ломал спейсерную математику окна (прыжки скролла
+   при drag-расширении, дрейф при скролле во время drag).
+   ВАЖНО: min-height ниже + margin-bottom = «шаг» строки; при их правке чинить
+   estimate в LibTracklist/QueueBlock/SearchPage/DetailView (сейчас 72+5=77). */
+.tr{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:calc(var(--radius) * 0.7);cursor:pointer;transition:.15s;margin-bottom:5px;border:1px solid var(--ovl-line);min-height:72px}
+/* Наводка — только фон; рамку гасим, как и у играющей строки ниже. */
+.tr:hover{background:rgba(var(--ovl-rgb),.04);border-color:transparent}
+/* Играющая строка выделяется только фоном и акцентом на тексте — рамку убираем.
+   border-color:transparent, а не border:none: 1px в раскладке должен остаться,
+   иначе строка «дёргается» на высоту бордера при смене трека. */
+.tr.playing{background:rgba(var(--accent-rgb),.04);border-color:transparent}
 .tr.playing .trn{color:color-mix(in srgb,var(--accent) 55%,var(--text))}
-.trcov{position:relative;width: 45px;height: 45px;;border-radius:calc(var(--radius) * 0.6);background:var(--hover);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:12px}
+.trcov{position:relative;width:50px;height:50px;border-radius:calc(var(--radius) * 0.8);background:var(--hover);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:12px}
 .trcov img{width:100%;height:100%;object-fit:cover}
 
 /* Номер трека вместо обложки (альбомы — обложка у всех треков одна). Ширина как
    у .trcov, чтобы колонка названий не съезжала относительно других списков.
    При наведении на строку номер сменяется иконкой play. */
-.trnum{position:relative;width:45px;height:45px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
+.trnum{position:relative;width:50px;height:50px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
 .trnum-i,.trnum-p{position:absolute;display:flex;align-items:center;justify-content:center;transition:opacity .12s ease}
-.trnum-i{font-size:13px;font-weight:500;font-variant-numeric:tabular-nums}
+.trnum-i{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
 .trnum-p{opacity:0;color:var(--text)}
 .tr:hover .trnum-i{opacity:0}
 .tr:hover .trnum-p{opacity:1}
 .tr.playing .trnum{color:var(--accent)}
+
+/* Колонка места в чарте — ПЕРЕД обложкой (обложка остаётся, в отличие от
+   .trnum): номер, под ним динамика за сутки. Ширина фиксированная и цифры
+   табличные, иначе трёхзначные места сдвигают всю строку. */
+.trrank{width:34px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text2)}
+.trrank-n{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.tr.playing .trrank{color:var(--accent)}
 
 /* Бейдж площадки поверх обложки (нижний-правый угол), прячется при наведении на
    обложку. Работает в строках треков (.trcov) и карточках (.sp-tc-cover). */
 .cov-badge{position:absolute;right:3px;bottom:3px;z-index:6;pointer-events:none;line-height:0;opacity:1;transition:opacity .15s ease}
 /* На крупных обложках-карточках бейдж больше и с большим отступом от угла. */
 .sp-tc-cover .cov-badge,.hpc-cover .cov-badge,.hc-cover .cov-badge{right:6px;bottom:6px}
-.trcov:hover .cov-badge,.sp-tc-cover:hover .cov-badge,.sp-track-card:hover .cov-badge,.sp-am-track-card:hover .cov-badge,#mpCover:hover .cov-badge,.home-pl-card:hover .cov-badge,.home-card:hover .cov-badge,.lib-sidebar .lib-item:hover .cov-badge,.sp-recent-item:hover .cov-badge{opacity:0}
-.trcov-loading{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:5;border-radius:calc(var(--radius) * 0.5);pointer-events:none;animation:coverLoadFadeIn .2s ease}
-.trcov-loading .sc-spinner{width:16px;height:16px;border-width:2px;margin:0}
+.trcov:hover .cov-badge,.sp-tc-cover:hover .cov-badge,.sp-track-card:hover .cov-badge,.sp-am-track-card:hover .cov-badge,#mpCover:hover .cov-badge,.home-pl-card:hover .cov-badge,.home-card:hover .cov-badge{opacity:0}
+.trcov-loading{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:5;border-radius:inherit;pointer-events:none;animation:coverLoadFadeIn .2s ease}
+.trcov-loading .sc-spinner{width:18px;height:18px;border-width:2px;margin:0}
+/* Эквалайзер поверх обложки — без свечения/подсветки, ровно те же полосы, что в
+   строках; крупнее их делают ручки --bars-* из [PlayStateOverlay] (не
+   transform:scale — масштаб мылил бы торцы). */
 .tri{flex:1;min-width:0}
-.trn{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tra{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.trn{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tra{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .tra-link{cursor:pointer;transition:color .1s}
 .tra-link:hover{color:var(--text);text-decoration:underline}
 /* Яндекс-артист: тот же вид, что .tra-link, но без глобального .tra-link
    capture-хендлера (он бы увёл на SC-артиста для результатов поиска). */
-.ym-tra-link{cursor:pointer;transition:color .1s}
-.ym-tra-link:hover{color:var(--text);text-decoration:underline}
 .tra-sep{color:var(--text2)}
 .tri:hover .trn,.tri:hover .tra{overflow:visible;text-overflow:clip}
-.trd{font-size:11px;color:var(--text2);display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600;min-width:46px;box-sizing:border-box;text-align:center;transition:.15s}
+/* Высота пилюли — 28px, как у кнопок действий в строке (.tr .ib), чтобы
+   длительность и соседние кнопки читались одним размером. */
+.trd{font-size:13px;color:var(--text2);display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:0 7px;height:26px;font-weight:600;min-width:46px;box-sizing:border-box;text-align:center;transition:.15s}
 /* Слот справа: длительность трека, а при наведении на строку — кнопка «…». */
+/* Кнопки «⋯» в строке больше нет — меню трека открывается только по ПКМ на
+   строке, поэтому длительность видна и при наведении (раньше она гасилась,
+   уступая место кебабу в том же слоте). */
 .trtime{position:relative;display:flex;align-items:center;justify-content:center;min-width:46px;flex-shrink:0}
-.trmore{position:absolute;inset:0;margin:auto;opacity:0;pointer-events:none}
-.tr:hover .trd{opacity:0}
-.tr:hover .trmore{opacity:1;pointer-events:auto}
 .tr-offline{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
 .trplays{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);flex-shrink:0;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600}
 .trplays svg{opacity:.7}
 .tr-repost{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap}
 .tr-repost svg{opacity:.8}
 .trac{display:flex;gap:2px;opacity:0;transition:.15s;flex-shrink:0}
-.tr:hover .trac{opacity:1}
+/* У играющей строки кнопки видны всегда, а не только под курсором — она и так
+   выделена фоном, и «избранное/добавить» для текущего трека под рукой. */
+.tr:hover .trac,.tr.playing .trac{opacity:1}
 
-/* ── Доп-колонки треклиста: «Альбом» + «Добавлено» ──────────────────────
-   Пер-колонка включается префом (React не рендерит ячейку, если выкл), а
+/* ── Доп-колонка треклиста: «Альбом» ────────────────────────────────────
+   Колонка включается префом (React не рендерит ячейку, если выкл), а
    показ по ширине окна — классом body.win-lib-wide (логические px, App.tsx).
-   Скрыты по умолчанию → на узком окне колонок нет, лэйаут не ломается. */
-.tr-album,.tr-date{display:none;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
-.tr-album{flex:0 1 220px;min-width:0}
-.tr-date{flex:0 0 auto;width:104px}
-body.win-lib-wide .tr-album,body.win-lib-wide .tr-date{display:block}
+   Скрыта по умолчанию → на узком окне колонки нет, лэйаут не ломается. */
+.tr-album{display:none;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;flex:0 1 220px;min-width:0}
+body.win-lib-wide .tr-album{display:block}
 .alb-link{cursor:pointer;transition:color .1s}
 .alb-link:hover{color:var(--text);text-decoration:underline}
 
 /* ── Компактная плотность строк (переключатель в настройках) ──────────── */
 .lib-tracklist.lib-dense .tr{min-height:44px;margin-bottom:2px;padding:3px 8px}
 .lib-tracklist.lib-dense .trcov{width:34px;height:34px}
+/* В плотном режиме обложка 34px — полные 20px эквалайзера заняли бы больше
+   половины её высоты, поэтому тут он ниже. */
+.lib-tracklist.lib-dense .trcov .bars{--bars-h:14px}
 .lib-tracklist.lib-dense .trn{font-size:13px}
 .lib-tracklist.lib-dense .tra{font-size:10px}
+/* В компактном виде строка 44px — кнопки остаются на общем размере .ib. */
+.lib-tracklist.lib-dense .tr .ib{width:25px;height:25px}
+.lib-tracklist.lib-dense .tr .ib svg{width:13px;height:13px;--ico-sw:2.12;--ico-ink:0.62}
+.lib-tracklist.lib-dense .tr .ib.added svg{width:15px;height:15px;--ico-sw:1.84;--ico-ink:0.34}
 .lib-sidebar.lib-sb-compact .lib-icon{display:none}
-/* В компактном сайдбаре обложка скрыта — прячем и бейдж площадки, иначе он
-   позиционируется относительно схлопнутого контейнера и висит мусором. */
-.lib-sidebar.lib-sb-compact .lib-item .cov-badge{display:none}
 .lib-sidebar.lib-sb-compact .lib-item{padding:4px 10px;margin-bottom:2px;gap:6px}
-.lib-sidebar.lib-sb-compact .lib-item-play{display:none!important}
 .lib-sidebar.lib-sb-compact .lib-item>div:first-child{display:none}
 .lib-sidebar.lib-sb-compact .lib-pin-dot{display:none}
 .lib-sidebar.lib-sb-compact .lib-item[data-pinned]::before{content:'';width:6px;height:6px;min-width:6px;border-radius:50%;background:var(--accent);align-self:center;flex-shrink:0}
 /* ── Sidebar: вид «только обложки» (`lib-sb-covers`) ──
-   Сам сайдбар сужается до ширины обложки; текст строк и play скрыты; крупная
+   Сам сайдбар сужается до ширины обложки; текст строк скрыт; крупная
    обложка столбиком по центру, подсветка hover/active облегает обложку
    (width:fit-content). Заголовок «Моя библиотека» прячем (не влезает в узкую
    колонку), кнопки шапки оставляем по центру. Бейдж площадки и pin-dot — на
    углах обложки. */
-.lib-sidebar.lib-sb-covers{width:74px;gap:6px}
+/* Ширина колонки и сторона обложки связаны арифметикой (см. ниже) — держим их
+   ручками, чтобы менять размер обложки без пересчёта зазоров вручную:
+   --cv-w   ширина сайдбара
+   --cv-pad зазор от обложки до бордера блока, одинаковый со всех сторон
+   --cv-ico сторона обложки, выводится из двух первых. */
+/* --cv-pad = 8px, потому что зазор МЕЖДУ обложками набирается из паддингов двух
+   соседних пунктов (4 + 4) и меньше 8px честно не делается. Под него и подогнан
+   --cv-ico, так что все зазоры — до краёв блока и между обложками — ровно 8px. */
+.lib-sidebar.lib-sb-covers{
+  --cv-w:74px;--cv-pad:8px;--cv-ico:calc(var(--cv-w) - 2px - var(--cv-pad)*2);
+  width:var(--cv-w);gap:6px;
+}
 /* Ровные зазоры вокруг обложек: гасим боковой inline-паддинг обёрток (система/
-   список), тулбар не трогаем. Обложка центрируется, отступ до бордера ~7px со
-   всех сторон (auto 3px + паддинг пункта 4px). */
-.lib-sidebar.lib-sb-covers .lib-block > div:not(.lib-toolbar){padding:3px 0!important}
-/* Тулбар в covers-режиме: три кнопки столбиком по центру, компактно. */
-.lib-sidebar.lib-sb-covers .lib-toolbar{flex-direction:column;align-items:center;gap:3px;padding:4px}
-.lib-sidebar.lib-sb-covers .lib-toolbar button{flex:none;width:34px;height:34px}
-.lib-sidebar.lib-sb-covers .lib-item{justify-content:center;width:fit-content;margin:0 auto 1px;padding:4px}
-.lib-sidebar.lib-sb-covers .lib-item:last-child{margin-bottom:0}
+   список), тулбар не трогаем. По вертикали зазор набирается тут (--cv-pad минус
+   паддинг пункта 4px), по горизонтали — auto-margin'ом пункта; сходятся они
+   только если сторона обложки посчитана как в --cv-ico ниже. Раньше обложка
+   была прибита к 46px, auto-margin разъезжался до 9px и бока получались вдвое
+   толще верха (13px против 7px). */
+.lib-sidebar.lib-sb-covers .lib-block > div:not(.lib-toolbar){padding:calc(var(--cv-pad) - 4px) 0!important}
+/* Тулбар в covers-режиме — сетка 2×2, а не столбик: столбиком четыре кнопки
+   съедали 153px высоты в узкой колонке и оставляли по 19px пустоты с боков
+   (34px кнопка в 72px блоке). Теперь блок ~80px, кнопки тянутся по ячейкам.
+   Паддинг = --cv-pad, поэтому от краёв блока они отбиты ровно как обложки в
+   соседних блоках; между собой — 4px, иначе ячейка ужимается до 24px и иконка
+   встаёт впритык. Ширину пункта задаёт грид, поэтому width:auto (перебиваем
+   прежние 34px), а flex:1 из базового правила в гриде и так не работает. */
+.lib-sidebar.lib-sb-covers .lib-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:var(--cv-pad)}
+.lib-sidebar.lib-sb-covers .lib-toolbar button{width:auto;height:30px}
+/* Нижнего margin у пункта нет: между обложками должно быть ровно 4 + 4 = 8px
+   собственных паддингов. Второй селектор нужен, чтобы перебить
+   `#libUnifiedList .lib-item{margin-bottom:1px}` — там id, и одной парой классов
+   его не достать. */
+.lib-sidebar.lib-sb-covers .lib-item,
+.lib-sidebar.lib-sb-covers #libUnifiedList .lib-item{justify-content:center;width:fit-content;margin:0 auto;padding:4px}
 .lib-sidebar.lib-sb-covers .lib-item-info{display:none}
-.lib-sidebar.lib-sb-covers .lib-item-play{display:none!important}
-.lib-sidebar.lib-sb-covers .lib-icon{width:46px;height:46px;position:relative;transition:filter .15s}
+/* --cv-ico = 74 − 2 (бордер блока) − 2*7 = 58px. Пункт вокруг неё = 58 + 2*4 =
+   66px, значит auto-margin даёт ровно (72 − 66)/2 = 3px, и 3 + 4 = 7px с боков —
+   столько же, сколько сверху и снизу. */
+.lib-sidebar.lib-sb-covers .lib-icon{width:var(--cv-ico);height:var(--cv-ico);position:relative;transition:filter .15s}
 /* Активный пункт в covers: без фон-бокса. Обложку затемняем по кругу — от краёв
    к центру ослабевает (мягкая радиальная виньетка), слабый эффект. */
 .lib-sidebar.lib-sb-covers .lib-item.active{background:transparent!important}
@@ -390,15 +428,59 @@ body.win-lib-wide .tr-album,body.win-lib-wide .tr-date{display:block}
 .lib-sidebar.lib-sb-covers .lib-toolbar button:hover{background:transparent}
 .ib{width:25px;height:25px;border-radius:calc(var(--radius) * 0.55);background:transparent;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-size:12px}
 .ib:hover{background:transparent;color:var(--text)}
-.ib.fav{color:#e03030}
+.ib.fav{color:var(--sys-fav-ico)}
 /* «Трек уже в этом плейлисте» — акцент (в отличие от fav, у которого свой красный). */
 .ib.added,.ib.added:hover{color:var(--accent)}
 .ib-rmq:hover{color:#e03030!important;background:transparent!important}
-.bars{display:flex;gap:2px;align-items:center;height:14px}
-.bars span{width:3px;height:8px;border-radius:2px;background:var(--accent);animation:npBar 0.8s ease-in-out infinite alternate;animation-fill-mode:backwards}
-.bars span:nth-child(2){animation-delay:.2s;height:12px}
-.bars span:nth-child(3){animation-delay:.4s;height:6px}
-body.audio-paused .bars span{animation-play-state:paused;opacity:.5}
+/* В строке трека кнопки крупнее общего .ib: строка выросла (min-height 72), а
+   25px читались мелко. Тулбаров грида/сайдбара это не касается — они на общем
+   размере. Иконкам размер проставлен атрибутами width/height в JSX (13px, у
+   «уже в плейлисте» — 15px); CSS их перекрывает, поэтому масштаб держим тут,
+   а не правкой четырёх компонентов со строками (.tr есть и в очереди, и в
+   поиске).
+   26px — тот же габарит, что у пилюли длительности (.trd height): кнопки и
+   пилюля должны читаться одним размером, менять их надо парой. */
+.tr .ib{width:26px;height:26px}
+.tr .ib svg{width:16px;height:16px;--ico-sw:1.72;--ico-ink:0.22}
+.tr .ib.added svg{width:18px;height:18px;--ico-sw:1.53;--ico-ink:0.03}
+/* Эквалайзер «сейчас играет». Один стиль на все поверхности: строки трек-листа,
+   ячейка номера (.trnum), очередь, оверлей поверх обложки (.tr-playing-overlay)
+   и пилюля «Сейчас играет» (.lib-jump).
+   Ручки (переопределяются на конкретной поверхности, см. PlayStateOverlay):
+     --bars-w   — ширина полосы
+     --bars-gap — зазор между полосами
+     --bars-h   — высота контейнера = максимум полосы
+     --bars-r   — скругление торцов (999px = полная пилюля)
+   Три полосы стоят НА ПОЛУ (align-items:flex-end) и растут вверх.
+   Анимируется height, а не transform — потому что торцы скруглены с ОБЕИХ
+   сторон и радиус обязан оставаться круглым на любой высоте: scaleY его
+   сплющивает (короткая полоса получала бы овальную «шляпку»), а translateY с
+   overflow:hidden срезал бы нижний торец. Полос всего три и только у играющего
+   трека, так что лейаут на этом не страдает. */
+/* ШИРИНА И ЗАЗОР живут на :root, а не на .bars, потому что их пересчитывает
+   [barsSnap] — он округляет их до целого числа устройственных пикселей при
+   текущем масштабе (DPI системы × зум вебвью) и пишет результат инлайном в
+   documentElement. Без этого при дробном множителе (зум 115% → 4px = 4.6px
+   устройственных) соседние полосы попадают на разные субпиксельные фазы и
+   кажутся разной толщины.
+   Значения ниже — фоллбэк: до первого вызова initBarsSnap и в зеркальных окнах.
+   Правило на .bars перебило бы инлайн на :root, поэтому объявлять их там
+   нельзя — только --bars-h и --bars-r, они на пиксельную сетку не завязаны.
+   Эти же полосы (вместе с npBar1..3 из animations.css) продублированы инлайном в
+   overlay.html — оверлей отдельная страница и стили отсюда не видит. Правишь
+   геометрию или кадры — правь и там, иначе визуализаторы разъедутся. */
+:root{--bars-w:3px;--bars-gap:2px}
+.bars{--bars-h:17px;--bars-r:999px;
+  display:flex;gap:var(--bars-gap);align-items:flex-end;height:var(--bars-h)}
+.bars span{width:var(--bars-w);height:44%;flex-shrink:0;background:var(--accent);
+  border-radius:var(--bars-r);animation:npBar1 1.7s ease-in-out infinite}
+/* Разные длительности + отрицательный delay (старт с середины цикла): полосы не
+   стартуют с одного кадра и общий период на глаз не ловится. */
+.bars span:nth-child(2){animation-name:npBar2;animation-duration:1.35s;animation-delay:-.5s}
+.bars span:nth-child(3){animation-name:npBar3;animation-duration:2s;animation-delay:-1.1s}
+/* На паузе полосы просто замирают — без затухания: приглушение читалось как
+   «трек недоступен», хотя это обычная остановка. */
+body.audio-paused .bars span{animation-play-state:paused}
 /* Оптимизация «Визуализаторы» (optEngine, fx.visualizers) — гасит анимацию ВСЕХ
    эквалайзеров: строки трек-листа, очередь, поиск, оверлей обложки и кнопка
    «Сейчас играет». Правило раньше било только по .tr-playing-overlay, поэтому

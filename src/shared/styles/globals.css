@@ -2,12 +2,7 @@
 
 /* Общая база, не зависящая от палитры окна.
    Палитра main-окна — index.css → root.css. Мини/трей-окна (picture-in-picture.html,
-   tray-popup.html) — самодостаточный vanilla-HTML, стили в их собственных <style>.
-   Анимации модалок: opacity .26s + scale/translate .32s. */
-@theme {
-  --modal-fade-duration: 260ms;
-  --modal-motion-duration: 320ms;
-}
+   tray-popup.html) — самодостаточный vanilla-HTML, стили в их собственных <style>. */
 
 *,
 *::before,
@@ -38,32 +33,6 @@ textarea {
   background: transparent;
 }
 
-/* Анимация AddPopup. */
-@keyframes apIn {
-  from {
-    opacity: 0;
-    transform: scale(0.92) translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* AddPopup soft-open — без вертикального сдвига и без overshoot.
-   Используется вместо `ctxIn`, у которой `cubic-bezier(.34,1.25,.64,1)`
-   и `translateY(-5px)→0` создают эффект «дёрганья» иконок при появлении. */
-@keyframes addPopupIn {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 /* Marquee длинного title.
    --mp-off задаётся компонентом NowPlayingInfo через JS после измерения. */
 @keyframes mp-marquee {
@@ -73,14 +42,4 @@ textarea {
   100% {
     transform: translateX(var(--mp-off, 0));
   }
-}
-.title-wrap.scrolling {
-  justify-content: flex-start;
-}
-.title-wrap.scrolling > div {
-  animation: mp-marquee linear infinite;
-  will-change: transform;
-}
-.title-wrap.scrolling:hover > div {
-  animation-play-state: paused;
 }

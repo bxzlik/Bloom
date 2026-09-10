@@ -1,16 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useT } from '@shared/i18n'
 import { getProviders, type NewReleases } from '@features/providers'
 import { playSingleTrack, PlayStateOverlay } from '@features/player'
-import { useDetailStore } from '@features/search'
 import { useYmAuthStore } from '@features/yandex'
 import { useUiPrefsStore } from '@features/settings'
-import { usePopupOpenAnimation } from '@shared/hooks'
-import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, YmLogo, providerBrandColor, type Track } from '@entities/track'
+import { useDetailStore } from '@features/search'
+import { ArtistLinks, CoverSourceBadge, type Track } from '@entities/track'
 import type { Playlist } from '@entities/playlist'
-import { CardMarquee } from '@shared/ui'
+import { CardMarquee, EmptyCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
+import { ReleaseCard } from './ReleaseCard'
+import { ChartCard } from './ChartCard'
 
 /**
  * Витрина «Чарты и новинки» на главной. Два независимых блока (чарт / новинки),
@@ -25,6 +25,20 @@ type Mode = 'chart' | 'new'
 type BlockData =
   | { kind: 'tracks'; tracks: Track[] }
   | { kind: 'albums'; albums: Playlist[] }
+
+/**
+ * Сколько мест чарта показывать на главной. Площадка отдаёт весь чарт (у Яндекса
+ * ~100 позиций) — витрина берёт только верх, полный список открывается кликом по
+ * заголовку (страница чарта, DetailView kind='chart').
+ */
+const HOME_CHART_MAX = 15
+
+/**
+ * Сколько релизов в полосе на главной. Остальное (до 60, см. NEW_RELEASES_MAX в
+ * yandex.rs) — на странице «Релизы» сеткой: карточка релиза широкая (320px) и
+ * каждая сканирует обложку ради тона плашки, длинная полоса тут не нужна.
+ */
+const HOME_REL_MAX = 10
 
 /** Кеш загруженных секций (по mode+провайдеру), чтобы не дёргать сеть на каждый заход. */
 const cache = new Map<string, { data: BlockData; at: number }>()
@@ -61,90 +75,6 @@ const providersFor = (mode: Mode): { id: string; label: string }[] =>
     .filter((p) => (mode === 'chart' ? !!p.getCharts : !!p.getNewReleases))
     .map((p) => ({ id: p.id, label: p.label }))
 
-/**
- * Кнопка-инфо «(i)» в заголовке секции. Чарты/новинки сейчас отдаёт только
- * Яндекс, поэтому вместо переключателя площадок — попап с бейджем Яндекса и
- * подписью «доступно только для Яндекс Музыки». Механика попапа — как у кнопки
- * «!» карточки «Продолжить» (fixed-портал в body, чтобы overflow секции его не
- * обрезал): открывается НАД кнопкой.
- */
-const DiscInfoBadge = () => {
-  const t = useT()
-  const [pos, setPos] = useState<{ top: number; cx: number } | null>(null)
-  const btnRef = useRef<HTMLButtonElement>(null)
-  const popRef = useRef<HTMLDivElement>(null)
-  usePopupOpenAnimation(popRef, pos)
-  const toggle = () => {
-    if (pos) {
-      setPos(null)
-      return
-    }
-    const r = btnRef.current?.getBoundingClientRect()
-    if (!r) return
-    // Открываем НАД кнопкой: якорим низ попапа к верху кнопки (translateY(-100%)).
-    setPos({ top: r.top - 8, cx: r.left + r.width / 2 })
-  }
-  // Ресайз/скролл → координаты fixed-попапа устаревают, закрываем.
-  useLayoutEffect(() => {
-    if (!pos) return
-    const close = () => setPos(null)
-    window.addEventListener('resize', close)
-    window.addEventListener('scroll', close, true)
-    return () => {
-      window.removeEventListener('resize', close)
-      window.removeEventListener('scroll', close, true)
-    }
-  }, [pos])
-  return (
-    <>
-      <button
-        ref={btnRef}
-        className={`home-disc-info${pos ? ' active' : ''}`}
-        onClick={toggle}
-        aria-label={t('home.info')}
-        aria-haspopup="menu"
-        aria-expanded={pos !== null}
-      >
-        <Ico name="info" width={16} height={16} />
-      </button>
-      {pos &&
-        createPortal(
-          <>
-            {/* клик мимо — закрыть */}
-            <div onClick={() => setPos(null)} style={{ position: 'fixed', inset: 0, zIndex: 8000 }} />
-            <div style={{ position: 'fixed', top: pos.top, left: pos.cx, zIndex: 8001, transform: 'translate(-50%, -100%)' }}>
-              <div ref={popRef} className="hcc-info-pop" role="menu">
-                <div className="hcc-info-item">
-                  <span className="hcc-info-ico" style={{ color: providerBrandColor('yandex') ?? 'var(--text2)' }}>
-                    <YmLogo size={16} />
-                  </span>
-                  <span className="hcc-info-txt">
-                    <span className="hcc-info-cap">{t('home.discOnlyCap')}</span>
-                    <span className="hcc-info-val">{t('home.discOnlyVal')}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </>,
-          document.body,
-        )}
-    </>
-  )
-}
-
-const openAlbum = (pid: string, a: Playlist): void => {
-  useDetailStore.getState().open({
-    kind: 'album',
-    providerId: pid,
-    id: a.id,
-    title: a.title,
-    cover: a.cover ?? null,
-    ownerAvatar: a.ownerAvatar ?? null,
-    year: a.year,
-    round: false,
-  })
-}
-
 /** Один блок витрины (чарт ИЛИ новинки) с переключателем площадки. */
 const DiscoverBlock = ({
   mode,
@@ -165,8 +95,8 @@ const DiscoverBlock = ({
     return () => clearTimeout(id)
   }, [active, ymAuthed])
 
-  // Площадка секции — первая доступная (сейчас чарты/новинки даёт только Яндекс,
-  // переключателя нет; вместо него в заголовке кнопка-инфо DiscInfoBadge).
+  // Площадка секции — первая доступная (сейчас чарты/новинки даёт только
+  // Яндекс, переключателя нет).
   const tabs = providersFor(mode)
   const selected = tabs[0]?.id ?? null
 
@@ -214,19 +144,44 @@ const DiscoverBlock = ({
   // Нет площадки для режима либо данные ещё не пришли — блок скрыт целиком.
   if (!tabs.length || !selected || !data) return null
 
-  return (
-    <div className="home-section home-disc">
-      <div className="home-disc-hdr">
-        <div className="home-section-hdr">{t(mode === 'chart' ? 'home.charts' : 'home.newReleases')}</div>
-        <DiscInfoBadge />
-      </div>
+  // Заголовок ведёт на полную страницу раздела: чарт — списком до 100 позиций,
+  // релизы — сеткой альбомов. У SoundCloud «New & Hot» приходит треками, сетки
+  // релизов для них нет — заголовок остаётся обычным.
+  const openFull = () =>
+    useDetailStore.getState().open({
+      kind: mode === 'chart' ? 'chart' : 'releases',
+      providerId: selected,
+      id: mode === 'chart' ? 'chart' : 'releases',
+      title: t(mode === 'chart' ? 'home.charts' : 'home.releases'),
+      cover: data.kind === 'tracks' ? data.tracks[0]?.cover ?? null : data.albums[0]?.cover ?? null,
+      round: false,
+    })
+  const linkedHdr = mode === 'chart' || data.kind === 'albums'
 
-      {data.kind === 'tracks' ? (
+  return (
+    <div className={`home-section home-disc${data.kind === 'albums' ? ' rel-sec' : mode === 'chart' ? ' ch-sec' : ''}`}>
+      {linkedHdr ? (
+        <button type="button" className="home-section-hdr is-link" onClick={openFull}>
+          {t(mode === 'chart' ? 'home.charts' : 'home.releases')}
+          <Ico name="arrowRight" width={22} height={22} />
+        </button>
+      ) : (
+        <div className="home-section-hdr">{t('home.releases')}</div>
+      )}
+
+      {data.kind === 'tracks' && mode === 'chart' ? (
+        // Витрина показывает только верх чарта — остальное на странице чарта.
+        <div className="home-cards ch-row">
+          {data.tracks.slice(0, HOME_CHART_MAX).map((tr, i) => (
+            <ChartCard key={tr.id} track={tr} pos={tr.chartPos ?? i + 1} onCtxMenu={onTrackCtx} />
+          ))}
+        </div>
+      ) : data.kind === 'tracks' ? (
         <div className="home-cards">
           {data.tracks.map((tr) => (
             <div className="home-card mqh" key={tr.id} onClick={() => playSingleTrack(tr.id)} onContextMenu={(e) => onTrackCtx(e, tr)}>
               <div className="hc-cover">
-                {tr.cover ? <img src={tr.cover} alt="" /> : <Ico name="note" width={24} height={24} />}
+                {tr.cover ? <img src={tr.cover} alt="" /> : <EmptyCover />}
                 <CoverSourceBadge track={tr} size={24} />
                 <div className="hc-play-overlay">
                   <div className="hc-play-btn">
@@ -249,22 +204,11 @@ const DiscoverBlock = ({
           ))}
         </div>
       ) : (
-        <div className="home-cards">
-          {data.albums.map((a) => (
-            <div className="home-card mqh" key={a.id} onClick={() => openAlbum(selected, a)}>
-              <div className="hc-cover">
-                {a.cover ? <img src={a.cover} alt="" /> : <Ico name="note" width={24} height={24} />}
-                <CoverProviderBadge provider={a.source} size={24} />
-                {/* Альбом открывается по клику, а не играет → стрелка. */}
-                <div className="hc-play-overlay">
-                  <div className="hc-play-btn">
-                    <Ico name="arrowRightStraight" width="100%" height="100%" style={{ color: 'var(--accent)' }} />
-                  </div>
-                </div>
-              </div>
-              <CardMarquee className="hc-name">{a.title}</CardMarquee>
-              <CardMarquee className="hc-artist">{a.ownerName}</CardMarquee>
-            </div>
+        // Альбомы бывают только у режима «Релизы» — там своя крупная карточка
+        // (круг с фото артиста + плашка релиза), см. ReleaseCard.
+        <div className="home-cards rel-row">
+          {data.albums.slice(0, HOME_REL_MAX).map((a) => (
+            <ReleaseCard key={a.id} album={a} providerId={selected} />
           ))}
         </div>
       )}

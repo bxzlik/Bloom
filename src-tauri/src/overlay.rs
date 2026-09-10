@@ -6,12 +6,13 @@
 //! Прячем OS-окно только при полном выключении оверлея в настройках.
 //!
 //! Поток данных:
-//!   - фронт зовёт `overlay_set_config` при старте/смене настроек (режим/якорь/размер);
+//!   - фронт зовёт `overlay_set_config` при старте/смене настроек (якорь/размер);
 //!   - `overlay_flash` — на смену трека (если включено) → JS показывает на N сек;
 //!   - хоткей Win+Shift+O → `toggle` → JS закрепляет/снимает плашку.
 //! Контент плашка берёт из `bloom-mp-state` (тот же кэш, что у мини-плеера/трея).
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::Duration;
 
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
@@ -20,9 +21,6 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Webview
 /// Логический размер дизайна плашки (без поля под тень).
 const PILL_W: f64 = 380.0;
 const PILL_H: f64 = 64.0;
-/// Расширенный режим — карточка с обложкой, прогрессом и полным набором кнопок.
-const EXP_W: f64 = 840.0;
-const EXP_H: f64 = 180.0;
 /// Поле вокруг плашки внутри окна — чтобы мягкая тень не обрезалась краем окна.
 const PAD: f64 = 28.0;
 /// Отступ окна от края рабочей области экрана.
@@ -33,9 +31,6 @@ const SNAP: f64 = 16.0;
 #[derive(Clone)]
 struct OverlayCfg {
     enabled: bool,
-    /// Режим плашки: "island"|"compact"|"bar"|"expanded". Влияет только на габарит
-    /// окна — раскладку внутри выбирает сам JS по `bloom_view_prefs`.
-    mode: String,
     /// Якорь на экране: "tl"|"tc"|"tr"|"bl"|"bc"|"br" (верт. t/b + гориз. l/c/r)
     /// либо "custom" — свободная позиция по долям cust_x/cust_y.
     anchor: String,
@@ -50,18 +45,12 @@ impl Default for OverlayCfg {
     fn default() -> Self {
         Self {
             enabled: false,
-            mode: "island".to_string(),
             anchor: "tr".to_string(),
             size: 1.0,
             cust_x: 0.98,
             cust_y: 0.02,
         }
     }
-}
-
-/// Габарит плашки (логич. px, без поля под тень) для режима.
-fn pill_size(mode: &str) -> (f64, f64) {
-    if mode == "expanded" { (EXP_W, EXP_H) } else { (PILL_W, PILL_H) }
 }
 
 static CFG: OnceCell<Mutex<OverlayCfg>> = OnceCell::new();
@@ -87,8 +76,25 @@ static PLACING: AtomicBool = AtomicBool::new(false);
 /// был чисто визуальным и не «залипал» при мелких движениях мыши.
 static DRAG_RAW: OnceCell<Mutex<(f64, f64)>> = OnceCell::new();
 
+/// Габарит ВИДИМОЙ плашки внутри окна (физ. px от левого-верхнего угла клиентской
+/// области) — его сообщает JS (`overlay_set_hit_rect`). Окно всегда шире плашки:
+/// вокруг лежит поле под тень (PAD), а в компактном режиме плашка занимает лишь
+/// малую часть окна. `None` — ещё не сообщён, считаем «своим» всё окно.
+static HIT: OnceCell<Mutex<Option<(f64, f64, f64, f64)>>> = OnceCell::new();
+/// Сторож курсора запущен (крутится, пока плашка видима).
+static WATCH: AtomicBool = AtomicBool::new(false);
+/// Поколение сторожа: быстрый цикл «скрыли → показали» мог бы поднять второй
+/// поток, пока первый ещё досыпает свой тик. Старый видит чужое поколение и выходит.
+static WATCH_GEN: AtomicU64 = AtomicU64::new(0);
+/// Текущее состояние click-through окна — чтобы не дёргать WinAPI каждый тик.
+static THROUGH: AtomicBool = AtomicBool::new(true);
+
 fn cfg() -> &'static Mutex<OverlayCfg> {
     CFG.get_or_init(|| Mutex::new(OverlayCfg::default()))
+}
+
+fn hit() -> &'static Mutex<Option<(f64, f64, f64, f64)>> {
+    HIT.get_or_init(|| Mutex::new(None))
 }
 
 /// Поле тени вокруг плашки внутри окна, в физ. пикселях (масштабируется размером
@@ -98,6 +104,131 @@ fn pad_phys(win: &WebviewWindow) -> f64 {
     PAD * cfg().lock().size * scale
 }
 
+/// Плашка сообщила свой габарит внутри окна (физ. px от левого-верхнего угла
+/// клиентской области — JS уже домножил на devicePixelRatio). Зовётся при показе
+/// и на любое изменение габарита плашки: раскрытие компакта по ховеру, смена
+/// режима, масштаб.
+pub fn set_hit_rect(x: f64, y: f64, w: f64, h: f64) {
+    *hit().lock() = Some((x, y, w, h));
+}
+
+/// Плашка показана/скрыта. Показ НЕ делает окно целиком «ловящим» мышь: иначе
+/// прозрачное поле вокруг плашки (тень + пустая часть окна в компактном режиме)
+/// съедало бы клики по тому, что под оверлеем. Вместо этого гоняем сторожа
+/// курсора: окно ловит мышь ровно тогда, когда курсор над самой плашкой.
+pub fn set_interactive(app: &AppHandle, on: bool) {
+    set_island_visible(on);
+    if on {
+        start_hit_watch(app);
+    } else {
+        stop_hit_watch(app);
+    }
+}
+
+/// Курсор над видимой плашкой? Клиентскую область окна берём напрямую по HWND:
+/// геттеры окна Tauri ходят в главный поток через канал, а тут опрос 30 раз в
+/// секунду — незачем будить цикл событий. Всё в физических пикселях.
+#[cfg(windows)]
+fn cursor_over_pill(hwnd: isize) -> bool {
+    use windows::Win32::Foundation::{HWND, POINT, RECT};
+    use windows::Win32::Graphics::Gdi::ClientToScreen;
+    use windows::Win32::UI::WindowsAndMessaging::{GetClientRect, GetCursorPos};
+    let hw = HWND(hwnd as _);
+    unsafe {
+        let mut cur = POINT::default();
+        if GetCursorPos(&mut cur).is_err() {
+            return false;
+        }
+        let mut cr = RECT::default();
+        if GetClientRect(hw, &mut cr).is_err() {
+            return false;
+        }
+        // Клиентские координаты → экранные (у окна без рамки они обычно совпадают
+        // с оконными, но полагаться на это не стоит).
+        let mut org = POINT::default();
+        if !ClientToScreen(hw, &mut org).as_bool() {
+            return false;
+        }
+        // Габарит плашки ещё не сообщён — считаем «своей» всю клиентскую область.
+        let (x, y, w, h) = (*hit().lock()).unwrap_or((
+            0.0,
+            0.0,
+            (cr.right - cr.left) as f64,
+            (cr.bottom - cr.top) as f64,
+        ));
+        let (l, t) = (org.x as f64 + x, org.y as f64 + y);
+        let (cx, cy) = (cur.x as f64, cur.y as f64);
+        cx >= l && cx < l + w && cy >= t && cy < t + h
+    }
+}
+
+/// Переключить click-through окна (только на смену состояния) и сообщить плашке:
+/// пока мышь мимо, ей ставится `pointer-events:none` — так CSS-ховер не залипает
+/// на элементе, с которого курсор «ушёл» вместе с потерей событий мыши.
+fn apply_through(win: &WebviewWindow, through: bool) {
+    if THROUGH.swap(through, Ordering::Relaxed) == through {
+        return;
+    }
+    let _ = win.set_ignore_cursor_events(through);
+    let _ = win.emit_to("overlay", "bloom-ov-hit", !through);
+}
+
+/// То же, но через API Tauri — для платформ без прямого доступа к HWND.
+#[cfg(not(windows))]
+fn cursor_over_pill_api(app: &AppHandle) -> bool {
+    let Some(win) = app.get_webview_window("overlay") else { return false };
+    let (Ok(cur), Ok(pos), Ok(size)) =
+        (app.cursor_position(), win.inner_position(), win.inner_size())
+    else {
+        return false;
+    };
+    let (x, y, w, h) =
+        (*hit().lock()).unwrap_or((0.0, 0.0, size.width as f64, size.height as f64));
+    let (l, t) = (pos.x as f64 + x, pos.y as f64 + y);
+    cur.x >= l && cur.x < l + w && cur.y >= t && cur.y < t + h
+}
+
+fn start_hit_watch(app: &AppHandle) {
+    if WATCH.swap(true, Ordering::Relaxed) {
+        return; // уже крутится
+    }
+    let watch_gen = WATCH_GEN.fetch_add(1, Ordering::Relaxed) + 1;
+    let app = app.clone();
+    std::thread::spawn(move || {
+        // HWND берём один раз: сам геттер — round-trip в главный поток.
+        #[cfg(windows)]
+        let hwnd = app
+            .get_webview_window("overlay")
+            .and_then(|w| w.hwnd().ok())
+            .map(|h| h.0 as isize);
+        while WATCH.load(Ordering::Relaxed) && WATCH_GEN.load(Ordering::Relaxed) == watch_gen {
+            // В режиме ручного размещения окно держим полностью интерактивным:
+            // плашку таскают мышью, и перехват не должен пропадать под курсором.
+            if !PLACING.load(Ordering::Relaxed) {
+                #[cfg(windows)]
+                let over = hwnd.map(cursor_over_pill).unwrap_or(false);
+                #[cfg(not(windows))]
+                let over = cursor_over_pill_api(&app);
+                // Трогаем окно только на смену состояния — эти вызовы уже идут
+                // через цикл событий.
+                if THROUGH.load(Ordering::Relaxed) == over {
+                    if let Some(win) = app.get_webview_window("overlay") {
+                        apply_through(&win, !over);
+                    }
+                }
+            }
+            std::thread::sleep(Duration::from_millis(32));
+        }
+    });
+}
+
+fn stop_hit_watch(app: &AppHandle) {
+    WATCH.store(false, Ordering::Relaxed);
+    if let Some(win) = app.get_webview_window("overlay") {
+        apply_through(&win, true);
+    }
+}
+
 #[derive(Clone, serde::Serialize)]
 struct OvShow {
     /// Закрепить (true — без авто-скрытия) — для тогла по хоткею.
@@ -105,13 +236,14 @@ struct OvShow {
     anchor: String,
 }
 
-/// Обновить конфиг (режим/якорь/размер). Зовётся фронтом при старте (preview=false)
+/// Обновить конфиг (якорь/размер). Зовётся фронтом при старте (preview=false)
 /// и при смене настроек оверлея пользователем (preview=true → живой показ плашки).
+/// Режим плашки Rust не знает: габарит окна у всех режимов один, раскладку внутри
+/// выбирает сам JS по `bloom_view_prefs`.
 /// При выключении — прячем окно (и сбрасываем «показано»).
 pub fn set_config(
     app: &AppHandle,
     enabled: bool,
-    mode: String,
     anchor: String,
     size: f64,
     cust_x: f64,
@@ -121,7 +253,6 @@ pub fn set_config(
     {
         let mut c = cfg().lock();
         c.enabled = enabled;
-        c.mode = mode;
         c.anchor = anchor;
         c.size = size.clamp(0.5, 1.6);
         c.cust_x = cust_x.clamp(0.0, 1.0);
@@ -133,6 +264,7 @@ pub fn set_config(
     }
     if !enabled {
         // Выключено — окно (если было создано) прячем; не создаём его зря.
+        stop_hit_watch(app);
         if let Some(win) = app.get_webview_window("overlay") {
             let _ = win.hide();
         }
@@ -206,7 +338,9 @@ pub fn set_place_mode(app: &AppHandle, on: bool) {
         let Some(win) = crate::mirror::ensure_overlay(app) else { return };
         PLACING.store(true, Ordering::Relaxed);
         ensure_shown(&win);
-        // Ловим мышь, чтобы можно было схватить плашку.
+        // Ловим мышь всем окном, чтобы плашку можно было схватить и таскать даже
+        // рывком (сторож курсора на время размещения не вмешивается).
+        THROUGH.store(false, Ordering::Relaxed);
         let _ = win.set_ignore_cursor_events(false);
         position(&win);
         push_state(&win);
@@ -310,6 +444,9 @@ fn push_state(win: &WebviewWindow) {
 }
 
 fn ensure_shown(win: &WebviewWindow) {
+    // Стартуем всегда прозрачными для мыши: перехват включит сторож курсора,
+    // когда мышь окажется над плашкой (см. set_interactive).
+    THROUGH.store(true, Ordering::Relaxed);
     let _ = win.set_ignore_cursor_events(true);
     let _ = win.set_always_on_top(true);
     if !SHOWN.swap(true, Ordering::Relaxed) {
@@ -321,9 +458,8 @@ fn ensure_shown(win: &WebviewWindow) {
 fn position(win: &WebviewWindow) {
     let c = cfg().lock().clone();
     let scale = win.scale_factor().unwrap_or(1.0);
-    let (pill_w, pill_h) = pill_size(&c.mode);
-    let w_log = (pill_w + 2.0 * PAD) * c.size;
-    let h_log = (pill_h + 2.0 * PAD) * c.size;
+    let w_log = (PILL_W + 2.0 * PAD) * c.size;
+    let h_log = (PILL_H + 2.0 * PAD) * c.size;
     let w = w_log * scale;
     let h = h_log * scale;
     let _ = win.set_size(PhysicalSize::new(w.round().max(1.0) as u32, h.round().max(1.0) as u32));

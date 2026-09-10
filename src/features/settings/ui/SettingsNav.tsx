@@ -1,10 +1,28 @@
-import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { ScLogo, YmLogo, YtmLogo, providerBrandColor } from '@entities/track'
-import { useT, useLocale, dictionaries, type TranslationKey } from '@shared/i18n'
+import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { useLastfmStore } from '@features/lastfm'
 import { useYmAuthStore } from '@features/yandex'
 import { useSettingsStore } from '../model'
+import { SectionTabs, useInk, inkVars } from './controls/SectionTabs'
+import { subTabsOf } from './subTabs'
+
+/**
+ * Навигация настроек — до трёх рядов в шапке панели (см. side-sheet.css).
+ *
+ *   Основное · Оформление · Интеграции   ← группы, под активной едет линия
+ *   [Система] Оверлей Аудио Эффективность…  ← секции группы, под активной едет пилюля
+ *   [Плеер] Очередь и текст Мини-плеер…     ← подвкладки раздела (если они есть)
+ *
+ * Третий ряд рисуется здесь, а не внутри раздела: лёжа в `.s-section`, он
+ * прокручивался вместе с карточками и проигрывал анимацию появления страницы
+ * при каждой смене раздела (см. subTabs.ts).
+ *
+ * Все индикаторы («чернила») — абсолютные элементы, позицию которых меряем по
+ * активной кнопке и гоняем через transform+width, поэтому переключение вкладки
+ * плавно перевозит их на новое место, а не перекрашивает.
+ */
 
 /**
  * Идентификаторы секций SM_CATS.
@@ -19,8 +37,8 @@ export type SectionId =
   | 'hotkeys'
   | 'tele-storage'
   // Оформление
-  | 'view'
   | 'interface'
+  | 'view'
   | 'pages'
   | 'tabs'
   | 'medialib'
@@ -97,14 +115,14 @@ const GROUPS: GroupDef[] = [
     labelKey: 'settings.nav.group.appearance',
     sections: [
       {
-        id: 'view',
-        labelKey: 'settings.nav.player',
-        icon: <Ico name="note" width={13} height={13} />,
-      },
-      {
         id: 'interface',
         labelKey: 'settings.nav.interface',
         icon: <Ico name="sidebar" width={13} height={13} />,
+      },
+      {
+        id: 'view',
+        labelKey: 'settings.nav.player',
+        icon: <Ico name="note" width={13} height={13} />,
       },
       {
         id: 'pages',
@@ -163,86 +181,19 @@ const GROUPS: GroupDef[] = [
   },
 ]
 
-/**
- * Правила «в какой секции искать по содержимому». Поиск в шапке навигации ищет
- * не только по названиям вкладок, но и по подписям всех настроек внутри — для
- * этого сопоставляем каждой секции префиксы i18n-ключей, которые она рендерит.
- *
- * `exclude` нужен там, где секции делят общий namespace: например ключи
- * `settings.interface.sidebar*`/`titlebar*`/`nav*` физически лежат в разделе
- * «Вкладки» (перенесены из «Интерфейса»), а overlay-настройки в
- * `settings.view.ov*` — в разделе «Оверлей», а не «Плеер».
- */
-const SEARCH_RULES: Record<SectionId, { include: string[]; exclude?: string[] }> = {
-  system: {
-    include: ['settings.system.', 'settings.about.'],
-    // «Восстановление очереди» и «Автовоспроизведение» переехали в «Аудио».
-    exclude: ['settings.system.restoreQueue', 'settings.system.autoplay'],
-  },
-  overlay: { include: ['settings.view.ov'] },
-  audio: {
-    include: ['settings.audio.', 'settings.system.restoreQueue', 'settings.system.autoplay'],
-  },
-  efficiency: { include: ['settings.efficiency.'] },
-  hotkeys: { include: ['settings.hotkeys.'] },
-  'tele-storage': { include: ['settings.storage.'] },
-  view: { include: ['settings.view.'], exclude: ['settings.view.ov'] },
-  interface: {
-    include: ['settings.interface.'],
-    exclude: [
-      'settings.interface.sidebar',
-      'settings.interface.titlebar',
-      'settings.interface.nav',
-      'settings.interface.cat.library',
-      'settings.interface.libView',
-      'settings.interface.libSidebar',
-      'settings.interface.libSbHover',
-      'settings.interface.libHeroBtns',
-      'settings.interface.libDensity',
-      'settings.interface.libCols',
-    ],
-  },
-  pages: {
-    include: [
-      'settings.home.',
-      'settings.library.',
-      'settings.search.',
-      'settings.interface.libView',
-      'settings.interface.libSidebar',
-      'settings.interface.libSbHover',
-      'settings.interface.libHeroBtns',
-      'settings.interface.libDensity',
-      'settings.interface.libCols',
-    ],
-  },
-  tabs: {
-    include: [
-      'settings.tabs.',
-      'settings.interface.sidebar',
-      'settings.interface.titlebar',
-      'settings.interface.nav',
-    ],
-  },
-  // «Фон» переехал вкладкой внутрь «Кастомизации» — ищем по обоим namespace'ам.
-  medialib: { include: ['settings.custom.', 'settings.background.'] },
-  soundcloud: { include: ['settings.sc.'] },
-  ytmusic: { include: ['settings.ytm.'] },
-  lastfm: { include: ['settings.lastfm.'] },
-  discord: { include: ['settings.discord.'] },
-  yandex: { include: ['settings.ym.'] },
-}
-
 export const SettingsNav = ({
   active,
   onSelect,
+  activeSub,
+  onSelectSub,
 }: {
   active: SectionId
-  onSelect: (id: SectionId, query?: string) => void
+  onSelect: (id: SectionId) => void
+  /** Активная подвкладка текущего раздела (см. subTabs.ts). */
+  activeSub: string
+  onSelectSub: (id: string) => void
 }) => {
   const t = useT()
-  const locale = useLocale()
-  const [filter, setFilter] = useState('')
-  const q = filter.trim().toLowerCase()
 
   // Живой «зелёный индикатор» подключённых интеграций. Публичные площадки
   // (SoundCloud/YTM) работают без авторизации — всегда активны; остальные —
@@ -261,80 +212,82 @@ export const SettingsNav = ({
   // Метка секции: переводимый ключ либо литеральный бренд.
   const secLabel = (s: SectionDef): string => (s.labelKey ? t(s.labelKey) : s.brand ?? s.id)
 
-  // Индекс содержимого секций для поиска: на каждую секцию — конкатенация всех
-  // переведённых подписей её настроек (по правилам SEARCH_RULES). Пересобираем
-  // только при смене языка.
-  const contentIndex = useMemo(() => {
-    const dict = dictionaries[locale]
-    const keys = Object.keys(dict) as TranslationKey[]
-    const idx = {} as Record<SectionId, string>
-    for (const id of Object.keys(SEARCH_RULES) as SectionId[]) {
-      const { include, exclude } = SEARCH_RULES[id]
-      idx[id] = keys
-        .filter((k) => include.some((p) => k.startsWith(p)) && !exclude?.some((p) => k.startsWith(p)))
-        .map((k) => dict[k])
-        .join('\n')
-        .toLowerCase()
-    }
-    return idx
-  }, [locale])
+  // Активная группа выводится из активной секции — отдельного состояния нет.
+  const gi = Math.max(
+    0,
+    GROUPS.findIndex((g) => g.sections.some((s) => s.id === active)),
+  )
 
-  // Секция видна в результатах, если запрос совпал с её меткой ИЛИ с подписью
-  // любой настройки внутри неё.
-  const secMatches = (s: SectionDef): boolean =>
-    secLabel(s).toLowerCase().includes(q) || (contentIndex[s.id]?.includes(q) ?? false)
+  // Возврат в группу открывает ту секцию, на которой её оставили, а не первую.
+  const lastSec = useRef<Record<number, SectionId>>({})
+  useEffect(() => {
+    lastSec.current[gi] = active
+  }, [gi, active])
+
+  const subTabs = subTabsOf(active)
+
+  const gRef = useRef<HTMLDivElement>(null)
+  const pRef = useRef<HTMLDivElement>(null)
+  const gInk = useInk(gRef, gi)
+  const pInk = useInk(pRef, active)
 
   return (
-    <div
-      className="settings-modal-nav"
-      id="smNav"
-      onMouseEnter={(e) => e.currentTarget.classList.add('sb-active')}
-      onMouseLeave={(e) => e.currentTarget.classList.remove('sb-active')}
-    >
-      <div className="s-nav-search" style={{ marginBottom: 6 }}>
-        <Ico name="search" width={13} height={13} />
-        <input
-          type="text"
-          placeholder={t('settings.nav.search')}
-          autoComplete="off"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
+    <div className="sm-topnav" id="smNav">
+      <div className="sm-gtabs" ref={gRef}>
+        {GROUPS.map((grp, i) => (
+          <button
+            key={grp.labelKey}
+            type="button"
+            data-ink={i === gi ? '' : undefined}
+            className={`sm-gtab${i === gi ? ' active' : ''}`}
+            onClick={() => onSelect(lastSec.current[i] ?? GROUPS[i].sections[0].id)}
+          >
+            {t(grp.labelKey)}
+          </button>
+        ))}
+        <span className="sm-gtab-ink" style={inkVars(gInk)} />
       </div>
-      {GROUPS.map((grp) => {
-        const visible = q ? grp.sections.filter(secMatches) : grp.sections
-        if (visible.length === 0) return null
-        // Fragment, не <div>! Иначе flex gap:2px на родителе не применяется
-        // между sibling-items внутри группы. В старом smBuildNav() тоже
-        // вставляет всё плоско в `#smNav` (без wrapper).
-        return (
-          <Fragment key={grp.labelKey}>
-            <div className="s-nav-group">{t(grp.labelKey)}</div>
-            {visible.map((sec) => {
-              const isActive = active === sec.id
-              // Активная вкладка интеграции — иконка ВСЕГДА в бренд-цвете (не зависит
-              // от тоггла «акцентные бейджи»); иначе наследует цвет вкладки.
-              const brandC = isActive
-                ? providerBrandColor(sec.id) ?? NAV_EXTRA_BRAND[sec.id]
-                : undefined
-              return (
-                <div
-                  key={sec.id}
-                  className={`s-nav-item${isActive ? ' active' : ''}`}
-                  onClick={() => onSelect(sec.id, q || undefined)}
-                >
-                  <div className="s-nav-icon" style={brandC ? { color: brandC } : undefined}>
-                    {sec.icon}
-                  </div>
-                  <span>{secLabel(sec)}</span>
-                  {activeIntegrations[sec.id] && <div className="s-nav-live" />}
-                  <div className="s-nav-dot" />
-                </div>
-              )
-            })}
-          </Fragment>
-        )
-      })}
+
+      <div className="sm-ptabs" ref={pRef}>
+        {/* Пилюля лежит ПЕРВОЙ, чтобы кнопки рисовались поверх неё. */}
+        <span className="sm-ptab-ink" style={inkVars(pInk)} />
+        {GROUPS[gi].sections.map((sec) => {
+          const isActive = active === sec.id
+          // Активная вкладка интеграции — иконка ВСЕГДА в бренд-цвете (не зависит
+          // от тоггла «акцентные бейджи»); иначе наследует цвет вкладки.
+          const brandC = isActive ? providerBrandColor(sec.id) ?? NAV_EXTRA_BRAND[sec.id] : undefined
+          return (
+            <button
+              key={sec.id}
+              type="button"
+              data-ink={isActive ? '' : undefined}
+              className={`sm-ptab${isActive ? ' active' : ''}`}
+              onClick={() => onSelect(sec.id)}
+            >
+              <span className="sm-ptab-ico" style={brandC ? { color: brandC } : undefined}>
+                {sec.icon}
+              </span>
+              <span className="sm-ptab-lbl">{secLabel(sec)}</span>
+              {activeIntegrations[sec.id] && <span className="sm-ptab-live" />}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Подвкладки раздела. Ряд НЕ перемонтируется при смене раздела (никакого
+          `key`) — как и ряд секций выше при смене группы: набор кнопок меняется
+          целиком, а пилюля переезжает на новое место, а не появляется рывком. */}
+      {subTabs.length > 0 && (
+        <SectionTabs
+          tabs={subTabs.map((tb) => ({
+            id: tb.id,
+            label: t(tb.labelKey),
+            icon: <Ico name={tb.icon} width={14} height={14} />,
+          }))}
+          active={activeSub}
+          onSelect={onSelectSub}
+        />
+      )}
     </div>
   )
 }
