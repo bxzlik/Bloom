@@ -655,7 +655,7 @@ const BpControls = () => {
             big-picture.css: боксы тут крупнее (46px), угол по умолчанию
             отстоял бы от иконки. */}
         {repeat === 1 && <span className="cc-badge"><Ico name="list" width={9} height={9} /></span>}
-        {repeat === 2 && <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 700 }}>1</span>}
+        {repeat === 2 && <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 'var(--fw-bold)' }}>1</span>}
       </button>
       <button className="cc" onClick={prevTr} aria-label={t('player.aria.prev')}>
         <Ico name="prev" width={md} height={md} />

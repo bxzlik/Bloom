@@ -24,10 +24,10 @@
 /* Спейсер: 0 в обычном режиме; в центрированном растёт и плавно опускает строку
    поиска к середине экрана (анимация «уезжает наверх», когда появляется запрос).
    50% — половина .search-page (не vh: страница ниже титлбара и над плеер-баром),
-   минус половина высоты .sp-top-zone (--sp-center-off ≈ инпут 48 + зона табов 57),
+   минус половина высоты .sp-top-zone (--sp-center-off ≈ инпут 56 + зона табов 57),
    чтобы по центру оказался весь блок «строка + табы», а не его верхний край. */
 .sp-spacer{height:0;flex-shrink:0;transition:height .38s cubic-bezier(.4,0,.2,1)}
-.search-page.sp-centered .sp-spacer{height:calc(50% - var(--sp-center-off,53px))}
+.search-page.sp-centered .sp-spacer{height:calc(50% - var(--sp-center-off,57px))}
 .search-page.sp-centered #spScScroll{display:none}
 .search-page.sp-centered .sp-header{display:flex;justify-content:center;padding-top:0;padding-bottom:0}
 .search-page.sp-centered .sp-inp-wrap{width:100%;max-width:540px}
@@ -49,7 +49,7 @@
 .sp-pl-grid-lg .sp-track-card,.sp-pl-grid-lg .sp-am-track-card{width:auto;flex-shrink:1}
 /* Подпись выравниваем по левому краю обложки (в ряду она была с отступом 10px). */
 .sp-pl-grid-lg .sp-tc-info{padding:12px 2px 0}
-.sp-inp-wrap{position:relative;display:flex;align-items:center;gap:11px;background:var(--input,var(--card));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:999px;padding:0 7px 0 18px;height:48px;transition:.15s}
+.sp-inp-wrap{position:relative;display:flex;align-items:center;gap:11px;background:var(--input,var(--card));border:1px solid color-mix(in srgb,var(--border),transparent 55%);border-radius:999px;padding:0 7px 0 18px;height:56px;transition:.15s}
 /* Активная строка поиска: не подсвечиваем акцентом, просто делаем рамку чуть ярче. */
 .sp-inp-wrap:focus-within{border-color:color-mix(in srgb,var(--border),transparent 25%);background:var(--card)}
 .sp-inp-wrap input{flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:15px;font-family:var(--font)}
@@ -63,7 +63,7 @@
 .sp-hist-row:hover{background:var(--hover)}
 .sp-hist-ico{width:22px;height:22px;border-radius:calc(var(--radius)*.55);background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);overflow:hidden}
 .sp-hist-ico img{width:100%;height:100%;object-fit:cover}
-.sp-hist-text{flex:1;min-width:0;font-size:13px;font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-hist-text{flex:1;min-width:0;font-size:13px;font-weight:var(--fw-bold);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-hist-del{width:22px;height:22px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s}
 .sp-hist-del:hover{background:var(--hover);color:var(--fg)}
 /* ── Artist/Playlist Detail Page (inline) ── */
@@ -92,7 +92,7 @@
 .sp-am-hero-content{position:relative;z-index:2;padding:26px 32px 30px;display:flex;flex-direction:column;gap:16px}
 /* «Назад»: стрелка + название страницы. Отступы сверху/слева выровнены, чтобы
    кнопка стояла ровно от верхне-левого угла. */
-.sp-am-back{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;max-width:100%;padding:6px 12px 6px 6px;margin:-12px 0 2px -14px;background:transparent;border:none;border-radius:calc(var(--radius)*.7);color:rgba(var(--ovl-rgb),.76);font-family:var(--font);font-size:16px;font-weight:700;cursor:pointer;transition:color .15s}
+.sp-am-back{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;max-width:100%;padding:6px 12px 6px 6px;margin:-12px 0 2px -14px;background:transparent;border:none;border-radius:calc(var(--radius)*.7);color:rgba(var(--ovl-rgb),.76);font-family:var(--font);font-size:16px;font-weight:var(--fw-bold);cursor:pointer;transition:color .15s}
 /* Подложки на ховере нет — отзыв даёт сама стрелка, отъезжающая влево. */
 .sp-am-back:hover{color:rgba(var(--ovl-rgb),.95)}
 .sp-am-back svg{flex-shrink:0;transition:transform .18s cubic-bezier(.4,0,.2,1)}
@@ -114,12 +114,12 @@
 .sp-am-avatar.square{border-radius:calc(var(--radius)*1.4)}
 .sp-am-avatar img{width:100%;height:100%;object-fit:cover}
 .sp-am-meta{flex:1;min-width:0}
-.sp-am-name{font-size:34px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:12px;color:var(--text)}
+.sp-am-name{font-size:34px;font-weight:var(--fw-bold);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:12px;color:var(--text)}
 /* Владелец плейлиста/альбома — отдельной строкой под именем: аватарка + имя. */
-.sp-am-owner{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:rgba(var(--ovl-rgb),.6);margin:-4px 0 10px;min-width:0}
+.sp-am-owner{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:var(--fw-bold);color:rgba(var(--ovl-rgb),.6);margin:-4px 0 10px;min-width:0}
 .sp-am-owner>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-am-owner-av{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--hover)}
-.sp-am-sub{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:rgba(var(--ovl-rgb),.6);flex-wrap:wrap;margin-bottom:8px}
+.sp-am-sub{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:var(--fw-bold);color:rgba(var(--ovl-rgb),.6);flex-wrap:wrap;margin-bottom:8px}
 .sp-am-stat{display:flex;align-items:center;gap:5px}
 /* Статы разделяем точкой: «2026 · 8 треков · 17 мин». Точка — флекс-ребёнок
    стата, поэтому слева её отделяет gap:5px + margin:4px = 9px, как gap ряда
@@ -127,7 +127,7 @@
 .sp-am-stat:not(:last-child)::after{content:'·';margin-left:4px}
 /* Обрезано двумя строками; полный текст — попапом по клику
    (shared/ui/ExpandDesc), отсюда cursor:pointer. */
-.sp-am-hero-desc{font-size:13px;font-weight:500;color:rgba(var(--ovl-rgb),.7);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:500px;cursor:pointer}
+.sp-am-hero-desc{font-size:13px;font-weight:var(--fw-bold);color:rgba(var(--ovl-rgb),.7);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:500px;cursor:pointer}
 /* Ряд кнопок — в правой колонке под именем/статами. */
 .sp-am-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px}
 /* Группа+share занимают остаток строки; space-between держит share у правого
@@ -136,7 +136,7 @@
 /* Иконочные кнопки сгруппированы в капсулы с тонкой рамкой (как в референсе). */
 .sp-am-btn-group{display:flex;align-items:center;gap:2px;padding:2px;border-radius:999px;border:1px solid rgba(var(--ovl-rgb),.07);background:transparent}
 .sp-am-btn-group .sp-am-icon-btn,.sp-am-btn-group .sp-follow-btn{width:30px;height:30px;border-radius:50%}
-.sp-am-play-btn{display:flex;align-items:center;gap:8px;padding:11px 26px;border-radius:var(--radius);background:var(--accent);color:var(--accent-text);font-size:13px;font-weight:700;border:none;cursor:pointer;transition:.15s;font-family:var(--font);flex-shrink:0}
+.sp-am-play-btn{display:flex;align-items:center;gap:8px;padding:11px 26px;border-radius:var(--radius);background:var(--accent);color:var(--accent-text);font-size:13px;font-weight:var(--fw-bold);border:none;cursor:pointer;transition:.15s;font-family:var(--font);flex-shrink:0}
 .sp-am-play-btn:hover{background:var(--accent-hover)}
 /* Иконочные кнопки — минималистичные (без рамок/подложки); на hover не заливка,
    а только подсветка самой иконки. */
@@ -163,7 +163,7 @@
 .sp-am-body{padding:16px 0 24px;scrollbar-width:none}
 .sp-am-body::-webkit-scrollbar{display:none}
 .sp-am-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.sp-am-tag{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:rgba(var(--ovl-rgb),.08);color:rgba(var(--ovl-rgb),.6);border:1px solid rgba(var(--ovl-rgb),.1)}
+.sp-am-tag{font-size:11px;font-weight:var(--fw-bold);padding:4px 12px;border-radius:20px;background:rgba(var(--ovl-rgb),.08);color:rgba(var(--ovl-rgb),.6);border:1px solid rgba(var(--ovl-rgb),.1)}
 .sp-am-socials{display:flex;gap:8px;margin-bottom:14px}
 .sp-am-social-btn{width:32px;height:32px;border-radius:50%;background:rgba(var(--ovl-rgb),.07);border:1px solid rgba(var(--ovl-rgb),.1);color:rgba(var(--ovl-rgb),.6);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;text-decoration:none}
 .sp-am-social-btn:hover{background:rgba(var(--ovl-rgb),.14);color:var(--text)}
@@ -177,24 +177,24 @@
 .sp-am-album-cov{width:96px;height:96px;border-radius:calc(var(--radius)*.7);overflow:hidden;flex-shrink:0;background:rgba(var(--ovl-rgb),.05);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3)}
 .sp-am-album-cov img{width:100%;height:100%;object-fit:cover}
 .sp-am-album-meta{flex:1;min-width:0;cursor:pointer}
-.sp-am-album-label{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;margin-bottom:4px}
-.sp-am-album-name{font-size:22px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.sp-am-album-label{font-size:11px;font-weight:var(--fw-bold);letter-spacing:.08em;color:var(--text2);text-transform:uppercase;margin-bottom:4px}
+.sp-am-album-name{font-size:22px;font-weight:var(--fw-bold);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
 .sp-am-album-sub{font-size:13px;color:var(--text2);margin-top:5px}
 .sp-am-album-body{padding:0 10px 8px}
 .sp-am-album-extra{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s cubic-bezier(.4,0,.2,1)}
 .sp-am-album-extra.open{grid-template-rows:1fr}
 .sp-am-album-extra>div{overflow:hidden;min-height:0}
-.sp-am-album-more{display:block;width:100%;margin-top:6px;padding:8px;border-radius:calc(var(--radius)*.6);background:transparent;border:1px solid var(--ovl-line);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.15s}
+.sp-am-album-more{display:block;width:100%;margin-top:6px;padding:8px;border-radius:calc(var(--radius)*.6);background:transparent;border:1px solid var(--ovl-line);color:var(--text2);font-size:12px;font-weight:var(--fw-bold);cursor:pointer;font-family:var(--font);transition:.15s}
 .sp-am-album-more:hover{color:var(--text);background:rgba(var(--ovl-rgb),.05)}
 /* Блок «Релиз» под треклистом альбома: тонкая линия-разделитель, серая
    подпись и крупная дата. Отступы подобраны так, чтобы подпись встала по
    левому краю содержимого строк трека (.tr padding 8px + padding тела 8px). */
 .sp-am-release{margin:2px 8px 0;padding:18px 8px 4px;border-top:1px solid var(--ovl-line2)}
-.sp-am-release-label{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:2px}
-.sp-am-release-date{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.sp-am-release-label{font-size:13px;font-weight:var(--fw-bold);color:var(--text2);margin-bottom:2px}
+.sp-am-release-date{font-size:26px;font-weight:var(--fw-bold);color:var(--text);letter-spacing:-.01em}
 .sp-am-section{margin-bottom:20px}
 .sp-am-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.sp-am-section-title{font-size:27px;font-weight:700}
+.sp-am-section-title{font-size:27px;font-weight:var(--fw-bold)}
 .sp-am-tracks-grid{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .sp-am-tracks-grid::-webkit-scrollbar{display:none}
 .sp-am-track-card{width:148px;flex-shrink:0;border-radius:var(--radius);cursor:pointer;transition:.15s;background:transparent}
@@ -212,8 +212,13 @@
    но z-index ниже #winTitlebar (1001) — панель окна рисуется ПОВЕРХ неё и
    остаётся видимой и кликабельной; от тайтлбара отступаем паддингом --tb-h
    (в авто-скрытии и фуллскрине он равен 0). */
-.sov-back{position:fixed;inset:0;z-index:995;display:flex;justify-content:center;align-items:flex-start;padding:calc(var(--tb-h,32px) + 11vh) 24px 24px;background:rgba(0,0,0,.42);backdrop-filter:blur(3px);animation:sovBackIn .16s ease}
+.sov-back{position:fixed;inset:0;z-index:995;display:flex;justify-content:center;align-items:flex-start;padding:calc(var(--tb-h,32px) + 11vh) 24px 24px;background:rgba(0,0,0,.42);backdrop-filter:blur(3px);animation:sovBackIn .16s ease;transition:padding-top .22s ease}
 @keyframes sovBackIn{from{opacity:0}to{opacity:1}}
+/* Уход — фейд подложки в такт WAAPI-закрытию панели (usePopupPresence, 130 мс).
+   forwards здесь безопасен: узел снимается сразу по концу анимации, а гоча с
+   backdrop-filter касается только застывшего конечного кадра. */
+.sov-back.is-closing{animation:sovBackOut .13s ease forwards;pointer-events:none}
+@keyframes sovBackOut{from{opacity:1}to{opacity:0}}
 .sov-panel{width:100%;max-width:560px;display:flex;flex-direction:column;gap:10px;transform-origin:top center}
 /* Строка ввода — та же капсула, что на странице поиска (.sp-inp-wrap). */
 .sov-inp{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));flex-shrink:0}
@@ -231,7 +236,7 @@
 .sov-ico{width:34px;height:34px;border-radius:calc(var(--radius)*.55);background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);overflow:hidden}
 .sov-ico img{width:100%;height:100%;object-fit:cover}
 .sov-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.sov-title{font-size:14px;font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sov-title{font-size:14px;font-weight:var(--fw-bold);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sov-sub{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sov-del{width:22px;height:22px;border-radius:calc(var(--radius)*.5);background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:.12s}
 .sov-row:hover .sov-del{opacity:1}

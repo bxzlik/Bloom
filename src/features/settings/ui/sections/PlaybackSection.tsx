@@ -1,8 +1,8 @@
-import { CatReset } from '../controls/SectionReset'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { invoke } from '@shared/tauri'
 import { toast } from '@shared/ui'
 import { useT } from '@shared/i18n'
+import type { TranslationKey } from '@shared/i18n'
 import {
   buildExportAllBundle,
   importPlaylistData,
@@ -15,6 +15,10 @@ import { resetSettings, hardReset } from '../../lib/reset'
 import { AboutBlock } from './AboutBlock'
 import { LogsViewerModal } from './LogsViewerModal'
 import { Ico } from '@shared/ui/icons/solar'
+import type { IconName } from '@shared/ui/icons/solar'
+
+/** Опасные действия раздела — у каждого своё «взведённое» состояние. */
+type ArmKey = 'clearLogs' | 'resetSettings' | 'hardReset'
 
 /**
  * Секция «Воспроизведение» — флаги AppSettings + Windows autostart.
@@ -34,14 +38,23 @@ export const PlaybackSection = () => {
   // null → просмотрщик логов закрыт; строка (в т.ч. пустая) → открыт.
   const [logsContent, setLogsContent] = useState<string | null>(null)
 
-  const onResetSettings = () => {
-    if (!confirm(t('settings.system.confirm.resetSettings'))) return
-    void resetSettings()
+  // Двойное подтверждение вместо confirm(): первое нажатие «взводит» кнопку
+  // (красная заливка + «Точно?») на 3 с, второе выполняет. Взведена всегда
+  // только одна — нажатие на другую опасную кнопку перехватывает таймер.
+  const [armed, setArmed] = useState<ArmKey | null>(null)
+  const armTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(armTimer.current), [])
+  const confirmTwice = (key: ArmKey, run: () => void) => () => {
+    window.clearTimeout(armTimer.current)
+    if (armed !== key) {
+      setArmed(key)
+      armTimer.current = window.setTimeout(() => setArmed(null), 3000)
+      return
+    }
+    setArmed(null)
+    run()
   }
-  const onHardReset = () => {
-    if (!confirm(t('settings.system.confirm.hardReset'))) return
-    void hardReset()
-  }
+
   const onExportLogs = async () => {
     try {
       const saved = await invoke<boolean>('export_logs')
@@ -59,7 +72,6 @@ export const PlaybackSection = () => {
     }
   }
   const onClearLogs = async () => {
-    if (!confirm(t('settings.system.confirm.clearLogs'))) return
     try {
       await invoke('clear_logs')
       if (logsContent !== null) setLogsContent('')
@@ -89,15 +101,29 @@ export const PlaybackSection = () => {
     )
   }
 
+  // Кнопки строк — только иконка; бывшая подпись остаётся в aria-label.
+  const icoBtn = (icon: IconName, label: TranslationKey, onClick: () => void) => (
+    <button className="s-ibtn" aria-label={t(label)} onClick={onClick}>
+      <Ico name={icon} size={16} />
+    </button>
+  )
+  const dangerBtn = (key: ArmKey, icon: IconName, label: TranslationKey, run: () => void) => (
+    <button
+      className={`s-ibtn danger${armed === key ? ' armed' : ''}`}
+      aria-label={t(label)}
+      onClick={confirmTwice(key, run)}
+    >
+      <Ico name={icon} size={16} />
+      {armed === key && <span>{t('settings.system.confirmAgain')}</span>}
+    </button>
+  )
+
   return (
     <div className="s-section active" id="ssec-playback">
       {/* «О приложении» + проверка обновлений (свой заголовок s-cat-label внутри). */}
       <AboutBlock />
 
-      <div className="s-cat-label">
-        {t('settings.system.startup')}
-        <CatReset onReset={() => { void setAutostart(false); void setMinimizeToTray(false) }} />
-      </div>
+      <div className="s-cat-label">{t('settings.system.startup')}</div>
       <div className="sc">
         <TeleToggleRow
           title={t('settings.system.autostart.title')}
@@ -117,10 +143,7 @@ export const PlaybackSection = () => {
         />
       </div>
 
-      <div className="s-cat-label">
-        {t('settings.system.windowTray')}
-        <CatReset onReset={() => { void setChangeTitlebar(false); void setChangeTrayCover(false) }} />
-      </div>
+      <div className="s-cat-label">{t('settings.system.windowTray')}</div>
       <div className="sc">
         <TeleToggleRow
           title={t('settings.system.titlebarTrack.title')}
@@ -145,14 +168,14 @@ export const PlaybackSection = () => {
             <div className="tele-toggle-title">{t('settings.system.exportAll.title')}</div>
             <div className="tele-toggle-sub">{t('settings.system.exportAll.sub')}</div>
           </div>
-          <button className="btn btg" style={{ flexShrink: 0, fontSize: 11, padding: '4px 12px' }} onClick={onExportAll}>{t('settings.system.exportAll.btn')}</button>
+          {icoBtn('export', 'settings.system.exportAll.btn', () => void onExportAll())}
         </div>
         <div className="sr">
           <div className="tele-toggle-info">
             <div className="tele-toggle-title">{t('settings.system.import.title')}</div>
             <div className="tele-toggle-sub">{t('settings.system.import.sub')}</div>
           </div>
-          <button className="btn btg" style={{ flexShrink: 0, fontSize: 11, padding: '4px 12px' }} onClick={onImport}>{t('settings.system.import.btn')}</button>
+          {icoBtn('import', 'settings.system.import.btn', () => void onImport())}
         </div>
       </div>
 
@@ -163,10 +186,10 @@ export const PlaybackSection = () => {
             <div className="sl2">{t('settings.system.log.title')}</div>
             <div className="ssub">{t('settings.system.log.sub')}</div>
           </div>
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            <button className="btn btg" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => void onViewLogs()}>{t('settings.system.log.view')}</button>
-            <button className="btn btg" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => void onExportLogs()}>{t('settings.system.log.download')}</button>
-            <button className="btn btg" style={{ fontSize: 11, padding: '4px 10px', color: '#e03030', borderColor: 'rgba(224,48,48,.4)' }} onClick={() => void onClearLogs()}>{t('settings.system.log.clear')}</button>
+          <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+            {icoBtn('eye', 'settings.system.log.view', () => void onViewLogs())}
+            {icoBtn('download', 'settings.system.log.download', () => void onExportLogs())}
+            {dangerBtn('clearLogs', 'trash', 'settings.system.log.clear', () => void onClearLogs())}
           </div>
         </div>
       </div>
@@ -183,14 +206,14 @@ export const PlaybackSection = () => {
             <div className="sl2">{t('settings.system.resetSettings.title')}</div>
             <div className="ssub">{t('settings.system.resetSettings.sub')}</div>
           </div>
-          <button className="btn btg" style={{ flexShrink: 0, fontSize: 11, padding: '4px 10px', color: '#e03030', borderColor: 'rgba(224,48,48,.4)' }} onClick={onResetSettings}>{t('settings.system.resetSettings.btn')}</button>
+          {dangerBtn('resetSettings', 'restart', 'settings.system.resetSettings.btn', () => void resetSettings())}
         </div>
         <div className="sr" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <div>
             <div className="sl2">{t('settings.system.hardReset.title')}</div>
             <div className="ssub">{t('settings.system.hardReset.sub')}</div>
           </div>
-          <button className="btn btg" style={{ flexShrink: 0, fontSize: 11, padding: '4px 10px', color: '#e03030', borderColor: 'rgba(224,48,48,.4)' }} onClick={onHardReset}>{t('settings.system.hardReset.btn')}</button>
+          {dangerBtn('hardReset', 'trash', 'settings.system.hardReset.btn', () => void hardReset())}
         </div>
       </div>
 

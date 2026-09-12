@@ -147,6 +147,48 @@ async function startStation(station: string, label: string, first?: string): Pro
   return true;
 }
 
+/**
+ * «Авто похожие»: станция `track:<id>`, дописанная в хвост текущей очереди —
+ * без её очистки и без loadPlay (текущий трек доигрывает сам). Тихо, без
+ * toast'ов: это фон, а не нажатая кнопка. `isValid` — пока ждали Rust,
+ * пользователь мог уйти на другой источник: тогда в его очередь не пишем.
+ */
+export async function continueByTrack(ymTrackId: string, label: string, isValid: () => boolean): Promise<boolean> {
+  if (!ymTrackId) return false;
+  if (!(await ymIsAuthed().catch(() => false))) return false;
+  const station = `track:${ymTrackId}`;
+  let batch;
+  try {
+    batch = await ymWaveTracks(station);
+  } catch {
+    return false;
+  }
+  const raws = batch?.tracks ?? [];
+  if (!raws.length || !isValid()) return false;
+
+  // Сид и прочее, что уже стоит в очереди, не дублируем.
+  const ids: string[] = [];
+  for (const raw of raws) {
+    const id = adopt(raw);
+    if (id && !host.queue.includes(id) && !ids.includes(id)) ids.push(id);
+  }
+  if (!ids.length) return false;
+
+  state = {
+    station,
+    batchId: batch.batchId || "",
+    lastId: String(raws[raws.length - 1]!.id),
+    gen: (state?.gen ?? 0) + 1,
+    refilling: false,
+  };
+  host.queue = [...host.queue, ...ids];
+  host.curSource = { type: "wave", label };
+  host.shuffle = false;
+  fb("radioStarted");
+  prefetch();
+  return true;
+}
+
 /** Засчитан старт трека (из creditPlay на 90%/ended): фидбек + догрузка батча. */
 export function onTrackStart(id: string): void {
   if (!isActive()) return;

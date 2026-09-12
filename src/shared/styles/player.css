@@ -186,7 +186,7 @@
    названию/артисту), но при нехватке места блок ужимается и текст режется. */
 #playerContent.style-large>.sl-bottom .sl-bottom-info>div:first-child{min-width:0;flex:0 1 auto}
 #playerContent.style-large>.sl-bottom .sl-bottom-info .sl-text-wrap{display:flex;flex-direction:column;gap:1px;min-width:0;overflow:hidden;max-width:100%}
-#playerContent.style-large>.sl-bottom .sl-bottom-info .ps-title{font-size:13px;text-align:left;white-space:nowrap;display:block;font-weight:700}
+#playerContent.style-large>.sl-bottom .sl-bottom-info .ps-title{font-size:13px;text-align:left;white-space:nowrap;display:block;font-weight:var(--fw-bold)}
 #playerContent.style-large>.sl-bottom .ps-title-wrap{overflow:hidden;min-width:0;padding-right:4px}
 #playerContent.style-large>.sl-bottom .sl-text-wrap>div:first-child{justify-content:flex-start!important}
 #playerContent.style-large>.sl-bottom .sl-bottom-info .ps-artist{font-size:11px;text-align:left;display:block;width:fit-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);margin:0}
@@ -203,6 +203,15 @@
 #playerContent.style-large>.sl-bottom .sl-vol-wrap.sl-vol-compact{min-width:auto}
 #playerContent.style-large>.sl-bottom .sl-vol-wrap .vol-sl{max-width:90px;flex:1}
 #playerContent.style-large>.sl-bottom #vizWrap{display:none!important}
+/* Транспорт в нижнем баре: слоты download | play-группа | дизлайк+текст
+   растворяем (display:contents; !important — у слотов инлайновые display и
+   width:124) — все кнопки одной плотной группой, группы разделены лишь 8px.
+   Со слотами по 124px средняя (auto) колонка грида съедала ~500px, и на узком
+   окне бар вылезал: громкость наезжала на транспорт, инфо схлопывалось. */
+#playerContent.style-large>.sl-bottom .ps-transport{padding-left:6px;padding-right:6px}
+#playerContent.style-large>.sl-bottom .ps-transport>div{display:contents!important}
+#playerContent.style-large>.sl-bottom .ps-transport>div:nth-child(2)>:first-child{margin-left:8px}
+#playerContent.style-large>.sl-bottom .ps-transport>div:nth-child(2)>:last-child{margin-right:8px}
 #playerContent.style-large #playerQueueBlock{grid-column:2;grid-row:1;min-width:0;min-height:0;overflow:hidden!important;width:auto!important}
 #playerContent.style-large #lyricsQueueBlock{grid-column:2;grid-row:1;min-width:0;min-height:0;overflow:hidden!important;width:auto!important}
 /* When queue is hidden in large mode — cover spans full width */
@@ -223,7 +232,7 @@
 #playerContent.style-cinema .cn-center-title{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 24px;text-align:center;pointer-events:none;transition:opacity .18s ease}
 #playerContent.style-cinema .cn-center-title .ps-title-wrap{overflow:hidden;min-width:0;max-width:100%}
 #playerContent.style-cinema .cn-center-title>div:first-child{justify-content:center!important;max-width:100%}
-#playerContent.style-cinema .cn-center-title .ps-title{font-size:28px;font-weight:800;text-align:center;white-space:nowrap;display:block;color:#fff}
+#playerContent.style-cinema .cn-center-title .ps-title{font-size:28px;font-weight:var(--fw-bold);text-align:center;white-space:nowrap;display:block;color:#fff}
 #playerContent.style-cinema .cn-center-title .ps-artist{font-size:17px;text-align:center;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(var(--ovl-rgb),.78);margin:0}
 #playerContent.style-cinema>.sl-cover-wrap:hover .cn-center-title{opacity:0}
 /* ♥ · на весь экран · + — на месте тайтла, появляются по наведению (разнесены) */
@@ -260,6 +269,16 @@
 #playerContent.style-cinema .cn-vol-row{display:flex;align-items:center;gap:6px;width:100%}
 #playerContent.style-cinema .cn-vol-row .ps-ctrl{background:rgba(0,0,0,.28);backdrop-filter:blur(8px)}
 #playerContent.style-cinema .cn-vol-row .vol-pct{color:rgba(var(--ovl-rgb),.85)}
+/* Транспорт в оверлее: слоты по 124px на узкой обложке вылезали за край.
+   Растворяем их (display:contents; !important — у слотов инлайновые display и
+   width), группы держат auto-отступы у крайних кнопок play-группы: download
+   слева, play-группа посередине, дизлайк+текст справа. Когда места нет, отступы
+   схлопываются и кнопки сжимаются 40→28px. */
+#playerContent.style-cinema .cn-overlay>.ps-transport{padding-left:6px;padding-right:6px}
+#playerContent.style-cinema .cn-overlay>.ps-transport>div{display:contents!important}
+#playerContent.style-cinema .cn-overlay>.ps-transport>div:nth-child(2)>:first-child{margin-left:auto}
+#playerContent.style-cinema .cn-overlay>.ps-transport>div:nth-child(2)>:last-child{margin-right:auto}
+#playerContent.style-cinema .cn-overlay>.ps-transport :is(.cc,.cc-play,.lyrics-btn){flex:0 1 40px;min-width:28px}
 /* Высота визуализатора (#vizWrap + canvas/фото внутри). Тянется от размера окна,
    но зажата снизу/сверху: min(5vw, 9vh) — берём меньшую из «ширинной» и
    «высотной» оценки, чтобы в широком, но низком окне блок не съедал вертикаль.
@@ -272,11 +291,15 @@
    Опорная точка подобрана так, чтобы при ~1300×890 логических px получались
    прежние 26px/13px, дальше растёт до потолка.
    Ручки: 22/36px и 2vw|3.8vh — название; 12/18px и 1vw|1.9vh — артист;
-   боковая очередь (--ps-title-fs-side) идёт от прежних 20px. */
+   боковая очередь (--ps-title-fs-side) идёт от прежних 20px.
+   Очередь снизу или скрыта (*-bottom, подключаются в queue.css) — крупнее: при ~1300×890
+   ≈34px/17.5px вместо 26/13. Ручки: 26/46px и 2.6vw|4.6vh; 14/22px и 1.35vw|2.4vh. */
 :root{
   --ps-title-fs:clamp(22px, min(2vw, 3.8vh), 36px);
   --ps-title-fs-side:clamp(18px, min(1.55vw, 3vh), 27px);
   --ps-artist-fs:clamp(12px, min(1vw, 1.9vh), 18px);
+  --ps-title-fs-bottom:clamp(26px, min(2.6vw, 4.6vh), 46px);
+  --ps-artist-fs-bottom:clamp(14px, min(1.35vw, 2.4vh), 22px);
 }
 /* Визуализатор в «Кино»/«Большом» — блок с рамкой под прогрессом, но фон чуть
    прозрачный (как панели контролов в этих стилях): полупрозрачная подложка + blur,
@@ -293,7 +316,7 @@
 .ps-right{flex:1;display:flex;flex-direction:column;justify-content:center;min-width:0;gap:10px}
 .tri{overflow:hidden;min-width:0}
 .trn,.tra{display:block;will-change:transform}
-.ps-title{font-size:var(--ps-title-fs);font-weight:900;white-space:nowrap;overflow:hidden;cursor:pointer;letter-spacing:-.4px;position:relative}
+.ps-title{font-size:var(--ps-title-fs);font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;cursor:pointer;letter-spacing:-.4px;position:relative}
 .ps-title-wrap{overflow:hidden;min-width:0;max-width:100%;position:relative;cursor:pointer}
 .ps-title-wrap .ps-title{display:inline-block;overflow:visible;white-space:nowrap;animation:none}
 .ps-title-wrap.ps-scrolling .ps-title{animation:ps-marquee linear infinite}
@@ -306,7 +329,7 @@
 .mp-title-wrap{overflow:hidden;min-width:0;position:relative;line-height:0}
 /* line-height явно: по умолчанию `normal` даёт ~1.33 кегля, и лишнее поле строки
    отталкивает артиста от названия. Тот же 1.15 продублирован у #mpArtist. */
-.mp-title-wrap .mp-title{display:inline-block;overflow:visible;white-space:nowrap;animation:none;font-size:13px;font-weight:700;line-height:1.1}
+.mp-title-wrap .mp-title{display:inline-block;overflow:visible;white-space:nowrap;animation:none;font-size:13px;font-weight:var(--fw-bold);line-height:1.1}
 .mp-title-wrap.mp-scrolling .mp-title{animation:mp-marquee linear infinite}
 .mp-title-wrap.mp-scrolling:hover .mp-title{animation-play-state:paused}
 body.opt-marquee-paused .ps-title-wrap .ps-title,body.opt-marquee-paused .mp-title-wrap .mp-title,body.opt-marquee-paused .bp-title{animation-play-state:paused!important}
@@ -372,7 +395,7 @@ body.opt-marquee-paused .ps-title-wrap .ps-title,body.opt-marquee-paused .mp-tit
 /* Тайминги под баром: кегль/вес крупнее, отступ вниз заметный, края — ровно
    по началу и концу полосы (line-height:1 убирает поле строки, tabular-nums
    держит ширину цифр стабильной, чтобы правая метка не «дышала»). */
-.ps-times{display:flex;justify-content:space-between;font-size:12px;font-weight:500;line-height:1;margin-top:6px;color:var(--text2);font-variant-numeric:tabular-nums}
+.ps-times{display:flex;justify-content:space-between;font-size:12px;font-weight:var(--fw-bold);line-height:1;margin-top:6px;color:var(--text2);font-variant-numeric:tabular-nums}
 /* Транспорт (play/prev/next/…): бокс чуть выше — .cc 40 + вертикальный паддинг. */
 .ps-ctrl{display:flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 1.2);padding:11px 14px;background:transparent}
 /* Заливка боксов управления в ДЕФОЛТНОМ стиле плеера: транспорт, ряд громкости
@@ -387,7 +410,7 @@ body.opt-marquee-paused .ps-title-wrap .ps-title,body.opt-marquee-paused .mp-tit
 /* Бейдж громкости: радиус/бордер — как у остальных боксов (var(--radius), --wb),
    а не фиксированные 6px. margin-left уравнивает зазор «ползунок→бейдж» с
    визуальным зазором «иконка→ползунок» (у .cc есть свой внутренний воздух). */
-.vol-pct{font-size:11px;font-weight:600;color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.7);padding:2px 4px;margin-left:6px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
+.vol-pct{font-size:11px;font-weight:var(--fw-bold);color:var(--text2);width:30px;min-width:30px;text-align:center;cursor:default;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.7);padding:2px 4px;margin-left:6px;background:transparent;font-variant-numeric:tabular-nums;flex-shrink:0}
 .cc{width:40px;height:40px;border-radius:calc(var(--radius) * 0.7);background:none;border:none;color:var(--icon-fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative;will-change:transform}
 .cc:hover{color:var(--text)}
 /* Вжатие при нажатии — ровно тот же жест, что у .cc-play: .94 за .15s (тайминг
@@ -441,7 +464,7 @@ body.opt-marquee-paused .ps-title-wrap .ps-title,body.opt-marquee-paused .mp-tit
    Цифра наследует color кнопки, т.е. на не-дефолтной скорости она акцентная
    через тот же .cc.on, что красит иконки-тоглы. */
 #speedBtn{min-width:36px}
-#speedBtn .cc-cap{font-size:10px;font-weight:800;line-height:1;letter-spacing:-.2px;font-variant-numeric:tabular-nums}
+#speedBtn .cc-cap{font-size:10px;font-weight:var(--fw-bold);line-height:1;letter-spacing:-.2px;font-variant-numeric:tabular-nums}
 .cc-play{width:48px;height:48px;border-radius:calc(var(--radius) * 0.85);background:var(--accent);border:none;color:var(--accent-text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s,transform .08s;will-change:transform}
 .cc-play:hover{background:var(--accent2)}
 /* Эффект вжатия при нажатии (как в мини-плеере/трее). */
@@ -476,7 +499,9 @@ body.play-flat #bigPicOverlay .cc-play:hover{color:#fff}
 /* overflow:hidden — заливку рисует box-shadow бегунка (см. lyrics.css), и она
    обрезается по скруглению дорожки. */
 .vol-sl{-webkit-appearance:none;height:4px;border-radius:99px;background:var(--track);outline:none;cursor:pointer;width:80px;overflow:hidden}
-.ps-ctrl .vol-sl{flex:1;width:auto}
+/* min-width:0 — у range есть собственная ширина (~130px), без него flex не даёт
+   слайдеру ужаться, и в узкой колонке строка громкости вылезала за край. */
+.ps-ctrl .vol-sl{flex:1;width:auto;min-width:0}
 /* Компактной делаем ТОЛЬКО нижнюю строку громкости (слайдер + число + площадка +
    EQ/скорость) во всех стилях плеера. Транспорт (перемотка/play/шафл) и всё выше
    не трогаем. Мини-бар (#miniPlayer) и полноэкранный (#bigPicOverlay) — свои селекторы. */

@@ -88,7 +88,6 @@ export interface HotkeysState {
   capturing: HotkeyAction | null
   setEnabled: (v: boolean) => void
   setBinding: (k: HotkeyAction, accel: string | null) => void
-  resetAll: () => void
   setCapturing: (k: HotkeyAction | null) => void
 }
 
@@ -113,12 +112,6 @@ export const useHotkeysStore = create<HotkeysState>((set, get) => ({
       for (const a of HOTKEY_ORDER) if (a !== k && next[a] === accel) next[a] = null
     }
     next[k] = accel
-    persist(next)
-    set({ bindings: next })
-  },
-
-  resetAll: () => {
-    const next = { ...DEFAULT_BINDINGS }
     persist(next)
     set({ bindings: next })
   },

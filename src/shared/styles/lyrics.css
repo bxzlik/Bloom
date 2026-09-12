@@ -16,7 +16,7 @@
 .lyrics-line{font-size:16px;line-height:1.75;color:rgba(var(--ovl-rgb),.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
 .lyrics-line.lyr-past{color:rgba(var(--ovl-rgb),.15)}
 .lyrics-line.lyr-upcoming{color:rgba(var(--ovl-rgb),.45)}
-.lyrics-line.lyr-active{color:var(--text);font-size:19px;font-weight:700;cursor:default}
+.lyrics-line.lyr-active{color:var(--text);font-size:19px;font-weight:var(--fw-bold);cursor:default}
 .lyrics-line.lyr-plain{cursor:default;color:rgba(var(--ovl-rgb),.6);font-size:16px}
 .lyrics-status{color:rgba(var(--ovl-rgb),.25);font-size:12px;text-align:center;padding:0 10px;line-height:1.6}
 /* ===== INTRO DOTS (три точки вместо первой строки, пока идёт вступление) =====
@@ -37,7 +37,7 @@
 .lq-content .lyrics-line{font-size:16px;line-height:1.75;color:rgba(var(--ovl-rgb),.25);margin:0;padding:1px 0;cursor:pointer;transition:color .3s,font-size .22s,font-weight .22s;user-select:text;text-align:center}
 .lq-content .lyrics-line.lyr-past{color:rgba(var(--ovl-rgb),.15)}
 .lq-content .lyrics-line.lyr-upcoming{color:rgba(var(--ovl-rgb),.45)}
-.lq-content .lyrics-line.lyr-active{color:var(--text);font-size:19px;font-weight:700;cursor:default}
+.lq-content .lyrics-line.lyr-active{color:var(--text);font-size:19px;font-weight:var(--fw-bold);cursor:default}
 .lq-content .lyrics-line.lyr-plain{cursor:default;color:rgba(var(--ovl-rgb),.6);font-size:16px}
 .lq-content .lyrics-status{color:rgba(var(--ovl-rgb),.25);font-size:12px;text-align:center;padding:20px 10px;line-height:1.6}
 /* В глобальной боковой панели (очередь/текст) строки выравниваем по левому краю:
@@ -121,7 +121,7 @@
 /* lyrics queue block inherits queue sizing rules */
 #playerContent:not(.queue-right):not(.queue-left) #lyricsQueueBlock{flex:1 1 0;min-height:0}
 #playerContent.queue-right #lyricsQueueBlock,
-#playerContent.queue-left #lyricsQueueBlock{width:320px;flex-shrink:0;flex:none}
+#playerContent.queue-left #lyricsQueueBlock{min-width:0}
 /* Ползунок громкости — без кругляшка. Бегунок остаётся (за него тянут), но он же
    и рисует всю заливку: круг 4×4 в размер дорожки + box-shadow влево «на весь
    экран», обрезанный overflow:hidden дорожки. Одна закраска вместо «градиент +
@@ -130,9 +130,7 @@
    конец заливки — ровный полукруг, а не квадрат. */
 .vol-sl::-webkit-slider-thumb{-webkit-appearance:none;width:4px;height:4px;border-radius:99px;background:var(--accent);box-shadow:calc(-100vw - 2px) 0 0 100vw var(--accent);cursor:pointer}
 #bloom-dl-popup,#bloom-src-popup{position:absolute;z-index:100000;width:fit-content;transform-origin:top left}
-#bloom-dl-popup.open,#bloom-src-popup.open{animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
-#bloom-dl-popup.closing,#bloom-src-popup.closing{animation:libMenuOut .14s ease-in forwards}
-/* Геометрия и отклик — те же, что у `.ctx`/`.ci` (см. search-misc.css): плоские
+#bloom-dl-popup.open,#bloom-src-popup.open{animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}/* Геометрия и отклик — те же, что у `.ctx`/`.ci` (см. search-misc.css): плоские
    пункты 28px без подложки на ховере, только осветление текста. Попап живёт в
    ряду транспорта, но это такое же меню, и выбиваться из общего вида ему незачем. */
 .bloom-dl-inner{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:calc(var(--radius) * 0.9);padding:5px;display:flex;flex-direction:column;gap:0;min-width:190px;box-shadow:none}
@@ -157,10 +155,9 @@
   min-width:0;width:fit-content;padding:var(--srcp-pad);gap:4px;
   border-radius:calc(var(--srcp-r) + var(--srcp-pad))}
 .bloom-srcp button{width:var(--srcp-btn);height:var(--srcp-btn);padding:0;justify-content:center;border-radius:var(--srcp-r)}
-/* Исключение из плоского правила: пункты БЕЗ подписей — осветлять там нечего
-   (лого в фирменных цветах), поэтому отклик даёт подложка под иконкой. */
-.bloom-srcp button:hover{background:rgba(var(--ovl-rgb),.07)}
-.bloom-srcp button[aria-current]:hover{background:none}
+/* Подложки под иконкой на ховере нет: лого в фирменных цветах читаются и так,
+   кружок под ними только шумит (плоское правило меню, см. flat-compact-menus). */
+.bloom-srcp button:hover{background:none}
 .bloom-srcp-div{height:1px;flex:none;background:var(--ovl-line);margin:2px var(--srcp-div)}
 /* Плеер: анкер — .cc (40×40, calc(--radius*.7)). */
 .bloom-srcp.srcp-cc{--srcp-btn:40px;--srcp-r:calc(var(--radius)*.7)}

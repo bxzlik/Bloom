@@ -1,7 +1,20 @@
 {
+  "3.1.0": {
+    "title": { "ru": "Что нового в 3.1.0", "en": "What's new in 3.1.0" },
+    "date": "2026-09-12",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
   "3.0.0": {
     "title": { "ru": "Что нового в 3.0.0", "en": "What's new in 3.0.0" },
-    "date": "2026-09-07",
+    "date": "2026-09-10",
     "pages": [
       {
         "title": { "ru": "Главная", "en": "Home" },

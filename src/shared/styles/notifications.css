@@ -34,7 +34,7 @@
   background: var(--accent);
   color: var(--accent-text, #fff);
   font-size: 9px;
-  font-weight: 800;
+  font-weight: var(--fw-bold);
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
@@ -146,7 +146,7 @@
 }
 .notif-card-title {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -155,7 +155,7 @@
 .notif-time {
   flex-shrink: 0;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--fw-bold);
   color: var(--text2);
   opacity: 0.6;
 }
@@ -172,7 +172,7 @@
   margin-top: 7px;
   padding: 3px 11px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--accent);
   background: rgba(var(--accent-rgb), 0.12);
   border: none;
@@ -204,7 +204,7 @@
   color: var(--accent-text, #fff);
   font-family: var(--font);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   cursor: pointer;
   transition: filter 0.12s;
 }
@@ -241,7 +241,7 @@
 }
 .tbu-title {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: var(--fw-bold);
   color: var(--text);
 }
 .tbu-meta {
@@ -305,7 +305,7 @@
 /* Заголовок текущей страницы заметки — по центру, ярче нейтрального текста. */
 .tbu-ptitle {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1.35;
   color: var(--text);
   text-align: center;
@@ -340,7 +340,7 @@
   color: var(--text2);
   font-family: var(--font);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--fw-bold);
   cursor: pointer;
   padding: 8px 10px;
   border-radius: calc(var(--radius) * 0.5);

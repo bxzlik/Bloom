@@ -471,7 +471,7 @@ export const useSortable = <T,>({
     badge.style.cssText =
       `position:absolute;top:-8px;right:-8px;background:var(--accent);color:var(--accent-text);` +
       `border-radius:50%;width:20px;height:20px;display:flex;align-items:center;` +
-      `justify-content:center;font-size:11px;font-weight:700;z-index:10;`
+      `justify-content:center;font-size:11px;font-weight:var(--fw-bold);z-index:10;`
     badge.textContent = String(count)
     wrapper.appendChild(badge)
     return wrapper

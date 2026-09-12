@@ -150,7 +150,7 @@ export const UpdateNotesModal = () => {
             <img src="/logo.png" alt="" style={{ width: 34, height: 34, objectFit: 'contain', flexShrink: 0 }} />
           )}
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 15, fontWeight: 'var(--fw-bold)', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {title}
             </div>
             {!historyList && note?.date && (
@@ -216,7 +216,7 @@ export const UpdateNotesModal = () => {
           ) : (
             <>
               {cur.title && (
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{cur.title}</div>
+                <div style={{ fontSize: 15, fontWeight: 'var(--fw-bold)', color: 'var(--text)', marginBottom: 8 }}>{cur.title}</div>
               )}
               {cur.icons.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, padding: '14px 0 16px' }}>

@@ -81,6 +81,9 @@ export const fileAdd = async (paths?: string[]): Promise<LocalTrackInfo[] | null
 /** Убрать одиночный трек. Копию из профиля Rust сотрёт с диска. */
 export const fileRemove = (path: string): Promise<void> => invoke('file_remove', { path })
 
+/** Пути всех одиночных треков из files.json, включая недоступные сейчас. */
+export const fileGet = (): Promise<string[]> => invoke('file_get')
+
 /** Первичная загрузка одиночных треков из files.json. */
 export const fileScanAll = (): Promise<LocalTrackInfo[]> => invoke('file_scan_all')
 

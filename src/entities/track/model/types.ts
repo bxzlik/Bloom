@@ -17,6 +17,11 @@ export interface Track {
   artist: string
   dur: string
   cover?: string | null
+  /**
+   * `fav`/`favAt`/`playCount` на треках НЕ ВЕДУТСЯ — остались от старой схемы.
+   * Лайки: `useFavStore` (id → момент лайка); прослушивания: `db/playStats`.
+   * Фильтр `t.fav` молча отдаёт пустоту — на этом лайки выпали из сидов волны.
+   */
   fav?: boolean
   favAt?: number
   playCount?: number

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { Ico } from '@shared/ui/icons/solar'
@@ -11,7 +11,7 @@ import { downloadTrack, downloadCover } from '../lib/download'
 /**
  * Меню скачивания «трек / обложка» — `showDlMenu`.
  * Анкорится над кнопкой `#dlMenuBtn` (как SpeedPicker), рендер через портал в
- * body. Open-анимация — тот же `usePopupOpenAnimation` (WAAPI scale 0.94→1), что
+ * body. Появление и закрытие — тот же `usePopupPresence` (WAAPI scale 0.94→1), что
  * и у SpeedPicker, ради единообразия попапов в ряду транспорта ( CSS
  * `libMenuIn` от класса `.open` гасится хуком).
  */
@@ -42,10 +42,7 @@ export const DlMenu = ({
   // Позиционирование по центру над анкором, flip вниз при нехватке места —
   // showDlMenu.
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null)
-      return
-    }
+    if (!open) return // позицию не сбрасываем — уходящее меню стоит на месте
     const btn = anchorRef.current
     const p = ref.current
     if (!btn || !p) return
@@ -57,8 +54,8 @@ export const DlMenu = ({
     setPos({ left, top })
   }, [open, anchorRef])
 
-  // Open-анимация (та же, что у SpeedPicker / .ctx) — гасит CSS libMenuIn.
-  usePopupOpenAnimation(ref, pos)
+  // Появление и закрытие (как у SpeedPicker / .ctx) — гасит CSS libMenuIn.
+  const { mounted } = usePopupPresence(ref, open, pos)
 
   // Click outside / Escape.
   useEffect(() => {
@@ -80,7 +77,7 @@ export const DlMenu = ({
     }
   }, [open, onClose, anchorRef])
 
-  if (!open) return null
+  if (!mounted) return null
 
   return createPortal(
     <div

@@ -6,6 +6,9 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
 :root{
+  /* Вес шрифта — копия --fw-bold из src/shared/styles/root.css
+     (окно отдельное, стили главного окна сюда не попадают). Меняешь там — меняй тут. */
+  --fw-bold:500;
   --bg:#1a1a1a;--bg2:#242424;--border:rgba(255,255,255,.08);
   --accent:#fff;--accent2:#e5e5e5;--accent-rgb:255,255,255;--accent-text:#000;
   --text:#fff;--text2:#9a9a9a;--muted:#5a5a5a;
@@ -40,7 +43,7 @@ html,body{
   -webkit-mask-position:center;mask-position:center;
 }
 .win-title{
-  font-size:12px;font-weight:600;color:rgba(255,255,255,.8);
+  font-size:12px;font-weight:var(--fw-bold);color:rgba(255,255,255,.8);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   pointer-events:none;min-width:0;
 }
@@ -92,7 +95,7 @@ body:hover .info-center{transform:translateY(-16px)}
   display:flex;justify-content:center;
 }
 .title{
-  font-size:17px;font-weight:800;color:#fff;letter-spacing:-.01em;
+  font-size:17px;font-weight:var(--fw-bold);color:#fff;letter-spacing:-.01em;
   white-space:nowrap;cursor:pointer;transition:color .12s;
   display:inline-block;pointer-events:auto;
   text-shadow:0 1px 3px rgba(0,0,0,.55);
@@ -130,7 +133,7 @@ body:hover .hover-ui{opacity:1;transform:none}
 .toast{
   position:absolute;left:50%;top:14px;transform:translateX(-50%);
   background:rgba(0,0,0,.85);color:var(--text);
-  font-size:11px;font-weight:600;
+  font-size:11px;font-weight:var(--fw-bold);
   padding:6px 12px;border-radius:calc(var(--radius)*0.5);
   pointer-events:none;opacity:0;transition:opacity .18s;
   z-index:50;white-space:nowrap;
@@ -170,7 +173,7 @@ body:hover .hover-ui{opacity:1;transform:none}
   flex-shrink:0;color:inherit;overflow:hidden;
 }
 .ci-icon svg{width:15px;height:15px}
-.ci.accent{color:var(--accent);font-weight:600}
+.ci.accent{color:var(--accent);font-weight:var(--fw-bold)}
 .ci.ci-pl{padding:4px 8px;gap:10px}
 .ci.ci-pl .ci-icon{width:28px;height:28px;border-radius:calc(var(--radius) * 0.4)}
 .ci-pl-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.25}
@@ -234,7 +237,7 @@ body:hover .hover-ui{opacity:1;transform:none}
   border-radius:50%;background:var(--accent);
   display:flex;align-items:center;justify-content:center;
   line-height:1;color:var(--accent-text);pointer-events:none;
-  font-size:8px;font-weight:700;
+  font-size:8px;font-weight:var(--fw-bold);
   box-shadow:0 1px 3px rgba(0,0,0,.3);
   animation:cc-badge-pop .18s ease-out;
 }

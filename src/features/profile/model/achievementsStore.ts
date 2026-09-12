@@ -94,14 +94,18 @@ export const useAchievementsStore = create<AchStoreState>((set, get) => ({
     return fresh
   },
 
+  // `seeded` не сбрасываем: тихий сид нужен только против лавины тостов на
+  // первом запуске, а после очистки данных нет. Со сброшенным флагом первая
+  // ачивка после очистки пришла бы без тоста, если до неё все тиры были нулями
+  // (вотчер не зовёт `sync` на неизменной сигнатуре, и флаг так и висел бы).
   clear: () => {
     save({})
     try {
-      localStorage.removeItem(SEEDED_KEY)
+      localStorage.setItem(SEEDED_KEY, '1')
     } catch {
       /* ignore */
     }
-    set({ unlocked: {}, seeded: false })
+    set({ unlocked: {}, seeded: true })
   },
 }))
 

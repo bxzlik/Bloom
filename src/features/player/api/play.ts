@@ -12,12 +12,14 @@ import { smartShuffleWeight } from '@/db/history'
 import { logPlay } from '@/db/playLog'
 import { notePlay } from '@/db/playStats'
 import { getProvider } from '@features/providers'
+// Глубокий импорт: barrel настроек тянет движки, импортирующие плеер (цикл).
+import { useAudioStore } from '@features/settings/model/audioStore'
 import { usePlayerStore } from '../model/store'
 import { useQueueStore, type PlaySource } from '../model/queueStore'
 import { saveVolumePrefs } from '../model/volumePrefs'
 import { audioEngine } from '../lib/audioEngine'
 import { resolvePlayableUrl } from '../lib/sourceResolvers'
-import { setPendingResumeSeek } from '../lib/resume'
+import { setPendingResumeSeek, markResumeCleared } from '../lib/resume'
 import { commitSwapDir, markSwapDir } from '../lib/trackSwapDir'
 
 /**
@@ -135,6 +137,35 @@ const skipUnplayable = (failedId: string, err: unknown): void => {
 let _playCredited = false
 
 /**
+ * «Авто похожие» (Настройки → Аудио → Очередь): последний трек очереди засчитан
+ * (90%/ended) или на нём нажали «далее» — дописываем в хвост похожие (Яндекс/SC,
+ * см. `waveApi.continueQueue`). Просим заранее, на 90%, чтобы к концу трека
+ * пачка уже стояла и переход шёл обычным путём, без паузы. Не срабатывает при
+ * повторе (он сам решает, что после конца) и в живой волне (догружается сама).
+ * Оба флага сбрасываются при смене трека (`commitDisplay`).
+ */
+let _autoSimilarFor: string | null = null // трек, для которого продолжение уже запрошено
+let _autoSimilarAdvance = false // «далее» нажали раньше, чем пришла пачка
+
+const maybeAutoSimilar = (): void => {
+  if (!useAudioStore.getState().autoSimilar) return
+  const { queue, qIdx, curId, repeat, source } = useQueueStore.getState()
+  if (!curId || repeat !== 0 || qIdx !== queue.length - 1) return
+  if (source?.kind === 'wave' && waveApi.isActive()) return
+  if (_autoSimilarFor === curId) return
+  _autoSimilarFor = curId
+  // Источник сменился, пока ждали сеть (запустили плейлист) — в чужую очередь не пишем.
+  void waveApi.continueQueue(() => useQueueStore.getState().source === source).then((ok) => {
+    const s = useQueueStore.getState()
+    // Пачка опоздала: трек уже доиграл (кнопка стала «начать заново») или жали
+    // «далее» — переходим на первый дописанный сами. Если за это время
+    // переключились на другое — не вмешиваемся.
+    if (ok && s.curId === curId && (s.queueEnded || _autoSimilarAdvance)) nextTr()
+    _autoSimilarAdvance = false
+  })
+}
+
+/**
  * Засчитать прослушивание трека: история + дневная активность + старт волны
  * (refill/prefetch). Вызывается из bridge при достижении ~90% длительности либо
  * на `ended` — НЕ на старте, чтобы быстро пропущенные/DRM треки не засчитывались
@@ -170,6 +201,8 @@ export const creditPlay = (id: string): void => {
   // Волна: уведомить о старте трека (записать played, дозагрузить пачку, prefetch).
   // В onTrackStart жил тоже здесь, в _creditPlay.
   waveApi.onTrackStart(id)
+  // После волны: onTrackStart уже закрыл устаревшую сессию, если ушли из неё.
+  maybeAutoSimilar()
 }
 
 /**
@@ -253,6 +286,8 @@ export const loadPlay = async (id: string): Promise<void> => {
     // Новый трек стал текущим — сбрасываем флаг «прослушивание засчитано»,
     // чтобы creditPlay сработал для него заново.
     _playCredited = false
+    _autoSimilarFor = null
+    _autoSimilarAdvance = false
   }
 
   // Спиннер на обложке строки/плеера показываем сразу — обратная связь, что трек
@@ -472,8 +507,13 @@ export const nextTr = (): void => {
   // useMainPlayerBridge), а не для кнопки. Иначе «далее» залипал на текущем.
   let next = qIdx + 1
   if (next >= queue.length) {
-    // wrap при любом включённом repeat (all/one); off — останавливаемся в конце.
-    if (repeat === 0) return
+    // wrap при любом включённом repeat (all/one); off — останавливаемся в конце,
+    // либо «Авто похожие» допишут хвост и перейдут на него сами.
+    if (repeat === 0) {
+      _autoSimilarAdvance = true
+      maybeAutoSimilar()
+      return
+    }
     next = 0
   }
   useQueueStore.getState().setQIdx(next)
@@ -715,7 +755,16 @@ export const removeFromQueue = (id: string): void => {
   if (idx < 0) return
   if (queue.length <= 1) {
     // Последний трек — очищаем очередь полностью, плеер сбрасываем.
-    useQueueStore.setState({ queue: [], qIdx: -1, curId: null, queueEnded: false, armed: false })
+    // Очередь до очистки — для карточки «Продолжить» (если кнопкой очистки уже
+    // урезали, там лежит полная, её не трогаем).
+    useQueueStore.setState((s) => ({
+      queue: [],
+      qIdx: -1,
+      curId: null,
+      queueEnded: false,
+      armed: false,
+      preClearQueue: s.preClearQueue ?? queue,
+    }))
     audioEngine.stop()
     usePlayerStore.setState({
       title: '',
@@ -726,6 +775,12 @@ export const removeFromQueue = (id: string): void => {
       duration: 0,
     })
     useLyricsStore.getState().clear()
+    // Восстанавливать в плеер после перезапуска нечего: saveResume при пустом
+    // curId ничего не пишет, поэтому снимок помечаем явно — иначе удалённый трек
+    // возвращался. Карточка «Продолжить» остаётся. Волна держит свою копию
+    // очереди (bloom_wave_state) и при старте поднимает её сама — завершаем сессию.
+    markResumeCleared()
+    waveApi.endSession()
     return
   }
   const newQueue = queue.slice()

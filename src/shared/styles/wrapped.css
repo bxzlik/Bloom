@@ -104,10 +104,10 @@
 .wry-head{display:flex;align-items:center;gap:9px;min-width:0}
 /* Кегль тот же, что у подменённой карточки месяца (.acc-wr-title) — два входа
    в итоги обязаны выглядеть одинаково весомо. */
-.wry-title{font-size:22px;font-weight:800;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wry-title{font-size:22px;font-weight:var(--fw-bold);letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Метка «Новое» гаснет после первого просмотра. */
 .wry-new{
-  flex-shrink:0;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+  flex-shrink:0;font-size:10px;font-weight:var(--fw-bold);letter-spacing:.6px;text-transform:uppercase;
   padding:3px 8px;border-radius:999px;background:var(--text);color:var(--block-color);
 }
 .wry-sub{font-size:13px;color:rgba(var(--ovl-rgb),.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -123,7 +123,7 @@
   flex-shrink:0;display:flex;align-items:center;margin-left:4px;
   padding:9px 18px;border-radius:999px;
   background:var(--accent);border:none;
-  font-size:13px;font-weight:700;color:var(--accent-text);
+  font-size:13px;font-weight:var(--fw-bold);color:var(--accent-text);
   transition:background .15s;
 }
 .wry:hover .wry-cta{background:var(--accent-hover)}
@@ -141,9 +141,9 @@
 
 .acc-entry-wr{position:relative;overflow:hidden}
 .acc-wr-txt{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
-.acc-wr-title{display:flex;align-items:center;gap:9px;font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1}
+.acc-wr-title{display:flex;align-items:center;gap:9px;font-size:22px;font-weight:var(--fw-bold);letter-spacing:-.4px;line-height:1.1}
 .acc-wr-new{
-  flex-shrink:0;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+  flex-shrink:0;font-size:10px;font-weight:var(--fw-bold);letter-spacing:.6px;text-transform:uppercase;
   padding:3px 8px;border-radius:999px;background:var(--text);color:var(--block-color);
 }
 .acc-wr-sub{font-size:13px;color:rgba(var(--ovl-rgb),.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -151,7 +151,7 @@
   flex-shrink:0;display:flex;align-items:center;
   padding:9px 18px;border-radius:999px;
   background:var(--accent);border:none;
-  font-size:13px;font-weight:700;color:var(--accent-text);transition:background .15s;
+  font-size:13px;font-weight:var(--fw-bold);color:var(--accent-text);transition:background .15s;
 }
 .acc-entry-wr:hover .acc-wr-cta{background:var(--accent-hover)}
 
@@ -184,6 +184,8 @@
   background:rgba(0,0,0,.62);
   backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
   animation:wrmFade .2s ease;
+  /* За --tb-h при выезде авто-скрытого тайтлбара (в такт его margin-top). */
+  transition:padding-top .22s ease;
 }
 .wrm-back.closing{animation:wrmFadeOut .18s ease forwards}
 @keyframes wrmFade{from{opacity:0}to{opacity:1}}
@@ -291,9 +293,9 @@ body.wrapped-open #winTitlebar{z-index:99999}
 
 /* ── Типографика ─────────────────────────────────────────────────────── */
 
-.wrm-kicker{font-size:11.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:rgba(var(--ovl-rgb),.5)}
-.wrm-h1{font-size:36px;font-weight:800;line-height:1.06;letter-spacing:-1.1px;color:var(--text)}
-.wrm-h2{font-size:24px;font-weight:800;line-height:1.15;letter-spacing:-.6px;color:var(--text)}
+.wrm-kicker{font-size:11.5px;font-weight:var(--fw-bold);letter-spacing:.9px;text-transform:uppercase;color:rgba(var(--ovl-rgb),.5)}
+.wrm-h1{font-size:36px;font-weight:var(--fw-bold);line-height:1.06;letter-spacing:-1.1px;color:var(--text)}
+.wrm-h2{font-size:24px;font-weight:var(--fw-bold);line-height:1.15;letter-spacing:-.6px;color:var(--text)}
 .wrm-sub{font-size:13.5px;color:rgba(var(--ovl-rgb),.55);line-height:1.4}
 .wrm-note{font-size:12.5px;color:rgba(var(--ovl-rgb),.4)}
 /* Итоговая приписка под списком («3 артиста всего») — отбита от карточки. */
@@ -309,10 +311,10 @@ body.wrapped-open #winTitlebar{z-index:99999}
 .wrm-nums-foot{margin-top:12px}
 .wrm-num{display:flex;align-items:baseline;gap:12px;min-width:0}
 .wrm-num b{
-  font-size:var(--wrm-num-size,80px);font-weight:800;line-height:.98;
+  font-size:var(--wrm-num-size,80px);font-weight:var(--fw-bold);line-height:.98;
   letter-spacing:-.05em;color:var(--text);font-variant-numeric:tabular-nums;
 }
-.wrm-num i{font-style:normal;font-size:13.5px;font-weight:600;color:rgba(var(--ovl-rgb),.55)}
+.wrm-num i{font-style:normal;font-size:13.5px;font-weight:var(--fw-bold);color:rgba(var(--ovl-rgb),.55)}
 
 /* ── Герои слайдов ───────────────────────────────────────────────────── */
 
@@ -361,7 +363,7 @@ body.wrapped-open #winTitlebar{z-index:99999}
 .wrm-hero-c.artist + .wrm-list{margin-top:12px}
 
 .wrm-hero-name{
-  margin-top:12px;font-size:20px;font-weight:800;letter-spacing:-.5px;color:var(--text);line-height:1.16;
+  margin-top:12px;font-size:20px;font-weight:var(--fw-bold);letter-spacing:-.5px;color:var(--text);line-height:1.16;
   overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
 }
 .wrm-hero-c .wrm-hero-name{margin-top:0}
@@ -404,7 +406,7 @@ body.wrapped-open #winTitlebar{z-index:99999}
 .wrm-hero.hit,.wrm-hero-c.hit{cursor:pointer}
 .wrm-hero.hit:hover .wrm-hero-cov,.wrm-hero-c.hit:hover .wrm-hero-ava{opacity:.86;transition:opacity .14s}
 .wrm-hero-c.hit:hover .wrm-hero-name{text-decoration:underline}
-.wrm-row-n{width:20px;flex-shrink:0;font-size:11.5px;font-weight:700;color:rgba(var(--ovl-rgb),.32);font-variant-numeric:tabular-nums}
+.wrm-row-n{width:20px;flex-shrink:0;font-size:11.5px;font-weight:var(--fw-bold);color:rgba(var(--ovl-rgb),.32);font-variant-numeric:tabular-nums}
 .wrm-row-cov{
   width:38px;height:38px;border-radius:9px;overflow:hidden;flex-shrink:0;
   background:rgba(var(--ovl-rgb),.09);display:flex;align-items:center;justify-content:center;color:rgba(var(--ovl-rgb),.35);
@@ -412,19 +414,19 @@ body.wrapped-open #winTitlebar{z-index:99999}
 .wrm-row-cov.round{border-radius:50%}
 .wrm-row-cov img{width:100%;height:100%;object-fit:cover;display:block}
 .wrm-row-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.wrm-row-name{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrm-row-name{font-size:13.5px;font-weight:var(--fw-bold);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wrm-row-sub{font-size:11.5px;color:rgba(var(--ovl-rgb),.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wrm-row-val{flex-shrink:0;font-size:12px;color:rgba(var(--ovl-rgb),.5);white-space:nowrap}
 /* Счётчик трека — голое число, поэтому чуть плотнее и с табличными цифрами. */
-.wrm-row-val.num{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;padding-right:4px}
+.wrm-row-val.num{font-size:13px;font-weight:var(--fw-bold);font-variant-numeric:tabular-nums;padding-right:4px}
 
 /* ── Площадки ────────────────────────────────────────────────────────── */
 
 .wrm-srcs{width:100%;margin-top:16px;display:flex;flex-direction:column;gap:11px}
 .wrm-src-head{display:flex;align-items:center;gap:8px}
 .wrm-src-logo{display:flex;flex-shrink:0}
-.wrm-src-name{font-size:13px;font-weight:600;color:rgba(var(--ovl-rgb),.85)}
-.wrm-src-pct{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--text)}
+.wrm-src-name{font-size:13px;font-weight:var(--fw-bold);color:rgba(var(--ovl-rgb),.85)}
+.wrm-src-pct{margin-left:auto;font-size:12.5px;font-weight:var(--fw-bold);color:var(--text)}
 .wrm-src-bar{height:5px;border-radius:3px;background:rgba(var(--ovl-rgb),.12);overflow:hidden;margin-top:6px}
 .wrm-src-bar i{display:block;height:100%;border-radius:3px;animation:wrmGrow .7s cubic-bezier(.22,.61,.36,1) backwards}
 @keyframes wrmGrow{from{width:0!important}}
@@ -435,7 +437,7 @@ body.wrapped-open #winTitlebar{z-index:99999}
 .wrm-chip{
   display:flex;align-items:center;gap:7px;padding:6px 13px 6px 6px;border-radius:999px;
   border:none;background:rgba(var(--ovl-rgb),.08);color:var(--text);
-  font-family:var(--font);font-size:13px;font-weight:600;
+  font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);
   cursor:pointer;transition:background .14s;
 }
 .wrm-chip:hover{background:rgba(var(--ovl-rgb),.15)}
@@ -451,7 +453,7 @@ body.wrapped-open #winTitlebar{z-index:99999}
 .wrm-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
 .wrm-fact{background:rgba(var(--ovl-rgb),.05);border-radius:13px;padding:10px 12px;min-width:0}
 .wrm-fact-l{font-size:10.5px;color:rgba(var(--ovl-rgb),.5);text-transform:uppercase;letter-spacing:.5px}
-.wrm-fact-v{font-size:14px;font-weight:700;color:var(--text);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrm-fact-v{font-size:14px;font-weight:var(--fw-bold);color:var(--text);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── Постер ──────────────────────────────────────────────────────────── */
 
@@ -476,7 +478,7 @@ body.wrapped-open #winTitlebar{z-index:99999}
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   height:34px;padding:0 20px;border-radius:999px;border:none;
   background:var(--text);color:var(--block-color);
-  font-family:var(--font);font-size:13px;font-weight:700;
+  font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);
   cursor:pointer;transition:background .15s,transform .12s,opacity .15s;
 }
 .wrm-btn:hover{background:color-mix(in srgb,var(--text),var(--block-color) 16%)}

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { cn } from '@shared/lib/cn'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import type { Track } from '@entities/track'
 import { ArtistLinks, CoverSourceBadge, CoverProviderBadge, ScLogo, YmLogo, YtmLogo, providerBrandColor } from '@entities/track'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
@@ -271,7 +271,8 @@ export const SourceDropdown = ({ source, onSource }: { source: string; onSource:
   const [flip, setFlip] = useState(true)
   const flipRef = useRef(true)
   flipRef.current = flip
-  usePopupOpenAnimation(panelRef, pos)
+  // Появление и закрытие; pos при закрытии не сбрасываем — попап уходит с места.
+  const { mounted } = usePopupPresence(panelRef, open, pos)
   // Бренд-режим иконок (если настройка «акцентные бейджи» выключена).
   const brand = !useBadgePrefs((s) => s.accentBadges)
   // Дропдаун показывает ВСЕ площадки, включая ненастроенные: пользователь видит
@@ -309,10 +310,7 @@ export const SourceDropdown = ({ source, onSource }: { source: string; onSource:
   // вьюпорт-координатах и переводим в координаты обёртки: попап позиционируется
   // относительно неё, без портала.
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null)
-      return
-    }
+    if (!open) return
     const wrap = ref.current
     const p = panelRef.current
     if (!wrap || !p) return
@@ -344,12 +342,10 @@ export const SourceDropdown = ({ source, onSource }: { source: string; onSource:
           width: 34, height: 34, border: 'none', background: 'none',
           color: 'var(--muted)', borderRadius: '50%', cursor: 'pointer', transition: '.15s',
         }}
-        onMouseOver={(e) => (e.currentTarget.style.background = 'var(--hover)')}
-        onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
       >
         <span style={{ display: 'flex' }}>{sourceIcon(effSource, false, brand)}</span>
       </button>
-      {open && (
+      {mounted && (
         <div
           ref={panelRef}
           className="bloom-dl-inner bloom-srcp srcp-round"
@@ -391,12 +387,15 @@ export type RecentRow =
  * «Очистить историю».
  */
 export const SearchHistoryDropdown = ({
+  open,
   rows,
   onOpenItem,
   onApplySearch,
   onRemoveItem,
   onRemoveSearch,
 }: {
+  /** Показан ли список; после false он ещё доигрывает уход (usePopupPresence). */
+  open: boolean
   rows: RecentRow[]
   onOpenItem: (it: RecentItem) => void
   onApplySearch: (q: string) => void
@@ -405,7 +404,7 @@ export const SearchHistoryDropdown = ({
 }) => {
   const t = useT()
   const ref = useRef<HTMLDivElement>(null)
-  usePopupOpenAnimation(ref, rows.length > 0)
+  const { mounted } = usePopupPresence(ref, open)
   // Ограничиваем высоту по нижнему краю окна, чтобы список не уходил за экран.
   const [maxH, setMaxH] = useState<number>()
   useLayoutEffect(() => {
@@ -417,7 +416,8 @@ export const SearchHistoryDropdown = ({
     calc()
     window.addEventListener('resize', calc)
     return () => window.removeEventListener('resize', calc)
-  }, [rows.length])
+  }, [rows.length, mounted])
+  if (!mounted) return null
   return (
     <div
       ref={ref}
@@ -513,7 +513,7 @@ const ProfileView = ({
             <Cover src={av} placeholder={<PhArtist />} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 6 }}>
+            <div style={{ fontSize: 24, fontWeight: 'var(--fw-bold)', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 6 }}>
               {artist.name}
             </div>
             {(artist.fullName || followers) && (
@@ -530,7 +530,7 @@ const ProfileView = ({
             <div style={{ display: 'flex', gap: 8, marginTop: 13, flexWrap: 'wrap' }}>
               <button
                 onClick={onOpenArtist}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', fontFamily: 'inherit' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, fontWeight: 'var(--fw-bold)', cursor: 'pointer', border: 'none', fontFamily: 'inherit' }}
               >
                 <Ico name="play" variant="bold" width={10} height={10} />
                 {t('search.tab.tracks')}
@@ -539,7 +539,7 @@ const ProfileView = ({
 . */}
               <button
                 onClick={onApplyToAccount}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: 'rgba(var(--ovl-rgb),.12)', border: '1px solid rgba(var(--ovl-rgb),.18)', color: 'var(--text)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 'calc(var(--radius)*.6)', background: 'rgba(var(--ovl-rgb),.12)', border: '1px solid rgba(var(--ovl-rgb),.18)', color: 'var(--text)', fontSize: 12, fontWeight: 'var(--fw-bold)', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 <Ico name="user" width={10} height={10} />
                 {t('search.profile')}
@@ -553,10 +553,10 @@ const ProfileView = ({
       {playlists.length > 0 && (
         <>
           <div className="sc-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 16, fontWeight: 700 }}>{t('search.tab.playlists')} · {playlists.length}</span>
+            <span style={{ fontSize: 16, fontWeight: 'var(--fw-bold)' }}>{t('search.tab.playlists')} · {playlists.length}</span>
             <button
               onClick={onImportPlaylists}
-              style={{ background: 'rgba(var(--ovl-rgb),.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
+              style={{ background: 'rgba(var(--ovl-rgb),.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 11, fontWeight: 'var(--fw-bold)', cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
             >
               {t('search.importAll')}
             </button>
@@ -573,17 +573,17 @@ const ProfileView = ({
       {likes.length > 0 && (
         <>
           <div className="sc-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '16px 0 4px' }}>
-            <span style={{ fontSize: 16, fontWeight: 700 }}>{t('search.likes')} · {likes.length}</span>
+            <span style={{ fontSize: 16, fontWeight: 'var(--fw-bold)' }}>{t('search.likes')} · {likes.length}</span>
             <div style={{ display: 'flex', gap: 5 }}>
               <button
                 onClick={onImportLikes}
-                style={{ background: 'var(--accent)', border: 'none', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--accent-text,#fff)', fontSize: 11, fontWeight: 700, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
+                style={{ background: 'var(--accent)', border: 'none', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--accent-text,#fff)', fontSize: 11, fontWeight: 'var(--fw-bold)', cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
               >
                 {t('search.importAll')}
               </button>
               <button
                 onClick={onLikesAsPlaylist}
-                style={{ background: 'rgba(var(--ovl-rgb),.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
+                style={{ background: 'rgba(var(--ovl-rgb),.06)', border: '1px solid var(--border)', borderRadius: 'calc(var(--radius)*.5)', color: 'var(--text2)', fontSize: 11, fontWeight: 'var(--fw-bold)', cursor: 'pointer', padding: '3px 10px', fontFamily: 'inherit' }}
               >
                 {t('search.asPlaylist')}
               </button>
@@ -608,7 +608,7 @@ const ProfileView = ({
                 display: 'block', width: '100%', marginTop: 8, padding: 9,
                 borderRadius: 'var(--radius)', background: 'transparent',
                 border: '1px solid var(--ovl-line)', color: 'var(--text2)',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)',
+                fontSize: 12, fontWeight: 'var(--fw-bold)', cursor: 'pointer', fontFamily: 'var(--font)',
               }}
             >
               {t('search.showMore')}
@@ -919,22 +919,22 @@ export const SearchPage = ({ active }: SearchPageProps) => {
               </button>
             )}
             <SourceDropdown source={source} onSource={setSource} />
-            {showHistory && (
-              <SearchHistoryDropdown
-                rows={mergedRecents}
-                onOpenItem={(it) => {
-                  blurInput()
-                  onRecentItem(it)
-                }}
-                onApplySearch={(q) => {
-                  blurInput()
-                  setQuery(q)
-                  void runSearch(q)
-                }}
-                onRemoveItem={removeRecentItem}
-                onRemoveSearch={removeRecentSearch}
-              />
-            )}
+            {/* Рендерится всегда: после showHistory=false список доигрывает уход. */}
+            <SearchHistoryDropdown
+              open={showHistory}
+              rows={mergedRecents}
+              onOpenItem={(it) => {
+                blurInput()
+                onRecentItem(it)
+              }}
+              onApplySearch={(q) => {
+                blurInput()
+                setQuery(q)
+                void runSearch(q)
+              }}
+              onRemoveItem={removeRecentItem}
+              onRemoveSearch={removeRecentSearch}
+            />
           </div>
         </div>
 

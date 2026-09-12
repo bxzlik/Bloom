@@ -37,23 +37,23 @@
     .mpl-cstack .mpl-cov:nth-child(1){top:0;left:0;z-index:3}
     .mpl-cstack .mpl-cov:nth-child(2){top:6px;left:10px;z-index:2;opacity:.85}
     .mpl-cstack .mpl-cov:nth-child(3){top:12px;left:18px;z-index:1;opacity:.65}
-    .mpl-name-input{width:100%;background:transparent;border:none;color:var(--text);padding:0;font-size:18px;font-weight:800;outline:none;font-family:var(--font);box-sizing:border-box;letter-spacing:-.02em}
+    .mpl-name-input{width:100%;background:transparent;border:none;color:var(--text);padding:0;font-size:18px;font-weight:var(--fw-bold);outline:none;font-family:var(--font);box-sizing:border-box;letter-spacing:-.02em}
     .mpl-name-input::placeholder{color:var(--muted)}
     .mpl-stats{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-    .mpl-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--mpl-fill);border:none;border-radius:99px;font-size:11px;font-weight:600;color:var(--text2)}
-    .mpl-chip b{color:var(--text);font-weight:700}
+    .mpl-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--mpl-fill);border:none;border-radius:99px;font-size:11px;font-weight:var(--fw-bold);color:var(--text2)}
+    .mpl-chip b{color:var(--text);font-weight:var(--fw-bold)}
     .mpl-chip.accent{background:var(--mpl-tint-hi);color:var(--accent)}
     .mpl-chip.accent b{color:var(--accent)}
 
 /* ── BODY ─────────────────────────────────────────────────────────────── */
     .mpl-body{flex:1;overflow-y:auto;padding:4px var(--mpl-pad) 6px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none}
     .mpl-body::-webkit-scrollbar{width:0;height:0}
-    .mpl-section-title{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+    .mpl-section-title{font-size:10px;font-weight:var(--fw-bold);color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
     /* Источник объединения: акцентная заливка без рамки. */
     .mpl-source{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--mpl-tint);border:none;border-radius:var(--mpl-row-r)}
     .mpl-source .mpl-src-icon{width:38px;height:38px;border-radius:calc(var(--radius)*.5);background:var(--hover);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
     .mpl-source .mpl-src-icon img{width:100%;height:100%;object-fit:cover}
-    .mpl-src-badge{margin-left:auto;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:rgba(var(--accent-rgb),.2);color:var(--accent);text-transform:uppercase;letter-spacing:.8px}
+    .mpl-src-badge{margin-left:auto;font-size:10px;font-weight:var(--fw-bold);padding:3px 8px;border-radius:99px;background:rgba(var(--accent-rgb),.2);color:var(--accent);text-transform:uppercase;letter-spacing:.8px}
     /* Поле поиска — капсула, как .pedit-nick-inp в редакторе тегов. */
     .mpl-search{position:relative;margin-bottom:8px}
     .mpl-search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.5;pointer-events:none}
@@ -71,7 +71,7 @@
     .mpl-item-cov{width:34px;height:34px;border-radius:calc(var(--radius)*.45);background:var(--hover);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
     .mpl-item-cov img{width:100%;height:100%;object-fit:cover}
     .mpl-item-info{min-width:0;flex:1}
-    .mpl-item-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mpl-item-name{font-size:13px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .mpl-item-sub{font-size:11px;color:var(--text2)}
     .mpl-item-check{width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(var(--ovl-rgb),.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.13s;color:var(--accent-text)}
     .mpl-item.sel .mpl-item-check{background:var(--accent);border-color:var(--accent)}
@@ -81,7 +81,7 @@
     .mpl-opt{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--mpl-row-r);cursor:pointer;transition:.13s;user-select:none}
     .mpl-opt:hover{background:var(--mpl-fill)}
     .mpl-opt-info{flex:1;min-width:0}
-    .mpl-opt-title{font-size:13px;font-weight:600}
+    .mpl-opt-title{font-size:13px;font-weight:var(--fw-bold)}
     .mpl-opt-sub{font-size:11px;color:var(--text2);margin-top:1px}
     .mpl-toggle{width:32px;height:18px;border-radius:99px;background:rgba(var(--ovl-rgb),.14);position:relative;transition:.18s;flex-shrink:0}
     .mpl-toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
@@ -93,9 +93,9 @@
    слева остаётся — она объясняет, что произойдёт по нажатию. */
     .mpl-foot{display:flex;align-items:center;gap:10px;padding:14px var(--mpl-pad);border-top:none;flex-shrink:0}
     .mpl-foot-hint{font-size:11px;color:var(--text2);flex:1;min-width:0}
-    .mpl-btn{padding:10px 18px;border-radius:var(--mpl-row-r);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;border:none}
+    .mpl-btn{padding:10px 18px;border-radius:var(--mpl-row-r);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;font-family:var(--font);transition:.15s;border:none}
     /* Второстепенная кнопка — заливкой, а не обводкой (см. .pedit-btn-cancel). */
-    .mpl-btn.ghost{background:var(--mpl-fill);border:none;color:var(--text2);font-weight:600}
+    .mpl-btn.ghost{background:var(--mpl-fill);border:none;color:var(--text2);font-weight:var(--fw-bold)}
     .mpl-btn.ghost:hover{background:var(--mpl-fill-hi);color:var(--text)}
     .mpl-btn.primary{background:var(--accent);color:var(--accent-text)}
     .mpl-btn.primary:hover{background:var(--accent2)}
@@ -108,38 +108,28 @@
     .pau-hero-ico.spin svg{animation:plSrcSpin 1.1s linear infinite}
     .pau-seg-row{display:flex;align-items:center;gap:10px;padding:6px 10px 8px;transition:opacity .15s}
     .pau-seg-row.off{opacity:.4;pointer-events:none}
-    .pau-seg-label{font-size:13px;font-weight:600;color:var(--text2);flex-shrink:0}
+    .pau-seg-label{font-size:13px;font-weight:var(--fw-bold);color:var(--text2);flex-shrink:0}
     .pau-seg{display:flex;gap:3px;margin-left:auto;background:var(--mpl-fill);border-radius:99px;padding:2px}
-    .pau-seg button{border:none;background:none;color:var(--text2);font-family:var(--font);font-size:11px;font-weight:700;padding:4px 8px;border-radius:99px;cursor:pointer;transition:.13s;white-space:nowrap}
+    .pau-seg button{border:none;background:none;color:var(--text2);font-family:var(--font);font-size:11px;font-weight:var(--fw-bold);padding:4px 8px;border-radius:99px;cursor:pointer;transition:.13s;white-space:nowrap}
     .pau-seg button:hover:not(:disabled){color:var(--text)}
     .pau-seg button.active{background:var(--accent);color:var(--accent-text)}
     .pau-opt-off{opacity:.4;pointer-events:none}
 
 /* Перенос плейлиста на другую площадку (ConvertModal) — внутри того же .spanel.
-   Три фазы: выбор площадки → прогресс скана → разбор спорных совпадений. */
+   Две фазы: прогресс скана → разбор спорных совпадений (что и куда переносим,
+   выбирают до неё — в модалке «+» библиотеки). */
     .cvt-hero-cov{position:relative;width:56px;height:56px;flex-shrink:0;border-radius:calc(var(--radius)*.55);background:var(--hover);overflow:hidden;display:flex;align-items:center;justify-content:center}
     .cvt-hero-cov img{width:100%;height:100%;object-fit:cover}
     .cvt-hero-badge{position:absolute;right:-3px;bottom:-3px;width:22px;height:22px;border-radius:50%;background:var(--mpl-cut);border:2px solid var(--mpl-cut);display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .cvt-hero-name{font-size:18px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cvt-targets{display:flex;gap:8px;flex-wrap:wrap}
-    /* Карточки площадок: заливка вместо рамки, выбранная — акцентный тон + подпись. */
-    .cvt-target{flex:1 1 96px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border-radius:calc(var(--radius)*.7);background:var(--mpl-fill);border:none;cursor:pointer;transition:.14s;user-select:none}
-    .cvt-target:hover{background:var(--mpl-fill-hi)}
-    .cvt-target.sel{background:var(--mpl-tint-hi)}
-    .cvt-target-logo{height:22px;display:flex;align-items:center;justify-content:center}
-    .cvt-target-label{font-size:12px;font-weight:700;color:var(--text2)}
-    .cvt-target.sel .cvt-target-label{color:var(--accent)}
-    .cvt-note{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:var(--mpl-row-r);background:var(--mpl-fill);border:none;font-size:12px;line-height:1.45;color:var(--text2)}
-    .cvt-note svg{flex-shrink:0;margin-top:1px;opacity:.7}
     .cvt-scan{display:flex;flex-direction:column;align-items:center;gap:12px;padding:34px 12px 26px;text-align:center}
     .cvt-scan-ico{width:52px;height:52px;border-radius:50%;background:var(--mpl-tint-hi);border:none;color:var(--accent);display:flex;align-items:center;justify-content:center}
     .cvt-scan-ico svg{animation:plSrcSpin 1.1s linear infinite}
     .cvt-scan-text{font-size:13px;color:var(--text2)}
     .cvt-bar{width:100%;height:6px;border-radius:99px;background:var(--mpl-fill-hi);overflow:hidden}
     .cvt-bar-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .22s cubic-bezier(.4,0,.2,1)}
-    .cvt-scan-count{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+    .cvt-scan-count{font-size:12px;font-weight:var(--fw-bold);font-variant-numeric:tabular-nums}
     .cvt-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-    .cvt-linkbtn{background:none;border:none;padding:0;font-family:var(--font);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);cursor:pointer;transition:.13s}
+    .cvt-linkbtn{background:none;border:none;padding:0;font-family:var(--font);font-size:10px;font-weight:var(--fw-bold);text-transform:uppercase;letter-spacing:.08em;color:var(--text2);cursor:pointer;transition:.13s}
     .cvt-linkbtn:hover{color:var(--text)}
     .cvt-linkbtn.accent{color:var(--accent);margin-left:auto}
     .cvt-linkbtn.accent:hover{filter:brightness(1.15)}
@@ -152,26 +142,26 @@
     .cvt-cov.sm{width:28px;height:28px}
     .cvt-cov img{width:100%;height:100%;object-fit:cover}
     .cvt-item-info{min-width:0;flex:1}
-    .cvt-item-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cvt-item-name{font-size:13px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cvt-item-sub{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cvt-decision{flex-shrink:0}
-    .cvt-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;background:rgba(var(--ovl-rgb),.08);font-size:10px;font-weight:700;color:var(--text2);white-space:nowrap}
+    .cvt-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;background:rgba(var(--ovl-rgb),.08);font-size:10px;font-weight:var(--fw-bold);color:var(--text2);white-space:nowrap}
     .cvt-tag.ok{background:rgba(var(--accent-rgb),.16);color:var(--accent)}
     .cvt-cands{display:flex;flex-direction:column;gap:2px;padding:0 8px 8px}
     .cvt-cand{display:flex;align-items:center;gap:9px;padding:5px 8px;border-radius:calc(var(--radius)*.45);cursor:pointer;transition:.13s;border:none}
     .cvt-cand:hover{background:var(--mpl-fill)}
     .cvt-cand.sel{background:var(--mpl-tint-hi)}
-    .cvt-score{font-size:10px;font-weight:700;color:var(--text2);font-variant-numeric:tabular-nums;flex-shrink:0}
+    .cvt-score{font-size:10px;font-weight:var(--fw-bold);color:var(--text2);font-variant-numeric:tabular-nums;flex-shrink:0}
     .cvt-score.high{color:var(--accent)}
     .cvt-cand-acts{display:flex;gap:6px;padding:6px 8px 0;align-items:center}
     .cvt-cand-acts.inline{padding:0 10px 8px}
     .cvt-nf{font-size:11px;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .cvt-actbtn{background:var(--mpl-fill);border:none;border-radius:99px;padding:5px 12px;font-family:var(--font);font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:.13s;white-space:nowrap}
+    .cvt-actbtn{background:var(--mpl-fill);border:none;border-radius:99px;padding:5px 12px;font-family:var(--font);font-size:11px;font-weight:var(--fw-bold);color:var(--text2);cursor:pointer;transition:.13s;white-space:nowrap}
     .cvt-actbtn:hover{background:var(--mpl-fill-hi);color:var(--text)}
     .cvt-actbtn.sel{background:rgba(var(--accent-rgb),.16);color:var(--accent)}
 
 /* Список с чекбоксами внутри .spanel (PlAutoDrawer). */
-    .afs-selall{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--font);padding:0;transition:.13s}
+    .afs-selall{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:10px;font-weight:var(--fw-bold);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font);padding:0;transition:.13s}
     .afs-selall:hover:not(:disabled){color:var(--text)}
     .afs-selall:disabled{opacity:.5;cursor:default}
     .afs-chk{width:14px;height:14px;border-radius:5px;border:1.5px solid rgba(var(--ovl-rgb),.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent-text);transition:.13s}

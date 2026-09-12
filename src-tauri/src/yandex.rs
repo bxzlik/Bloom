@@ -335,8 +335,8 @@ pub struct YmEntity {
     pub title: String,
     pub subtitle: String,
     pub cover: String,
-    /// Основной список треков (для альбома/плейлиста — все; для артиста — вся
-    /// дискография из `/artists/{id}/tracks`, секция «Треки»).
+    /// Основной список треков (для альбома/плейлиста — все; для артиста — первая
+    /// страница дискографии из `/artists/{id}/tracks`, секция «Треки»).
     pub tracks: Vec<YmTrack>,
     /// Только для артиста: «Популярные» из brief-info (секция «Популярные»).
     #[serde(rename = "popularTracks", default)]
@@ -356,6 +356,25 @@ pub struct YmEntity {
     /// Только для артиста: похожие исполнители из brief-info (секция «Похожие»).
     #[serde(rename = "similarArtists", default)]
     pub similar_artists: Vec<YmArtist>,
+    /// Только для артиста: номер следующей страницы «Треков» (догрузка через
+    /// `ym_artist_tracks`). None — дискография уместилась в первую страницу.
+    #[serde(rename = "tracksNextPage", default, skip_serializing_if = "Option::is_none")]
+    pub tracks_next_page: Option<u32>,
+    /// Только для артиста: всего треков в «Треках» (`pager.total`) — счётчик в hero.
+    #[serde(rename = "tracksTotal", default, skip_serializing_if = "Option::is_none")]
+    pub tracks_total: Option<u64>,
+}
+
+/// Страница «Треков» артиста (`/artists/{id}/tracks`).
+#[derive(Serialize)]
+pub struct YmTracksPage {
+    pub tracks: Vec<YmTrack>,
+    /// Номер следующей страницы; None — это была последняя.
+    #[serde(rename = "nextPage")]
+    pub next_page: Option<u32>,
+    /// Всего треков у артиста (`pager.total`); None — Яндекс не отдал pager.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total: Option<u64>,
 }
 
 /// Результат поиска по всем категориям.
@@ -523,22 +542,48 @@ pub async fn album(token: &str, id: &str) -> Result<YmEntity> {
             .map(cover_from)
             .unwrap_or_default(),
         similar_artists: Vec::new(),
+        tracks_next_page: None,
+        tracks_total: None,
     })
 }
 
-/// Вся дискография артиста (секция «Треки») — `/artists/{id}/tracks`, первая
-/// страница (page-size=50). Полные объекты-треки, parse_track работает.
-async fn artist_tracks(token: &str, id: &str) -> Result<Vec<YmTrack>> {
+/// Размер страницы «Треков» артиста — и первая порция, и каждая догрузка.
+const ARTIST_TRACKS_PAGE: u64 = 50;
+
+/// Страница дискографии артиста (секция «Треки») — `/artists/{id}/tracks`.
+/// Полные объекты-треки, parse_track работает. Первую (page=0) берёт `artist`,
+/// остальные догружаются по «Загрузить ещё» через `ym_artist_tracks`.
+pub async fn artist_tracks(token: &str, id: &str, page: u32) -> Result<YmTracksPage> {
+    let page_s = page.to_string();
+    let size_s = ARTIST_TRACKS_PAGE.to_string();
     let v = api_get(
         token,
         &format!("{API}/artists/{id}/tracks"),
-        &[("page", "0"), ("page-size", "50")],
+        &[("page", page_s.as_str()), ("page-size", size_s.as_str())],
     )
     .await?;
-    Ok(v["result"]["tracks"]
-        .as_array()
+    let r = &v["result"];
+    let raw = r["tracks"].as_array();
+    let raw_len = raw.map_or(0, |a| a.len() as u64);
+    let tracks: Vec<YmTrack> = raw
         .map(|arr| arr.iter().filter_map(parse_track).collect())
-        .unwrap_or_default())
+        .unwrap_or_default();
+    // Есть ли ещё — по pager (total/perPage), если Яндекс его отдал; без pager
+    // полная страница значит «возможно, есть» (пустая следующая просто закончит).
+    let pager = &r["pager"];
+    let has_more = raw_len > 0
+        && match pager["total"].as_u64() {
+            Some(total) => {
+                let per = pager["perPage"].as_u64().unwrap_or(ARTIST_TRACKS_PAGE);
+                page as u64 * per + raw_len < total
+            }
+            None => raw_len >= ARTIST_TRACKS_PAGE,
+        };
+    Ok(YmTracksPage {
+        tracks,
+        next_page: has_more.then_some(page + 1),
+        total: pager["total"].as_u64(),
+    })
 }
 
 pub async fn artist(token: &str, id: &str) -> Result<YmEntity> {
@@ -563,9 +608,13 @@ pub async fn artist(token: &str, id: &str) -> Result<YmEntity> {
             }
         }
     }
-    // Полная дискография (секция «Треки», как на SoundCloud). Best-effort —
-    // если эндпоинт не отдал, остаются хотя бы «Популярные».
-    let tracks = artist_tracks(token, id).await.unwrap_or_default();
+    // Первая страница дискографии (секция «Треки», как на SoundCloud); дальше —
+    // догрузка по номеру страницы. Best-effort — если эндпоинт не отдал,
+    // остаются хотя бы «Популярные».
+    let (tracks, tracks_next_page, tracks_total) = artist_tracks(token, id, 0)
+        .await
+        .map(|p| (p.tracks, p.next_page, p.total))
+        .unwrap_or_default();
     let albums = r["albums"]
         .as_array()
         .map(|arr| arr.iter().filter_map(parse_album).take(18).collect())
@@ -586,6 +635,8 @@ pub async fn artist(token: &str, id: &str) -> Result<YmEntity> {
         release_date: String::new(),
         owner_avatar: String::new(),
         similar_artists,
+        tracks_next_page,
+        tracks_total,
     })
 }
 
@@ -623,6 +674,8 @@ fn playlist_entity(r: &serde_json::Value) -> YmEntity {
         // У плейлиста аватар владельца бывает только в новом формате (owner.avatar*).
         owner_avatar: cover_from(&r["owner"]),
         similar_artists: Vec::new(),
+        tracks_next_page: None,
+        tracks_total: None,
     }
 }
 

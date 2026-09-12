@@ -1,5 +1,6 @@
 export * from './useTauriEvent'
 export * from './useThemeSettings'
 export * from './usePopupOpenAnimation'
+export * from './usePopupPresence'
 export * from './useTrackRowMarquee'
 export * from './useCardMarquee'

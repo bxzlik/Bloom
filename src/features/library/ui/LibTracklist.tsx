@@ -792,7 +792,7 @@ const TrackRow = ({
               background: 'var(--accent)',
               color: 'var(--accent-text)',
               fontSize: 9,
-              fontWeight: 700,
+              fontWeight: 'var(--fw-bold)',
               padding: '0 4px',
               lineHeight: 1,
               marginLeft: 4,
@@ -886,7 +886,7 @@ const HistoryHeader = ({ label, widx }: { label: string; widx?: number }) => (
     style={{
       padding: '10px 14px 4px',
       fontSize: 10,
-      fontWeight: 700,
+      fontWeight: 'var(--fw-bold)',
       color: 'var(--muted)',
       textTransform: 'uppercase',
       letterSpacing: '.8px',
@@ -961,7 +961,7 @@ const EmptyState = ({ mode, downloaded }: { mode: string; downloaded: boolean })
       <div
         style={{
           fontSize: 15,
-          fontWeight: 600,
+          fontWeight: 'var(--fw-bold)',
           color: 'var(--text)',
           marginTop: 4,
         }}

@@ -9,6 +9,7 @@ import { useQueueStore, type PlaySource } from "@features/player/model/queueStor
 import { usePlayerStore } from "@features/player/model/store";
 import { useLibStore } from "@features/library/model/store";
 import { useHistoryStore } from "@features/library/model/historyStore";
+import { useFavStore } from "@features/library/model/favStore";
 import { trackRegistry } from "@entities/track";
 import { loadPlay } from "@features/player/api/play";
 import {
@@ -41,6 +42,14 @@ export const host = {
   },
   get playHistory(): HistoryEntry[] {
     return useHistoryStore.getState().entries as HistoryEntry[];
+  },
+  /**
+   * Лайки: id → момент лайка. Только отсюда — поля `Track.fav`/`favAt` на
+   * треках библиотеки не ведутся (лайки живут в `useFavStore`), и фильтр по ним
+   * молча отдавал пустоту: лайки не были сидами волны вовсе.
+   */
+  get favs(): Map<string, number> {
+    return useFavStore.getState().favs;
   },
 
   get queue(): string[] {
@@ -76,7 +85,10 @@ export const host = {
     return useQueueStore.getState().shuffle;
   },
   set shuffle(v: boolean) {
-    useQueueStore.setState({ shuffle: v });
+    // Выключение — без отката к снимку `_origQueue`: волна сама задаёт порядок,
+    // а снимок держит очередь ДО неё. Иначе выключение перемешки вернуло бы
+    // старую очередь, а при дописывании («Авто похожие») — выкинуло бы волну.
+    useQueueStore.setState(v ? { shuffle: true } : { shuffle: false, smartShuffle: false, _origQueue: null });
     usePlayerStore.setState({ shuffle: v });
   },
 

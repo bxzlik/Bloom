@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { Ico } from '@shared/ui/icons/solar'
 
 /**
@@ -22,32 +22,35 @@ const CheckIcon = () => <Ico name="check" width={16} height={16} />
  * перекрывает контент секции и обрезает скролл-контейнер настроек.
  */
 export const HelpPopup = ({ children }: { children: ReactNode }) => {
+  const [open, setOpen] = useState(false)
+  // Позицию при закрытии не сбрасываем — уходящий попап доигрывает на месте.
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
   const popRef = useRef<HTMLDivElement>(null)
-  usePopupOpenAnimation(popRef, pos)
+  const { mounted } = usePopupPresence(popRef, open, pos)
 
   const toggle = () => {
-    if (pos) {
-      setPos(null)
+    if (open) {
+      setOpen(false)
       return
     }
     const r = btnRef.current?.getBoundingClientRect()
     if (!r) return
     setPos({ top: r.bottom + 8, right: window.innerWidth - r.right })
+    setOpen(true)
   }
 
   // Координаты fixed-попапа теряют актуальность при ресайзе/скролле — закрываем.
   useLayoutEffect(() => {
-    if (!pos) return
-    const close = () => setPos(null)
+    if (!open) return
+    const close = () => setOpen(false)
     window.addEventListener('resize', close)
     window.addEventListener('scroll', close, true)
     return () => {
       window.removeEventListener('resize', close)
       window.removeEventListener('scroll', close, true)
     }
-  }, [pos])
+  }, [open])
 
   return (
     <>
@@ -56,31 +59,33 @@ export const HelpPopup = ({ children }: { children: ReactNode }) => {
         onClick={toggle}
         aria-label="?"
         aria-haspopup="dialog"
-        aria-expanded={pos !== null}
+        aria-expanded={open}
         style={{
           width: 24,
           height: 24,
           flexShrink: 0,
           borderRadius: '50%',
-          background: pos ? 'var(--accent)' : 'var(--hover)',
-          color: pos ? 'var(--accent-text,#fff)' : 'var(--text2)',
+          background: open ? 'var(--accent)' : 'var(--hover)',
+          color: open ? 'var(--accent-text,#fff)' : 'var(--text2)',
           border: '1px solid var(--border)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 13,
-          fontWeight: 700,
+          fontWeight: 'var(--fw-bold)',
           fontFamily: 'var(--font)',
           transition: '.15s',
         }}
       >
         ?
       </button>
-      {pos &&
+      {mounted &&
+        pos &&
         createPortal(
           <>
-            <div onClick={() => setPos(null)} style={{ position: 'fixed', inset: 0, zIndex: 9000 }} />
+            {/* Клик мимо — закрыть; уходящий попап клики уже не ловит. */}
+            {open && <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9000 }} />}
             <div
               ref={popRef}
               role="dialog"
@@ -250,7 +255,7 @@ export const IntegrationCard = ({
         {icon}
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>{title}</div>
+        <div style={{ fontSize: 15, fontWeight: 'var(--fw-bold)', lineHeight: 1.2 }}>{title}</div>
         {status && (
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{status}</div>
         )}
@@ -264,7 +269,7 @@ export const IntegrationCard = ({
 
 /** Заголовок блока внутри попапа-инструкции. */
 export const HelpTitle = ({ children }: { children: ReactNode }) => (
-  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{children}</div>
+  <div style={{ fontSize: 12, fontWeight: 'var(--fw-bold)', color: 'var(--text)', marginBottom: 8 }}>{children}</div>
 )
 
 /** Нумерованный список шагов внутри попапа-инструкции. */

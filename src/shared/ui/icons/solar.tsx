@@ -100,6 +100,7 @@ import WindowFrameLinear from '~icons/solar/window-frame-linear'
 import SaveLinear from '~icons/solar/diskette-linear'
 import CodeLinear from '~icons/solar/code-linear'
 import StarsLinear from '~icons/solar/stars-linear'
+import DocTextLinear from '~icons/solar/document-text-linear'
 import MinSquareLinear from '~icons/solar/minimize-square-linear'
 import RestoreLinear from '~icons/solar/minimize-square-minimalistic-linear'
 import MaxSquareLinear from '~icons/solar/maximize-square-linear'
@@ -338,6 +339,7 @@ const ICONS = {
   save: { linear: SaveLinear },
   code: { linear: CodeLinear },
   stars: { linear: StarsLinear },
+  docText: { linear: DocTextLinear },
   minSquare: { linear: MinSquareLinear },
   restore: { linear: RestoreLinear },
   maxSquare: { linear: MaxSquareLinear },

@@ -9,6 +9,7 @@ import {
   ymSearch,
   ymAlbum,
   ymArtist,
+  ymArtistTracks,
   ymPlaylist,
   ymPlaylistUuid,
   ymResolve,
@@ -156,8 +157,9 @@ export const ymProvider: MusicProvider = {
     const m = /^ym_artist_(\d+)$/.exec(id)
     if (!m) throw new Error(i18nT('search.err.artistNotFound'))
     const e = await ymArtist(m[1]!)
-    // «Популярные» — из brief-info (popularTracks); «Треки» — вся дискография
-    // (e.tracks из /artists/{id}/tracks). с раскладкой SoundCloud.
+    // «Популярные» — из brief-info (popularTracks); «Треки» — первая страница
+    // дискографии (e.tracks из /artists/{id}/tracks), остальное — «Загрузить ещё»
+    // через getArtistTracksPage. Раскладка SoundCloud.
     const topTracks = (e.popularTracks ?? []).map(toTrack)
     const tracks = (e.tracks ?? []).map(toTrack)
     const albums: Playlist[] = (e.albums ?? []).map(toAlbum)
@@ -176,7 +178,19 @@ export const ymProvider: MusicProvider = {
       albums,
       playlists: [],
       similarArtists: (e.similarArtists ?? []).map(toArtist),
+      tracksCursor: e.tracksNextPage != null ? `${m[1]}:${e.tracksNextPage}` : null,
+      tracksTotal: e.tracksTotal,
     }
+  },
+
+  async getArtistTracksPage(cursor): Promise<{ tracks: Track[]; cursor: string | null }> {
+    // Курсор — `<artistId>:<page>` (см. getArtist).
+    const m = /^(\d+):(\d+)$/.exec(cursor)
+    if (!m) return { tracks: [], cursor: null }
+    const p = await ymArtistTracks(m[1]!, Number(m[2]))
+    const tracks = (p.tracks ?? []).map(toTrack)
+    if (tracks.length) trackRegistry.put(tracks, { temp: true })
+    return { tracks, cursor: p.nextPage != null ? `${m[1]}:${p.nextPage}` : null }
   },
 
   async getCharts(): Promise<Track[]> {

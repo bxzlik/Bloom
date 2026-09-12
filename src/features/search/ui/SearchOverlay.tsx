@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { useT, useLocale, type TranslationKey } from '@shared/i18n'
 import { useNavStore } from '@app/navigationStore'
 import type { Track } from '@entities/track'
@@ -65,7 +65,8 @@ export const SearchOverlay = () => {
   const panelRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const [cursor, setCursor] = useState(-1)
-  usePopupOpenAnimation(panelRef, open)
+  // Панель — WAAPI из хука, подложка на уходе гаснет CSS-классом is-closing.
+  const { mounted, closing } = usePopupPresence(panelRef, open)
 
   const hasQuery = query.trim().length > 0
 
@@ -214,13 +215,13 @@ export const SearchOverlay = () => {
     }
   }
 
-  if (!open) return null
+  if (!mounted) return null
 
   const showEmpty = hasQuery && !loading && searched && rows.length === 1 // только строка «искать»
 
   return createPortal(
     <div
-      className="sov-back"
+      className={`sov-back${closing ? ' is-closing' : ''}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) close()
       }}

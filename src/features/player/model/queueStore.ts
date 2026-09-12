@@ -20,6 +20,35 @@ export type PlaySource =
   | null
 
 /**
+ * Ключ источника — «тот же это список или другой». Нужен шапкам списков: пока
+ * очередь набрана ЭТОЙ страницей, их кнопка воспроизведения работает паузой
+ * (см. useSourcePlayback), а не перезапускает список с первого трека.
+ *
+ * `single` ключа не имеет: одиночный трек — не список, и шапке сравнивать
+ * себя с ним не с чем. У площадок (`sc`) id в источнике нет, поэтому ключ
+ * строим по подписи — той же, что показывает пилюля источника.
+ */
+export const sourceKey = (s: PlaySource): string | null => {
+  if (!s) return null
+  switch (s.kind) {
+    case 'lib-all':
+    case 'lib-fav':
+    case 'lib-history':
+      return s.kind
+    case 'playlist':
+      return `playlist:${s.id}`
+    case 'folder':
+      return `folder:${s.path}`
+    case 'sc':
+      return `sc:${s.label}`
+    case 'wave':
+      return `wave:${s.label}`
+    default:
+      return null
+  }
+}
+
+/**
  * Очередь воспроизведения. Источник правды в main окне; в mirror окнах не
  * используется (там только usePlayerStore через bridge).
  *
@@ -70,6 +99,13 @@ export interface QueueState {
 
   /** Оригинальный порядок до shuffle (чтобы восстановить при отключении). */
   _origQueue: string[] | null
+  /**
+   * Очередь в том виде, какой она была до очистки (кнопка очистки / удаление
+   * последнего трека). Её поднимает карточка «Продолжить» — очищают обычно чтобы
+   * убрать лишнее из плеера, а не чтобы забыть, что слушали. Сбрасывается новой
+   * очередью (`setQueue`).
+   */
+  preClearQueue: string[] | null
 
   /** Заменить очередь целиком и выбрать стартовый индекс. */
   setQueue: (queue: string[], qIdx: number, source: PlaySource) => void
@@ -134,9 +170,10 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   smartShuffle: false,
   repeat: 0,
   _origQueue: null,
+  preClearQueue: null,
 
   setQueue: (queue, qIdx, source) =>
-    set({ queue, qIdx, source, _origQueue: null, queueEnded: false, armed: false }),
+    set({ queue, qIdx, source, _origQueue: null, preClearQueue: null, queueEnded: false, armed: false }),
   setQIdx: (qIdx) => set({ qIdx }),
   setCurId: (id) => set({ curId: id }),
   setLoadingId: (id) => set({ loadingId: id }),
@@ -197,8 +234,14 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   cycleRepeat: () => set((s) => ({ repeat: ((s.repeat + 1) % 3) as 0 | 1 | 2 })),
 
   clearExceptCurrent: () => {
-    const { curId } = get()
+    const { curId, queue, preClearQueue } = get()
     if (!curId) return
-    set({ queue: [curId], qIdx: 0, _origQueue: null })
+    set({
+      queue: [curId],
+      qIdx: 0,
+      _origQueue: null,
+      // Повторная очистка не должна перетереть полную очередь урезанной.
+      preClearQueue: preClearQueue ?? (queue.length > 1 ? queue : null),
+    })
   },
 }))

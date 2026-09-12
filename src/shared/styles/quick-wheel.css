@@ -3,10 +3,14 @@
    9999 и колесо перекрывало тайтлбар). */
 #quick-wheel{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.52);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
 /* Появление — как у всплывающего поиска: подложка коротким fade (@keyframes
-   sovBackIn), само колесо — WAAPI-анимацией usePopupOpenAnimation. Без
+   sovBackIn), само колесо — WAAPI-анимацией usePopupPresence. Без
    `forwards`, иначе backdrop-filter перестаёт применяться. */
 #quick-wheel.qw-open{display:flex;animation:qwBackIn .16s ease}
 @keyframes qwBackIn{from{opacity:0}to{opacity:1}}
+/* Уход — в такт WAAPI-закрытию колеса (usePopupPresence, 130 мс). Здесь forwards
+   можно: класс снимается сразу по концу, застывшего кадра не остаётся. */
+#quick-wheel.qw-closing{animation:qwBackOut .13s ease forwards;pointer-events:none}
+@keyframes qwBackOut{from{opacity:1}to{opacity:0}}
 #qw-wrap{position:relative;width:420px;height:420px;flex-shrink:0}
 #qw-svg{position:absolute;inset:0;width:100%;height:100%}
 #qw-labels{position:absolute;inset:0;pointer-events:none}

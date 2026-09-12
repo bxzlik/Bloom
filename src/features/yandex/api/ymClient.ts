@@ -80,6 +80,19 @@ export interface YmRawEntity {
   ownerAvatar: string
   /** Только у артиста: похожие исполнители (brief-info). */
   similarArtists: YmRawArtist[]
+  /** Только у артиста: номер следующей страницы «Треков»; нет — всё уместилось. */
+  tracksNextPage?: number
+  /** Только у артиста: всего треков в «Треках» (pager.total). */
+  tracksTotal?: number
+}
+
+/** Страница «Треков» артиста (догрузка по «Загрузить ещё»). */
+export interface YmRawTracksPage {
+  tracks: YmRawTrack[]
+  /** Номер следующей страницы; null — это была последняя. */
+  nextPage: number | null
+  /** Всего треков у артиста; нет — Яндекс не отдал pager. */
+  total?: number
 }
 
 export interface YmRawSearch {
@@ -133,6 +146,9 @@ export const ymSearch = (query: string, page = 0): Promise<YmRawSearch> =>
 export const ymAlbum = (id: string): Promise<YmRawEntity> => invoke<YmRawEntity>('ym_album', { id })
 
 export const ymArtist = (id: string): Promise<YmRawEntity> => invoke<YmRawEntity>('ym_artist', { id })
+
+export const ymArtistTracks = (id: string, page: number): Promise<YmRawTracksPage> =>
+  invoke<YmRawTracksPage>('ym_artist_tracks', { id, page })
 
 export const ymPlaylist = (owner: string, kind: string): Promise<YmRawEntity> =>
   invoke<YmRawEntity>('ym_playlist', { owner, kind })

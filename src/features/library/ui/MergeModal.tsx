@@ -179,7 +179,7 @@ export const MergeModal = () => {
             <div className="mpl-source">
               <div className="mpl-src-icon"><PlCov pl={src} /></div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{src.name}</div>
+                <div style={{ fontSize: 13, fontWeight: 'var(--fw-bold)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{src.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text2)' }}>{t('search.tracksCount', { n: src.trs.length })}</div>
               </div>
               <div className="mpl-src-badge">A</div>
@@ -189,7 +189,7 @@ export const MergeModal = () => {
           <div>
             <div className="mpl-section-title">
               <span>{t('lib.merge.addPlaylists')}</span>
-              <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{t('lib.addModal.selected', { n: sel.size })}</span>
+              <span style={{ color: 'var(--accent)', fontWeight: 'var(--fw-bold)' }}>{t('lib.addModal.selected', { n: sel.size })}</span>
             </div>
             <div className="mpl-search">
               <Ico name="search" width={13} height={13} />

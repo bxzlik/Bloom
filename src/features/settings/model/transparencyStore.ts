@@ -177,6 +177,3 @@ export const useTransparencyBootstrap = (): void => {
     }
   }, [])
 }
-
-/** Значения по умолчанию — нужны точечному сбросу карточек настроек. */
-export { DEFAULTS as TRANSPARENCY_DEFAULTS }

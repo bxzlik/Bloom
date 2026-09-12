@@ -1,16 +1,25 @@
-/* ===== SETTINGS MODAL OVERLAY ===== */
-#settingsOverlay{position:fixed;inset:0;z-index:990;background:rgba(0,0,0,.6);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.26s}
-#settingsOverlay.open{opacity:1;pointer-events:all}
-.settings-modal{background:color-mix(in srgb,var(--card-solid,var(--card)) 40%,#000 60%);border:1px solid rgba(var(--ovl-rgb),.08);border-radius:var(--radius);width:920px;max-width:97vw;height:84vh;max-height:720px;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden;position:relative;transform:scale(.91) translateY(24px);will-change:transform;transition:.32s cubic-bezier(.34,1.38,.64,1)}
-#settingsOverlay.open .settings-modal{transform:scale(1) translateY(0)}
+/* ===== НАСТРОЙКИ: КАРКАС ====================================================
+   Настройки живут в боковой панели SideSheet (слева, широкая — side-sheet.css);
+   модалкой по центру они были раньше. Имена #settingsOverlay и .settings-modal
+   остались от того вида и уже ничего не «оверлеят»: на id завязаны --card-solid,
+   цвета карточек и ховеры (overrides-main.css, transparency.css), а класс держит
+   колонку контента. Своей подложки, плавающей карточки и своей анимации у них
+   нет — выезд и уход приложения в глубину делает сама панель.
+   Если анимация сюда когда-нибудь вернётся — НЕ scale: масштабирование
+   растеризует текст и иконки в битмап, и в конце они «доводятся» на место
+   рывком; сдвиг (translate) слой не масштабирует. */
+#settingsOverlay{display:flex;flex:1;min-height:0;padding:16px 0}
+.settings-modal{position:relative;display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden}
 .settings-modal-body{display:flex;flex:1;overflow:hidden}
 
 /* Полосы прокрутки внутри панели настроек не рисуются вовсе (side-sheet.css),
    поэтому своей логики ползунка у контента больше нет. */
 
-/* Контент раздела */
-.settings-modal-content{flex:1;overflow-y:auto;padding:20px 24px 32px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.sm-cat-view{flex:1;display:flex;overflow:hidden}
+/* Контент раздела. Боковых отступов нет — их держит сама панель (--sheet-pad),
+   и своего фона тоже: панель прозрачная, фон даёт окно. */
+.settings-modal-content{flex:1;overflow-y:auto;padding:2px 0 28px;display:flex;flex-direction:column;gap:12px;min-width:0}
+/* Колонка: навигация сверху, контент под ней. */
+.sm-cat-view{flex:1;display:flex;flex-direction:column;overflow:hidden}
 /* ===== HOTKEYS: CONFIGURABLE SYSTEM SHORTCUTS ===== */
 /* Заголовок «Активные» + видимый reset (капс-лейбл с хайрлайнами, как s-cat-label) */
 .hk-list{display:flex;flex-direction:column;gap:10px}
@@ -18,11 +27,11 @@
 .hk-card{display:flex;align-items:center;gap:14px;padding:15px 17px;background:var(--bg2);border:none;border-radius:calc(var(--radius)*0.9);transition:.15s}
 .hk-ico{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text2)}
 .hk-text{flex:1;min-width:0}
-.hk-title{font-size:14px;font-weight:700;color:var(--text)}
+.hk-title{font-size:14px;font-weight:var(--fw-bold);color:var(--text)}
 .hk-sub{font-size:12px;color:var(--muted);margin-top:2px}
 
 /* Кнопка «Назначить» (не назначено) */
-.hk-assign{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:calc(var(--radius)*0.7);background:none;border:1px dashed var(--border);color:var(--text2);font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:.15s}
+.hk-assign{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:calc(var(--radius)*0.7);background:none;border:1px dashed var(--border);color:var(--text2);font-size:12px;font-weight:var(--fw-bold);font-family:var(--font);cursor:pointer;transition:.15s}
 .hk-assign:hover{border-color:var(--accent);color:var(--accent)}
 .hk-assign-plus{font-size:14px;line-height:1}
 
@@ -33,34 +42,21 @@
 .hk-clear:hover{border-color:var(--danger,#e5484d);color:var(--danger,#e5484d)}
 
 .hk-badge{display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
-.hk-key{display:inline-flex;align-items:center;justify-content:center;padding:5px 11px;background:var(--bg);border:1px solid var(--border);border-bottom:2px solid rgba(var(--ovl-rgb),.14);border-radius:6px;font-size:12px;font-weight:700;color:var(--text2);min-width:30px;white-space:nowrap;transition:.15s}
+.hk-key{display:inline-flex;align-items:center;justify-content:center;padding:5px 11px;background:var(--bg);border:1px solid var(--border);border-bottom:2px solid rgba(var(--ovl-rgb),.14);border-radius:6px;font-size:12px;font-weight:var(--fw-bold);color:var(--text2);min-width:30px;white-space:nowrap;transition:.15s}
 .hk-assign-btn:hover .hk-key{border-color:var(--accent);color:var(--accent)}
 
 /* Режим перехвата */
 .hk-capture{display:none;align-items:center;gap:8px;flex-shrink:0}
 .hk-capture.active{display:inline-flex}
-.hk-cap-field{padding:6px 12px;background:rgba(var(--accent-rgb),.12);border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:700;color:var(--accent);min-width:110px;text-align:center}
-.hk-cap-ok{padding:6px 12px;border-radius:6px;background:var(--accent);border:none;color:var(--accent-text);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.hk-cap-field{padding:6px 12px;background:rgba(var(--accent-rgb),.12);border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:var(--fw-bold);color:var(--accent);min-width:110px;text-align:center}
+.hk-cap-ok{padding:6px 12px;border-radius:6px;background:var(--accent);border:none;color:var(--accent-text);font-size:12px;font-weight:var(--fw-bold);cursor:pointer;font-family:var(--font);transition:.15s}
 .hk-cap-ok:hover{opacity:.85}
 .hk-cap-ok:disabled{opacity:.4;cursor:default}
-.hk-cap-cancel{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:none;border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.hk-cap-cancel{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:none;border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:var(--fw-bold);cursor:pointer;font-family:var(--font);transition:.15s}
 .hk-cap-cancel:hover{border-color:var(--text2);color:var(--text)}
 
 /* Right content */
 .s-section{position:relative;display:none;flex-direction:column;gap:12px;animation:sSecIn .17s ease}
-/* Кнопка «сбросить раздел» (SectionReset). Прижата в правый верхний угол
-   содержимого, поэтому встаёт на одну строку с первой подписью группы и не
-   сдвигает карточки. Координаты выведены из первой карточки: у `.sc` padding
-   16px, подпись ~13px высотой, значит центр строки на 22.5px — кнопка 26px
-   с top:10px садится ровно на него, а до нижней границы подписи (41px)
-   остаётся зазор.
-   Живёт отдельно от `.s-section-head`: та скрыта, её роль забрал ряд вкладок
-   в шапке панели. */
-.s-sec-reset{position:absolute;top:10px;right:16px;z-index:2;width:26px;height:26px;display:flex;align-items:center;justify-content:center;padding:0;background:none;border:none;border-radius:calc(var(--radius) * 0.5);color:var(--text2);cursor:pointer;transition:color .12s,transform .08s}
-/* Без подложки на ховере: кнопка голая иконка, как в плоских меню — плашка
-   вокруг неё читалась как отдельный элемент управления. Отзыв даёт цвет. */
-.s-sec-reset:hover{color:var(--text)}
-.s-sec-reset:active{transform:scale(.94)}
 .s-section.active{display:flex}
 /* When sections are hosted inside the modal content area, active ones must show */
 #smContent .s-section.active{display:flex}
@@ -68,7 +64,7 @@
 #smContent .s-section.active:is(#ssec-soundcloud,#ssec-lastfm,#ssec-yandex,#ssec-ytmusic){flex:1;justify-content:center}
 /* === РЕАКЦИЯ === */
 .s-section-head{display:none}
-.s-section-title{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+.s-section-title{font-size:15px;font-weight:var(--fw-bold);display:flex;align-items:center;gap:8px}
 
 /* Settings: sc cards with toggle rows → transparent wrapper, each row becomes its own card */
 /* sc-keep class marks cards that must stay grouped (equalizer, crossfade, etc.) */
@@ -91,7 +87,7 @@
 /* About section */
 .about-hero-card{padding:16px}
 .about-logo-row{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-.about-logo{width:44px;height:44px;border-radius:calc(var(--radius)*0.7);background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:var(--accent-text);flex-shrink:0}
+.about-logo{width:44px;height:44px;border-radius:calc(var(--radius)*0.7);background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:var(--fw-bold);color:var(--accent-text);flex-shrink:0}
 
 
 /* Превью пресета — карусель картинок внутри карточки .cz-card. */
@@ -107,8 +103,14 @@
 /* ── Кастомизация: плашки контекстов (Фон/Обложка/Виз/Курсор/Слайдер) ──────
    Только иконка: ни бордера, ни подписей. Выбранная плашка — заливка акцентом,
    применённая картинка — превью на фоне. */
-.mls-card{position:relative;height:58px;border:none;border-radius:calc(var(--radius)*0.75);background:rgba(var(--ovl-rgb),.05);cursor:pointer;overflow:hidden;transition:background .16s}
-.mls-card:hover{background:rgba(var(--ovl-rgb),.085)}
+/* Плашки, стоящие прямо в разделе (не внутри .sc): в покое — ровно цвет
+   обычного блока (--card-solid), наведение — плёнка поверх него через
+   color-mix. Голая плёнка rgba() здесь не годится — у шторки
+   настроек нет своего фона, и сквозь плёнку были видны обои даже без режима
+   прозрачности. В стекле --card-solid = --glass-block-bg, поэтому плашки сами
+   следуют слайдеру «Прозрачность блоков». */
+.mls-card{position:relative;height:58px;border:none;border-radius:calc(var(--radius)*0.75);background:var(--card-solid,var(--card));cursor:pointer;overflow:hidden;transition:background .16s}
+.mls-card:hover{background:color-mix(in srgb,var(--card-solid,var(--card)),rgb(var(--ovl-rgb)) 8.5%)}
 .mls-card-preview{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
 .mls-card-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:.5}
 .mls-card-icon-wrap{display:flex;align-items:center;justify-content:center;z-index:1;pointer-events:none;color:var(--text2);transition:color .16s}
@@ -136,11 +138,7 @@
    прибавлялся бы к этим 12px. Отступ над полосой задан padding'ом .cz-chips
    тем же числом, поэтому она стоит ровно посередине. */
 .cz-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0}
-.cz-seg{display:inline-flex;gap:4px;padding:4px;background:rgba(var(--ovl-rgb),.05);border-radius:calc(var(--radius)*.8);min-width:0}
-.cz-seg-btn{padding:8px 18px;border:none;border-radius:calc(var(--radius)*.6);background:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
-.cz-seg-btn:hover{color:var(--fg)}
-.cz-seg-btn.active{background:var(--card-solid,var(--card));color:var(--fg);font-weight:700}
-.cz-tools{display:inline-flex;gap:2px;padding:4px;background:rgba(var(--ovl-rgb),.05);border-radius:calc(var(--radius)*.8);flex-shrink:0}
+.cz-tools{display:inline-flex;gap:2px;padding:4px;background:var(--card-solid,var(--card));border-radius:calc(var(--radius)*.8);flex-shrink:0}
 /* Кнопки-инструменты без подложки: на наведении красится только иконка. */
 .cz-tool{width:36px;height:32px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:calc(var(--radius)*.6);background:none;color:var(--text2);cursor:pointer;transition:color .15s;padding:0}
 .cz-tool:hover{color:var(--fg)}
@@ -165,14 +163,14 @@
   from{opacity:1;max-height:64px;margin-bottom:0;transform:none}
   to{opacity:0;max-height:0;margin-bottom:-12px;transform:translateY(-7px)}
 }
-.cz-field{flex:1;min-width:0;display:flex;align-items:center;background:rgba(var(--ovl-rgb),.05);border-radius:calc(var(--radius)*.7);padding-right:6px}
+.cz-field{flex:1;min-width:0;display:flex;align-items:center;background:color-mix(in srgb,var(--card-solid,var(--card)),rgb(var(--ovl-rgb)) 5%);border-radius:calc(var(--radius)*.7);padding-right:6px}
 .cz-input{flex:1;min-width:0;background:none;border:none;color:var(--text);font-family:var(--font);font-size:13px;font-weight:400;letter-spacing:0;text-transform:none;padding:12px 14px;outline:none}
 .cz-input::placeholder{color:var(--muted)}
 /* Кнопка внутри поля — выбрать файлы с диска. */
 .cz-field-btn{width:28px;height:28px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer;transition:color .15s}
 .cz-field-btn:hover{color:var(--fg)}
-.cz-btn{flex-shrink:0;padding:0 20px;height:40px;border:none;border-radius:calc(var(--radius)*.7);background:rgba(var(--ovl-rgb),.07);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
-.cz-btn:hover:not(:disabled){background:rgba(var(--ovl-rgb),.11);color:var(--fg)}
+.cz-btn{flex-shrink:0;padding:0 20px;height:40px;border:none;border-radius:calc(var(--radius)*.7);background:color-mix(in srgb,var(--card-solid,var(--card)),rgb(var(--ovl-rgb)) 7%);color:var(--text2);font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s;white-space:nowrap}
+.cz-btn:hover:not(:disabled){background:color-mix(in srgb,var(--card-solid,var(--card)),rgb(var(--ovl-rgb)) 11%);color:var(--fg)}
 .cz-btn:disabled{opacity:.45;cursor:default}
 /* Переключение «Библиотека ↔ Пресеты»: короткий заезд со стороны, с которой
    пришли. Два отдельных кейфрейма вместо var() в transform — надёжнее. */
@@ -187,7 +185,7 @@
 .cz-card>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none;user-select:none}
 /* Плёнка под именем — читаемость поверх любой картинки. */
 .cz-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:52%;background:linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,.24) 46%,transparent);pointer-events:none;z-index:1}
-.cz-card-name{position:absolute;left:12px;right:76px;bottom:11px;z-index:2;font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cz-card-name{position:absolute;left:12px;right:76px;bottom:11px;z-index:2;font-size:13px;font-weight:var(--fw-bold);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cz-card-acts{position:absolute;right:7px;bottom:7px;z-index:3;display:flex;gap:2px}
 /* Кнопки на карточке — без подложки: на наведении красится только иконка. */
 .cz-act{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:none;background:none;color:rgba(255,255,255,.68);cursor:pointer;padding:0;transition:color .15s}
@@ -204,53 +202,10 @@
 /* Пустое состояние панели */
 .cz-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:56px 20px;text-align:center}
 .cz-empty-ico{color:rgba(var(--ovl-rgb),.16);margin-bottom:8px}
-.cz-empty-title{font-size:14px;font-weight:700;color:var(--text2)}
+.cz-empty-title{font-size:14px;font-weight:var(--fw-bold);color:var(--text2)}
 .cz-empty-sub{font-size:12px;color:var(--muted)}
 .sc{background:var(--card-solid,var(--card));border:none;border-radius:var(--radius);padding:16px}
-/* Сброс группы (CardReset) — вплотную к заголовку карточки, а не в углу: одна
-   и та же посадка у карточки, у группы и у строки, поэтому кнопки читаются как
-   один элемент, а не как три разных. Заголовок для этого флекс.
-   Заголовок группы во всю ширину: у него подчёркивание, и ширина по
-   содержимому обрезала бы линию. */
-.sc-reset,.sl-reset,.cat-reset{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;background:none;border:none;border-radius:calc(var(--radius) * 0.4);color:var(--text2);cursor:pointer;opacity:0;transition:color .12s,opacity .14s,transform .08s}
-.sc-reset svg,.sl-reset svg,.cat-reset svg{width:12px;height:12px}
-/* Проявляется по наведению, но область зависит от РОЛИ заголовка — иначе две
-   разные разметки одного и того же заголовка ведут себя по-разному.
-
-   Заголовки в капсе (`h3` внутри карточки и подпись группы между карточками)
-   рисуют одно и то же, поэтому и реагируют одинаково: на наведение на саму
-   строку заголовка. Обе тянутся во всю ширину колонки, так что попасть в них
-   не сложнее, чем в карточку.
-
-   Обычный заголовок карточки и строки-настройки — по наведению на карточку:
-   у них кнопка стоит вплотную к тексту, и своя узкая зона была бы капризной.
-
-   Держать полсотни иконок постоянно видимыми — шум, поэтому только по
-   наведению. Клавиатуре кнопка доступна всегда. */
-.s-cat-label:hover .cat-reset,
-.sc:hover .sc-title .sc-reset,.sc:hover .sl-reset,
-.sc-reset:focus-visible,.sl-reset:focus-visible,.cat-reset:focus-visible{opacity:1}
-/* Ховер без подложки — см. `.s-sec-reset:hover`. */
-.sc-reset:hover,.sl-reset:hover,.cat-reset:hover{color:var(--text)}
-.sc-reset:active,.sl-reset:active,.cat-reset:active{transform:scale(.94)}
-/* Недоступный сброс (например, привязки клавиш при выключенных горячих
-   клавишах): проявляется приглушённым и не реагирует. */
-.sc-reset:disabled,.sl-reset:disabled,.cat-reset:disabled{cursor:default}
-.sc:hover .sc-reset:disabled,.sc:hover .sl-reset:disabled,.s-cat-label:hover .cat-reset:disabled{opacity:.3}
-.sc-reset:disabled:hover,.sl-reset:disabled:hover,.cat-reset:disabled:hover{color:var(--text2)}
-/* Заголовки группы и `h3` ниже кнопки — компенсируем, чтобы строка не
-   подросла и не сдвинула подчёркивание.
-   `h3` — заголовок карточки в ВЕРХНЕМ регистре с подчёркиванием: читается как
-   подпись группы, поэтому кнопка у него уходит к правому краю, как у
-   `.s-cat-label`, а не встаёт вплотную к тексту. `margin-left:auto`, а не
-   `justify-content`, — у части заголовков перед текстом стоит иконка, и
-   распорка растащила бы её с подписью. */
-.cat-reset{margin:-4px 0 -4px auto}
 .sr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;gap:10px}
-/* Название строки-настройки: флекс, чтобы принять кнопку сброса вплотную к
-   тексту. Ширина по содержимому — иначе строка растянулась бы на всю
-   карточку и кнопка уехала бы к тумблеру, от которого её и уводим. */
-.sl2{display:flex;align-items:center;gap:4px;width:fit-content}
 .sr+.sr{border-top:1px solid rgba(var(--ovl-rgb),.05)}
 .sr:last-child{border-bottom:none;padding-bottom:0}
 .sr:first-child{padding-top:0}
@@ -260,8 +215,8 @@
    которую правила выше превращают в прозрачную обёртку. Способ был лишним:
    превращение делает обёртка, а заголовок в нём не участвовал, — поэтому все
    такие `h3` вынесены наружу как `.s-cat-label`. */
-.s-cat-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:13px 2px 12px;margin:6px 0 2px;border-top:1px solid rgba(var(--ovl-rgb),.03);border-bottom:1px solid rgba(var(--ovl-rgb),.03)}
-.sc-title{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--text)}
+.s-cat-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:var(--fw-bold);color:var(--text2);text-transform:uppercase;letter-spacing:1.4px;padding:13px 2px 12px;margin:6px 0 2px;border-top:1px solid rgba(var(--ovl-rgb),.03);border-bottom:1px solid rgba(var(--ovl-rgb),.03)}
+.sc-title{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:var(--fw-bold);color:var(--text)}
 .sc-desc{font-size:11px;color:var(--text2);margin-top:3px;line-height:1.4}
 /* Ряд-блок: та же карточка, что и обычный `.sr`, но с вертикальной раскладкой
    (заголовок + описание + произвольный контент), а не «слева текст — справа контрол». */
@@ -273,11 +228,15 @@
 .s-dev-card.active{background:rgba(var(--ovl-rgb),.07);border-color:rgba(var(--accent-rgb),.35);color:var(--text)}
 .s-dev-card>svg{opacity:.75;margin-bottom:22px;flex-shrink:0}
 .s-dev-card.active>svg{opacity:1}
-.s-dev-name{font-size:13px;font-weight:600;color:inherit;line-height:1.35;overflow-wrap:anywhere}
+.s-dev-name{font-size:13px;font-weight:var(--fw-bold);color:inherit;line-height:1.35;overflow-wrap:anywhere}
 .s-dev-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.3;overflow-wrap:anywhere}
 .s-dev-unlock{justify-content:center;border-style:dashed}
 .s-opt-row{display:flex;gap:8px;margin-top:12px}
-.s-opt-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:14px 6px;border-radius:calc(var(--radius)*0.65);background:rgba(var(--ovl-rgb),.04);border:none;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600;transition:.15s;font-family:var(--font);min-width:0;user-select:none;line-height:1.2}
+/* transition перечисляет свойства поимённо, а не `all`: у кнопки-опции по
+   дизайну ездят только заливка, цвет и прозрачность (у заблокированных).
+   С `all` любая случайно унаследованная геометрия (см. историю с padding из
+   .btg) анимируется, ряд меняет высоту и страница настроек дёргается. */
+.s-opt-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:14px 6px;border-radius:calc(var(--radius)*0.65);background:rgba(var(--ovl-rgb),.04);border:none;color:var(--text2);cursor:pointer;font-size:11px;font-weight:var(--fw-bold);transition:background .15s,color .15s,opacity .15s;font-family:var(--font);min-width:0;user-select:none;line-height:1.2}
 .s-opt-btn:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
 .s-opt-btn.active,.s-opt-btn.bta{background:rgba(var(--ovl-rgb),.12)!important;color:var(--text)!important;border:none!important}
 .s-opt-btn.btg{background:rgba(var(--ovl-rgb),.04)!important;color:var(--text2)!important;border:none!important}
@@ -285,53 +244,67 @@
 /* Подсказка над s-opt-btn (см. TipBtn в LibrarySection). Обёртка держит flex:1
    вместо самой кнопки, иначе ряд перестаёт делиться поровну. */
 .s-opt-tipwrap{position:relative;flex:1;display:flex;min-width:0}
-.s-opt-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);z-index:5;width:max-content;max-width:260px;padding:8px 10px;border-radius:calc(var(--radius)*0.5);background:var(--card-solid,#1c1c1e);box-shadow:none;color:var(--text);font-size:11px;font-weight:500;line-height:1.45;text-align:left;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
+.s-opt-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);z-index:5;width:max-content;max-width:260px;padding:8px 10px;border-radius:calc(var(--radius)*0.5);background:var(--card-solid,#1c1c1e);box-shadow:none;color:var(--text);font-size:11px;font-weight:var(--fw-bold);line-height:1.45;text-align:left;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
 .s-opt-tipwrap:hover .s-opt-tip,.s-opt-tipwrap:focus-within .s-opt-tip{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* Кнопка-иконка в строке настроек (импорт/экспорт, логи, опасная зона):
+   без подложки, на ховере меняется только цвет. .danger — красная;
+   .armed — первое нажатие двойного подтверждения: красная заливка
+   и подпись «Точно?», второе нажатие выполняет действие. */
+.s-ibtn{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;min-width:30px;padding:0 7px;border:none;border-radius:calc(var(--radius)*.8);background:transparent;color:var(--text2);font-family:var(--font);font-size:11px;font-weight:var(--fw-bold);cursor:pointer;transition:background .15s,color .15s}
+.s-ibtn:hover{color:var(--text)}
+.s-ibtn.danger{color:#e03030}
+.s-ibtn.danger:hover{color:#ff4a4a}
+.s-ibtn.armed,.s-ibtn.armed:hover{background:#e03030;color:#fff;padding:0 10px 0 8px}
+
 .s-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 2px}
-.s-lang-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:26px 12px;border-radius:calc(var(--radius)*0.75);background:rgba(var(--ovl-rgb),.035);border:1.5px solid transparent;color:var(--text2);cursor:pointer;font-family:var(--font);transition:.15s;user-select:none}
-.s-lang-card:hover{background:rgba(var(--ovl-rgb),.07);color:var(--text)}
-.s-lang-card.active{background:rgba(var(--ovl-rgb),.06);border-color:var(--accent);color:var(--text)}
+.s-lang-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:26px 12px;border-radius:calc(var(--radius)*0.75);background:var(--card-solid,var(--card));border:1.5px solid transparent;color:var(--text2);cursor:pointer;font-family:var(--font);transition:.15s;user-select:none}
+.s-lang-card:hover{background:color-mix(in srgb,var(--card-solid,var(--card)),rgb(var(--ovl-rgb)) 7%);color:var(--text)}
+/* Выбранный язык — цвет обычного блока, выделяет его рамка акцентом. */
+.s-lang-card.active{background:var(--card-solid,var(--card));border-color:var(--accent);color:var(--text)}
 .s-lang-flag{line-height:0}
 .s-flag-svg{width:46px;height:auto;display:block;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.35)}
-.s-lang-name{font-size:14px;font-weight:700}
-.srange-full{width:100%;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;transition:background .15s}
-.srange-full::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 5px rgba(var(--accent-rgb),.5);transition:transform .1s,box-shadow .1s}
-.srange-full::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 0 9px rgba(var(--accent-rgb),.8)}
-.srange-full::-moz-range-track{height:4px;background:var(--border);border-radius:2px}
-.srange-full::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
+.s-lang-name{font-size:14px;font-weight:var(--fw-bold)}
+/* Слайдер как громкость плеера (.vol-sl): без кругляшка, заливку рисует
+   box-shadow бегунка, обрезанный overflow:hidden дорожки (см. lyrics.css).
+   Дорожка — полупрозрачный --track, а не сплошной --border: иначе в режиме
+   прозрачности она оставалась серой полосой поверх стекла. */
+.srange-full{width:100%;-webkit-appearance:none;height:4px;border-radius:99px;background:var(--track);outline:none;cursor:pointer;overflow:hidden}
+.srange-full::-webkit-slider-thumb{-webkit-appearance:none;width:4px;height:4px;border-radius:99px;background:var(--accent);box-shadow:calc(-100vw - 2px) 0 0 100vw var(--accent);cursor:pointer}
 .s-sliders-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:12px}
 .s-slider-col-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
-.s-slider-col-lbl{font-size:11px;color:var(--text2);font-weight:500}
-.s-slider-col-val{font-size:11px;color:var(--muted);font-weight:700}
-.s-font-cats{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
-.s-font-cat{padding:4px 12px;border-radius:calc(var(--radius)*0.5);background:rgba(var(--ovl-rgb),.04);border:none;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600;transition:.15s;font-family:var(--font)}
-.s-font-cat:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
-.s-font-cat.active{background:rgba(var(--ovl-rgb),.12);color:var(--text)}
-.s-font-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:340px;overflow-y:auto;padding-right:4px}
-.s-font-grid::-webkit-scrollbar{width:2px}
-.s-font-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.s-font-grid::-webkit-scrollbar-track{background:transparent}
-.s-font-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 6px;border-radius:calc(var(--radius)*0.7);background:rgba(var(--ovl-rgb),.04);border:none;cursor:pointer;transition:.15s;font-family:var(--font)}
+.s-slider-col-lbl{font-size:11px;color:var(--text2);font-weight:var(--fw-bold)}
+.s-slider-col-val{font-size:11px;color:var(--muted);font-weight:var(--fw-bold)}
+/* Шапка карточки шрифтов: заголовок с описанием + «+» (загрузить свой файл).
+   Кнопка без подложки — только смена цвета, как у прочих вторичных действий. */
+.s-font-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.s-font-add{width:26px;height:26px;flex-shrink:0;margin:-2px -4px 0 0;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:color .15s,transform .2s cubic-bezier(.34,1.25,.64,1)}
+.s-font-add:hover{color:var(--text);transform:scale(1.12)}
+.s-font-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.s-font-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 6px;border-radius:calc(var(--radius)*0.7);background:rgba(var(--ovl-rgb),.04);border:none;cursor:pointer;transition:.15s;font-family:var(--font)}
 .s-font-item:hover{background:rgba(var(--ovl-rgb),.08)}
 .s-font-item.active{background:rgba(var(--ovl-rgb),.12)}
-.s-font-item-aa{font-size:22px;font-weight:700;color:var(--text);line-height:1}
-.s-font-item-name{font-size:10px;color:var(--muted)}
-.s-mode-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:calc(var(--radius)*0.7);background:rgba(var(--ovl-rgb),.04);border:none;color:var(--text2);cursor:pointer;font-size:12px;font-weight:600;transition:.15s;font-family:var(--font);user-select:none}
+.s-font-item-aa{font-size:22px;font-weight:var(--fw-bold);color:var(--text);line-height:1}
+.s-font-item-name{max-width:100%;padding:0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--muted)}
+/* Удаление своего шрифта: ✕ проявляется только на ховере плитки (как .tp-card-del). */
+.s-font-del{position:absolute;top:5px;right:5px;display:flex;align-items:center;justify-content:center;color:var(--text2);opacity:0;transform:scale(.55);pointer-events:none;transition:opacity .14s,color .14s,transform .2s cubic-bezier(.34,1.25,.64,1)}
+.s-font-item.deletable:hover .s-font-del{opacity:1;transform:none;pointer-events:auto}
+.s-font-del:hover{color:#e03030}
+.s-mode-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:calc(var(--radius)*0.7);background:rgba(var(--ovl-rgb),.04);border:none;color:var(--text2);cursor:pointer;font-size:12px;font-weight:var(--fw-bold);transition:.15s;font-family:var(--font);user-select:none}
 .s-mode-btn:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
 .s-mode-btn.active{background:rgba(var(--ovl-rgb),.1);color:var(--text)}
 #sTrSliders{display:none}
 #sTrSliders.vis{display:block}
 /* ===== ZOOM TILES ===== */
 .s-zoom-presets{display:flex;gap:6px}
-.s-zoom-tile{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:calc(var(--radius)*0.65);background:rgba(var(--ovl-rgb),.04);border:none;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600;transition:.15s;font-family:var(--font);user-select:none}
+/* transition поимённо — по той же причине, что у .s-opt-btn выше. */
+.s-zoom-tile{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:calc(var(--radius)*0.65);background:rgba(var(--ovl-rgb),.04);border:none;color:var(--text2);cursor:pointer;font-size:11px;font-weight:var(--fw-bold);transition:background .15s,color .15s,opacity .15s;font-family:var(--font);user-select:none}
 .s-zoom-tile:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
 .s-zoom-tile.bta,.s-zoom-tile.active{background:rgba(var(--ovl-rgb),.12)!important;color:var(--text)!important}
 .s-zoom-tile.btg{background:rgba(var(--ovl-rgb),.04)!important;color:var(--text2)!important}
 .s-zoom-slider-row{display:flex;align-items:center;justify-content:space-between}
-.s-zoom-slider-row .sl-reset{margin-right:auto}
-.s-zoom-slider-lbl{font-size:12px;color:var(--text2);font-weight:500}
-.s-zoom-slider-val{font-size:11px;font-weight:700;color:var(--muted);background:rgba(var(--ovl-rgb),.06);padding:2px 8px;border-radius:6px}
+.s-zoom-slider-lbl{font-size:12px;color:var(--text2);font-weight:var(--fw-bold)}
+.s-zoom-slider-val{font-size:11px;font-weight:var(--fw-bold);color:var(--muted)}
 /* === ЧИПЫ-ПЕРЕКЛЮЧАТЕЛИ «что показывать» ===
    Общий вид для наборов вида «выбери элементы»: «Отображать на панели»
    (TabsSection) и «Секции главной» (PagesSection). Раскраска — как у
@@ -340,7 +313,7 @@
    Раскладка своя: строка «иконка + подпись» по ширине текста с переносом —
    длинные подписи («Недавно слушали») не сплющиваются, как в равных колонках. */
 .s-chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.s-chip{display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:calc(var(--radius)*0.65);border:none;background:rgba(var(--ovl-rgb),.04);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font);user-select:none}
+.s-chip{display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:calc(var(--radius)*0.65);border:none;background:rgba(var(--ovl-rgb),.04);color:var(--text2);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s;font-family:var(--font);user-select:none}
 .s-chip:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
 .s-chip .s-chip-ico{display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .s-chip.active{background:rgba(var(--ovl-rgb),.12);color:var(--text)}
@@ -352,7 +325,7 @@
 /* Вид — общий с рядом секций в шапке панели (.sm-ptabs): без подложки-коробки,
    под активной вкладкой едет пилюля-индикатор (SectionTabs + useInk). */
 .s-ptabs{position:relative;display:flex;gap:2px;margin-bottom:12px}
-.s-ptab{position:relative;z-index:1;flex:0 0 auto;display:flex;align-items:center;gap:8px;max-width:190px;padding:8px 14px;border:none;border-radius:999px;background:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:color .18s}
+.s-ptab{position:relative;z-index:1;flex:0 0 auto;display:flex;align-items:center;gap:8px;max-width:190px;padding:8px 14px;border:none;border-radius:999px;background:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:color .18s}
 .s-ptab:hover{color:var(--text)}
 .s-ptab.active{color:var(--text)}
 /* Иконка и подпись — как в ряду секций: без display:flex svg встаёт по базовой
@@ -367,37 +340,6 @@
 .sm-topnav .s-ptabs::-webkit-scrollbar{height:0}
 .sm-topnav .s-ptab-ink{bottom:2px}
 
-/* ===== НАСТРОЙКИ ВНУТРИ БОКОВОЙ ПАНЕЛИ =====================================
-   Настройки переехали в общий каркас SideSheet (слева, широкая — см.
-   side-sheet.css). Обёртка #settingsOverlay осталась внутри панели, потому что
-   на этот id завязаны --card-solid, цвета карточек и ховеры в overrides-main.css
-   и transparency.css. Оверлеем она больше не является — гасим здесь всё, что
-   делало её полноэкранной подложкой, а .settings-modal — плавающей карточкой.
-
-   Специфичность (класс .sm-in-sheet) и !important нужны, чтобы перебить
-   стеклянный режим: transparency.css грузится ПОСЛЕ settings.css и красит обе
-   поверхности через !important. */
-.sheet #settingsOverlay.sm-in-sheet{
-  position:static;inset:auto;z-index:auto;
-  display:flex;flex:1;min-height:0;
-  padding:16px 0;
-  background:none!important;
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-  opacity:1;pointer-events:auto;transition:none
-}
-.sheet #settingsOverlay.sm-in-sheet .settings-modal{
-  width:100%;max-width:none;height:100%;max-height:none;
-  background:transparent!important;
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-  border:none;border-radius:0;box-shadow:none;
-  transform:none;transition:none;will-change:auto
-}
-/* Контент-колонка тоже без своей плашки: панель прозрачная, фон даёт окно.
-   Боковых отступов не даём — их держит сама панель (--sheet-pad). */
-.sheet #settingsOverlay.sm-in-sheet #smContent{background:transparent!important;padding:2px 0 28px}
-/* Раскладка стала колонкой: навигация сверху, контент под ней. */
-.sheet #settingsOverlay.sm-in-sheet .sm-cat-view{flex-direction:column}
-
 /* ── Навигация настроек: два ряда вкладок ───────────────────────────────────
    Ряд групп (Основное/Оформление/Интеграции) с бегущей линией под активной и
    ряд секций активной группы с бегущей пилюлей. Позицию обоих индикаторов
@@ -406,7 +348,7 @@
 .sm-topnav{flex-shrink:0;display:flex;flex-direction:column;gap:12px;padding:2px 0 14px}
 
 .sm-gtabs{position:relative;display:flex;gap:24px;padding-bottom:9px}
-.sm-gtab{position:relative;z-index:1;padding:0;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--text2);white-space:nowrap;transition:color .18s}
+.sm-gtab{position:relative;z-index:1;padding:0;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:15px;font-weight:var(--fw-bold);letter-spacing:-.01em;color:var(--text2);white-space:nowrap;transition:color .18s}
 .sm-gtab:hover{color:var(--text)}
 .sm-gtab.active{color:var(--text)}
 .sm-gtab-ink{position:absolute;left:0;bottom:0;height:2px;border-radius:2px;background:var(--text);width:var(--ink-w,0);transform:translateX(var(--ink-x,0));transition:transform .32s var(--sheet-ease),width .32s var(--sheet-ease)}
@@ -415,7 +357,7 @@
    прокручиваемого контента, поэтому едет вместе с кнопками. */
 .sm-ptabs{position:relative;display:flex;gap:2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:2px}
 .sm-ptabs::-webkit-scrollbar{height:0}
-.sm-ptab{position:relative;z-index:1;flex:0 0 auto;display:flex;align-items:center;gap:8px;max-width:190px;padding:8px 14px;border:none;border-radius:999px;background:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text2);transition:color .18s}
+.sm-ptab{position:relative;z-index:1;flex:0 0 auto;display:flex;align-items:center;gap:8px;max-width:190px;padding:8px 14px;border:none;border-radius:999px;background:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);color:var(--text2);transition:color .18s}
 .sm-ptab:hover{color:var(--text)}
 .sm-ptab.active{color:var(--text)}
 .sm-ptab-ico{display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .18s}

@@ -1,4 +1,3 @@
-import { CardReset } from '../controls/SectionReset'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
@@ -12,8 +11,6 @@ import type { PageTab } from '../subTabs'
  *
  * - «Главная» — набор видимых секций главной страницы (`uiPrefs.home*`);
  * - «Библиотека» — бывший раздел «Библиотека» (`LibraryCards`).
- *
- * Кнопка сброса в шапке общая (сбрасывает все UI-префы, как и раньше).
  */
 export const PagesSection = ({ tab }: { tab: PageTab }) => {
   const t = useT()
@@ -39,6 +36,7 @@ type HomeKey =
   | 'homeFav'
   | 'homeHistory'
   | 'homeForYou'
+  | 'homeSimilar'
   | 'homeNew'
   | 'homeCharts'
   | 'homeRecent'
@@ -50,11 +48,12 @@ const HOME_ITEMS: { key: HomeKey; labelKey: TranslationKey; icon: IconName }[] =
   { key: 'homeContinue', labelKey: 'settings.home.item.continue', icon: 'play' },
   { key: 'homeFav', labelKey: 'settings.home.item.fav', icon: 'heart' },
   { key: 'homeHistory', labelKey: 'settings.home.item.history', icon: 'clock' },
-  { key: 'homeForYou', labelKey: 'settings.home.item.forYou', icon: 'user' },
-  { key: 'homeNew', labelKey: 'settings.home.item.new', icon: 'stars' },
-  { key: 'homeCharts', labelKey: 'settings.home.item.charts', icon: 'chart' },
   { key: 'homeRecent', labelKey: 'settings.home.item.recent', icon: 'vinyl' },
   { key: 'homePlaylists', labelKey: 'settings.home.item.playlists', icon: 'list' },
+  { key: 'homeForYou', labelKey: 'settings.home.item.forYou', icon: 'user' },
+  { key: 'homeSimilar', labelKey: 'settings.home.item.similar', icon: 'link' },
+  { key: 'homeNew', labelKey: 'settings.home.item.new', icon: 'stars' },
+  { key: 'homeCharts', labelKey: 'settings.home.item.charts', icon: 'chart' },
 ]
 
 /**
@@ -83,10 +82,7 @@ const HomeCards = () => {
 
   return (
     <div className="sc">
-      <div className="sc-title">
-        {t('settings.home.sections.title')}
-        <CardReset onReset={() => p.resetKeys(...HOME_ITEMS.map((it) => it.key))} />
-      </div>
+      <div className="sc-title">{t('settings.home.sections.title')}</div>
       <div className="sc-desc">{t('settings.home.sections.desc')}</div>
       <div className="s-chip-grid">
         {HOME_ITEMS.map((it) => (

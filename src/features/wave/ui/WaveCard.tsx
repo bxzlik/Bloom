@@ -9,7 +9,7 @@ import {
 import { createPortal } from 'react-dom'
 import waveApi, { getWaveSource, setWaveSource } from '@/wave'
 import { useYmAuthStore } from '@features/yandex'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { ScLogo, YmLogo, providerBrandColor } from '@entities/track'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
@@ -50,11 +50,13 @@ export const WaveCard = () => {
   const t = useT()
   const [loading, setLoading] = useState(false)
   const [dislikesOpen, setDislikesOpen] = useState(false)
-  // Координаты открытия (fixed) или null = закрыт. Попап рендерится порталом в
-  // body — иначе его перекрывают блоки главной ниже (он заперт в стек-контексте
-  // баннера). `clamped` — те же координаты после подгонки под окно (замер по
-  // факту рендера, см. ниже); пока его нет, меню держим невидимым, чтобы не
-  // мигнуло за краем экрана.
+  // Координаты открытия (fixed). Попап рендерится порталом в body — иначе его
+  // перекрывают блоки главной ниже (он заперт в стек-контексте баннера).
+  // `clamped` — те же координаты после подгонки под окно (замер по факту
+  // рендера, см. ниже); пока его нет, меню держим невидимым, чтобы не мигнуло за
+  // краем экрана. Открытость — отдельный флаг: при закрытии координаты не
+  // сбрасываем, уходящее меню доигрывает на месте.
+  const [menuOpen, setMenuOpen] = useState(false)
   const [menuPos, setMenuPos] = useState<MenuPos | null>(null)
   const [clamped, setClamped] = useState<{ x: number; y: number } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -64,7 +66,7 @@ export const WaveCard = () => {
   // Разлогинились → источник 'ym' уже не валиден, показываем как 'sc'.
   const effSource = ymAuthed ? source : 'sc'
 
-  usePopupOpenAnimation(menuRef, clamped)
+  const { mounted: menuShown } = usePopupPresence(menuRef, menuOpen, clamped)
 
   // ПКМ по любому месту блока волны — тот же попап, что и у кнопки «Настроить».
   // ГОЧА: попап и модалка дизлайков — порталы в body, но события React всплывают
@@ -76,6 +78,7 @@ export const WaveCard = () => {
     e.stopPropagation()
     setClamped(null)
     setMenuPos({ x: e.clientX, y: e.clientY })
+    setMenuOpen(true)
   }
 
   // Кнопка «Настроить»: попап падает ПОД кнопку и выравнивается по её правому
@@ -85,12 +88,10 @@ export const WaveCard = () => {
     const r = e.currentTarget.getBoundingClientRect()
     setClamped(null)
     setMenuPos({ x: r.right, y: r.bottom + 8, right: true })
+    setMenuOpen(true)
   }
 
-  const closeMenu = () => {
-    setMenuPos(null)
-    setClamped(null)
-  }
+  const closeMenu = () => setMenuOpen(false)
 
   // Удерживаем меню в пределах окна (как у прочих контекстных меню).
   useLayoutEffect(() => {
@@ -105,7 +106,7 @@ export const WaveCard = () => {
 
   // Закрытие при ресайзе/скролле — координаты fixed-попапа становятся неверными.
   useLayoutEffect(() => {
-    if (!menuPos) return
+    if (!menuOpen) return
     window.addEventListener('resize', closeMenu)
     window.addEventListener('scroll', closeMenu, true)
     const onKey = (e: KeyboardEvent) => {
@@ -117,7 +118,7 @@ export const WaveCard = () => {
       window.removeEventListener('scroll', closeMenu, true)
       window.removeEventListener('keydown', onKey)
     }
-  }, [menuPos])
+  }, [menuOpen])
 
   const pickSource = (s: 'sc' | 'ym') => {
     setWaveSource(s)
@@ -171,18 +172,21 @@ export const WaveCard = () => {
       </button>
 
       <DislikesModal open={dislikesOpen} onClose={() => setDislikesOpen(false)} />
-      {menuPos &&
+      {menuShown &&
+        menuPos &&
         createPortal(
           <>
-            {/* клик мимо (в т.ч. правый) — закрыть */}
-            <div
-              onClick={closeMenu}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                closeMenu()
-              }}
-              style={{ position: 'fixed', inset: 0, zIndex: 8000 }}
-            />
+            {/* клик мимо (в т.ч. правый) — закрыть; уходящее меню клики уже не ловит */}
+            {menuOpen && (
+              <div
+                onClick={closeMenu}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  closeMenu()
+                }}
+                style={{ position: 'fixed', inset: 0, zIndex: 8000 }}
+              />
+            )}
             <div
               ref={menuRef}
               role="menu"

@@ -28,7 +28,14 @@ import {
   getCurrentView,
   compressCover,
 } from '../lib'
-import { playFromSource, playShuffledFromSource, addTracksToQueue, playTracksNext } from '@features/player'
+import {
+  playFromSource,
+  playShuffledFromSource,
+  addTracksToQueue,
+  playTracksNext,
+  togglePlay,
+  useSourcePlayback,
+} from '@features/player'
 import { LibTracklist } from './LibTracklist'
 import { LibScrollbar } from './LibScrollbar'
 import { LibGridOverview } from './LibGridOverview'
@@ -293,6 +300,27 @@ export const LibContent = () => {
     </div>
   )
 
+  // Очередь набрана ЭТИМ видом — «Играть все» становится паузой (как в шапке
+  // списка на телефоне). Ключ считаем из mode/plId/folderPath, а не из
+  // getCurrentView(): тот перебирает и фильтрует все треки, в рендере ему не
+  // место, а источник целиком определяется этими тремя полями.
+  const viewKey =
+    mode === 'pl'
+      ? plId
+        ? `playlist:${plId}`
+        : null
+      : mode === 'folder'
+        ? folderPath
+          ? `folder:${folderPath}`
+          : null
+        : `lib-${mode}`
+  // Наложенный inline-фильтр источник не меняет (тот же `lib-all`), но набор
+  // треков — меняет: с ним кнопка обязана играть отфильтрованное, а не встать
+  // паузой на том, что уже играет.
+  const { mine: viewIsCur, playing: viewPlaying } = useSourcePlayback(
+    searchQuery ? null : viewKey,
+  )
+
   /**
    * Ряд действий шапки: «Играть все» + капсулы иконок (либо bulk-режим SelActions,
    * либо кнопки сохранения редактора). Рендерится в одном из двух мест —
@@ -337,17 +365,23 @@ export const LibContent = () => {
               </button>
             </div>
           )}
+          {/* Пока очередь набрана этим видом — кнопка пауза/плей по нему, а не
+              перезапуск с первого трека: иначе клик терял бы то, что играет. */}
           <button
             key="play-all"
             className="btn-play-all"
             onClick={() => {
+              if (viewIsCur) {
+                togglePlay()
+                return
+              }
               const view = getCurrentView()
               if (!view.tracks.length) return
               playFromSource(view.tracks.map((t) => t.id), view.source)
             }}
           >
-            <Ico name="play" width={16} height={16} />
-            {t('lib.playAll')}
+            <Ico name={viewPlaying ? 'pause' : 'play'} width={16} height={16} />
+            {viewPlaying ? t('common.pause') : t('lib.playAll')}
           </button>
           {/* Иконки собраны в капсулы — как в шапке артиста/плейлиста в поиске
               (.sp-am-btn-group): работа со списком слева, воспроизведение/меню справа.

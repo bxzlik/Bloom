@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { ArtistLinks, providerBrandColor, type Track } from '@entities/track'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence, useStickyWhile } from '@shared/hooks'
 import {
   addToQueue,
   playNextInQueue,
@@ -52,8 +52,8 @@ export interface TrackCtxMenuProps {
  * Активны сейчас: cxfav (toggle), cxadd→flyout, cxrm (только mode=pl), cxdel.
  */
 export const TrackCtxMenu = ({
-  pos,
-  track,
+  pos: posProp,
+  track: trackProp,
   onClose,
   onCreatePlaylistForTrack,
   onEditTags,
@@ -66,6 +66,14 @@ export const TrackCtxMenu = ({
   const moreItemRef = useRef<HTMLDivElement>(null)
   const srcItemRef = useRef<HTMLDivElement>(null)
   const dlItemRef = useRef<HTMLDivElement>(null)
+  // Появление и закрытие. Родители закрывают меню, обнуляя pos/track, поэтому
+  // уходящее меню (и его флайауты) дорисовываем по последним значениям — ниже
+  // `pos`/`track` уже «липкие».
+  const open = posProp != null && trackProp != null
+  const [clampedPos, setClampedPos] = useState<{ x: number; y: number } | null>(null)
+  const { mounted } = usePopupPresence(menuRef, open, clampedPos)
+  const pos = useStickyWhile(posProp, mounted)
+  const track = useStickyWhile(trackProp, mounted)
   const isFav = useFavStore((s) => (track ? s.favs.has(track.id) : false))
   const toggleFav = useFavStore((s) => s.toggleFav)
   const playlists = usePlaylistStore((s) => s.playlists)
@@ -94,7 +102,6 @@ export const TrackCtxMenu = ({
   const closeRef = useRef(onClose)
   closeRef.current = onClose
 
-  const [clampedPos, setClampedPos] = useState<{ x: number; y: number } | null>(null)
   // Какое подменю-флайаут открыто: 'pl' (в плейлист), 'dl' (скачать / офлайн)
   // или 'more' («Ещё» — редкие пункты + смена площадки).
   const [sub, setSub] = useState<null | 'pl' | 'dl' | 'more'>(null)
@@ -104,10 +111,16 @@ export const TrackCtxMenu = ({
   const [flyout2Pos, setFlyout2Pos] = useState<{ left: number; top: number } | null>(null)
   const hideTimer = useRef<number | null>(null)
 
-  // Плавная open-анимация через WAAPI (вместо ctxIn с overshoot+translateY).
-  usePopupOpenAnimation(menuRef, clampedPos)
-  usePopupOpenAnimation(flyoutRef, flyoutPos)
-  usePopupOpenAnimation(flyout2Ref, flyout2Pos)
+  // Флайауты — тот же WAAPI, что у меню (вместо ctxIn с overshoot+translateY).
+  // Уходят вместе с меню или сами (увели мышь); первый дорисовывает то
+  // подменю, что показывал.
+  const { mounted: subShown } = usePopupPresence(flyoutRef, open && sub !== null, flyoutPos)
+  const shownSub = useStickyWhile(sub, subShown)
+  const { mounted: sub2Shown } = usePopupPresence(
+    flyout2Ref,
+    open && sub === 'more' && sub2 === 'src',
+    flyout2Pos,
+  )
 
   // Сбрасываем flyout при закрытии меню — иначе state переживает
   // unmount-через-null и при следующем открытии flyout всплывает сам.
@@ -172,10 +185,8 @@ export const TrackCtxMenu = ({
   const anchorEl =
     sub === 'more' ? moreItemRef.current : sub === 'dl' ? dlItemRef.current : addItemRef.current
   useLayoutEffect(() => {
-    if (!sub || !anchorEl || !flyoutRef.current) {
-      setFlyoutPos(null)
-      return
-    }
+    // Позицию не сбрасываем — уходящий флайаут доигрывает на месте.
+    if (!sub || !anchorEl || !flyoutRef.current) return
     const ar = anchorEl.getBoundingClientRect()
     const fw = flyoutRef.current.offsetWidth
     const fh = flyoutRef.current.offsetHeight
@@ -193,10 +204,7 @@ export const TrackCtxMenu = ({
   // считаем после его позиционирования (flyoutPos в deps).
   const anchor2El = sub2 ? srcItemRef.current : null
   useLayoutEffect(() => {
-    if (!sub2 || !anchor2El || !flyout2Ref.current) {
-      setFlyout2Pos(null)
-      return
-    }
+    if (!sub2 || !anchor2El || !flyout2Ref.current) return
     const ar = anchor2El.getBoundingClientRect()
     const fw = flyout2Ref.current.offsetWidth
     const fh = flyout2Ref.current.offsetHeight
@@ -212,7 +220,7 @@ export const TrackCtxMenu = ({
 
   // Close on click outside / Escape.
   useEffect(() => {
-    if (!pos) return
+    if (!open) return
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node
       if (menuRef.current?.contains(t)) return
@@ -229,7 +237,7 @@ export const TrackCtxMenu = ({
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('keydown', onKey)
     }
-  }, [pos, onClose])
+  }, [open, onClose])
 
   // Клик по имени артиста в превью: страницу открывает глобальный делегат
   // `.tra-link` (см. App), а меню надо закрыть отдельно — onDown его пропускает
@@ -529,7 +537,6 @@ export const TrackCtxMenu = ({
             id="cxdel"
             onClick={() => {
               onClose()
-              if (!confirm(t('lib.ctx.confirmDelete'))) return
               void deleteUploadedTrack(track.id)
             }}
           >
@@ -543,7 +550,7 @@ export const TrackCtxMenu = ({
 
       {/* Flyout-подменю справа от пункта: «В плейлист» (cxadd) или «Сменить
           площадку» (cxsrc) — один контейнер, содержимое по активному `sub`. */}
-      {sub && (
+      {subShown && shownSub && (
         <div
           ref={flyoutRef}
           id="cxPlFlyout"
@@ -557,7 +564,7 @@ export const TrackCtxMenu = ({
           }}
         >
           {/* ── Подменю «В плейлист» ── */}
-          {sub === 'pl' && (
+          {shownSub === 'pl' && (
           <>
           {/* «В библиотеку» — первый пункт flyout для трека НЕ из библиотеки
               (SC/Yandex). _showScAddFlyout. */}
@@ -565,7 +572,7 @@ export const TrackCtxMenu = ({
             <>
               <div
                 className="ci"
-                style={{ color: 'var(--accent)', fontWeight: 600 }}
+                style={{ color: 'var(--accent)', fontWeight: 'var(--fw-bold)' }}
                 onClick={() => {
                   saveTrackToLibrary(track)
                   onClose()
@@ -651,7 +658,7 @@ export const TrackCtxMenu = ({
 
           {/* ── Подменю «Ещё»: редкие пункты. «Сменить площадку» — своя строка
               с флайаутом второго уровня (см. #cxSrcFlyout ниже). ── */}
-          {sub === 'more' && (
+          {shownSub === 'more' && (
             <>
               {hasShare && (
                 <div
@@ -733,7 +740,7 @@ export const TrackCtxMenu = ({
           )}
 
           {/* ── Подменю «Скачать»: скачать файл на диск / слушать офлайн (тоггл). ── */}
-          {sub === 'dl' && (
+          {shownSub === 'dl' && (
             <>
               <div
                 className="ci"
@@ -783,7 +790,7 @@ export const TrackCtxMenu = ({
       {/* Второй уровень: список площадок справа от «Сменить площадку» внутри
           флайаута «Ещё». Текущая помечена галочкой, остальные ищут трек там и
           ПЕРСИСТЕНТНО заменяют им библиотечную запись (switchTrackPlatform). */}
-      {sub === 'more' && sub2 === 'src' && (
+      {sub2Shown && (
         <div
           ref={flyout2Ref}
           id="cxPlFlyout"

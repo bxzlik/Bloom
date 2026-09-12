@@ -84,10 +84,10 @@
 @keyframes toastRing{from{stroke-dashoffset:0}to{stroke-dashoffset:93.6}}
 /* Не больше трёх строк (как на телефоне): длинный текст обрезается, а не
    растит капсулу в столбик. */
-#toast .toast-text{line-height:1.35;font-weight:500;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+#toast .toast-text{line-height:1.35;font-weight:var(--fw-bold);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 /* Кнопка — пилюля, а не голый текст: у капсулы правый край скруглён, и текст
    без подложки жался бы к дуге. */
-#toast .toast-undo{flex-shrink:0;background:color-mix(in srgb,var(--accent) 14%,transparent);border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:6px 13px;border-radius:999px;font-family:var(--font);white-space:nowrap;transition:background .14s}
+#toast .toast-undo{flex-shrink:0;background:color-mix(in srgb,var(--accent) 14%,transparent);border:none;color:var(--accent);font-size:12px;font-weight:var(--fw-bold);cursor:pointer;padding:6px 13px;border-radius:999px;font-family:var(--font);white-space:nowrap;transition:background .14s}
 #toast .toast-undo:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
 /* Тост прогресса скачивания — та же капсула, но со значком-вертушкой вместо
    вида и полосой ДОЛИ по низу. Когда он висит, эфемерный #toast уезжает ниже
@@ -100,7 +100,7 @@
 #dltoast .dlt-ico{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;color:var(--tk);background:color-mix(in srgb,var(--tk) 16%,transparent)}
 #dltoast .dlt-spin{width:15px;height:15px;border:2px solid color-mix(in srgb,var(--tk) 22%,transparent);border-top-color:var(--tk);border-radius:50%;animation:bloom-spin .75s linear infinite}
 #dltoast .dlt-body{min-width:0;flex:1}
-#dltoast .dlt-title{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dltoast .dlt-title{font-size:13px;font-weight:var(--fw-bold);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #dltoast .dlt-sub{font-size:12px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #dltoast .dlt-count{font-size:11px;color:var(--text2);flex-shrink:0;font-variant-numeric:tabular-nums}
 #dltoast .dlt-close{flex-shrink:0;background:none;border:none;color:var(--text2);cursor:pointer;width:26px;height:26px;display:flex;align-items:center;justify-content:center;opacity:.7;border-radius:50%;transition:background .12s,opacity .12s}
@@ -123,7 +123,7 @@ body.dl-toast #toast{top:112px}
 #cxPreview>*{position:relative;z-index:1}
 #cxPreviewCov{width:38px;height:38px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
 #cxPreviewCov img{width:100%;height:100%;object-fit:cover}
-#cxPreviewName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff}
+#cxPreviewName{font-size:13px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff}
 #cxPreviewArtist{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px}
 /* Шапка целиком pointer-events:none (клики идут «сквозь» неё), но имя артиста —
    ссылка на страницу артиста, поэтому мышь ей возвращаем точечно. */

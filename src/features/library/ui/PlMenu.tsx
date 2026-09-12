@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavStore } from '@app/navigationStore'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence, useStickyWhile } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import type { Track } from '@entities/track'
 import { HoverMarquee, toast } from '@shared/ui'
@@ -19,14 +19,13 @@ import { downloadPlaylistOffline, removePlaylistOffline, useOfflineStore } from 
 import { Ico } from '@shared/ui/icons/solar'
 import { PlaylistOfflineTag } from './PlaylistOfflineTag'
 import { CreatedMeta } from './DateMeta'
-import { exportPlaylistFile, folderScan, folderRemove, folderIsCopy } from '../api'
+import { exportPlaylistFile, folderScan, folderRemove } from '../api'
 import { buildExportBundle, refreshPlaylistTracks, deleteUploadedTrack, applyFolderScan } from '../lib'
 import {
   usePlaylistStore,
   useHistoryStore,
   useDupsStore,
   useMergeStore,
-  useConvertStore,
   useLibStore,
   useFavStore,
   useUnifiedOrderStore,
@@ -73,12 +72,12 @@ export const PlMenu = ({
   anchorRef,
   cursorX,
   cursorY,
-  forceFullMenu,
-  mode,
-  heroName,
-  heroSub,
-  playlist,
-  folderPath,
+  forceFullMenu: forceFullMenuProp,
+  mode: modeProp,
+  heroName: heroNameProp,
+  heroSub: heroSubProp,
+  playlist: playlistProp,
+  folderPath: folderPathProp,
   onReset,
   onEdit,
 }: PlMenuProps) => {
@@ -99,6 +98,20 @@ export const PlMenu = ({
     | { kind: 'cursor'; top: number; left: number }
     | null
   >(null)
+  // Появление и закрытие. ПКМ-родители закрывают меню, обнуляя свои данные
+  // (ctxEntry → null), поэтому шапку и пункты уходящего меню рисуем по
+  // последнему снимку пропсов.
+  const { mounted } = usePopupPresence(menuRef, open, pos)
+  const live = {
+    forceFullMenu: forceFullMenuProp,
+    mode: modeProp,
+    heroName: heroNameProp,
+    heroSub: heroSubProp,
+    playlist: playlistProp,
+    folderPath: folderPathProp,
+  }
+  const { forceFullMenu, mode, heroName, heroSub, playlist, folderPath } =
+    useStickyWhile(open ? live : null, mounted) ?? live
   // Cursor-mode: первый рендер — у сырого курсора (скрытый), затем меряем
   // реальную высоту и клампим. До замера держим меню hidden, чтобы не было
   // прыжка с overflow за экран (fallback-высота не годилась для длинных меню).
@@ -116,13 +129,14 @@ export const PlMenu = ({
   const moreItemRef = useRef<HTMLDivElement>(null)
   const dlFlyoutRef = useRef<HTMLDivElement>(null)
   const dlHideTimer = useRef<number | null>(null)
-  // Сбрасываем sub-страницу / флайаут при закрытии меню.
+  // Сбрасываем sub-страницу / флайаут после ухода меню (не в момент закрытия —
+  // иначе содержимое сменилось бы посреди анимации).
   useEffect(() => {
-    if (!open) {
+    if (!mounted) {
       setSortPage(false)
       setDlFlyout(null)
     }
-  }, [open])
+  }, [mounted])
 
   const cancelDlHide = () => {
     if (dlHideTimer.current !== null) {
@@ -142,10 +156,8 @@ export const PlMenu = ({
   // Позиционирование флайаута: справа от пункта-якоря, при нехватке места — слева.
   const flyoutAnchor = dlFlyout === 'more' ? moreItemRef.current : dlItemRef.current
   useLayoutEffect(() => {
-    if (!dlFlyout || !flyoutAnchor || !dlFlyoutRef.current) {
-      setDlFlyoutPos(null)
-      return
-    }
+    // Позицию не сбрасываем — уходящий флайаут доигрывает на месте.
+    if (!dlFlyout || !flyoutAnchor || !dlFlyoutRef.current) return
     const ar = flyoutAnchor.getBoundingClientRect()
     const fw = dlFlyoutRef.current.offsetWidth
     const fh = dlFlyoutRef.current.offsetHeight
@@ -159,18 +171,16 @@ export const PlMenu = ({
     setDlFlyoutPos({ left, top })
   }, [dlFlyout, flyoutAnchor])
 
-  // Плавная open-анимация (вместо ctxIn) — и для меню, и для флайаута «Скачать»
-  // (иначе ctxIn с overshoot+сдвигом дёргает иконки, как было замечено).
-  usePopupOpenAnimation(menuRef, pos)
-  usePopupOpenAnimation(dlFlyoutRef, dlFlyoutPos)
+  // Флайаут «Скачать» / «Ещё» — тот же WAAPI, что у меню (ctxIn с overshoot+
+  // сдвигом дёргал иконки). Уходит вместе с меню или сам (увели мышь) и
+  // дорисовывает то, что показывал.
+  const { mounted: dlFlyoutShown } = usePopupPresence(dlFlyoutRef, open && !!dlFlyout, dlFlyoutPos)
+  const shownFlyout = useStickyWhile(dlFlyout, dlFlyoutShown)
 
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null)
-      setCursorMeasured(false)
-      setMaxH(null)
-      return
-    }
+    // Позицию не сбрасываем — уходящее меню доигрывает на месте; при следующем
+    // открытии всё пересчитается ниже до первой отрисовки.
+    if (!open) return
     if (cursorX != null && cursorY != null) {
       // Первый проход: ставим у сырого курсора (скрыто), клампим в эффекте ниже
       // по реально измеренной высоте меню.
@@ -249,7 +259,7 @@ export const PlMenu = ({
     return () => window.removeEventListener('mousedown', onDown)
   }, [open, onClose, anchorRef])
 
-  if (!open || !pos) return null
+  if (!mounted || !pos) return null
 
   // ── Действия ─────────────────────────────────────────────────────
 
@@ -362,22 +372,15 @@ export const PlMenu = ({
       .catch((e) => console.warn('folderScan failed', e))
   }
 
-  const removeFolder = async () => {
+  const removeFolder = () => {
     if (!folderPath) return
     onClose()
-    // Копию из профиля («В Bloom») отвязка стирает с диска — предупреждаем иначе.
-    const isCopy = await folderIsCopy(folderPath).catch(() => false)
-    const question = isCopy
-      ? t('lib.plmenu.confirmDeleteCopiedFolder', { name: heroName })
-      : t('lib.plmenu.confirmUnlinkFolder', { name: heroName })
-    if (!confirm(question)) return
     folderRemove(folderPath).catch((e) => console.warn('folderRemove failed', e))
     onReset?.()
   }
 
   const clearHistory = () => {
     onClose()
-    if (!confirm(t('lib.plmenu.confirmClearHistory'))) return
     // Только список. Дневной журнал активности — это статистика, а не история:
     // чистить его заодно значило бы стирать графики профиля и «Итоги» за то,
     // что человек всего лишь прибрал список недавнего.
@@ -457,7 +460,9 @@ export const PlMenu = ({
 
   // ── Опции по режиму ─────────────────────────────────────────────
   // Cursor-mode = меню позиционируется у курсора (ПКМ из sidebar или по шапке).
-  const isCursorMode = cursorX != null && cursorY != null
+  // По сохранённой позиции, а не по cursorX/Y: родитель обнуляет курсор в
+  // момент закрытия, и уходящее меню переключилось бы на полный набор пунктов.
+  const isCursorMode = pos.kind === 'cursor'
   // Compact = урезанный sidebar-вариант пунктов. ПКМ по шапке (forceFullMenu)
   // позиционируется у курсора, но показывает полный набор как у кнопки «…».
   const compact = isCursorMode && !forceFullMenu
@@ -538,7 +543,8 @@ export const PlMenu = ({
       ])
     }
 
-    // 4. Обновление с площадок — частое действие, остаётся в основном списке.
+    // 4. Обновление с площадок — частое действие, остаётся в основном списке
+    //    (настройка расписания к нему уехала в «Ещё»).
     const tools: ReactNode[] = []
     if (playlist.sources?.length) {
       tools.push(
@@ -549,19 +555,6 @@ export const PlMenu = ({
           onClick={() => {
             onClose()
             void refreshPlaylistTracks(playlist.id)
-          }}
-        />,
-        <Item
-          key="auto-refresh"
-          icon={<Ico name="clock" width={11} height={11} />}
-          label={t('lib.plauto.title')}
-          onClick={() => {
-            onClose()
-            // Этот плейлист сразу отмечаем в наборе — открывать панель, чтобы
-            // ещё раз искать его в списке, было бы лишним шагом.
-            const st = usePlAutoStore.getState()
-            if (!st.ids.includes(playlist.id)) st.toggleId(playlist.id)
-            st.openDrawer()
           }}
         />,
       )
@@ -586,9 +579,10 @@ export const PlMenu = ({
     )
     groups.push(tools)
 
-    // 5. Редкие инструменты — во флайаут «Ещё»: объединить / перенести / дубли.
+    // 5. Редкие инструменты — во флайаут «Ещё»: объединить / расписание / дубли.
     //    Каждый нужен раз в сто открытий меню, но занимал строку всегда.
-    //    (Экспорт в файл живёт во флайауте «Скачать» — это тоже выгрузка на диск.)
+    //    (Экспорт в файл живёт во флайауте «Скачать» — это тоже выгрузка на диск.
+    //    Перенос на площадку живёт в модалке «+» библиотеки.)
     moreItems.push(
       <Item
         key="merge"
@@ -599,17 +593,21 @@ export const PlMenu = ({
           useMergeStore.getState().openMerge(playlist.id)
         }}
       />,
-      // «Перенести на площадку» — конвертер: копия плейлиста с треками другой
-      // площадки. Пустой плейлист переносить нечего.
-      ...(playlist.trs.length
+      // Расписание автообновления — только у плейлистов с источниками:
+      // обновлять нечего, если тянуть не откуда.
+      ...(playlist.sources?.length
         ? [
             <Item
-              key="convert"
-              icon={<ConvertIcon />}
-              label={t('lib.plmenu.convert')}
+              key="auto-refresh"
+              icon={<ClockIcon />}
+              label={t('lib.plauto.title')}
               onClick={() => {
                 onClose()
-                useConvertStore.getState().openConvert(playlist.id)
+                // Этот плейлист сразу отмечаем в наборе — открывать панель, чтобы
+                // ещё раз искать его в списке, было бы лишним шагом.
+                const st = usePlAutoStore.getState()
+                if (!st.ids.includes(playlist.id)) st.toggleId(playlist.id)
+                st.openDrawer()
               }}
             />,
           ]
@@ -814,7 +812,7 @@ export const PlMenu = ({
       </div>
 
       {/* Боковой флайаут «Скачать» / «Ещё» — справа от пункта (как #cxPlFlyout у трека). */}
-      {dlFlyout && (
+      {dlFlyoutShown && shownFlyout && (
         <div
           ref={dlFlyoutRef}
           id="cxPlFlyout"
@@ -827,8 +825,8 @@ export const PlMenu = ({
             visibility: dlFlyoutPos ? 'visible' : 'hidden',
           }}
         >
-          {dlFlyout === 'more' && moreItems}
-          {dlFlyout === 'dl' && (
+          {shownFlyout === 'more' && moreItems}
+          {shownFlyout === 'dl' && (
           <>
           <div className="ci" onClick={downloadPl}>
             <span className="ci-icon"><DownloadIcon /></span>
@@ -971,7 +969,6 @@ const DiskIcon = () => <Ico name="save" width={11} height={11} />
 const OfflineOffIcon = () => <Ico name="trash" width={11} height={11} />
 const TrashIcon = () => <Ico name="trash" width={11} height={11} />
 const MergeIcon = () => <Ico name="merge" width={11} height={11} />
-const ConvertIcon = () => <Ico name="arrowRightStraight" width={11} height={11} />
 const DupsIcon = () => <Ico name="copy" width={11} height={11} />
 const RefreshIcon = () => <Ico name="refresh" width={11} height={11} />
 const AddQueueIcon = () => <Ico name="addQueue" width={11} height={11} />

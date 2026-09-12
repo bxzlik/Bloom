@@ -14,19 +14,19 @@
 .dups-status:active{transform:scale(.92)}
 .dups-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:64px 0;color:var(--muted)}
 .dups-empty .dups-status{margin-bottom:10px}
-.dups-empty-title{font-size:15px;font-weight:700;color:var(--text)}
+.dups-empty-title{font-size:15px;font-weight:var(--fw-bold);color:var(--text)}
 .dups-empty-sub{font-size:12px;color:var(--muted)}
 /* Сводка над группами (вместо старой шапки): кружок + текст + «Удалить все». */
 .dups-summary{display:flex;align-items:center;gap:14px;padding:4px 2px 8px;--ds-size:48px}
 .dups-summary-text{flex:1;min-width:0}
-.dups-summary-title{font-size:14px;font-weight:600;color:var(--text2)}
-.dups-summary-title strong{color:var(--text);font-weight:800}
+.dups-summary-title{font-size:14px;font-weight:var(--fw-bold);color:var(--text2)}
+.dups-summary-title strong{color:var(--text);font-weight:var(--fw-bold)}
 .dups-summary-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .dups-group{background:rgba(var(--ovl-rgb),.025);border-radius:calc(var(--radius)*.75);overflow:hidden;padding:4px}
 .dups-group-head{padding:6px 6px 6px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.dups-group-label{font-size:12px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:8px;min-width:0}
+.dups-group-label{font-size:12px;font-weight:var(--fw-bold);color:var(--text2);display:flex;align-items:center;gap:8px;min-width:0}
 .dups-group-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dups-group-badge{font-size:11px;font-weight:800;min-width:24px;height:20px;padding:0 6px;border-radius:20px;display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--dups-red),.14);color:rgb(var(--dups-red));flex-shrink:0;font-variant-numeric:tabular-nums}
+.dups-group-badge{font-size:11px;font-weight:var(--fw-bold);min-width:24px;height:20px;padding:0 6px;border-radius:20px;display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--dups-red),.14);color:rgb(var(--dups-red));flex-shrink:0;font-variant-numeric:tabular-nums}
 .dups-del-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;border-radius:50%;background:none;border:none;color:var(--muted);cursor:pointer;transition:.15s}
 .dups-del-btn:hover{color:rgb(var(--dups-red))}
 .dups-track{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:calc(var(--radius)*.55);cursor:pointer;transition:.12s;position:relative}
@@ -37,11 +37,11 @@
 .dups-track-cov{width:36px;height:36px;border-radius:calc(var(--radius)*.45);background:var(--hover);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .dups-track-cov img{width:100%;height:100%;object-fit:cover}
 .dups-track-info{flex:1;min-width:0}
-.dups-track-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dups-track-name{font-size:13px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dups-track-artist{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dups-track-dur{font-size:11px;color:var(--muted);flex-shrink:0;width:34px;text-align:right;font-variant-numeric:tabular-nums}
 /* Бейдж «оставить» у лучшего трека группы. */
-.dups-keep-badge{font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(var(--accent-rgb),.16);color:var(--accent);letter-spacing:.4px;flex-shrink:0;text-transform:uppercase}
+.dups-keep-badge{font-size:9px;font-weight:var(--fw-bold);padding:3px 8px;border-radius:20px;background:rgba(var(--accent-rgb),.16);color:var(--accent);letter-spacing:.4px;flex-shrink:0;text-transform:uppercase}
 /* Кнопка удаления одного дубля (на hover ряда). */
 .dups-track-del{width:28px;height:28px;border-radius:50%;background:none;border:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0;opacity:0}
 .dups-track:hover .dups-track-del{opacity:1}
@@ -58,10 +58,10 @@
    модалки (#scOverlay/.sc-modal и её шапка, вкладки, списки) удалён. */
 .sc-inp{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:calc(var(--radius)*.6);color:var(--text);padding:8px 12px;font-size:13px;outline:none;font-family:var(--font);transition:.15s}
 .sc-inp:focus{border-color:var(--border-focus)}
-.sc-btn{padding:8px 16px;border-radius:calc(var(--radius)*.6);background:var(--accent);color:var(--accent-text);border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap;flex-shrink:0}
+.sc-btn{padding:8px 16px;border-radius:calc(var(--radius)*.6);background:var(--accent);color:var(--accent-text);border:none;font-size:12px;font-weight:var(--fw-bold);cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap;flex-shrink:0}
 .sc-btn:hover{opacity:.85}
 .sc-btn:disabled{opacity:.45;cursor:not-allowed}
-.sc-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px}
+.sc-section-title{font-size:10px;font-weight:var(--fw-bold);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px}
 .sc-load-more-card{width:172px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:calc(var(--radius)*.8);background:var(--card);border:1.5px dashed var(--border);color:var(--text2);font-size:12px;font-family:var(--font);cursor:pointer;transition:.15s;padding:12px 8px}
 .sc-load-more-card:hover{background:var(--hover);color:var(--text);border-color:var(--text2)}
 .sc-load-more-card:disabled{opacity:.5;cursor:default}
@@ -81,7 +81,7 @@
 .sp-tc-play-btn{width:44%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;transform:scale(.85);transition:transform .28s cubic-bezier(.22,1,.36,1);will-change:transform}
 .sp-track-card:hover .sp-tc-play-btn{transform:scale(1)}
 .sp-tc-info{padding:10px 10px 12px}
-.sp-tc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.sp-tc-name{font-size:13px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 .sp-tc-artist{font-size:12px;color:var(--text2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-artist-grid{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
 .sp-artist-grid::-webkit-scrollbar{display:none}
@@ -89,20 +89,26 @@
 .sp-artist-card:hover{background:var(--card)}
 .sp-ac-av{width:100px;height:100px;border-radius:50%;overflow:hidden;background:var(--hover);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sp-ac-av img{width:100%;height:100%;object-fit:cover}
-.sp-ac-name{font-size:13px;font-weight:600;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-ac-name{font-size:13px;font-weight:var(--fw-bold);width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-ac-sub{font-size:11px;color:var(--text2);width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-pl-grid{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
 .sp-pl-grid::-webkit-scrollbar{display:none}
 #spScScroll::-webkit-scrollbar{display:none}
-.sp-sec-title{font-size:16px;font-weight:700;padding:0 2px 12px;letter-spacing:0}
+.sp-sec-title{font-size:16px;font-weight:var(--fw-bold);padding:0 2px 12px;letter-spacing:0}
 
 /* ===== WINDOW TITLEBAR ===== */
 /* --tb-h: реальная высота тайтлбара. На неё опираются боковые drawer-панели
    (.spanel-backdrop / #peditBackdrop в modals.css), чтобы их верхний отступ
    совпадал с тайтлбаром, а в fullscreen / autohide (где тайтлбара нет) панель
-   уходила под самый верх окна без «висящего» зазора. */
+   уходила под самый верх окна без «висящего» зазора. В autohide переменная
+   следит за выездом: пока панель показана — снова 32px, и оверлеи (настройки,
+   редактор профиля в .sheet-layer) опускаются вместе с .app, а не остаются под
+   тайтлбаром. Саму переменную НЕ анимировать (@property + transition на body):
+   она наследуемая, и каждый кадр пересчитывал стили всего документа — выезд
+   лагал. Плавность даёт transition у потребителя (.sheet-layer в side-sheet.css). */
 body{--tb-h:32px}
 body.fullscreen,body.titlebar-autohide{--tb-h:0px}
+body.titlebar-autohide:not(.fullscreen):has(.tb-edge-trigger:hover,#winTitlebar:hover){--tb-h:32px}
 #winTitlebar{height:32px;display:flex;align-items:center;gap:8px;padding:0 4px 0 12px;flex-shrink:0;user-select:none;-webkit-user-select:none;position:relative;z-index:1001}
 body.fullscreen #winTitlebar{display:none}
 /* ===== TITLEBAR AUTO-HIDE (в потоке: прячется вверх, выезжает на своё место) =====
@@ -122,11 +128,11 @@ body.titlebar-autohide #winTitlebar:hover{margin-top:0}
    перебивают фон в transparency.css (тайтлбар там — внешний контейнер). */
 body.titlebar-bg #winTitlebar{background:var(--block-color);box-shadow:inset 0 -1px 0 var(--ovl-line)}
 .win-icon{width:16px;height:16px;flex-shrink:0;pointer-events:none;background-color:currentColor;-webkit-mask-image:url('/logo.png');mask-image:url('/logo.png');-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;color:var(--text2)}
-.win-title{font-size:12px;font-weight:600;color:var(--text2);flex:0 0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.win-ver{font-size:11px;font-weight:600;color:var(--text2);opacity:.55;letter-spacing:.3px;flex-shrink:0;pointer-events:none;margin-left:-2px}
+.win-title{font-size:12px;font-weight:var(--fw-bold);color:var(--text2);flex:0 0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.win-ver{font-size:11px;font-weight:var(--fw-bold);color:var(--text2);opacity:.55;letter-spacing:.3px;flex-shrink:0;pointer-events:none;margin-left:-2px}
 #winTitleCenter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;pointer-events:none;white-space:nowrap}
 #winTitleCenter .wtc-icon{width:13px;height:13px;flex-shrink:0;opacity:.7}
-#winTitleCenter .wtc-label{font-size:12px;font-weight:600;color:var(--text2)}
+#winTitleCenter .wtc-label{font-size:12px;font-weight:var(--fw-bold);color:var(--text2)}
 .win-btns{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
 .win-btn{width:32px;height:32px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
 /* Ховер по всему ряду одинаковый: без плашки, только подсветка иконки. */
@@ -141,10 +147,10 @@ body.titlebar-bg #winTitlebar{background:var(--block-color);box-shadow:inset 0 -
 .drpc-main-card{display:flex;align-items:center;gap:14px;background:var(--card-solid,var(--card));border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;cursor:pointer;transition:.2s;user-select:none}
 .drpc-main-card:hover{border-color:rgba(88,101,242,.45);background:rgba(88,101,242,.04)}
 .drpc-main-card.active{border-color:rgba(88,101,242,.65);background:rgba(88,101,242,.08)}
-.drpc-on-chip{font-size:10px;font-weight:800;letter-spacing:.8px;padding:4px 10px;border-radius:20px;background:rgba(88,101,242,.15);color:#5865f2;border:1px solid rgba(88,101,242,.3);flex-shrink:0;transition:.2s}
+.drpc-on-chip{font-size:10px;font-weight:var(--fw-bold);letter-spacing:.8px;padding:4px 10px;border-radius:20px;background:rgba(88,101,242,.15);color:#5865f2;border:1px solid rgba(88,101,242,.3);flex-shrink:0;transition:.2s}
 .drpc-main-card:not(.active) .drpc-on-chip{background:rgba(128,128,128,.1);color:var(--muted);border-color:var(--border)}
 .drpc-preview-wrap{margin:14px 0 0;background:#2d2d32;border-radius:8px;overflow:hidden;padding:14px 16px}
-.drpc-preview-header{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#dbdee1;margin-bottom:10px;letter-spacing:0;text-transform:none}
+.drpc-preview-header{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:var(--fw-bold);color:#dbdee1;margin-bottom:10px;letter-spacing:0;text-transform:none}
 .drpc-preview-dots{margin-left:auto;color:#80848e;font-size:10px;line-height:1;letter-spacing:1px;cursor:default}
 .drpc-preview-card{display:flex;gap:12px;align-items:flex-start;background:transparent;border-radius:0;padding:0}
 .drpc-preview-cover-wrap{position:relative;width:72px;height:72px;border-radius:8px;overflow:visible;flex-shrink:0}
@@ -152,12 +158,12 @@ body.titlebar-bg #winTitlebar{background:var(--block-color);box-shadow:inset 0 -
 .drpc-preview-cover-ph{width:72px;height:72px;border-radius:8px;background:#2b2d31;display:flex;align-items:center;justify-content:center}
 .drpc-preview-small-img{position:absolute;bottom:-5px;right:-5px;width:24px;height:24px;background:transparent;display:flex;align-items:center;justify-content:center;overflow:visible}
 .drpc-preview-info{flex:1;min-width:0;padding-top:2px}
-.drpc-preview-title{font-size:14px;font-weight:600;color:#f2f3f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drpc-preview-title{font-size:14px;font-weight:var(--fw-bold);color:#f2f3f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .drpc-preview-artist{font-size:12px;color:#b5bac1;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .drpc-preview-progress-row{display:flex;align-items:center;gap:7px;margin-top:8px}
 .drpc-preview-time{font-size:11px;color:#b5bac1;flex-shrink:0;font-variant-numeric:tabular-nums}
 .drpc-preview-bar-track{flex:1;height:4px;background:#4e5058;border-radius:2px;overflow:hidden}
 .drpc-preview-bar-fill{height:100%;background:#dbdee1;border-radius:2px;width:0%;transition:width .5s linear}
 .drpc-preview-btns{display:flex;flex-direction:column;gap:5px;margin-top:10px}
-.drpc-preview-btn-el{padding:7px 16px;border-radius:8px;border:none;background:#343439;color:#fff;font-size:12px;font-weight:500;text-align:center;cursor:default;transition:background .15s}
+.drpc-preview-btn-el{padding:7px 16px;border-radius:8px;border:none;background:#343439;color:#fff;font-size:12px;font-weight:var(--fw-bold);text-align:center;cursor:default;transition:background .15s}
 .drpc-preview-btn-el:hover{background:#3e3e44}

@@ -23,7 +23,7 @@ export const StubSection = ({
         <div
           style={{
             fontSize: 15,
-            fontWeight: 700,
+            fontWeight: 'var(--fw-bold)',
             color: 'var(--text)',
             marginBottom: 8,
           }}
@@ -39,7 +39,7 @@ export const StubSection = ({
               display: 'inline-block',
               padding: '4px 10px',
               fontSize: 10,
-              fontWeight: 700,
+              fontWeight: 'var(--fw-bold)',
               letterSpacing: '.5px',
               textTransform: 'uppercase',
               color: 'var(--muted)',

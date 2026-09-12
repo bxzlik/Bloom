@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { useColorPickerStore } from '../model/colorPickerStore'
 
 /**
@@ -94,8 +94,9 @@ export const ColorPicker = () => {
   const onChangeRef = useRef<((hex: string) => void) | null>(null)
   const hexFocusRef = useRef(false)
   const popRef = useRef<HTMLDivElement>(null)
-  // Open-анимация (scale 0.94→1) — как у прочих попапов/дропдаунов.
-  usePopupOpenAnimation(popRef, anchor)
+  // Появление и закрытие — как у прочих попапов/дропдаунов. close() в сторе
+  // anchor не трогает, так что уходящий попап стоит на месте.
+  const { mounted } = usePopupPresence(popRef, open, anchor)
 
   // Применяет HSV: обновляет state+ref, синкает hex-инпут и эмитит цвет наружу.
   const applyHsv = (next: { h: number; s: number; v: number }, emit = true) => {
@@ -159,7 +160,7 @@ export const ColorPicker = () => {
     }
   }, [open, close])
 
-  if (!open || !anchor) return null
+  if (!mounted || !anchor) return null
 
   // Позиционирование под swatch с клампом по краям окна.
   let left = anchor.left

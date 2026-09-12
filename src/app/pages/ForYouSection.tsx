@@ -3,7 +3,7 @@ import { useT } from '@shared/i18n'
 import { playFromSource, playSingleTrack, PlayStateOverlay } from '@features/player'
 import { useUiPrefsStore } from '@features/settings'
 import { useYmAuthStore } from '@features/yandex'
-import { buildForYou, readForYouCache, writeForYouCache } from '@features/library'
+import { buildForYou, onForYouReset, readForYouCache, writeForYouCache } from '@features/library'
 import { ArtistLinks, CoverSourceBadge, type Track } from '@entities/track'
 import { CardMarquee, EmptyCover } from '@shared/ui'
 import { Ico } from '@shared/ui/icons/solar'
@@ -37,6 +37,18 @@ export const ForYouSection = ({
   // означает не «похожих нет», а «спросить было ещё некого», см. ниже.
   const doneRef = useRef(false)
   const inFlight = useRef(false)
+
+  // «Очистить статистику» выбивает сиды, по которым подборка собрана. Главная
+  // при этом смонтирована, так что забываем подборку здесь же и снимаем
+  // защёлку — эффект ниже соберёт новую (сразу или при следующем заходе).
+  useEffect(
+    () =>
+      onForYouReset(() => {
+        doneRef.current = false
+        setTracks(null)
+      }),
+    [],
+  )
 
   // Провайдеры площадок регистрируются в эффекте `App`, а эффекты потомков в
   // React выполняются РАНЬШЕ родительских — на первом кадре реестр пуст.

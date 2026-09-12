@@ -14,7 +14,7 @@ import type { Artist } from '@entities/artist'
 import type { Playlist } from '@entities/playlist'
 import type { ArtistPageData, RepostItem } from '@features/providers'
 import { getProvider } from '@features/providers'
-import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, addTracksToQueue, playTracksNext, type PlaySource } from '@features/player'
+import { AddPopup, playFromSource, playShuffledFromSource, PlayStateOverlay, addTracksToQueue, playTracksNext, togglePlay, useSourcePlayback, sourceKey, type PlaySource } from '@features/player'
 import {
   TrackCtxMenu,
   saveTrackToLibrary,
@@ -192,6 +192,41 @@ const FollowBtn = ({
       aria-label={following ? t('search.unfollow') : t('search.follow')}
     >
       <Ico name={following ? 'check' : 'user'} width={15} height={15} />
+    </button>
+  )
+}
+
+/**
+ * Кнопка воспроизведения в шапке страницы площадки: «Воспроизвести всё», а пока
+ * очередь набрана ЭТОЙ страницей — пауза/плей по ней. Второй клик не должен
+ * перезапускать подборку с первого трека — страница и есть то место, откуда её
+ * поставили; так же ведёт себя шапка списка в библиотеке и на телефоне.
+ *
+ * Отдельный компонент, потому что `useSourcePlayback` — хук, а `srcKey` в
+ * DetailView известен только после раннего выхода (`if (!target) return null`).
+ * `compact` — вариант чарта: у него hero нет, там пара круглых иконок.
+ */
+const HeroPlayBtn = ({
+  srcKey,
+  onPlay,
+  compact,
+}: {
+  srcKey: string | null
+  onPlay: () => void
+  compact?: boolean
+}) => {
+  const t = useT()
+  const { mine, playing } = useSourcePlayback(srcKey)
+  const label = playing ? t('common.pause') : t('search.playAll')
+  const size = compact ? 15 : 18
+  return (
+    <button
+      className={compact ? 'sp-am-icon-btn' : 'sp-am-play-btn'}
+      onClick={mine ? togglePlay : onPlay}
+      aria-label={compact ? label : undefined}
+    >
+      <Ico name={playing ? 'pause' : 'play'} width={size} height={size} />
+      {!compact && label}
     </button>
   )
 }
@@ -751,12 +786,25 @@ export const DetailView = () => {
   let mainTracks: Track[] = []
 
   if (loaded?.kind === 'artist') {
-    const { artist, tracks } = loaded.data
+    const { artist, tracks, tracksCursor: moreCursor, tracksTotal } = loaded.data
     heroName = artist.name
     heroCover = artist.avatar ?? heroCover
     heroDesc = artist.description ?? ''
     mainTracks = tracks
-    const secs = totalSec(tracks)
+    // Треки приходят порциями: пока есть что догружать, счётчик берём у площадки
+    // (tracksTotal), а длительность — оценкой «≈ средняя загруженных × всего»
+    // (среднее только по трекам с известной длительностью). Площадка не знает
+    // total — длительность прячем. Всё догружено — точные счёт и сумма по списку.
+    // Курсор читаем из loaded.data: догрузка пишет его туда же, что и треки.
+    const partial = !!moreCursor
+    const count = partial ? Math.max(tracksTotal ?? 0, tracks.length) : tracks.length
+    const estimated = partial && !!tracksTotal
+    let secs = 0
+    if (!partial) secs = totalSec(tracks)
+    else if (estimated) {
+      const known = tracks.map((tr) => durToSec(tr.dur)).filter((s) => s > 0)
+      if (known.length) secs = Math.round((known.reduce((s, x) => s + x, 0) / known.length) * count)
+    }
     subNode = (
       <>
         {!!artist.followers && (
@@ -767,12 +815,12 @@ export const DetailView = () => {
         )}
         <span className="sp-am-stat">
           <Ico name="note" width={13} height={13} />
-          {tracksLabel(tracks.length)}
+          {tracksLabel(count)}
         </span>
         {!!secs && (
           <span className="sp-am-stat">
             <Ico name="clock" width={13} height={13} />
-            {fmtDurLong(secs)}
+            {estimated ? `≈ ${fmtDurLong(secs)}` : fmtDurLong(secs)}
           </span>
         )}
       </>
@@ -843,6 +891,9 @@ export const DetailView = () => {
     if (!mainTracks.length) return
     playList(mainTracks, scSource(heroName, heroCover, isArtist))
   }
+  // Ключ источника этой страницы для кнопки-паузы в шапке. Пока играть нечего
+  // (страница грузится / подборка пуста) — null, кнопка остаётся «воспроизвести».
+  const srcKey = mainTracks.length ? sourceKey(scSource(heroName, heroCover, isArtist)) : null
   const onShuffle = () => {
     if (!mainTracks.length) return
     playShuffledFromSource(mainTracks.map((t) => t.id), scSource(heroName, heroCover, isArtist))
@@ -1026,9 +1077,7 @@ export const DetailView = () => {
                 компактную пару play/шафл прямо в строке заголовка. */}
             {isChart && loaded && (
               <div className="sp-am-back-actions">
-                <button className="sp-am-icon-btn" onClick={onPlayAll} aria-label={t('search.playAll')}>
-                  <Ico name="play" width={15} height={15} />
-                </button>
+                <HeroPlayBtn srcKey={srcKey} onPlay={onPlayAll} compact />
                 <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
                   <Ico name="shuffle" width={15} height={15} />
                 </button>
@@ -1073,10 +1122,7 @@ export const DetailView = () => {
               {heroDesc && <ExpandDesc className="sp-am-hero-desc" text={heroDesc} />}
               {loaded && (
                 <div className="sp-am-actions">
-                  <button className="sp-am-play-btn" onClick={onPlayAll}>
-                    <Ico name="play" width={18} height={18} />
-                    {t('search.playAll')}
-                  </button>
+                  <HeroPlayBtn srcKey={srcKey} onPlay={onPlayAll} />
                   {/* Группа вторичных действий (слева) + share (справа) в одном
                       ряду со space-between — share всегда прижат вправо, в т.ч.
                       когда ряд переносится под «Воспроизвести всё». */}
@@ -1398,7 +1444,7 @@ const MoreBtn = ({ loading, onClick, label }: { loading: boolean; onClick: () =>
       display: 'block', width: '100%', marginTop: 8, padding: 9,
       borderRadius: 'var(--radius)', background: 'transparent',
       border: '1px solid var(--ovl-line)', color: 'var(--text2)',
-      fontSize: 12, fontWeight: 600, cursor: loading ? 'default' : 'pointer',
+      fontSize: 12, fontWeight: 'var(--fw-bold)', cursor: loading ? 'default' : 'pointer',
       fontFamily: 'var(--font)', opacity: loading ? 0.6 : 1,
     }}
   >

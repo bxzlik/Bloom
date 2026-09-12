@@ -6,7 +6,7 @@ import {
   type RefObject,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import {
   SPEEDS,
@@ -28,10 +28,10 @@ const TICKS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
  * (выключенный даёт классический slowed/nightcore — питч едет вместе с темпом).
  *
  * Рендер через `createPortal` в `body` — иначе backdrop-filter предков ломает
- * `position:fixed`. Open-анимация — общий `usePopupOpenAnimation`
+ * `position:fixed`. Появление и закрытие — общий `usePopupPresence`
  * (WAAPI scale 0.94→1), как у `.ctx` и меню «три точки». Класс `.open` нужен
  * только ради CSS `display:flex` (`#speedPicker{display:none}`); keyframe
- * `libMenuIn` гасится хуком. Закрытие — мгновенный unmount.
+ * `libMenuIn` гасится хуком.
  */
 export const SpeedPicker = ({
   open,
@@ -52,10 +52,7 @@ export const SpeedPicker = ({
 
   // Позиционирование над анкором (по центру), flip вниз при нехватке места.
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null)
-      return
-    }
+    if (!open) return // позицию не сбрасываем — уходящий пикер стоит на месте
     const btn = anchorRef.current
     const p = ref.current
     if (!btn || !p) return
@@ -67,8 +64,8 @@ export const SpeedPicker = ({
     setPos({ left, top })
   }, [open, anchorRef])
 
-  // Open-анимация (та же, что у .ctx / меню «три точки»).
-  usePopupOpenAnimation(ref, pos)
+  // Появление и закрытие (как у .ctx / меню «три точки»).
+  const { mounted } = usePopupPresence(ref, open, pos)
 
   // Click outside / Escape.
   useEffect(() => {
@@ -90,7 +87,7 @@ export const SpeedPicker = ({
     }
   }, [open, onClose, anchorRef])
 
-  if (!open) return null
+  if (!mounted) return null
 
   // Позиция бегунка в % — для заливки полосы (linear-gradient по --sp-p).
   const pct = ((rate - SPEED_MIN) / (SPEED_MAX - SPEED_MIN)) * 100

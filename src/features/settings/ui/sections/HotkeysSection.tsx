@@ -1,4 +1,3 @@
-import { CatReset } from '../controls/SectionReset'
 import { useEffect, useState } from 'react'
 import { toast } from '@shared/ui'
 import { useT, type TranslationKey } from '@shared/i18n'
@@ -55,7 +54,6 @@ export const HotkeysSection = () => {
   const capturing = useHotkeysStore((s) => s.capturing)
   const setEnabled = useHotkeysStore((s) => s.setEnabled)
   const setBinding = useHotkeysStore((s) => s.setBinding)
-  const resetAll = useHotkeysStore((s) => s.resetAll)
   const setCapturing = useHotkeysStore((s) => s.setCapturing)
   const [pending, setPending] = useState<Captured | null>(null)
 
@@ -99,12 +97,6 @@ export const HotkeysSection = () => {
     setBinding(k, null)
     toast(t('settings.hotkeys.toast.cleared'))
   }
-  const onResetAll = () => {
-    resetAll()
-    setCapturing(null)
-    setPending(null)
-    toast(t('settings.hotkeys.toast.reset'))
-  }
 
   return (
     <div className="s-section active" id="ssec-hotkeys">
@@ -129,10 +121,7 @@ export const HotkeysSection = () => {
         </div>
       </div>
 
-      <div className="s-cat-label">
-        {t('settings.hotkeys.active')}
-        <CatReset onReset={onResetAll} disabled={!enabled} />
-      </div>
+      <div className="s-cat-label">{t('settings.hotkeys.active')}</div>
       <div className={`hk-list${enabled ? '' : ' hk-disabled'}`}>
         {HOTKEY_ORDER.map((k) => {
             const meta = ACTION_META[k]

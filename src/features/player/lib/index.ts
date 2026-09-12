@@ -7,6 +7,7 @@ export * from './resume'
 export * from './useMainPlayerBridge'
 export * from './trackArtistAvatars'
 export * from './barsSnap'
+export * from './useSourcePlayback'
 export { useAudioEffects, applyAudioDevice } from './audioEffects'
 export {
   downloadTrack,

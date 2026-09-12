@@ -87,17 +87,6 @@ export function scRawToTrack(raw: ScRawTrack): Track {
   };
 }
 
-// Собрать «жанровый отпечаток» сидов — для скоринга.
-function seedGenres(seedIds: string[]): Set<string> {
-  const set = new Set<string>();
-  for (const id of seedIds) {
-    const t = host.trackById(id);
-    if (!t?.genres) continue;
-    for (const g of t.genres) if (g) set.add(g.toLowerCase());
-  }
-  return set;
-}
-
 interface FetchResult {
   candidates: Candidate[];
   // scId сидов, которые реально вернули треки от /stations — только для них имеет смысл
@@ -175,7 +164,6 @@ async function buildBatch(opts: BuildBatchOpts): Promise<Candidate[]> {
   }
 
   const ctx = {
-    seedGenres: seedGenres(opts.seeds),
     session: s,
     dropRecentDays: DROP_RECENT_DAYS,
     curId: host.curId,
@@ -328,6 +316,35 @@ export async function startWave(mode: WaveMode, seeds: string[], opts?: { first?
     host.loadPlay(host.queue[0]);
     session.persist(host.queue, host.qIdx);
     // Пре-резолв URL'ов следующих треков — чтобы «Next» сразу же был мгновенным.
+    prefetchUpcoming();
+    return true;
+  } finally {
+    startInFlight = false;
+  }
+}
+
+// Продолжение очереди («Авто похожие»): та же волна, но без замены очереди —
+// пачка дописывается в хвост, текущий трек доигрывает сам (без loadPlay), а
+// дальше идёт волна со своей догрузкой. Уже стоящие в очереди треки в пачку не
+// попадут: passesFilters/enqueueBatch отсекают их по host.queue.
+// `isValid` — пока ждали SC, пользователь мог уйти на другой источник: тогда в
+// его новую очередь не пишем.
+export async function continueWave(mode: WaveMode, seeds: string[], isValid: () => boolean): Promise<boolean> {
+  if (!seeds.length) return false;
+  if (startInFlight) return false;
+  startInFlight = true;
+  try {
+    session.startSession(mode, seeds);
+    let batch: Candidate[] = [];
+    try {
+      batch = await buildBatch({ mode, seeds, takeCount: BATCH });
+    } catch (e) {
+      console.warn("[wave] continue buildBatch failed:", e);
+    }
+    if (!batch.length || !isValid() || !enqueueBatch(batch)) { session.endSession(); return false; }
+    host.curSource = { type: WAVE_SOURCE_TYPE, label: waveLabel(mode) };
+    host.shuffle = false;
+    session.persist(host.queue, host.qIdx);
     prefetchUpcoming();
     return true;
   } finally {

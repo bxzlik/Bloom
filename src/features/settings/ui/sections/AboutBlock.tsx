@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, type CSSProperties } from 'react'
 import { useUpdateStore } from '../../model/updateStore'
 import { useT } from '@shared/i18n'
+import { Ico } from '@shared/ui/icons/solar'
 
 /**
  * «О приложении» + проверка обновлений (в самом низу секции «Система»).
@@ -12,6 +13,20 @@ import { useT } from '@shared/i18n'
  * глобальный баннер-уведомление (App). Авто-проверка делается один раз при
  * старте приложения (`useUpdateBootstrap`); здесь — только ручная по клику.
  */
+
+/** Кнопка-ссылка «Что нового»/«История» — без подложки, иконка слева от подписи. */
+const linkBtn: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: 0,
+  background: 'none',
+  border: 'none',
+  fontSize: 12,
+  fontWeight: 'var(--fw-bold)',
+  cursor: 'pointer',
+  fontFamily: 'var(--font)',
+}
 
 export const AboutBlock = () => {
   const t = useT()
@@ -82,42 +97,31 @@ export const AboutBlock = () => {
             )}
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>Bloom</div>
-            <div style={{ marginTop: 3, fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>
+            <div style={{ fontSize: 15, fontWeight: 'var(--fw-bold)' }}>Bloom</div>
+            <div style={{ marginTop: 3, fontSize: 13, fontWeight: 'var(--fw-bold)', color: 'var(--text2)' }}>
               {t('settings.about.version')} <span style={{ color: 'var(--muted)' }}>v</span>{version || '—'}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6 }}>
-              <button
-                onClick={() => void openWhatsNew()}
-                style={{
-                  padding: 0,
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--accent)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font)',
-                }}
-              >
-                {t('update.notesTitle')}
-              </button>
-              <button
-                onClick={() => void openHistory()}
-                style={{
-                  padding: 0,
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text2)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font)',
-                }}
-              >
-                {t('update.history')}
-              </button>
-            </div>
+          </div>
+          {/* Ссылки на заметки релиза — справа столбиком: «Что нового» сверху, история под ним.
+              Выравнивание по левому краю, чтобы иконки стояли одной колонкой. */}
+          <div
+            style={{
+              marginLeft: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: 8,
+              flexShrink: 0,
+            }}
+          >
+            <button onClick={() => void openWhatsNew()} style={{ ...linkBtn, color: 'var(--accent)' }}>
+              <Ico name="docText" size={14} />
+              {t('update.notesTitle')}
+            </button>
+            <button onClick={() => void openHistory()} style={{ ...linkBtn, color: 'var(--text2)' }}>
+              <Ico name="clock" size={14} />
+              {t('update.history')}
+            </button>
           </div>
         </div>
 

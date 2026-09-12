@@ -756,7 +756,7 @@ const MpProgress = ({ tint, trackTint }: { tint: string | null; trackTint: strin
               padding: '2px 9px',
               borderRadius: 8,
               fontSize: 11,
-              fontWeight: 600,
+              fontWeight: 'var(--fw-bold)',
               lineHeight: 1,
               color: 'var(--text)',
               background: 'var(--block-color, #1a1a1a)',
@@ -919,7 +919,7 @@ const Volume = ({ volume, onWheel }: { volume: number; onWheel: (e: ReactWheelEv
               paddingRight: 3,
               borderRadius: 7,
               fontSize: 8,
-              fontWeight: 700,
+              fontWeight: 'var(--fw-bold)',
               fontVariantNumeric: 'tabular-nums',
             }}
           >
@@ -1028,7 +1028,6 @@ const VertVolPopup = ({
         position: 'fixed',
         left: pos?.left ?? -9999,
         top: pos?.top ?? -9999,
-        border: '1px solid rgba(var(--ovl-rgb),.12)',
         borderRadius: 10,
         padding: '10px 8px',
         zIndex: 9500,
@@ -1066,7 +1065,7 @@ const NextSvg = ({ size }: { size: number }) => <Ico name="next" size={size} />
 const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={size} />
 const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (
-  <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 700 }}>1</span>
+  <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 'var(--fw-bold)' }}>1</span>
 )
 /* «Повтор плейлиста» — та же иконка списка, что у вкладки «Плейлисты» в поиске. */
 const RepeatAllBadge = () => (

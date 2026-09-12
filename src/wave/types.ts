@@ -42,7 +42,6 @@ export interface Candidate {
   raw?: ScRawTrack; // для гостевых
   libTrack?: Track; // для подмешанных из библиотеки
   artistKey: string; // нормализованное имя артиста для антиповторов
-  genres: string[];
 }
 
 export interface WaveSession {

@@ -1,14 +1,23 @@
 /* Скрыть скроллбар списка очереди (прокрутка остаётся, полоса невидима) */
 #qpList{scrollbar-width:none;-ms-overflow-style:none}
 #qpList::-webkit-scrollbar{display:none;width:0;height:0}
-/* Queue position: bottom (default) — equal split */
-#playerContent:not(.queue-right):not(.queue-left) #playerMainBlock{flex:1 1 0;min-height:0;overflow:hidden}
+/* Queue position: bottom (default) — equal split.
+   overflow:visible у #playerMainBlock (снизу и при скрытой очереди) — не
+   hidden: .player-section с height:100% встаёт нижним краем ровно на край
+   обрезки, и при дробной высоте (деление пополам через flex:1 1 0, масштаб
+   Windows 125%, зум) рамку 1px съедало округление клипа — «иногда пропадает
+   нижний бордер». Обрезку и так делает сама .player-section (overflow:hidden). */
+#playerContent:not(.queue-right):not(.queue-left) #playerMainBlock{flex:1 1 0;min-height:0;overflow:visible}
 #playerContent:not(.queue-right):not(.queue-left) #playerMainBlock .player-section{height:100%;overflow:hidden;box-sizing:border-box;flex-shrink:1;align-items:stretch}
 #playerContent:not(.queue-right):not(.queue-left) #playerMainBlock .ps-cover{width:auto;height:100%;aspect-ratio:1/1;max-width:none;max-height:none}
 #playerContent:not(.queue-right):not(.queue-left) #playerMainBlock .ps-cover.vinyl-mode{width:auto;height:100%;max-height:min(45vh,380px);aspect-ratio:1/1;max-width:min(45vh,380px)}
 #playerContent:not(.queue-right):not(.queue-left) #playerQueueBlock{flex:1 1 0;min-height:0}
+/* Очередь снизу или скрыта — название/артист крупнее (кегли в player.css, *-bottom).
+   Переменные переопределяем на #playerMainBlock: он есть только в «Обычном»/
+   «Пластинке», так что large/cinema не задевает. */
+#playerContent:not(.queue-right):not(.queue-left) #playerMainBlock{--ps-title-fs:var(--ps-title-fs-bottom);--ps-artist-fs:var(--ps-artist-fs-bottom)}
 /* Hide-queue mode: horizontal layout, cover 50% / controls 50% */
-#playerContent.queue-hidden #playerMainBlock{flex:1 1 0;min-height:0;overflow:hidden}
+#playerContent.queue-hidden #playerMainBlock{flex:1 1 0;min-height:0;overflow:visible}
 #playerContent.queue-hidden #playerMainBlock .player-section{height:100%;overflow:hidden;box-sizing:border-box;flex-shrink:1;align-items:center;gap:16px}
 #playerContent.queue-hidden #playerMainBlock .ps-cover{flex:0 0 42%;width:42%!important;height:auto!important;aspect-ratio:1/1!important;max-width:42%!important;max-height:100%;align-self:center}
 #playerContent.queue-hidden #playerMainBlock .ps-cover.vinyl-mode{flex:0 0 42%;width:42%!important;max-width:42%!important}
@@ -40,21 +49,38 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 /* Queue position: side layout */
 #playerContent.queue-right{flex-direction:row!important}
 #playerContent.queue-left{flex-direction:row-reverse!important}
+/* Плеер — узкая колонка фиксированной ширины (--ps-side-w), очередь забирает
+   остальное. !important — у #playerMainBlock инлайновый flex:1 1 0 (иначе
+   делилось 50/50); у очереди инлайновый flex:1 1 0 и так нужный. Когда очередь
+   спрятана по ширине окна (win-narrow), колонка снова тянется на всё. */
+#playerContent.queue-right,
+#playerContent.queue-left{--ps-side-w:clamp(360px,38%,440px)}
 #playerContent.queue-right #playerMainBlock,
-#playerContent.queue-left #playerMainBlock{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column}
+#playerContent.queue-left #playerMainBlock{flex:0 0 var(--ps-side-w)!important;min-width:0;overflow:hidden;display:flex;flex-direction:column}
+body.win-narrow #playerContent.queue-right #playerMainBlock,
+body.win-narrow #playerContent.queue-left #playerMainBlock{flex:1 1 0!important}
 #playerContent.queue-right #playerQueueBlock,
-#playerContent.queue-left #playerQueueBlock{width:320px;flex-shrink:0;flex:none}
+#playerContent.queue-left #playerQueueBlock{min-width:0}
 /* In side mode: player-section becomes vertical (cover on top, info below) */
 #playerContent.queue-right .player-section,
 #playerContent.queue-left .player-section{flex-direction:column;align-items:center;padding:24px 24px 18px;gap:16px;flex:1;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
 #playerContent.queue-right .player-section::-webkit-scrollbar,
 #playerContent.queue-left .player-section::-webkit-scrollbar{display:none;width:0;height:0}
-#playerContent.queue-right .ps-cover,
-#playerContent.queue-left .ps-cover{width:clamp(160px,60%,320px);height:auto;aspect-ratio:1/1;max-width:100%}
-#playerContent.queue-right .ps-cover.vinyl-mode,
-#playerContent.queue-left .ps-cover.vinyl-mode{height:auto;aspect-ratio:1/1;max-width:100%}
-#playerContent.queue-right .ps-right,
-#playerContent.queue-left .ps-right{width:100%;justify-content:center}
+/* Правила колонки плеера привязаны к #playerMainBlock: он есть только в
+   «Обычном»/«Пластинке». В «Большом»/«Кино» очередь слева тоже даёт класс
+   queue-left, и без этой привязки правила протекали туда (auto-отступ уводил
+   транспорт к верху нижнего бара, gap:0 сжимал кнопки). */
+#playerContent.queue-right #playerMainBlock .ps-cover,
+#playerContent.queue-left #playerMainBlock .ps-cover{width:min(100%,320px,42vh);height:auto;aspect-ratio:1/1;max-width:100%;margin-top:auto}
+#playerContent.queue-right #playerMainBlock .ps-cover.vinyl-mode,
+#playerContent.queue-left #playerMainBlock .ps-cover.vinyl-mode{height:auto;aspect-ratio:1/1;max-width:100%}
+#playerContent.queue-right #playerMainBlock .ps-right,
+#playerContent.queue-left #playerMainBlock .ps-right{width:100%;justify-content:center;flex:none;margin-bottom:auto}
+/* ↑ Центрирование колонки по высоте: auto-отступ над обложкой и под контролами
+   делят свободное место поровну. flex:none — базовый .ps-right{flex:1} тянул
+   блок вниз, и между обложкой и названием зияла дыра, а пустота копилась снизу.
+   Отступы, а не justify-content:center — они «безопасные»: если контент не
+   влезает, колонка скроллится, а не обрезается сверху. */
 #playerContent.queue-right .ps-title,
 #playerContent.queue-left .ps-title{text-align:center;font-size:var(--ps-title-fs-side)}
 #playerContent.queue-right .ps-artist,
@@ -70,6 +96,20 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 /* Side queue: vizWrap full width, no extra margin */
 #playerContent.queue-right #vizWrap,
 #playerContent.queue-left #vizWrap{margin:0}
+/* Транспорт «Обычного»/«Пластинки» при ЛЮБОМ положении очереди (снизу, сбоку,
+   скрыта): слоты download | play-группа | дизлайк+текст по 124px (инлайн) не
+   влезали в узкий .ps-right и в боковую колонку — крайние кнопки вылезали за
+   рамку. Растворяем слоты (display:contents; !important — у них инлайновые
+   display/width); группы держат auto-отступы у крайних кнопок play-группы.
+   Есть место — вид как раньше (download слева, play-группа посередине,
+   дизлайк+текст справа); нет — отступы схлопываются, кнопки сжимаются 40→28px.
+   #playerMainBlock есть только в этих двух стилях — в large/cinema не протекает. */
+#playerMainBlock .ps-transport>div{display:contents!important}
+#playerMainBlock .ps-transport>div:nth-child(2)>:first-child{margin-left:auto}
+#playerMainBlock .ps-transport>div:nth-child(2)>:last-child{margin-right:auto}
+#playerMainBlock .ps-transport :is(.cc,.cc-play,.lyrics-btn){flex:0 1 40px;min-width:28px}
+#playerContent.queue-right #playerMainBlock .ps-transport,
+#playerContent.queue-left #playerMainBlock .ps-transport{padding-left:6px;padding-right:6px}
 /* padding:0 — как на странице плеера: у .main в библиотеке рамки нет
    (.main-flush, base.css), и поля --page-pad читались как кривой отступ. Блоки
    сайдбара стоят вровень с верхом/низом сайдбара приложения. width — border-box,
@@ -111,62 +151,22 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 .lib-toolbar button:hover{color:var(--text);background:transparent}
 .lib-toolbar #libAddBtn svg{transition:transform .22s cubic-bezier(.34,1.25,.64,1)}
 .lib-toolbar #libAddBtn.open svg{transform:rotate(45deg)}
-#libAddMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:12px;padding:4px;flex-direction:column;gap:2px;width:248px;box-sizing:border-box;z-index:9999;box-shadow:none;transform-origin:top center;display:none}
-#libAddMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
-#libAddMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
-#libAddMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
-#libAddMenu button:hover{background:var(--hover,rgba(var(--ovl-rgb),.07))}
-#libAddMenu .lam-chevron{margin-left:auto;color:var(--muted);opacity:.7}
-/* Inline-ввод (создание плейлиста / ссылка импорта) */
-#libAddMenu .lam-input-row{display:flex;align-items:center;gap:6px;padding:3px 3px 6px}
-#libAddMenu .lam-input-field{flex:1;min-width:0;position:relative;display:flex}
-#libAddMenu .lam-input{flex:1;min-width:0;background:rgba(var(--ovl-rgb),.05);border:1px solid var(--ovl-line);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .12s}
-#libAddMenu .lam-input.lam-input-badged{padding-right:32px}
-#libAddMenu .lam-input:focus{border-color:var(--ovl-line2)}
-#libAddMenu .lam-input::placeholder{color:var(--muted)}
-#libAddMenu .lam-link-logo{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;pointer-events:none}
-#libAddMenu .lam-check{flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--accent);color:var(--accent-text,#fff);border-radius:8px;transition:.12s}
-#libAddMenu .lam-check:hover{background:var(--accent-hover)}
-#libAddMenu .lam-check:disabled{opacity:.6;cursor:default}
-#libAddMenu .lam-spinner{width:13px;height:13px;border:2px solid rgba(var(--ovl-rgb),.4);border-top-color:var(--text);border-radius:50%;animation:lamSpin .6s linear infinite}
-@keyframes lamSpin{to{transform:rotate(360deg)}}
-/* Выбор цели импорта */
-#libAddMenu .lam-target-wrap{position:relative}
-#libAddMenu .lam-target-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#libAddMenu .lam-target-caret{color:var(--muted);opacity:.8;flex-shrink:0;transition:transform .18s cubic-bezier(.34,1.25,.64,1)}
-#libAddMenu .lam-target-btn.open{background:var(--hover,rgba(var(--ovl-rgb),.07));box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.45)}
-#libAddMenu .lam-target-btn.open .lam-target-caret{color:var(--accent);opacity:1;transform:rotate(180deg)}
-#libAddMenu .lam-icon-box{width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-#libAddMenu .lam-all-thumb{width:22px;height:22px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--sys-cov-bg);box-shadow:inset 0 0 0 1px var(--sys-cov-bd)}
-#libAddMenu .lam-pl-thumb{width:22px;height:22px;border-radius:5px;overflow:hidden;flex-shrink:0;display:block;background:var(--card)}
-#libAddMenu .lam-pl-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-/* Вложенное подменю — на ярус выше родительского #libAddMenu (тот на --ov-lift),
-   поэтому свой процент, а не переменная. Ослаблено с 3% вместе с базовым ярусом,
-   чтобы отрыв от родителя остался прежним на глаз. */
-#libAddMenu .lam-target-menu{position:absolute;top:calc(100% + 2px);left:0;right:0;background:color-mix(in srgb,var(--block-color),var(--text) 2%);border:none;border-radius:10px;padding:4px;z-index:1;box-shadow:none;max-height:240px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;animation:libMenuIn .15s cubic-bezier(.22,1,.36,1) forwards;transform-origin:top}
-#libAddMenu .lam-target-menu::-webkit-scrollbar{width:0;height:0;display:none}
-#libAddMenu .lam-target-menu button.active{color:var(--accent);background:rgba(var(--accent-rgb),.1)}
-#libAddMenu .lam-active-check{flex-shrink:0;color:var(--accent)}
-#libAddMenu .lam-target-sep{height:1px;background:rgba(var(--ovl-rgb),.07);margin:4px 6px}
-#libAddMenu .lam-back{color:var(--muted)}
 /* Пикер скорости: карточки-пресеты + полоса произвольной скорости + тумблер
    питча. Ширина фиксированная — иначе слайдер и карточки «дышат» по контенту
    локали. */
 #speedPicker{position:fixed;box-sizing:border-box;width:268px;flex-direction:column;align-items:stretch;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:calc(var(--radius)*0.95);padding:12px;gap:12px;z-index:9100;box-shadow:none;transform-origin:top left;display:none}
-#speedPicker.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
-#speedPicker.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
-/* Пресеты */
+#speedPicker.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}/* Пресеты */
 #speedPicker .sp-presets{display:flex;gap:8px}
 #speedPicker .sp-card{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;height:44px;padding:0 4px;border-radius:calc(var(--radius)*0.7);background:rgba(var(--ovl-rgb),.05);border:1px solid rgba(var(--ovl-rgb),.07);color:var(--text);font-family:var(--font);cursor:pointer;transition:background .15s,border-color .15s,color .15s}
 #speedPicker .sp-card:hover{background:rgba(var(--ovl-rgb),.09);border-color:rgba(var(--ovl-rgb),.14)}
 #speedPicker .sp-card.active{background:var(--accent);border-color:var(--accent);color:var(--accent-text,#fff)}
-#speedPicker .sp-val{font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1}
+#speedPicker .sp-val{font-size:15px;font-weight:var(--fw-bold);letter-spacing:-.3px;line-height:1}
 /* Полоса произвольной скорости. Заливка — linear-gradient по --sp-p (ставится
    инлайном из компонента). */
 #speedPicker .sp-slider{display:flex;flex-direction:column;gap:8px}
 #speedPicker .sp-slider-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-#speedPicker .sp-slider-title{font-size:11px;font-weight:600;color:var(--text2,#999)}
-#speedPicker .sp-cur{font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:-.2px;color:var(--text2,#999);background:rgba(var(--ovl-rgb),.06);border:1px solid transparent;border-radius:999px;padding:2px 9px;cursor:pointer;transition:.15s}
+#speedPicker .sp-slider-title{font-size:11px;font-weight:var(--fw-bold);color:var(--text2,#999)}
+#speedPicker .sp-cur{font-family:var(--font);font-size:12px;font-weight:var(--fw-bold);letter-spacing:-.2px;color:var(--text2,#999);background:rgba(var(--ovl-rgb),.06);border:1px solid transparent;border-radius:999px;padding:2px 9px;cursor:pointer;transition:.15s}
 #speedPicker .sp-cur:hover{border-color:rgba(var(--ovl-rgb),.14)}
 #speedPicker .sp-cur.on{color:var(--accent);background:rgba(var(--accent-rgb),.12)}
 /* padding-bottom = место под засечки: 7px рисок + 6px зазора, чтобы бегунок
@@ -177,20 +177,18 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 #speedPicker .sp-ticks{position:absolute;left:6.5px;right:6.5px;bottom:0;height:7px;pointer-events:none}
 #speedPicker .sp-tick{position:absolute;bottom:0;width:1px;height:4px;transform:translateX(-.5px);background:rgba(var(--ovl-rgb),.16)}
 #speedPicker .sp-tick.major{height:7px;background:rgba(var(--ovl-rgb),.3)}
-#speedPicker .sp-scale{display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:var(--muted,#666)}
+#speedPicker .sp-scale{display:flex;justify-content:space-between;font-size:10px;font-weight:var(--fw-bold);color:var(--muted,#666)}
 /* Тумблер «Nightcore» (питч едет за темпом). Переключатель — общий .tele-sw,
    здесь только уменьшен. */
 #speedPicker .sp-pitch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:11px;border-top:1px solid rgba(var(--ovl-rgb),.07);cursor:pointer}
 #speedPicker .sp-pitch-text{display:flex;flex-direction:column;gap:2px;min-width:0}
-#speedPicker .sp-pitch-title{font-size:12px;font-weight:600;color:var(--text)}
+#speedPicker .sp-pitch-title{font-size:12px;font-weight:var(--fw-bold);color:var(--text)}
 #speedPicker .sp-pitch-sub{font-size:10px;color:var(--muted,#666)}
 #speedPicker .sp-sw{width:34px;height:19px}
 #speedPicker .sp-sw .tele-sw-track::after{width:13px;height:13px}
 #speedPicker .sp-sw input:checked+.tele-sw-track::after{transform:translateX(15px) translateY(-50%)}
 #libSortMenu{position:fixed;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:12px;padding:4px;flex-direction:column;gap:2px;min-width:175px;z-index:9999;box-shadow:none;transform-origin:top center;display:none}
-#libSortMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}
-#libSortMenu.closing{display:flex;animation:libMenuOut .14s ease-in forwards}
-#libSortMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
+#libSortMenu.open{display:flex;animation:libMenuIn .18s cubic-bezier(.22,1,.36,1) forwards}#libSortMenu button{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font-size:13px;width:100%;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;transition:background .12s}
 #libSortMenu button:hover{background:var(--hover,rgba(var(--ovl-rgb),.07))}
 #libSortMenu button.active{color:var(--accent)}
 #libSortBtn.sort-active,#libFilterBtn.sort-active,#libAutoBtn.sort-active{color:var(--accent)!important}
@@ -246,7 +244,7 @@ body.win-short #playerContent:not(.queue-right):not(.queue-left):not(.style-larg
 .lib-icon.off-icon svg{color:var(--sys-all-ico)}
 .lib-icon.pl-icon{background:var(--card)}
 .lib-item-info{flex:1;min-width:0}
-.lib-item-name{font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.15s}
+.lib-item-name{font-size:13px;font-weight:var(--fw-bold);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.15s}
 .lib-item-sub{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-follow-btn{width:36px;height:36px;border-radius:var(--radius);border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
 .sp-follow-btn:hover{background:rgba(var(--ovl-rgb),.1);color:var(--text)}

@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { useHistoryStore, useActivityStore, useUsageStore } from '@features/library'
+import { useHistoryStore, useActivityStore, useUsageStore, clearForYouCache, clearSimilarToCache } from '@features/library'
 import { playTrack } from '@features/player'
 import { ArtistLinks, ScLogo, YmLogo, YtmLogo, HddLogo, providerBrandColor } from '@entities/track'
 import { toast, EmptyCover } from '@shared/ui'
@@ -11,6 +11,7 @@ import { useProfileStats, type ProfileStats } from '../lib/useProfileStats'
 import { useAchievementsStore } from '../model/achievementsStore'
 import { clearPlayLog } from '@/db/playLog'
 import { resetPlayStats } from '@/db/playStats'
+import { resetWaveFaces } from '@/wave'
 import { plural } from '@features/wrapped/lib/fmt'
 import { useWrappedEntries, useWrappedUiStore } from '@features/wrapped'
 import { useProfilePanelStore } from '../model/profilePanelStore'
@@ -159,6 +160,14 @@ export const StatsPanel = () => {
     // продолжили бы считать по нему до перезапуска).
     void clearPlayLog()
     resetPlayStats()
+    // «Для вас» собрана по сидам из только что стёртого топа — пересобираем,
+    // а не держим до полуночи.
+    clearForYouCache()
+    // И «Похожие на»: её сид взят из того же топа.
+    clearSimilarToCache()
+    // То же с коллажем «Моей волны»: на SoundCloud его обложки — похожие на
+    // старый топ (Яндекс строит свою волну сам, там картинка не поменяется).
+    resetWaveFaces()
     toast(t('stats.cleared'))
   }
 

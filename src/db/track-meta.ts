@@ -33,8 +33,3 @@ export function tagsFromList(s: string | null | undefined): string[] {
   }
   return out;
 }
-
-export function trackGenres(t: Pick<Track, "genres"> | undefined): string[] {
-  if (!t?.genres) return [];
-  return t.genres.map(g => g.toLowerCase());
-}

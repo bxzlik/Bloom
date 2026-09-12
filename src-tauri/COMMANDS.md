@@ -60,6 +60,7 @@
 | `folder_remove` | `path: string` | `()` |
 | `folder_scan` | `path: string` | `()` |
 | `folder_get` | — | `string[]` |
+| `file_get` | — | `string[]` — пути всех одиночных треков из files.json, включая недоступные сейчас |
 | `open_folder` | `path: string` | `()` — открыть папку в проводнике; не-директория → `Err` |
 
 ### Downloads → features/soundcloud/api (SC), features/library/api (local), features/player/api (cover)
@@ -107,6 +108,7 @@
 | `ym_search` | `query: string, page?: u32` | `YmSearch` |
 | `ym_album` | `id: string` | `YmEntity` |
 | `ym_artist` | `id: string` | `YmEntity` |
+| `ym_artist_tracks` | `id: string, page: u32` | `YmTracksPage` |
 | `ym_playlist` | `owner: string, kind: string` | `YmEntity` |
 | `ym_resolve` | `url: string` | `YmResolved` |
 | `ym_has_plus` | — | `bool` |

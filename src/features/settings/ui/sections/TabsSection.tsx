@@ -1,4 +1,3 @@
-import { CardReset, RowReset } from '../controls/SectionReset'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
@@ -41,10 +40,7 @@ const SidebarCards = () => {
   return (
     <>
       <div className="sc sc-keep">
-        <div className="sc-title">
-          {t('settings.interface.sidebarPos.title')}
-          <CardReset onReset={() => p.resetKeys('sidebarPos', 'sidebarCompact', 'sidebarFloating', 'sidebarPlain')} />
-        </div>
+        <div className="sc-title">{t('settings.interface.sidebarPos.title')}</div>
         <div className="sc-desc">{t('settings.interface.sidebarPos.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.sidebarPos === 'left'} onClick={() => p.set('sidebarPos', 'left')}>
@@ -83,10 +79,7 @@ const SidebarCards = () => {
       </div>
 
       <div className="sc sc-keep">
-        <div className="sc-title">
-          {t('settings.interface.sidebarView.title')}
-          <CardReset onReset={() => p.resetKeys('sidebarView')} />
-        </div>
+        <div className="sc-title">{t('settings.interface.sidebarView.title')}</div>
         <div className="sc-desc">{t('settings.interface.sidebarView.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.sidebarView === 'icons'} onClick={() => p.set('sidebarView', 'icons')}>
@@ -105,50 +98,35 @@ const SidebarCards = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.interface.sidebar.autohide.title')}
-              <RowReset onReset={() => p.resetKeys('sidebarAutohide')} />
-            </div>
+            <div className="sl2">{t('settings.interface.sidebar.autohide.title')}</div>
             <div className="ssub">{t('settings.interface.sidebar.autohide.sub')}</div>
           </div>
           <Toggle checked={p.sidebarAutohide} onChange={(v) => p.set('sidebarAutohide', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.interface.sidebar.lock.title')}
-              <RowReset onReset={() => p.resetKeys('sbResizeLock')} />
-            </div>
+            <div className="sl2">{t('settings.interface.sidebar.lock.title')}</div>
             <div className="ssub">{t('settings.interface.sidebar.lock.sub')}</div>
           </div>
           <Toggle checked={p.sbResizeLock} onChange={(v) => p.set('sbResizeLock', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.interface.sidebar.sep.title')}
-              <RowReset onReset={() => p.resetKeys('sbSep')} />
-            </div>
+            <div className="sl2">{t('settings.interface.sidebar.sep.title')}</div>
             <div className="ssub">{t('settings.interface.sidebar.sep.sub')}</div>
           </div>
           <Toggle checked={p.sbSep} onChange={(v) => p.set('sbSep', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.interface.nav.float.title')}
-              <RowReset onReset={() => p.resetKeys('navFloatBtn')} />
-            </div>
+            <div className="sl2">{t('settings.interface.nav.float.title')}</div>
             <div className="ssub">{t('settings.interface.nav.float.sub')}</div>
           </div>
           <Toggle checked={p.navFloatBtn} onChange={(v) => p.set('navFloatBtn', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.interface.nav.homeLogo.title')}
-              <RowReset onReset={() => p.resetKeys('navHomeLogo')} />
-            </div>
+            <div className="sl2">{t('settings.interface.nav.homeLogo.title')}</div>
             <div className="ssub">{t('settings.interface.nav.homeLogo.sub')}</div>
           </div>
           <Toggle checked={p.navHomeLogo} onChange={(v) => p.set('navHomeLogo', v)} />
@@ -167,10 +145,7 @@ const TitlebarCards = () => {
   return (
     <>
       <div className="sc">
-        <div className="sc-title">
-          {t('settings.interface.titlebar.title')}
-          <CardReset onReset={() => p.resetKeys('titlebarLabel', 'tbMin', 'tbMax', 'tbPin', 'tbBell', 'tbClose', 'tbLogo', 'tbVersion')} />
-        </div>
+        <div className="sc-title">{t('settings.interface.titlebar.title')}</div>
         <div className="sc-desc">{t('settings.interface.titlebar.desc')}</div>
         <div className="s-chip-grid">
           {TITLEBAR_ITEMS.map((it) => (
@@ -188,20 +163,14 @@ const TitlebarCards = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.interface.titlebar.autohide.title')}
-              <RowReset onReset={() => p.resetKeys('titlebarAutohide')} />
-            </div>
+            <div className="sl2">{t('settings.interface.titlebar.autohide.title')}</div>
             <div className="ssub">{t('settings.interface.titlebar.autohide.sub')}</div>
           </div>
           <Toggle checked={p.titlebarAutohide} onChange={(v) => p.set('titlebarAutohide', v)} />
         </div>
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.interface.titlebar.bg.title')}
-              <RowReset onReset={() => p.resetKeys('titlebarBg')} />
-            </div>
+            <div className="sl2">{t('settings.interface.titlebar.bg.title')}</div>
             <div className="ssub">{t('settings.interface.titlebar.bg.sub')}</div>
           </div>
           <Toggle checked={p.titlebarBg} onChange={(v) => p.set('titlebarBg', v)} />

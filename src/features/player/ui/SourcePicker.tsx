@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { ScLogo, YmLogo, YtmLogo, providerBrandColor } from '@entities/track'
 import { useBadgePrefs } from '@shared/lib/badgePrefs'
 import { placeSrcPopup } from '@shared/lib/srcPopupPos'
@@ -13,7 +13,7 @@ import { switchPlatform } from '../api/play'
  * воспроизведение на её версию (`switchPlatform`).
  *
  * Анкорится над кнопкой (как SpeedPicker/DlMenu), рендер через портал в body,
- * open-анимация — общий `usePopupOpenAnimation`. Стиль — общий `.bloom-dl-popup`.
+ * появление и закрытие — общий `usePopupPresence`. Стиль — общий `.bloom-dl-popup`.
  */
 /**
  * Лого площадки с пер-провайдерным масштабом: лого SoundCloud визуально мельче
@@ -57,10 +57,7 @@ export const SourcePicker = ({
   // Позиционирование: активный пункт ложится ровно на кнопку-анкер (попап
   // «вырастает» из иконки), при нехватке места вверх раскладка зеркалится.
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null)
-      return
-    }
+    if (!open) return // позицию не сбрасываем — уходящий попап стоит на месте
     const btn = anchorRef.current
     const p = ref.current
     if (!btn || !p) return
@@ -69,7 +66,7 @@ export const SourcePicker = ({
     setPos({ left: r.left, top: r.top })
   }, [open, anchorRef])
 
-  usePopupOpenAnimation(ref, pos)
+  const { mounted } = usePopupPresence(ref, open, pos)
 
   // Click outside / Escape.
   useEffect(() => {
@@ -91,7 +88,7 @@ export const SourcePicker = ({
     }
   }, [open, onClose, anchorRef])
 
-  if (!open) return null
+  if (!mounted) return null
 
   // Базовый порядок площадок фиксирован (реестр); активная просто изымается из
   // списка и рисуется отдельной строкой внизу. При смене площадки прежняя

@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { fetchWaveFaces, pickDisplaySeeds, type WaveFace } from '@/wave'
+import { fetchWaveFaces, onWaveFacesReset, pickDisplaySeeds, type WaveFace } from '@/wave'
 import { useLibStore } from '@features/library/model/store'
 import { useFavStore } from '@features/library/model/favStore'
 import { trackRegistry, coverCache, type Track } from '@entities/track'
@@ -99,6 +99,10 @@ export const WaveCollage = memo(function WaveCollage({ source }: { source: 'sc' 
   const favs = useFavStore((s) => s.favs)
   // null = ещё грузим (показываем заглушки), [] = площадка не отдала ничего.
   const [faces, setFaces] = useState<WaveFace[] | null>(null)
+  // Сброс лиц (`resetWaveFaces` из «Очистить статистику»): сиды коллажа взяты из
+  // топа прослушиваний, а сам он перезапрашивает только при смене площадки.
+  const [resetTick, setResetTick] = useState(0)
+  useEffect(() => onWaveFacesReset(() => setResetTick((n) => n + 1)), [])
 
   useEffect(() => {
     let cancelled = false
@@ -109,12 +113,13 @@ export const WaveCollage = memo(function WaveCollage({ source }: { source: 'sc' 
     return () => {
       cancelled = true
     }
-  }, [source])
+  }, [source, resetTick])
 
-  // Фолбэк по библиотеке. Пересчитываем только при изменении библиотеки/лайков:
-  // pickDisplaySeeds детерминирована, поэтому полоса не тасуется на каждом
-  // прослушивании.
+  // Фолбэк по библиотеке. Пересчитываем только при изменении библиотеки/лайков
+  // (и после сброса статистики — сиды те же, что у лиц): pickDisplaySeeds
+  // детерминирована, поэтому полоса не тасуется на каждом прослушивании.
   const libTiles = useMemo<WaveFace[]>(() => {
+    void resetTick
     const libById = new Map(libTracks.map((tr) => [tr.id, tr]))
     const out: WaveFace[] = []
     for (const id of pickDisplaySeeds(POOL * 4)) {
@@ -126,7 +131,7 @@ export const WaveCollage = memo(function WaveCollage({ source }: { source: 'sc' 
     }
     coverCache.save()
     return out
-  }, [libTracks, favs])
+  }, [libTracks, favs, resetTick])
 
   const loading = faces === null
   // ГОЧА: обязательно мемо. Пул — зависимость сразу трёх эффектов, один из
@@ -136,6 +141,11 @@ export const WaveCollage = memo(function WaveCollage({ source }: { source: 'sc' 
     () => (faces && faces.length ? faces : loading ? EMPTY : libTiles),
     [faces, loading, libTiles],
   )
+  // Сколько плиток рисуем. Обложек меньше, чем TILES, — плиток столько же, и
+  // они растягиваются на всю полосу (flex:1): чужие обложки из библиотеки в
+  // коллаж площадки не подмешиваем, пустых заглушек справа тоже не оставляем.
+  // Полный набор заглушек — только пока грузимся или показать совсем нечего.
+  const tiles = pool.length ? Math.min(TILES, pool.length) : TILES
 
   // Что сейчас в какой плитке: индексы в `pool`. Пересобирается при смене пула.
   const [order, setOrder] = useState<number[]>([])
@@ -146,22 +156,22 @@ export const WaveCollage = memo(function WaveCollage({ source }: { source: 'sc' 
 
   useEffect(() => {
     slotRef.current = 0
-    poolRef.current = TILES
-    setOrder(Array.from({ length: TILES }, (_, i) => i))
-  }, [pool])
+    poolRef.current = tiles
+    setOrder(Array.from({ length: tiles }, (_, i) => i))
+  }, [pool, tiles])
 
   // Прогреваем весь запас: подменяемая обложка должна появиться мгновенно, иначе
   // кроссфейд проявляет пустое место, пока картинка тянется по сети.
   useEffect(() => {
-    for (const f of pool.slice(TILES)) {
+    for (const f of pool.slice(tiles)) {
       const im = new Image()
       im.src = f.cover
     }
-  }, [pool])
+  }, [pool, tiles])
 
   useEffect(() => {
-    // Меняться нечем: обложек ровно на плитки (или меньше) — запаса нет.
-    if (pool.length <= TILES) return
+    // Меняться нечем: обложек ровно на плитки — запаса нет.
+    if (pool.length <= tiles) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const id = window.setInterval(() => {
       // Экономию энергии проверяем на каждом тике, а не при подписке: класс
@@ -169,7 +179,7 @@ export const WaveCollage = memo(function WaveCollage({ source }: { source: 'sc' 
       if (motionOff() || document.hidden) return
       setOrder((cur) => {
         const next = cur.slice()
-        const slot = slotRef.current % TILES
+        const slot = slotRef.current % tiles
         slotRef.current += 1
         // Берём первую обложку из запаса, которой сейчас нет НИ В ОДНОЙ плитке,
         // — иначе одна и та же картинка окажется в полосе дважды.
@@ -185,13 +195,13 @@ export const WaveCollage = memo(function WaveCollage({ source }: { source: 'sc' 
       })
     }, SWAP_MS)
     return () => window.clearInterval(id)
-  }, [pool])
+  }, [pool, tiles])
 
   return (
     <div className="hwb-collage">
-      {Array.from({ length: TILES }, (_, i) => (
-        // Обложек меньше, чем плиток, либо ещё грузятся — дырок в полосе быть не
-        // должно, плитка сама покажет нейтральную заглушку.
+      {Array.from({ length: tiles }, (_, i) => (
+        // Пока грузятся (или показать нечего) — плитка сама покажет нейтральную
+        // заглушку, дырок в полосе быть не должно.
         <CollageTile key={i} cover={pool[order[i] ?? i]?.cover} loading={loading} />
       ))}
     </div>

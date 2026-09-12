@@ -81,7 +81,7 @@ export const LogsViewerModal = ({
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{t('logs.title')}</span>
+          <span style={{ fontSize: 13, fontWeight: 'var(--fw-bold)' }}>{t('logs.title')}</span>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
               className="btn btg"

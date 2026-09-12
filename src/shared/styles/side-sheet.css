@@ -125,6 +125,12 @@ body.sheet-open .app::after {
   z-index: 995;
   pointer-events: none;
 }
+/* В autohide --tb-h прыгает 0↔32px при выезде тайтлбара — едем в такт его
+   margin-top (.22s в soundcloud-system.css). Только открытый слой: закрытый
+   иначе перекладывался бы на каждом наведении. */
+.sheet-layer.open {
+  transition: top 0.22s ease;
+}
 /* Сам слой событий НЕ ловит никогда: он растянут на всё окно и иначе накрывал бы
    приложение, забирая клики у ловушки «назад». Кликабельна только панель. */
 .sheet-layer.open .sheet {

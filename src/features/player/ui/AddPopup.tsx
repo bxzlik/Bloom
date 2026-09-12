@@ -163,7 +163,7 @@ export const AddPopup = ({
         <>
           <div
             className="ci"
-            style={{ color: 'var(--accent)', fontWeight: 600 }}
+            style={{ color: 'var(--accent)', fontWeight: 'var(--fw-bold)' }}
             onClick={() => {
               ;(onAddToLib ?? mpAddToLib)()
               onClose()

@@ -4,7 +4,7 @@
    Здесь осталось то, что шторка переиспользует: переключатель периода, график
    активности с теплокартой и разбивка по площадкам. */
 .act-period-switcher{display:flex;gap:2px}
-.act-period-btn{background:none;border:none;color:var(--muted);font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;cursor:pointer;transition:.15s;text-transform:uppercase;letter-spacing:.4px}
+.act-period-btn{background:none;border:none;color:var(--muted);font-size:10px;font-weight:var(--fw-bold);padding:2px 6px;border-radius:3px;cursor:pointer;transition:.15s;text-transform:uppercase;letter-spacing:.4px}
 .act-period-btn.active{background:rgba(var(--accent-rgb),.15);color:var(--accent)}
 .act-period-btn:hover:not(.active){color:var(--text)}
 .activity-chart{display:flex;align-items:flex-end;gap:4px;height:52px;margin-top:8px}
@@ -33,11 +33,11 @@
 /* Кнопки действий статистики («Скопировать» / «Очистить») — футер модалки.
    Вид как у кнопок редактора профиля (.pedit-btn-cancel): не рамка, а мягкая
    заливка, ховер = та же заливка поплотнее. Рамок нет ни у одной. */
-.stats-tool-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(var(--ovl-rgb),.05);border:none;border-radius:calc(var(--radius)*.6);color:var(--text2);font-size:13px;font-weight:600;padding:6px 11px;cursor:pointer;transition:.15s;font-family:var(--font)}
+.stats-tool-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(var(--ovl-rgb),.05);border:none;border-radius:calc(var(--radius)*.6);color:var(--text2);font-size:13px;font-weight:var(--fw-bold);padding:6px 11px;cursor:pointer;transition:.15s;font-family:var(--font)}
 .stats-tool-btn:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
 /* Постоянный вход в итоги месяца — единственная «положительная» кнопка футера,
    поэтому она сплошная акцентная, как «Сохранить» в редакторе профиля. */
-.stats-tool-btn.accent{background:var(--accent);color:var(--accent-text);font-weight:700}
+.stats-tool-btn.accent{background:var(--accent);color:var(--accent-text);font-weight:var(--fw-bold)}
 .stats-tool-btn.accent:hover{background:var(--accent2);color:var(--accent-text)}
 .stats-tool-btn.danger:hover{background:rgba(255,107,107,.14);color:#ff6b6b}
 .stats-tool-btn.danger.confirm{background:rgba(255,107,107,.18);color:#ff6b6b}
@@ -47,8 +47,8 @@
 .src-row{display:flex;flex-direction:column;gap:5px}
 .src-head{display:flex;align-items:center;gap:8px;font-size:12px}
 .src-logo{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex-shrink:0}
-.src-name{font-weight:600}
-.src-pct{font-weight:700;color:var(--text2)}
+.src-name{font-weight:var(--fw-bold)}
+.src-pct{font-weight:var(--fw-bold);color:var(--text2)}
 .src-meta{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
 .src-bar{height:6px;border-radius:3px;background:rgba(var(--ovl-rgb),.06);overflow:hidden}
 .src-bar-fill{height:100%;border-radius:3px;transition:width .3s}
@@ -62,7 +62,7 @@
    карточка выглядит одинаково всегда. */
 .acc-entries{display:flex;flex-direction:column;gap:10px;flex-shrink:0}
 .acc-entry{display:flex;align-items:center;gap:8px;width:100%;padding:16px 16px 16px 20px;background:transparent;border:1px solid var(--ovl-line);border-radius:var(--radius);color:var(--text);font-family:var(--font);text-align:left;cursor:pointer}
-.acc-entry-val{font-size:30px;font-weight:800;letter-spacing:-.6px;line-height:1}
+.acc-entry-val{font-size:30px;font-weight:var(--fw-bold);letter-spacing:-.6px;line-height:1}
 /* --icon-fg-sb, а не --muted: карточка прозрачная, и на светлой обложке
    штриховая иконка на #555 исчезала. */
 .acc-entry-ico{color:var(--icon-fg-sb);flex-shrink:0}
@@ -100,7 +100,7 @@
   .acc-swap-i.in,.acc-swap-i.out{animation-duration:.01ms}
 }
 
-.acc-entry-side{margin-left:auto;font-size:20px;font-weight:800;letter-spacing:-.3px;white-space:nowrap}
+.acc-entry-side{margin-left:auto;font-size:20px;font-weight:var(--fw-bold);letter-spacing:-.3px;white-space:nowrap}
 .acc-entry-tile{width:56px;height:56px;margin-left:14px;border-radius:calc(var(--radius)*.6);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(var(--ovl-rgb),.05)}
 .acc-entry-medal{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);background:rgba(var(--ovl-rgb),.04)}
 /* Плитка горит золотом, только когда взят хоть один уровень. */
@@ -111,7 +111,7 @@
    боковых панелей. Шапки нет: ни заголовка, ни крестика — закрывают кликом по
    фону или Esc. Здесь только тело. */
 .spanel{--pstat-pad:16px}
-.ppnl-badge{font-size:12px;font-weight:700;color:var(--text2);border:1px solid var(--ovl-line);padding:3px 10px;border-radius:999px}
+.ppnl-badge{font-size:12px;font-weight:var(--fw-bold);color:var(--text2);border:1px solid var(--ovl-line);padding:3px 10px;border-radius:999px}
 /* Полосу прокрутки прячем — как на странице профиля и главной. */
 .ppnl-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:16px 0 8px;scrollbar-width:none}
 .ppnl-body::-webkit-scrollbar{display:none;width:0;height:0}
@@ -130,7 +130,8 @@
    на размытом фоне читалась как обводка. */
 :root{--smodal-w:540px;--smodal-gap:40px}
 .smodal-backdrop{position:fixed;inset:0;z-index:995;display:flex;align-items:stretch;justify-content:center;padding:calc(var(--tb-h,32px) + var(--smodal-gap)) 16px var(--smodal-gap);background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);opacity:0;pointer-events:none;transition:opacity .22s}
-.smodal-backdrop.open{opacity:1;pointer-events:all}
+/* padding-top — за --tb-h при выезде авто-скрытого тайтлбара; только в .open. */
+.smodal-backdrop.open{opacity:1;pointer-events:all;transition:opacity .22s,padding-top .22s ease}
 .smodal{--pstat-pad:24px;width:var(--smodal-w);max-width:calc(100vw - 32px);display:flex;flex-direction:column;overflow:hidden;background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border-radius:var(--radius);box-shadow:0 40px 120px rgba(0,0,0,.95);transition:transform .42s cubic-bezier(.22,1,.36,1)}
 /* Закрытое положение: сдвиг «полокна + полсебя + зазор» = карточка целиком за
    кромкой. `%` считается от своей ширины, поэтому поправок на --smodal-w не надо. */
@@ -148,7 +149,7 @@ body.drawer-left .smodal{transform:translateX(calc(-50vw - 50% - 24px))}
    он и есть единственная «шапка» раздела. */
 .pstat-sec{padding:0 var(--pstat-pad,16px);margin-bottom:34px}
 .pstat-sec-head{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-.pstat-sec-title{flex:1;min-width:0;font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.15;color:var(--text)}
+.pstat-sec-title{flex:1;min-width:0;font-size:26px;font-weight:var(--fw-bold);letter-spacing:-.6px;line-height:1.15;color:var(--text)}
 .pstat-empty{font-size:13px;color:var(--muted);padding:2px 0}
 
 /* Лента любимых исполнителей: листается вбок от края до края. Под кружком имя и
@@ -160,7 +161,7 @@ body.drawer-left .smodal{transform:translateX(calc(-50vw - 50% - 24px))}
 .pstat-artist{width:108px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;cursor:pointer}
 .pstat-artist-ava{width:108px;height:108px;border-radius:50%;overflow:hidden;background:var(--hover);display:flex;align-items:center;justify-content:center;color:var(--muted)}
 .pstat-artist-ava img{width:100%;height:100%;object-fit:cover}
-.pstat-artist-name{max-width:100%;margin-top:10px;font-size:14px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstat-artist-name{max-width:100%;margin-top:10px;font-size:14px;font-weight:var(--fw-bold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pstat-artist-sub{max-width:100%;font-size:12px;line-height:1.35;color:var(--text2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Топ треков — строка в одну линию: крошечная обложка, «артист — название»
@@ -170,7 +171,7 @@ body.drawer-left .smodal{transform:translateX(calc(-50vw - 50% - 24px))}
 .pstat-track-cov{width:16px;height:16px;border-radius:4px;background:var(--hover);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .pstat-track-cov img{width:100%;height:100%;object-fit:cover}
 .pstat-track-line{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pstat-track-name{font-weight:600;color:var(--text)}
+.pstat-track-name{font-weight:var(--fw-bold);color:var(--text)}
 /* Артист тусклее названия, но не «на грани» — по нему ещё и кликают. */
 .pstat-track-artist{color:var(--text2)}
 .pstat-track-plays{font-size:13px;color:var(--muted);flex-shrink:0}
@@ -181,13 +182,13 @@ body.drawer-left .smodal{transform:translateX(calc(-50vw - 50% - 24px))}
 .pstat-ov-row{display:flex}
 .pstat-ov-row+.pstat-ov-row{margin-top:10px;padding-top:10px;border-top:1px solid var(--ovl-line)}
 .pstat-ov-cell{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px}
-.pstat-ov-val{max-width:100%;font-size:20px;font-weight:800;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstat-ov-val{max-width:100%;font-size:20px;font-weight:var(--fw-bold);letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pstat-ov-lbl{max-width:100%;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Достижения в шторке — те же карточки, но в одну колонку. */
 /* Строка-шапка: слева заголовок раздела, справа плашка «взято/всего». */
 .pach-count{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 var(--pstat-pad,16px) 12px}
-.pach-title{font-size:17px;font-weight:800;letter-spacing:-.3px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pach-title{font-size:17px;font-weight:var(--fw-bold);letter-spacing:-.3px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pach-list{display:flex;flex-direction:column;gap:10px;padding:0 var(--pstat-pad,16px)}
 
 /* ===== ACHIEVEMENTS ===== */
@@ -205,7 +206,7 @@ body.drawer-left .smodal{transform:translateX(calc(-50vw - 50% - 24px))}
 .ach-card[data-tier="gold"] .ach-medal{background:rgba(255,210,74,.16);color:#ffd24a;border-color:rgba(255,210,74,.45)}
 .ach-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
 .ach-head{display:flex;align-items:center;gap:8px}
-.ach-name{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ach-name{font-size:14px;font-weight:var(--fw-bold);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ach-pips{display:flex;gap:3px;margin-left:auto;flex-shrink:0}
 .ach-pip{width:7px;height:7px;border-radius:50%;background:rgba(var(--ovl-rgb),.14)}
 .ach-pip.on[data-tier="bronze"]{background:#cd7f32}
@@ -216,6 +217,6 @@ body.drawer-left .smodal{transform:translateX(calc(-50vw - 50% - 24px))}
 .ach-bar-fill{height:100%;border-radius:999px;background:var(--accent);transition:width .4s ease}
 .ach-card.maxed .ach-bar-fill{background:linear-gradient(90deg,#ffd24a,#ffb01f)}
 .ach-meta{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
-.ach-progress{font-weight:700;color:var(--text2)}
-.ach-maxed{font-weight:800;color:#ffd24a;text-transform:uppercase;letter-spacing:.5px}
+.ach-progress{font-weight:var(--fw-bold);color:var(--text2)}
+.ach-maxed{font-weight:var(--fw-bold);color:#ffd24a;text-transform:uppercase;letter-spacing:.5px}
 .ach-date{margin-left:auto;font-size:11px}

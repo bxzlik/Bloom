@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlayerStore, sendPlayerCommand } from '@features/player'
 import { useNavStore } from '@app/navigationStore'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { Ico, type IconName } from '@shared/ui/icons/solar'
 
 /**
@@ -80,9 +80,9 @@ export const QuickWheel = () => {
   const playing = usePlayerStore((s) => s.playing)
 
   const wrapRef = useRef<HTMLDivElement>(null)
-  // Появление — как у всплывающего поиска (SearchOverlay): подложка коротким
-  // fade из CSS, само колесо — scale(.94)→1 + opacity через WAAPI.
-  usePopupOpenAnimation(wrapRef, open)
+  // Появление и уход — как у всплывающего поиска (SearchOverlay): подложка
+  // коротким fade из CSS, само колесо — scale + opacity через WAAPI.
+  const { mounted, closing } = usePopupPresence(wrapRef, open)
   const tabDownRef = useRef(false)
   const activeRef = useRef<string | null>(null)
   activeRef.current = activeId
@@ -157,7 +157,11 @@ export const QuickWheel = () => {
   }, [])
 
   return (
-    <div id="quick-wheel" className={open ? 'qw-open' : undefined} onMouseMove={open ? onMove : undefined}>
+    <div
+      id="quick-wheel"
+      className={mounted ? (closing ? 'qw-open qw-closing' : 'qw-open') : undefined}
+      onMouseMove={open ? onMove : undefined}
+    >
       <div id="qw-wrap" ref={wrapRef}>
         <svg id="qw-svg" viewBox="-210 -210 420 420" xmlns="http://www.w3.org/2000/svg">
           {SECTORS.map((s) => {

@@ -27,7 +27,7 @@
 .eq-head-title {
   flex: 1;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--text);
 }
 .eq-reset {
@@ -89,7 +89,7 @@
 .eq-add,
 .eq-chip {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--fw-bold);
   color: var(--text2);
   background: rgba(var(--ovl-rgb), 0.05);
   border: 1px solid var(--border);
@@ -139,7 +139,7 @@
 .eq-add {
   padding: 5px 9px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1;
 }
 .eq-add:hover,
@@ -210,7 +210,7 @@
 }
 .eq-fx-title {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
@@ -222,7 +222,7 @@
 .eq-fx-chip {
   flex: 1;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--fw-bold);
   color: var(--text2);
   background: rgba(var(--ovl-rgb), 0.05);
   border: 1px solid var(--border);

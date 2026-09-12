@@ -151,7 +151,7 @@ export const PlAutoDrawer = () => {
             <div
               style={{
                 fontSize: 18,
-                fontWeight: 800,
+                fontWeight: 'var(--fw-bold)',
                 letterSpacing: '-.2px',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',

@@ -368,6 +368,7 @@ export const scProvider: MusicProvider = {
       reposts,
       similarArtists,
       tracksCursor: tracksNext,
+      tracksTotal: user?.trackCount || undefined,
       repostsCursor: rawReposts.next,
     }
   },

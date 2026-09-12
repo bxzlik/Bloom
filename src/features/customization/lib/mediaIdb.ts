@@ -136,6 +136,13 @@ export const saveAppImage = async (key: AppImageKey, dataUrl: string | null): Pr
   })
 }
 
+/** Снять все «текущие» картинки (фон, обложка, визуализатор, курсор, ползунок).
+ *  Сама медиа-библиотека не трогается — это часть сброса настроек, а не данных. */
+export const clearAppImages = async (): Promise<void> => {
+  const keys: AppImageKey[] = ['manualBgUrl', 'playerCoverUrl', 'vizPhoto', 'customCursor', 'sliderThumb']
+  await Promise.all(keys.map((k) => saveAppImage(k, null)))
+}
+
 export interface CustomizationStats {
   count: number
   bytes: number

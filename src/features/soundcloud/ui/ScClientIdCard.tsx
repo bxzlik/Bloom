@@ -80,7 +80,7 @@ export const ScClientIdCard = () => {
             color: 'var(--text)',
             border: '1px solid var(--border)',
             borderRadius: 'calc(var(--radius) * 0.6)',
-            fontWeight: 600,
+            fontWeight: 'var(--fw-bold)',
             fontSize: 12,
             fontFamily: 'var(--font)',
             cursor: checking ? 'default' : 'pointer',

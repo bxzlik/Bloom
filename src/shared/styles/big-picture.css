@@ -53,13 +53,13 @@
 #bigPicOverlay .bp-font-panel{position:absolute;z-index:8;background:linear-gradient(160deg,rgba(38,38,42,.51),rgba(15,15,17,.61));border:none;border-radius:16px;padding:8px;backdrop-filter:blur(34px) saturate(1.7);-webkit-backdrop-filter:blur(34px) saturate(1.7);box-shadow:none;display:flex;flex-direction:column;gap:4px;transform-origin:top left;animation:ctxIn .18s cubic-bezier(.22,1,.36,1)}
 .bp-panel-sep{height:1px;background:rgba(255,255,255,.09);margin:4px 6px}
 .bp-view{display:flex;flex-direction:column;gap:2px}
-.bp-view-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:4px 10px 4px}
-.bp-view-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.5);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-family:var(--font);text-align:left;cursor:pointer;transition:background .15s,color .15s;outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
+.bp-view-label{font-size:10px;font-weight:var(--fw-bold);letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:4px 10px 4px}
+.bp-view-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.5);font-size:12px;font-weight:var(--fw-bold);letter-spacing:.04em;text-transform:uppercase;font-family:var(--font);text-align:left;cursor:pointer;transition:background .15s,color .15s;outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
 .bp-view-opt svg{flex-shrink:0;opacity:.85}
 .bp-view-opt:hover:not(.bp-view-opt-active){background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
 .bp-view-opt-active{background:rgba(255,255,255,.14);color:#fff}
 .bp-font-sizes{display:flex;gap:0;align-items:flex-end}
-.bp-font-sz{width:40px;height:40px;border-radius:10px;border:none;background:transparent;color:rgba(255,255,255,.35);cursor:pointer;font-weight:700;transition:color .15s,background .15s;display:flex;align-items:center;justify-content:center;font-family:var(--font);outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
+.bp-font-sz{width:40px;height:40px;border-radius:10px;border:none;background:transparent;color:rgba(255,255,255,.35);cursor:pointer;font-weight:var(--fw-bold);transition:color .15s,background .15s;display:flex;align-items:center;justify-content:center;font-family:var(--font);outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent}
 .bp-font-sz[data-sz="0"]{font-size:12px}
 .bp-font-sz[data-sz="1"]{font-size:15px}
 .bp-font-sz[data-sz="2"]{font-size:18px}
@@ -67,9 +67,9 @@
 .bp-font-sz.bp-font-sz-active{color:#fff;background:rgba(255,255,255,.15)}
 .bp-font-sz:hover:not(.bp-font-sz-active){color:rgba(255,255,255,.6)}
 .bp-font-offset{display:flex;align-items:center;gap:4px;border-radius:10px}
-.bp-font-off-btn{width:40px;height:36px;border:none;background:rgba(255,255,255,.06);color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;font-family:var(--font);outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;border-radius:10px}
+.bp-font-off-btn{width:40px;height:36px;border:none;background:rgba(255,255,255,.06);color:#fff;font-size:15px;font-weight:var(--fw-bold);cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;font-family:var(--font);outline:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;border-radius:10px}
 .bp-font-off-btn:hover{background:rgba(255,255,255,.12)}
-#bpOffsetVal{flex:1;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,.5);min-width:50px;background:transparent}
+#bpOffsetVal{flex:1;text-align:center;font-size:12px;font-weight:var(--fw-bold);color:rgba(255,255,255,.5);min-width:50px;background:transparent}
 /* --bp-cov — единый размер обложки (и ширина левой колонки) во всех режимах. */
 /* Вертикальный бюджет: `100vh - 280px` — резерв под подпись/транспорт/полосу,
    иначе на низких окнах нижний блок налезал бы на прогресс. --bp-drop (сдвиг
@@ -107,7 +107,7 @@
 #bigPicOverlay .bp-title-wrap .bp-title{display:inline-block;overflow:visible;white-space:nowrap;animation:none}
 #bigPicOverlay .bp-title-wrap.bp-scrolling .bp-title{animation:bp-marquee linear infinite}
 #bigPicOverlay .bp-title-wrap.bp-scrolling:hover .bp-title{animation-play-state:paused}
-#bigPicOverlay .bp-title{font-size:23px;font-weight:800;color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#bigPicOverlay .bp-title{font-size:23px;font-weight:var(--fw-bold);color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 /* Строка артистов однострочная: перенос на вторую строку сдвигал транспорт и
    ломал центровку стопки. Ширина 100% (а не fit-content от align-items:center у
    .bp-info) — иначе клипу .mq не от чего считать переполнение. Прокрутку хвоста
@@ -236,7 +236,7 @@ body.slider-ios #bigPicOverlay .bp-bar-wrap::before{background:var(--bp-track)!i
 #bigPicOverlay .bp-lyr-scroll .lyrics-intro.lyr-active{color:#fff}
 #bigPicOverlay .bp-lyr-scroll .lyrics-intro.lyr-past{color:rgba(255,255,255,.22)}
 #bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-upcoming{color:rgba(255,255,255,.4)}
-#bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-active{color:#fff;font-size:var(--bp-lyr-fs-active,46px);font-weight:700;cursor:default}
+#bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-active{color:#fff;font-size:var(--bp-lyr-fs-active,46px);font-weight:var(--fw-bold);cursor:default}
 #bigPicOverlay .bp-lyr-scroll .lyrics-line.lyr-plain{cursor:default;color:rgba(255,255,255,.5);font-size:var(--bp-lyr-fs,36px)}
 #bigPicOverlay .bp-lyr-scroll .lyrics-status{color:rgba(255,255,255,.25);font-size:14px;text-align:left;padding:0 10px;line-height:1.6}
 .ps-cover{cursor:pointer}

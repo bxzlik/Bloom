@@ -1,9 +1,8 @@
-import { RowReset, SectionReset } from '@features/settings/ui/controls/SectionReset'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { toast } from '@shared/ui'
+import { PillTabs, toast } from '@shared/ui'
 import { useT, type TranslationKey } from '@shared/i18n'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence, useStickyWhile } from '@shared/hooks'
 import { useMediaLibStore } from '../model/mediaLibStore'
 import { useCustomizationStore } from '../model/customizationStore'
 import { usePresetsStore, resolvePresetImg, type Preset } from '../model/presetsStore'
@@ -18,7 +17,7 @@ import { downloadImageFile } from '@features/player/lib/download'
  *
  * - плашки 5 контекстов (Фон / Обложка / Визуализатор / Курсор / Слайдер) —
  *   картинка ставится перетаскиванием из библиотеки, клик снимает;
- * - сегмент «Библиотека / Пресеты» с общей сеткой карточек (presetsStore);
+ * - вкладки «Библиотека / Пресеты» с общей сеткой карточек (presetsStore);
  * - за разделительной полосой — параметры фонового слоя (BackgroundSliders).
  *
  * Вкладки `.s-ptabs` («Кастомизация»/«Фон») убраны: фон больше не отдельная
@@ -49,10 +48,15 @@ interface CtxMenuItem {
   danger?: boolean
   onClick: () => void
 }
-const CtxMenu = ({ pos, items, onClose }: { pos: { x: number; y: number } | null; items: CtxMenuItem[]; onClose: () => void }) => {
+const CtxMenu = ({ pos: posProp, items: itemsProp, onClose }: { pos: { x: number; y: number } | null; items: CtxMenuItem[]; onClose: () => void }) => {
   const ref = useRef<HTMLDivElement>(null)
   const [clamped, setClamped] = useState<{ x: number; y: number } | null>(null)
-  usePopupOpenAnimation(ref, clamped)
+  // Родитель закрывает меню, обнуляя pos и пункты, — уходящее меню дорисовываем
+  // по последним значениям.
+  const open = posProp != null
+  const { mounted } = usePopupPresence(ref, open, clamped)
+  const pos = useStickyWhile(posProp, mounted)
+  const items = useStickyWhile(open ? itemsProp : null, mounted) ?? []
 
   // Удерживаем меню в пределах окна.
   useLayoutEffect(() => {
@@ -74,7 +78,7 @@ const CtxMenu = ({ pos, items, onClose }: { pos: { x: number; y: number } | null
 
   // Закрытие по клику вне / Escape.
   useEffect(() => {
-    if (!pos) return
+    if (!open) return
     const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose() }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('mousedown', onDown)
@@ -83,7 +87,7 @@ const CtxMenu = ({ pos, items, onClose }: { pos: { x: number; y: number } | null
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('keydown', onKey)
     }
-  }, [pos, onClose])
+  }, [open, onClose])
 
   if (!pos) return null
   const rp = clamped ?? pos
@@ -101,7 +105,6 @@ const CtxMenu = ({ pos, items, onClose }: { pos: { x: number; y: number } | null
 
 export const CustomizationSection = () => {
   const t = useT()
-  const resetBg = useCustomizationStore((s) => s.resetBg)
 
   return (
     <div className="s-section active" id="ssec-medialib">
@@ -110,10 +113,7 @@ export const CustomizationSection = () => {
           <Ico name="album" width={15} height={15} />{' '}
           {t('settings.nav.customization')}
         </div>
-        {/* Сброс относится к параметрам фона (resetBg): картинки библиотеки
-            удаляются поштучно, сбрасывать там нечего. */}
       </div>
-      <SectionReset onReset={resetBg} />
 
       <MediaCards />
     </div>
@@ -311,16 +311,17 @@ const MediaCards = () => {
         ))}
       </div>
 
-      {/* Сегмент «Библиотека / Пресеты» + инструменты справа */}
+      {/* Вкладки «Библиотека / Пресеты» (общий PillTabs, как в поиске и
+          настройках) + инструменты справа */}
       <div className="cz-bar">
-        <div className="cz-seg">
-          <button className={`cz-seg-btn${pane === 'lib' ? ' active' : ''}`} onClick={() => switchPane('lib')}>
-            {t('settings.custom.library')}
-          </button>
-          <button className={`cz-seg-btn${pane === 'presets' ? ' active' : ''}`} onClick={() => switchPane('presets')}>
-            {t('settings.custom.presets')}
-          </button>
-        </div>
+        <PillTabs
+          active={pane}
+          onSelect={switchPane}
+          tabs={[
+            { id: 'lib', label: t('settings.custom.library') },
+            { id: 'presets', label: t('settings.custom.presets') },
+          ]}
+        />
         <div className="cz-tools">
           {/* Первая кнопка не зависит от режима добавления; «+» превращается в «✕». */}
           {pane === 'lib' ? (
@@ -473,10 +474,7 @@ const MediaCards = () => {
             <div className="sc">
               <div className="sr">
                 <div>
-                  <div className="sl2">
-                    {t('settings.custom.coverMode')}
-                    <RowReset onReset={() => setCoverMode('always')} />
-                  </div>
+                  <div className="sl2">{t('settings.custom.coverMode')}</div>
                   <div className="ssub">{t('settings.custom.coverMode.sub')}</div>
                 </div>
                 <div className="cz-modes">

@@ -43,8 +43,6 @@ interface CustomizationState {
   setBgBlur: (px: number) => void
   setBgDim: (pct: number) => void
   setCoverAsBg: (v: boolean) => void
-  /** Сброс фона к дефолтам: убрать картинку, blur=0, dim=65, coverAsBg=off. */
-  resetBg: () => void
 }
 
 const PREFS_KEY = 'bloom_bg_prefs'
@@ -169,12 +167,6 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => {
     },
     setCoverAsBg: (v) => {
       set({ coverAsBg: v })
-      persistPrefs()
-      applyBgNow()
-    },
-    resetBg: () => {
-      set({ bgUrl: null, bgBlur: 0, bgDim: 65, coverAsBg: false })
-      void saveAppImage('manualBgUrl', null)
       persistPrefs()
       applyBgNow()
     },

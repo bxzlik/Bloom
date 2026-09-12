@@ -1,5 +1,5 @@
 export { CustomizationSection } from './ui/CustomizationSection'
 export { useMediaLibStore, useMediaLibBootstrap } from './model/mediaLibStore'
-export { customizationStats, type CustomizationStats } from './lib/mediaIdb'
+export { customizationStats, clearAppImages, type CustomizationStats } from './lib/mediaIdb'
 export { useCustomizationStore, useCustomizationBootstrap } from './model/customizationStore'
 export { usePresetsStore } from './model/presetsStore'

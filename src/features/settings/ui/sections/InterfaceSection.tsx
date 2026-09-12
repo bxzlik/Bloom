@@ -1,9 +1,7 @@
-import { TRANSPARENCY_DEFAULTS as TR_DEFAULTS } from '../../model/transparencyStore'
-import { CardReset, CatReset, RowReset } from '../controls/SectionReset'
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
-import { useThemeStore, THEME_DEFAULTS, THEME_PRESETS, AUTO_THEME_ID, DEFAULT_THEME_ID, themePreview, type ThemePreset } from '../../model/themeStore'
+import { usePopupPresence } from '@shared/hooks'
+import { useThemeStore, THEME_PRESETS, AUTO_THEME_ID, themePreview, type ThemePreset } from '../../model/themeStore'
 import { AUTO_ACCENT_L_MAX, AUTO_ACCENT_L_MIN } from '../../lib/coverAccent'
 import { useUiPrefsStore } from '../../model/uiPrefsStore'
 import { useGrpStore } from '@features/player/model/grpStore'
@@ -19,13 +17,9 @@ import {
   LOCALES,
   type TFunc,
 } from '@shared/i18n'
-import {
-  FONT_CATS,
-  FONT_CAT_LABELS,
-  ensureFontLoaded,
-  catOfFont,
-  type FontCat,
-} from '../../lib/fonts'
+import { FONTS, fontFamilyOf } from '../../lib/fonts'
+import { ACCEPT_FONTS, userFontValue } from '../../lib/userFonts'
+import { useUserFontsStore } from '../../model/userFontsStore'
 import { Ico } from '@shared/ui/icons/solar'
 import type { IfaceTab } from '../subTabs'
 
@@ -90,8 +84,7 @@ export const InterfaceSection = ({ tab }: { tab: IfaceTab }) => {
  * Вкладка «Боковые панели»: сторона выезжающих drawer'ов (общая) + панель
  * очереди/текста в плеере — с какой стороны выезжает и можно ли тянуть ширину.
  * Последние две переехали сюда из раздела «Плеер»: настройка про панель, а не
- * про плеер. Обе живут в ui-префах/grpStore, поэтому «Сбросить» этого раздела
- * трогает только `grpResizeLock`, сторона панели (grpStore) переживает сброс.
+ * про плеер.
  */
 const PanelsCards = () => {
   const t = useT()
@@ -102,10 +95,7 @@ const PanelsCards = () => {
   return (
     <>
       <div className="sc sc-keep">
-        <div className="sc-title">
-          {t('settings.interface.drawerSide.title')}
-          <CardReset onReset={() => p.resetKeys('drawerSide')} />
-        </div>
+        <div className="sc-title">{t('settings.interface.drawerSide.title')}</div>
         <div className="sc-desc">{t('settings.interface.drawerSide.desc')}</div>
         <div className="s-opt-row">
           <OptBtn active={p.drawerSide === 'left'} onClick={() => p.set('drawerSide', 'left')}>
@@ -120,10 +110,7 @@ const PanelsCards = () => {
       </div>
 
       <div className="sc sc-keep">
-        <div className="sc-title">
-          {t('settings.view.grpSide')}
-          <CardReset onReset={() => setGrpSide('right')} />
-        </div>
+        <div className="sc-title">{t('settings.view.grpSide')}</div>
         <div className="sc-desc">{t('settings.view.grpSide.desc')}</div>
         <div className="s-opt-row">
           {/* Иконки те же, что у «Выезжающих панелей» выше: залитая половина —
@@ -142,10 +129,7 @@ const PanelsCards = () => {
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.view.grpLock.title')}
-              <RowReset onReset={() => p.resetKeys('grpResizeLock')} />
-            </div>
+            <div className="sl2">{t('settings.view.grpLock.title')}</div>
             <div className="ssub">{t('settings.view.grpLock.sub')}</div>
           </div>
           <Toggle
@@ -201,17 +185,6 @@ const InterfaceCards = () => {
   const coverAsBg = useCustomizationStore((s) => s.coverAsBg)
   const setCoverAsBg = useCustomizationStore((s) => s.setCoverAsBg)
 
-  // Шрифт: вкладка категории + грид. Стартовая вкладка — категория текущего шрифта.
-  const [fontCat, setFontCat] = useState<FontCat>(() => catOfFont(fontFamily))
-  useEffect(() => {
-    FONT_CATS[fontCat].forEach((f) => ensureFontLoaded(f.val))
-  }, [fontCat])
-  const normFont = fontFamily.replace(/\s/g, '')
-  const pickFont = (val: string) => {
-    setFontFamily(val)
-    ensureFontLoaded(val)
-  }
-
   return (
     <>
       <div className="s-cat-label">{t('settings.interface.cat.language')}</div>
@@ -228,19 +201,7 @@ const InterfaceCards = () => {
         ))}
       </div>
 
-      <div className="s-cat-label">
-        {t('settings.interface.cat.theme')}
-        <CatReset
-          onReset={() => {
-            // Именно applyTheme, а не три пикера: ручные сеттеры помечают тему
-            // как `custom`, и сброс оставлял бы «Свою тему» вместо пресета.
-            applyTheme(DEFAULT_THEME_ID)
-            setAutoAccent(THEME_DEFAULTS.autoAccent)
-            setAutoAccentL(THEME_DEFAULTS.autoAccentL)
-            setAccentBadges(false)
-          }}
-        />
-      </div>
+      <div className="s-cat-label">{t('settings.interface.cat.theme')}</div>
       <div className="sc sc-keep">
         <ThemePicker
           customThemes={customThemes}
@@ -298,10 +259,7 @@ const InterfaceCards = () => {
 
       <div className="s-cat-label">{t('settings.interface.cat.transparency')}</div>
       <div className="sc">
-        <div className="sc-title">
-          {t('settings.interface.transparency.title')}
-          <CardReset onReset={() => { setTrMode(TR_DEFAULTS.trMode); setOverlayGlass(TR_DEFAULTS.overlayGlass); setNativeTransparent(TR_DEFAULTS.nativeTransparent); setBlockOpacity(TR_DEFAULTS.blockOpacity); setGlassStr(TR_DEFAULTS.glassStr); setGlassBlur(TR_DEFAULTS.glassBlur) }} />
-        </div>
+        <div className="sc-title">{t('settings.interface.transparency.title')}</div>
         <div className="sc-desc">{t('settings.interface.transparency.desc')}</div>
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button className={`s-mode-btn${trMode === 'off' ? ' active' : ''}`} onClick={() => setTrMode('off')}>
@@ -340,63 +298,17 @@ const InterfaceCards = () => {
         </div>
       </div>
 
-      <div className="s-cat-label">
-        {t('settings.interface.cat.scaling')}
-        <CatReset onReset={() => p.resetKeys('fullZoom', 'winZoom')} />
-      </div>
-      <ZoomCard title={t('settings.interface.zoom.fullscreen')} value={p.fullZoom} onChange={(v) => p.set('fullZoom', v)} onReset={() => p.resetKeys('fullZoom')} />
-      <ZoomCard title={t('settings.interface.zoom.windowed')} value={p.winZoom} onChange={(v) => p.set('winZoom', v)} onReset={() => p.resetKeys('winZoom')} />
+      <div className="s-cat-label">{t('settings.interface.cat.scaling')}</div>
+      <ZoomCard title={t('settings.interface.zoom.fullscreen')} value={p.fullZoom} onChange={(v) => p.set('fullZoom', v)} />
+      <ZoomCard title={t('settings.interface.zoom.windowed')} value={p.winZoom} onChange={(v) => p.set('winZoom', v)} />
 
       <div className="s-cat-label">{t('settings.interface.cat.font')}</div>
-      <div className="sc">
-        <div className="sc-title">
-          {t('settings.interface.font.title')}
-          <CardReset onReset={() => { setFontFamily(THEME_DEFAULTS.fontFamily); setFontCat(catOfFont(THEME_DEFAULTS.fontFamily)) }} />
-        </div>
-        <div className="sc-desc">{t('settings.interface.font.desc')}</div>
-        <div className="s-font-cats" style={{ marginTop: 12, flexWrap: 'nowrap' }}>
-          {FONT_CAT_LABELS.map((c) => (
-            <button
-              key={c.id}
-              className={`s-font-cat${fontCat === c.id ? ' active' : ''}`}
-              style={{ flex: 1 }}
-              onClick={() => setFontCat(c.id)}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        <div className="s-font-grid">
-          {FONT_CATS[fontCat].map((f) => (
-            <button
-              key={f.name}
-              className={`s-font-item${normFont === f.val.replace(/\s/g, '') ? ' active' : ''}`}
-              style={{ fontFamily: f.val }}
-              onClick={() => pickFont(f.val)}
-            >
-              <span className="s-font-item-aa" style={{ fontFamily: f.val }}>Aa</span>
-              <span className="s-font-item-name">{f.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <FontCard t={t} value={fontFamily} onChange={setFontFamily} />
 
-      <div className="s-cat-label">
-        {t('settings.interface.cat.interface')}
-        <CatReset
-          onReset={() => {
-            setRadius(THEME_DEFAULTS.radius)
-            p.resetKeys('borderAlpha')
-            setCoverAsBg(false)
-          }}
-        />
-      </div>
+      <div className="s-cat-label">{t('settings.interface.cat.interface')}</div>
       <RadiusCard t={t} value={radius} onChange={setRadius} />
       <div className="sc">
-        <div className="sc-title">
-          {t('settings.interface.borders.title')}
-          <CardReset onReset={() => p.resetKeys('borderAlpha')} />
-        </div>
+        <div className="sc-title">{t('settings.interface.borders.title')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
           <span className="ssub" style={{ minWidth: 36 }}>{Math.round((p.borderAlpha / 6) * 100)}%</span>
           <input
@@ -411,13 +323,11 @@ const InterfaceCards = () => {
       </div>
       {/* Переехало из убранной вкладки «Фон» раздела «Кастомизация»
           (сама картинка фона и её размытие/затемнение остались там). */}
+      <div className="s-cat-label">{t('settings.interface.cat.background')}</div>
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2">
-              {t('settings.background.coverAsBg')}
-              <RowReset onReset={() => setCoverAsBg(false)} />
-            </div>
+            <div className="sl2">{t('settings.background.coverAsBg')}</div>
             <div className="ssub">{t('settings.background.coverAsBg.sub')}</div>
           </div>
           <Toggle checked={coverAsBg} onChange={setCoverAsBg} />
@@ -453,15 +363,93 @@ const RADIUS_PRESETS: { v: number; labelKey: Parameters<TFunc>[0]; rx: number }[
   { v: 32, labelKey: 'settings.interface.radius.large', rx: 9 },
 ]
 
+/**
+ * Карточка «Шрифт интерфейса»: встроенный каталог + свои шрифты пользователя.
+ *
+ * Загрузка — иконка «+» в шапке карточки (скрытый input[type=file]: системный
+ * диалог Tauri тут не нужен, файл всё равно читается как dataURL и копируется
+ * внутрь приложения). Перетаскивание не поддерживается намеренно — HTML5 DnD в
+ * окне Tauri не работает (dragDropEnabled глушит внутренний drag).
+ *
+ * Свои плитки идут после встроенных и ничем от них не отличаются, кроме ✕ на
+ * ховере — как у своих тем в темпикере (.tp-card-del).
+ */
+const FontCard = ({ t, value, onChange }: { t: TFunc; value: string; onChange: (v: string) => void }) => {
+  const items = useUserFontsStore((s) => s.items)
+  const addFiles = useUserFontsStore((s) => s.addFiles)
+  const removeFont = useUserFontsStore((s) => s.remove)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const current = fontFamilyOf(value)
+
+  return (
+    <div className="sc">
+      <div className="s-font-head">
+        <div>
+          <div className="sc-title">{t('settings.interface.font.title')}</div>
+          <div className="sc-desc">{t('settings.interface.font.desc')}</div>
+        </div>
+        <button className="s-font-add" onClick={() => inputRef.current?.click()} aria-label={t('settings.interface.font.add')}>
+          <Ico name="add" width={16} height={16} />
+        </button>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPT_FONTS}
+        multiple
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const files = e.target.files
+          if (files && files.length) void addFiles(files)
+          // Сбрасываем значение: иначе повторный выбор того же файла не даст change.
+          e.target.value = ''
+        }}
+      />
+      <div className="s-font-grid">
+        {FONTS.map((f) => (
+          <button
+            key={f.name}
+            className={`s-font-item${current === fontFamilyOf(f.val) ? ' active' : ''}`}
+            style={{ fontFamily: f.val }}
+            onClick={() => onChange(f.val)}
+          >
+            <span className="s-font-item-aa" style={{ fontFamily: f.val }}>Aa</span>
+            <span className="s-font-item-name">{f.name}</span>
+          </button>
+        ))}
+        {items.map((f) => {
+          const val = userFontValue(f.family)
+          return (
+            <button
+              key={f.id}
+              className={`s-font-item deletable${current === f.family ? ' active' : ''}`}
+              style={{ fontFamily: val }}
+              onClick={() => onChange(val)}
+            >
+              <span className="s-font-item-aa" style={{ fontFamily: val }}>Aa</span>
+              <span className="s-font-item-name">{f.name}</span>
+              <span
+                className="s-font-del"
+                role="button"
+                aria-label={t('settings.interface.font.remove')}
+                onClick={(e) => { e.stopPropagation(); void removeFont(f.id) }}
+              >
+                <Ico name="close" width={12} height={12} />
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 const RadiusCard = ({ t, value, onChange }: { t: TFunc; value: number; onChange: (v: number) => void }) => {
   // Снап к ближайшему пресету для подсветки плитки.
   const snap = RADIUS_PRESETS.reduce((a, b) => (Math.abs(b.v - value) < Math.abs(a.v - value) ? b : a))
   return (
     <div className="sc">
-      <div className="sc-title">
-        {t('settings.interface.radius.title')}
-        <CardReset onReset={() => onChange(THEME_DEFAULTS.radius)} />
-      </div>
+      <div className="sc-title">{t('settings.interface.radius.title')}</div>
       <div className="sc-desc">{t('settings.interface.radius.desc')}</div>
       <div className="s-zoom-presets" style={{ marginTop: 14 }}>
         {RADIUS_PRESETS.map((p) => (
@@ -490,15 +478,12 @@ const RadiusCard = ({ t, value, onChange }: { t: TFunc; value: number; onChange:
 
 const ZOOM_PRESETS = [70, 85, 100, 115, 130]
 
-const ZoomCard = ({ title, value, onChange, onReset }: { title: string; value: number; onChange: (v: number) => void; onReset: () => void }) => {
+const ZoomCard = ({ title, value, onChange }: { title: string; value: number; onChange: (v: number) => void }) => {
   // Снап к ближайшему пресету для подсветки плитки.
   const snap = ZOOM_PRESETS.reduce((a, b) => (Math.abs(b - value) < Math.abs(a - value) ? b : a))
   return (
     <div className="sc">
-      <div className="sc-title">
-        {title}
-        <CardReset onReset={onReset} />
-      </div>
+      <div className="sc-title">{title}</div>
       <div className="s-zoom-presets" style={{ marginTop: 14 }}>
         {ZOOM_PRESETS.map((z) => (
           <button key={z} className={`s-zoom-tile ${z === snap ? 'bta' : 'btg'}`} onClick={() => onChange(z)}>
@@ -640,35 +625,37 @@ const ThemePicker = ({
         </div>
       </div>
 
-      {mode === 'create' && (
-        <TpPopover anchorRef={addBtnRef} width={280} className="tp-creator" onClose={() => setMode('none')}>
-          <ThemeCreator
-            initial={currentColors}
-            onCreate={(name, colors) => { onCreate(name, colors); setMode('none') }}
-            t={t}
-          />
-        </TpPopover>
-      )}
+      {/* Рендерится всегда: после закрытия поповер доигрывает уход, а
+          ThemeCreator размонтируется только по его концу. */}
+      <TpPopover open={mode === 'create'} anchorRef={addBtnRef} width={280} className="tp-creator" onClose={() => setMode('none')}>
+        <ThemeCreator
+          initial={currentColors}
+          onCreate={(name, colors) => { onCreate(name, colors); setMode('none') }}
+          t={t}
+        />
+      </TpPopover>
     </div>
   )
 }
 
 /**
  * Обёртка-поповер темпикера: портал в body + fixed-позиция от кнопки-якоря
- * (правый край поповера выравнивается по правому краю кнопки), open-анимация
- * без «дёрганья» (usePopupOpenAnimation вместо ctxIn) и закрытие по клику вне.
+ * (правый край поповера выравнивается по правому краю кнопки), появление и
+ * уход без «дёрганья» (usePopupPresence вместо ctxIn) и закрытие по клику вне.
  *
  * Раньше поповеры были `position:absolute` внутри скролла настроек: их высота
  * добавляла вертикальный скроллбар панели → соседние надписи/элементы
  * сдвигались вбок при открытии. Портал + fixed это убирает.
  */
 const TpPopover = ({
+  open,
   anchorRef,
   width,
   className,
   onClose,
   children,
 }: {
+  open: boolean
   anchorRef: RefObject<HTMLButtonElement | null>
   width: number
   className?: string
@@ -678,11 +665,13 @@ const TpPopover = ({
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
 
-  // Анимируем ОДИН раз при открытии (trigger = null→true), а не на каждый
-  // repos при скролле — иначе поповер мигал бы, переигрывая scale.
-  usePopupOpenAnimation(ref, pos !== null)
+  // Появление играем ОДИН раз при открытии (trigger = false→true), а не на
+  // каждый repos при скролле — иначе поповер мигал бы, переигрывая scale.
+  const { mounted } = usePopupPresence(ref, open, pos !== null)
 
+  // Позицию при закрытии не сбрасываем — уходящий поповер стоит на месте.
   useLayoutEffect(() => {
+    if (!open) return
     const recalc = () => {
       const a = anchorRef.current
       if (!a) return
@@ -698,9 +687,10 @@ const TpPopover = ({
       window.removeEventListener('resize', recalc)
       window.removeEventListener('scroll', recalc, true)
     }
-  }, [anchorRef, width])
+  }, [open, anchorRef, width])
 
   useEffect(() => {
+    if (!open) return
     const onDown = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null
       if (anchorRef.current?.contains(t)) return
@@ -711,9 +701,9 @@ const TpPopover = ({
     }
     window.addEventListener('mousedown', onDown)
     return () => window.removeEventListener('mousedown', onDown)
-  }, [anchorRef, onClose])
+  }, [open, anchorRef, onClose])
 
-  if (!pos) return null
+  if (!mounted || !pos) return null
   return createPortal(
     <div
       ref={ref}

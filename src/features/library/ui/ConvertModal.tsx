@@ -12,12 +12,12 @@ import { scanPlaylistConversion, createConvertedPlaylist, type ConvertItem } fro
 import { useConvertStore, usePlaylistStore, useLibStore } from '../model'
 
 /**
- * Модалка «Перенести на площадку» (#convertPlOverlay) — конвертер плейлиста.
+ * Панель «Перенести на площадку» (#convertPlOverlay) — конвертер плейлиста.
  *
- * Три фазы в одной панели:
- * 1. `pick`   — выбор целевой площадки + имя новой копии;
- * 2. `scan`   — прогресс поиска треков на площадке (отменяется закрытием);
- * 3. `review` — итог: уверенные совпадения проставлены, спорные и ненайденные
+ * Что и куда переносим, выбирают снаружи — в модалке «+» библиотеки
+ * (`LibAddModal`, вид `convert`). Здесь остаются только две рабочие фазы:
+ * 1. `scan`   — прогресс поиска треков на площадке (отменяется закрытием);
+ * 2. `review` — итог: уверенные совпадения проставлены, спорные и ненайденные
  *               ждут ручного выбора (кандидаты / оставить оригинал / пропустить).
  *
  * Исходный плейлист не меняется — создаётся новый (см. `createConvertedPlaylist`).
@@ -32,7 +32,7 @@ type Decision =
   /** Не включать трек в новый плейлист. */
   | { kind: 'skip' }
 
-type Phase = 'pick' | 'scan' | 'review'
+type Phase = 'scan' | 'review'
 
 const pct = (score: number): string => `${Math.round(score * 100)}%`
 
@@ -50,14 +50,14 @@ export const ConvertModal = () => {
   const playlists = usePlaylistStore((s) => s.playlists)
   const libTracks = useLibStore((s) => s.tracks)
   const selectPlaylist = useLibStore((s) => s.selectPlaylist)
-  // Лого площадок — всегда брендовый цвет, как в LibAddMenu/PlSourcesEditor.
+  // Лого площадки — всегда брендовый цвет, как в LibAddModal/PlSourcesEditor.
   // Настройку «Бейджи в цвете акцента» тут намеренно НЕ читаем: она про плашки
-  // источника на обложках треков, а это голые лого-подсказки.
+  // источника на обложках треков, а это голая лого-подсказка.
   const logoColor = (id: string): string => providerBrandColor(id) ?? 'var(--text)'
 
   const [mounted, setMounted] = useState(false)
   const [opening, setOpening] = useState(false)
-  const [phase, setPhase] = useState<Phase>('pick')
+  const [phase, setPhase] = useState<Phase>('scan')
   const [target, setTarget] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [nameTouched, setNameTouched] = useState(false)
@@ -79,9 +79,6 @@ export const ConvertModal = () => {
     if (livePl) setHeldPl(livePl)
   }, [livePl])
 
-  // Сетевые площадки (локальная — не цель переноса).
-  const providers = useMemo(() => getProviders().filter((p) => p.id !== 'local'), [plId])
-
   const close = useCallback(() => {
     abortRef.current?.abort()
     abortRef.current = null
@@ -91,7 +88,7 @@ export const ConvertModal = () => {
   // Сброс при открытии.
   useEffect(() => {
     if (!open) return
-    setPhase('pick')
+    setPhase('scan')
     setTarget(null)
     setNameTouched(false)
     setName('')
@@ -128,17 +125,26 @@ export const ConvertModal = () => {
     return pl.trs.map((id) => byId.get(id)).filter((x): x is Track => !!x)
   }, [pl, libTracks])
 
-  const targetLabel = providers.find((p) => p.id === target)?.label ?? ''
+  const targetLabel = useMemo(
+    () => (target ? getProviders().find((p) => p.id === target)?.label ?? '' : ''),
+    [target],
+  )
   const autoName = pl ? (targetLabel ? `${pl.name} (${targetLabel})` : pl.name) : ''
   const nameValue = nameTouched ? name : autoName
 
-  const startScan = async () => {
-    if (!target || !srcTracks.length) return
+  /** `tgt` передаётся явно: на автостарте setTarget ещё не применился. */
+  const startScan = async (tgt: string) => {
+    // Переносить нечего — вход такой плейлист не предлагает, но плейлист мог
+    // опустеть между выбором и открытием панели.
+    if (!srcTracks.length) {
+      close()
+      return
+    }
     const ac = new AbortController()
     abortRef.current = ac
     setPhase('scan')
     setProgress({ done: 0, total: srcTracks.length })
-    const res = await scanPlaylistConversion(srcTracks, target, {
+    const res = await scanPlaylistConversion(srcTracks, tgt, {
       signal: ac.signal,
       onProgress: (done, total) => setProgress({ done, total }),
     })
@@ -157,6 +163,22 @@ export const ConvertModal = () => {
     setDecisions(def)
     setPhase('review')
   }
+
+  // Площадку всегда выбирают снаружи (модалка «+» библиотеки) — здесь сразу
+  // сканируем. Эффект объявлен после сброса при открытии, поэтому его
+  // `setTarget(null)` уже отработал и не затрёт цель.
+  useEffect(() => {
+    if (!open) return
+    const tgt = useConvertStore.getState().target
+    // Без цели переносить некуда — единственный вход всегда её задаёт.
+    if (!tgt) {
+      close()
+      return
+    }
+    setTarget(tgt)
+    void startScan(tgt)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plId])
 
   const stats = useMemo(() => {
     let moved = 0
@@ -234,21 +256,17 @@ export const ConvertModal = () => {
             )}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            {phase === 'pick' ? (
-              <div className="cvt-hero-name">{pl.name}</div>
-            ) : (
-              <input
-                className="mpl-name-input"
-                type="text"
-                placeholder={t('lib.convert.namePlaceholder')}
-                maxLength={80}
-                value={nameValue}
-                onChange={(e) => {
-                  setNameTouched(true)
-                  setName(e.target.value)
-                }}
-              />
-            )}
+            <input
+              className="mpl-name-input"
+              type="text"
+              placeholder={t('lib.convert.namePlaceholder')}
+              maxLength={80}
+              value={nameValue}
+              onChange={(e) => {
+                setNameTouched(true)
+                setName(e.target.value)
+              }}
+            />
             <div className="mpl-stats">
               <span className="mpl-chip accent">
                 <b>{srcTracks.length}</b> {t('lib.merge.tracksSuffix')}
@@ -263,40 +281,7 @@ export const ConvertModal = () => {
         </div>
 
         <div className="mpl-body">
-          {/* ── Фаза 1: выбор площадки ─────────────────────────────────── */}
-          {phase === 'pick' && (
-            <>
-              <div>
-                <div className="mpl-section-title">{t('lib.convert.targetTitle')}</div>
-                {providers.length === 0 ? (
-                  <div className="mpl-empty">{t('lib.convert.noProviders')}</div>
-                ) : (
-                  <div className="cvt-targets">
-                    {providers.map((p) => (
-                      <div
-                        key={p.id}
-                        className={`cvt-target${target === p.id ? ' sel' : ''}`}
-                        onClick={() => setTarget(p.id)}
-                      >
-                        {/* Лого площадок монохромные (currentColor) — цвет даём
-                            сами: бренд или акцент, по настройке бейджей. */}
-                        <span className="cvt-target-logo" style={{ color: logoColor(p.id) }}>
-                          {providerLogo(p.id, 22)}
-                        </span>
-                        <span className="cvt-target-label">{p.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="cvt-note">
-                <Ico name="info" width={13} height={13} />
-                <span>{t('lib.convert.note')}</span>
-              </div>
-            </>
-          )}
-
-          {/* ── Фаза 2: прогресс скана ─────────────────────────────────── */}
+          {/* ── Фаза 1: прогресс скана ─────────────────────────────────── */}
           {phase === 'scan' && (
             <div className="cvt-scan">
               <div className="cvt-scan-ico">
@@ -319,7 +304,7 @@ export const ConvertModal = () => {
             </div>
           )}
 
-          {/* ── Фаза 3: разбор результата ──────────────────────────────── */}
+          {/* ── Фаза 2: разбор результата ──────────────────────────────── */}
           {phase === 'review' && (
             <div>
               <div className="mpl-section-title">
@@ -482,23 +467,10 @@ export const ConvertModal = () => {
 
         <div className="mpl-foot">
           <div className="mpl-foot-hint">
-            {phase === 'pick'
-              ? target
-                ? t('lib.convert.hint.willScan', { n: srcTracks.length, label: targetLabel })
-                : t('lib.convert.hint.pickTarget')
-              : phase === 'scan'
-                ? t('lib.convert.hint.scanning')
-                : t('lib.convert.hint.willCreate', { n: stats.total - stats.skipped })}
+            {phase === 'scan'
+              ? t('lib.convert.hint.scanning')
+              : t('lib.convert.hint.willCreate', { n: stats.total - stats.skipped })}
           </div>
-          {phase === 'pick' && (
-            <button
-              className="mpl-btn primary"
-              onClick={() => void startScan()}
-              disabled={!target || !srcTracks.length}
-            >
-              {t('lib.convert.start')}
-            </button>
-          )}
           {phase === 'review' && (
             <button
               className="mpl-btn primary"

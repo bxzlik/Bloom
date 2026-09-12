@@ -31,13 +31,13 @@ import { YtmSection } from '@features/ytmusic'
  *
  * Каркас — общий с drawer'ами (см. shared/styles/side-sheet.css): панель
  * впритык к левой кромке, приложение уходит в перспективу вправо. Обёртка
- * `#settingsOverlay` осталась ВНУТРИ панели, хотя оверлеем больше не является:
- * на этот id завязаны цвета карточек, --card-solid и ховеры в overrides-main.css
- * и transparency.css. Её оверлейные свойства гасятся в settings.css
- * (блок «Настройки внутри боковой панели»).
+ * `#settingsOverlay` и `.settings-modal` — имена от прежней модалки по центру;
+ * оверлея и плавающей карточки давно нет, но на id завязаны цвета карточек,
+ * --card-solid и ховеры в overrides-main.css и transparency.css, а класс держит
+ * колонку контента (см. шапку settings.css).
  *
  * Иерархия классов из CSS:
- *   #settingsOverlay.open
+ *   #settingsOverlay
  *     .settings-modal
  *       .settings-modal-body
  *         .sm-cat-view (колонка: навигация сверху, контент снизу)
@@ -111,7 +111,7 @@ export const SettingsOverlay = () => {
 
   return (
     <SideSheet open={open} onClose={close} side="left" wide escClose={false}>
-      <div id="settingsOverlay" className="open sm-in-sheet">
+      <div id="settingsOverlay">
         <div className="settings-modal">
           <div className="settings-modal-body">
             <div className="sm-cat-view">

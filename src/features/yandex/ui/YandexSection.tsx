@@ -41,7 +41,7 @@ export const YandexSection = () => {
 
   const plusBadge =
     hasPlus === true
-      ? <><span style={{ color: '#1db954', fontWeight: 700 }}>{t('settings.ym.plus.active.a')}</span> {t('settings.ym.plus.active.b')}</>
+      ? <><span style={{ color: '#1db954', fontWeight: 'var(--fw-bold)' }}>{t('settings.ym.plus.active.a')}</span> {t('settings.ym.plus.active.b')}</>
       : hasPlus === false
         ? <><span style={{ color: 'var(--text2)' }}>{t('settings.ym.plus.none.a')}</span> {t('settings.ym.plus.none.b')}</>
         : <span style={{ color: 'var(--text2)' }}>{t('settings.ym.plus.unknown')}</span>
@@ -93,7 +93,7 @@ export const YandexSection = () => {
               disabled={connecting}
               style={{
                 padding: '9px 16px', background: 'var(--accent)', color: 'var(--accent-text,#fff)',
-                border: 'none', borderRadius: 'calc(var(--radius)*0.6)', fontWeight: 700, fontSize: 13,
+                border: 'none', borderRadius: 'calc(var(--radius)*0.6)', fontWeight: 'var(--fw-bold)', fontSize: 13,
                 fontFamily: 'var(--font)',
                 cursor: connecting ? 'default' : 'pointer', opacity: connecting ? 0.6 : 1, alignSelf: 'flex-start',
               }}
@@ -106,7 +106,7 @@ export const YandexSection = () => {
                 {t('settings.ym.codePrompt.a')}{' '}
                 <b style={{ color: 'var(--text)' }}>{verifyUrl}</b>{' '}
                 {t('settings.ym.codePrompt.b')}
-                <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 3, margin: '10px 0', color: 'var(--accent)', userSelect: 'all' }}>
+                <div style={{ fontSize: 26, fontWeight: 'var(--fw-bold)', letterSpacing: 3, margin: '10px 0', color: 'var(--accent)', userSelect: 'all' }}>
                   {userCode}
                 </div>
               </div>

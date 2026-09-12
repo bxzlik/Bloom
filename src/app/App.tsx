@@ -45,6 +45,7 @@ import {
   useOptBootstrap,
   useTelemetryBootstrap,
   useUpdateBootstrap,
+  useUserFontsBootstrap,
   UpdateNotesModal,
 } from '@features/settings'
 
@@ -89,6 +90,9 @@ export const App = () => {
   useMainPlayerBridge()
   useLyricsBridge()
   useThemeBootstrap()
+  // Свои шрифты поднимаются из IDB: пока @font-face не вписан, выбранный
+  // пользователем шрифт рисуется запасным из стека — поэтому как можно раньше.
+  useUserFontsBootstrap()
   useSettingsBootstrap()
   useUiPrefsBootstrap()
   useAutoAccentBridge()

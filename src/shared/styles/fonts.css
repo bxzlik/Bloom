@@ -1,0 +1,24 @@
+/* ── Встроенные шрифты ─────────────────────────────────────────────────────
+   Лежат в src/shared/assets/fonts и уходят в сборку — работают без сети.
+   Каталог (что показывается в настройках) — features/settings/lib/fonts.ts.
+   Comic Sans MS здесь нет: он системный (есть в любой Windows). */
+
+/* Inter 4 — один файл на все алфавиты (InterVariable.woff2 из rsms/inter,
+   docs/font-files). Оси: wght 100–900 и opsz 14–32 («оптический размер»).
+   Раньше были 7 файлов-сабсетов Google по unicode-range: для сайта это экономит
+   трафик, а у нас всё и так лежит на диске — нарезка ничего не давала. */
+@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url('../assets/fonts/Inter.woff2') format('woff2')}
+
+/* Оптический размер выключен: по умолчанию (auto) текст крупнее ~14px рисуется
+   «дисплейным» вариантом — уже и плотнее, и заголовки выглядели бы иначе, чем
+   раньше с Google-версией (там ось прибита к 14). none = всегда opsz 14.
+   На Minecraft Rus и Comic Sans не влияет — у них этой оси нет. */
+html{font-optical-sizing:none}
+
+/* Minecraft Rus v1.1 (© BOGDAN Software, файл с fonts-online.ru; лицензии в
+   файле нет — проект личный). Одно начертание 400, 272 символа: латиница и
+   русский. Нет №, тире –, стрелок, ß, украинских і/ї/є/ґ и расширенной
+   латиницы (ł, ş, č…) — такие символы рисуются запасным шрифтом из стека.
+   Рисуется как обычный векторный шрифт (со сглаживанием и поддельным жиром):
+   отдельный пиксельный режим убран по решению пользователя. */
+@font-face{font-family:'Minecraft Rus';font-style:normal;font-weight:400;font-display:swap;src:url('../assets/fonts/MinecraftRus.ttf') format('truetype')}

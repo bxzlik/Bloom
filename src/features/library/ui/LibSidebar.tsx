@@ -28,7 +28,7 @@ import {
   type LibSidebarSort,
   type UnifiedEntry,
 } from '../lib'
-import { LibAddMenu } from './LibAddMenu'
+import { LibAddModal } from './LibAddModal'
 import { LibSortMenu } from './LibSortMenu'
 import { PlMenu } from './PlMenu'
 import { PlaylistOfflineTag } from './PlaylistOfflineTag'
@@ -88,7 +88,6 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
     return historyTotals(histEntries, byId)
   }, [histEntries, allTracks])
 
-  const addBtnRef = useRef<HTMLButtonElement>(null)
   const sortBtnRef = useRef<HTMLButtonElement>(null)
   const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
@@ -267,7 +266,6 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
             <Ico name="refresh" width={16} height={16} />
           </button>
           <button
-            ref={addBtnRef}
             id="libAddBtn"
             className={cn(addMenuOpen && 'open')}
             onClick={(e) => {
@@ -302,10 +300,9 @@ export const LibSidebar = ({ className }: { className?: string } = {}) => {
         </div>
       </div>
 
-      <LibAddMenu
+      <LibAddModal
         open={addMenuOpen}
         onClose={() => setAddMenuOpen(false)}
-        anchorRef={addBtnRef}
         onImported={handleImported}
       />
       <LibSortMenu

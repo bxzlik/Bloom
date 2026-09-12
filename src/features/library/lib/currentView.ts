@@ -40,15 +40,18 @@ export const applySort = (
     case 'dur':
       sorted.sort((a, b) => sd * (parseDurSec(a.dur) - parseDurSec(b.dur)))
       break
-    case 'date':
-      // В fav-режиме сортируем по favAt, иначе по addedAt.
+    case 'date': {
+      // В fav-режиме сортируем по моменту лайка, иначе по addedAt. Момент лайка —
+      // из стора: `t.favAt` не ведётся, и сортировка молча шла по addedAt.
+      const favAt = useFavStore.getState().favs
       sorted.sort((a, b) => {
         if (libMode === 'fav') {
-          return sd * (((b.favAt || b.addedAt || 0) - (a.favAt || a.addedAt || 0)))
+          return sd * (((favAt.get(b.id) || b.addedAt || 0) - (favAt.get(a.id) || a.addedAt || 0)))
         }
         return sd * (((a.addedAt || 0) - (b.addedAt || 0)))
       })
       break
+    }
     case 'plays':
       // Не `t.playCount` — оно не ведётся и всегда 0, из-за чего пункт меню
       // «По прослушиваниям» молча ничего не делал. Считаем по журналу.

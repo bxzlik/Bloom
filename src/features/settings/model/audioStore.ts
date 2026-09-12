@@ -15,6 +15,11 @@ interface Persisted {
   normEnabled: boolean
   normTargetDb: number
   deviceId: string
+  /**
+   * «Авто похожие»: доигравшая очередь продолжается похожими (Яндекс/SC),
+   * дописанными в её хвост. Читает `player/api/play` (`maybeAutoSimilar`).
+   */
+  autoSimilar: boolean
 }
 
 const DEFAULTS: Persisted = {
@@ -23,6 +28,7 @@ const DEFAULTS: Persisted = {
   normEnabled: false,
   normTargetDb: -14,
   deviceId: '',
+  autoSimilar: false,
 }
 
 const KEY = 'bloom_audio'
@@ -44,11 +50,10 @@ export interface AudioState extends Persisted {
   setNormEnabled: (v: boolean) => void
   setNormTargetDb: (v: number) => void
   setDeviceId: (v: string) => void
+  setAutoSimilar: (v: boolean) => void
   setNormStatus: (v: NormStatus) => void
   /** Сброс раздела «Аудио» к значениям по умолчанию. */
   reset: () => void
-  /** Сброс ОТДЕЛЬНЫХ настроек — для кнопки сброса на карточке. */
-  resetKeys: (...keys: (keyof Persisted)[]) => void
 }
 
 export const useAudioStore = create<AudioState>((set, get) => {
@@ -63,6 +68,7 @@ export const useAudioStore = create<AudioState>((set, get) => {
           normEnabled: s.normEnabled,
           normTargetDb: s.normTargetDb,
           deviceId: s.deviceId,
+          autoSimilar: s.autoSimilar,
         } satisfies Persisted),
       )
     } catch {
@@ -77,12 +83,9 @@ export const useAudioStore = create<AudioState>((set, get) => {
     setNormEnabled: (v) => { set({ normEnabled: v }); persist() },
     setNormTargetDb: (v) => { set({ normTargetDb: v }); persist() },
     setDeviceId: (v) => { set({ deviceId: v }); persist() },
+    setAutoSimilar: (v) => { set({ autoSimilar: v }); persist() },
     setNormStatus: (v) => set({ normStatus: v }),
     // normStatus не трогаем: это не настройка, а состояние движка.
     reset: () => { set({ ...DEFAULTS }); persist() },
-    resetKeys: (...keys) => {
-      keys.forEach((k) => set({ [k]: DEFAULTS[k] } as Partial<AudioState>))
-      persist()
-    },
   }
 })

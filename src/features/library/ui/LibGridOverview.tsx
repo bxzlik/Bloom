@@ -19,7 +19,7 @@ import {
   useLibSidebarSort,
   buildOrderedUnifiedEntries,
 } from '../lib'
-import { LibAddMenu } from './LibAddMenu'
+import { LibAddModal } from './LibAddModal'
 import { LibSortMenu } from './LibSortMenu'
 import { PlMenu } from './PlMenu'
 import { ArtistCtxMenu, FILTER_ICON, FILTER_TYPE } from './LibSidebar'
@@ -71,7 +71,6 @@ export const LibGridOverview = () => {
 
   // Меню (sort/add) + модалки — те же, что в сайдбаре.
   const sortBtnRef = useRef<HTMLButtonElement>(null)
-  const addBtnRef = useRef<HTMLButtonElement>(null)
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [addMenuOpen, setAddMenuOpen] = useState(false)
   const startEdit = usePlEditStore((s) => s.startEdit)
@@ -236,7 +235,7 @@ export const LibGridOverview = () => {
             <button ref={sortBtnRef} className="ib" onClick={(e) => { e.stopPropagation(); setSortMenuOpen((v) => !v) }}>
               <Ico name="sort" width={13} height={13} />
             </button>
-            <button ref={addBtnRef} className="ib" onClick={(e) => { e.stopPropagation(); setAddMenuOpen((v) => !v) }}>
+            <button className="ib" onClick={(e) => { e.stopPropagation(); setAddMenuOpen((v) => !v) }}>
               <Ico name="add" width={14} height={14} />
             </button>
           </div>
@@ -327,7 +326,7 @@ export const LibGridOverview = () => {
 
       {/* Меню/модалки (вне контейнера sortable, чтобы не мешать DOM-reorder карточек) */}
       <LibSortMenu open={sortMenuOpen} onClose={() => setSortMenuOpen(false)} anchorRef={sortBtnRef} value={sortMode} onChange={setSortMode} />
-      <LibAddMenu open={addMenuOpen} onClose={() => setAddMenuOpen(false)} anchorRef={addBtnRef} />
+      <LibAddModal open={addMenuOpen} onClose={() => setAddMenuOpen(false)} />
 
       <PlMenu
         open={ctxEntry !== null}

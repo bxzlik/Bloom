@@ -2,7 +2,10 @@
    Порядок @import = порядок каскада, на него опираются ties по специфичности — НЕ менять.
    Намеренные отклонения живут в overrides-main.css (грузится ПОСЛЕ, см. main.tsx). */
 
-/* палитра: @import шрифтов (обязан идти ПЕРВЫМ), @font-face, :root */
+/* встроенные шрифты (@font-face Inter / Minecraft Rus) — первыми */
+@import './fonts.css';
+
+/* палитра: :root */
 @import './root.css';
 
 /* основной массив селекторов, разбит по темам */
@@ -24,6 +27,7 @@
 @import './home.css';
 @import './wrapped.css';
 @import './track-modals.css';
+@import './lib-add-modal.css';
 @import './stats-windows.css';
 @import './soundcloud-system.css';
 @import './notifications.css';

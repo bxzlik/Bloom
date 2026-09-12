@@ -9,6 +9,7 @@ import { useQueueStore } from '../model/queueStore'
 import { bootstrapSpeed } from '../model/speedStore'
 import { saveVolumePrefs } from '../model/volumePrefs'
 import { audioEngine } from './audioEngine'
+import waveApi from '@/wave'
 import { saveResume, consumePendingResumeSeek, restoreSession } from './resume'
 import {
   togglePlay,
@@ -179,6 +180,38 @@ export const useMainPlayerBridge = () => {
     const onUnload = () => saveResume('snapshot')
     window.addEventListener('beforeunload', onUnload)
     return () => window.removeEventListener('beforeunload', onUnload)
+  }, [])
+
+  // Правки очереди (очистка, удаление/перестановка строк, перемешка, повтор) —
+  // сразу в резюм. Сами по себе они не вызывают ни тиков, ни play/pause, а
+  // beforeunload при выходе из трея (`app.exit`) не стреляет — без этого на паузе
+  // очищенная очередь возвращалась после перезапуска. Дебаунс: restoreSession
+  // ставит очередь раньше armed/_boot, а перетаскивание строк шлёт пачку правок.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const unsub = useQueueStore.subscribe((s, p) => {
+      if (
+        s.queue === p.queue &&
+        s.qIdx === p.qIdx &&
+        s.source === p.source &&
+        s.shuffle === p.shuffle &&
+        s.smartShuffle === p.smartShuffle &&
+        s.repeat === p.repeat
+      ) return
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        timer = null
+        saveResume()
+        // Волна держит свою копию очереди (bloom_wave_state) и при старте пишет её
+        // обратно в резюм — её тоже обновляем. Только для волнового источника:
+        // на чужом persistState завершил бы сессию волны.
+        if (useQueueStore.getState().source?.kind === 'wave') waveApi.persistState()
+      }, 300)
+    })
+    return () => {
+      unsub()
+      if (timer) clearTimeout(timer)
+    }
   }, [])
 
   // body.audio-paused — управляет анимацией эквалайзер-баров (.bars) на обложках:

@@ -139,7 +139,7 @@ const EmptyState = () => {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
       <KaomojiBox />
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{t('player.selectTrack')}</div>
+        <div style={{ fontSize: 16, fontWeight: 'var(--fw-bold)', color: 'var(--text)' }}>{t('player.selectTrack')}</div>
         <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>
           {t('player.selectTrackSub')}
         </div>
@@ -490,8 +490,8 @@ const PlayerContent = () => {
   )
 
   const transportNode = (
-    <div className="ps-ctrl" style={{ width: '100%' }}>
-      <div style={{ width: 124, display: 'flex', alignItems: 'center' }}>{dlBtnNode}</div>
+    <div className="ps-ctrl ps-transport" style={{ width: '100%' }}>
+      <div className="ps-tr-side" style={{ width: 124, display: 'flex', alignItems: 'center' }}>{dlBtnNode}</div>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <button className={`cc${repeat > 0 ? ' on' : ''}`} onClick={cycleRepeatMain} aria-label={t('player.aria.repeat')} style={{ position: 'relative' }}>
           <RepeatSvg size={18} />
@@ -511,7 +511,7 @@ const PlayerContent = () => {
         </button>
       </div>
       {/* Правый слот транспорта: дизлайк (волна) + переключатель текста. */}
-      <div style={{ width: 124, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+      <div className="ps-tr-side" style={{ width: 124, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
         <DislikeButton />
         <LyricsToggleButton />
       </div>
@@ -532,7 +532,7 @@ const PlayerContent = () => {
   )
 
   const volumeNode = (
-    <div className="ps-ctrl" style={{ flex: 1, justifyContent: 'flex-start' }} onWheel={onWheelVol}>
+    <div className="ps-ctrl" style={{ flex: 1, minWidth: 0, justifyContent: 'flex-start' }} onWheel={onWheelVol}>
       <button className="cc" onClick={toggleMuteMain} aria-label="Mute">
         <VolSvg size={18} v={volume} />
       </button>
@@ -734,11 +734,12 @@ const PlayerContent = () => {
       <div
         id="playerMainBlock"
         key="player-main-block"
+        // overflow — в queue.css по раскладке: инлайновый hidden перебивал бы
+        // visible для очереди снизу (там от него пропадала нижняя рамка карточки).
         style={{
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
-          overflow: 'hidden',
           gap: 8,
           flex: '1 1 0',
           minHeight: 0,
@@ -862,7 +863,7 @@ const NextTrackBlock = ({
         overflow: 'hidden',
       }}
     >
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.9 }}>
+      <div style={{ fontSize: 10, fontWeight: 'var(--fw-bold)', color: 'var(--accent)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.9 }}>
         {t('player.nextUp')}
       </div>
       <div
@@ -1190,7 +1191,7 @@ const VolumePopupBtn = ({ volume, onWheel }: { volume: number; onWheel: (e: Reac
               paddingRight: 3,
               borderRadius: 7,
               fontSize: 8,
-              fontWeight: 700,
+              fontWeight: 'var(--fw-bold)',
               fontVariantNumeric: 'tabular-nums',
             }}
           >
@@ -1277,7 +1278,6 @@ const VertVolPopup = ({
         position: 'fixed',
         left: pos?.left ?? -9999,
         top: pos?.top ?? -9999,
-        border: '1px solid rgba(var(--ovl-rgb),.12)',
         borderRadius: 10,
         padding: '10px 8px',
         zIndex: 9500,
@@ -1320,7 +1320,7 @@ const NextSvg = ({ size }: { size: number }) => <Ico name="next" size={size} />
 const ShuffleSvg = ({ size }: { size: number }) => <Ico name="shuffle" size={size} />
 const RepeatSvg = ({ size }: { size: number }) => <Ico name="repeat" size={size} />
 const RepeatOneBadge = () => (
-  <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 700, top: 4, right: 4 }}>1</span>
+  <span className="cc-badge num" style={{ fontSize: 8, fontWeight: 'var(--fw-bold)', top: 4, right: 4 }}>1</span>
 )
 /* «Повтор плейлиста» — та же иконка списка, что у вкладки «Плейлисты» в поиске. */
 const RepeatAllBadge = () => (

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { create } from 'zustand'
 import { t } from '@shared/i18n'
 import { AUTO_ACCENT_L_DEFAULT, AUTO_ACCENT_L_MAX, AUTO_ACCENT_L_MIN } from '../lib/coverAccent'
-import { isPixelFont } from '../lib/fonts'
+import { normalizeFont, DEFAULT_FONT } from '../lib/fonts'
 
 /**
  * Тема UI — настройки внешнего вида, которые применяются через CSS custom
@@ -118,7 +118,7 @@ const DEFAULTS = {
   blockColor: '#0a0a0a',
   accent: '#ffffff',
   radius: 14,
-  fontFamily: 'Inter, system-ui, sans-serif',
+  fontFamily: DEFAULT_FONT,
   autoAccent: false,
   autoTheme: false,
   autoAccentL: AUTO_ACCENT_L_DEFAULT,
@@ -264,7 +264,8 @@ const loadFromLs = (): Snapshot => {
       blockColor: typeof p.blockColor === 'string' ? p.blockColor : DEFAULTS.blockColor,
       accent: typeof p.accent === 'string' ? p.accent : DEFAULTS.accent,
       radius: typeof p.radius === 'number' ? p.radius : DEFAULTS.radius,
-      fontFamily: typeof p.fontFamily === 'string' ? p.fontFamily : DEFAULTS.fontFamily,
+      // Шрифта могло не остаться в каталоге (было ~95, стало 3) — такие → Inter.
+      fontFamily: normalizeFont(p.fontFamily),
       autoAccent: !!p.autoAccent,
       autoTheme: !!p.autoTheme,
       autoAccentL: typeof p.autoAccentL === 'number' ? clampAccentL(p.autoAccentL) : DEFAULTS.autoAccentL,
@@ -360,9 +361,6 @@ const applyToRoot = (s: Snapshot): void => {
   root.style.setProperty('--accent-text', contrastTextOn(s.accent))
   root.style.setProperty('--radius', `${s.radius}px`)
   root.style.setProperty('--font', s.fontFamily)
-  // Растровые шрифты рисуются иначе, чем векторные: без сглаживания, без
-  // поддельного жира, без дробного трекинга. Правила — в pixel-font.css.
-  root.classList.toggle('pixel-font', isPixelFont(s.fontFamily))
   // Светлая тема — не отдельный пресет, а режим: класс переключает --ovl-rgb
   // (см. root.css), и вся полупрозрачная плёнка интерфейса становится чёрной.
   const light = isLightSurface(s)
@@ -570,7 +568,3 @@ export const useThemeBootstrap = (): void => {
     publishToMpWindows(useThemeStore.getState())
   }, [])
 }
-
-
-/** Значения по умолчанию — нужны точечному сбросу карточек настроек. */
-export { DEFAULTS as THEME_DEFAULTS }

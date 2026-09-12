@@ -3,7 +3,7 @@
 import { host } from "./host";
 import { t as i18nT } from "@shared/i18n";
 import * as session from "./session";
-import { startWave, maybeRefill, WAVE_SOURCE_TYPE, waveLabel, prefetchUpcoming } from "./engine";
+import { startWave, continueWave, maybeRefill, WAVE_SOURCE_TYPE, waveLabel, prefetchUpcoming } from "./engine";
 import { pickPersonalSeeds, pickTrackSeeds, pickQueueSeeds, pickDisplaySeeds, scIdOf } from "./seeds";
 import { dispatch, onPlayStart } from "./feedback";
 // Сброс кэша источников живёт в Rust, поэтому он async — его ОБЯЗАТЕЛЬНО ждать
@@ -24,7 +24,7 @@ export function setWaveSource(s: "sc" | "ym"): void {
 }
 
 // Витрина волны (вид «Кольцо» на главной): обложки площадки + фолбэк по библиотеке.
-export { fetchWaveFaces, resetWaveFaces, type WaveFace } from "./faces";
+export { fetchWaveFaces, resetWaveFaces, onWaveFacesReset, type WaveFace } from "./faces";
 export { pickDisplaySeeds };
 
 async function waveStartPersonal(): Promise<boolean> {
@@ -84,6 +84,28 @@ async function waveStartByQueue(trackIds?: string[]): Promise<boolean> {
   const ok = await startWave("queue", seeds);
   if (!ok) host.toast(i18nT("wave.toast.noSimilar"), "error");
   return ok;
+}
+
+// «Авто похожие»: очередь доиграла (или вот-вот) — дописываем похожие в её хвост,
+// не трогая уже стоящее (кнопка «Похожие на очередь» выше, наоборот, заменяет).
+// Площадку выбираем по последнему треку, у которого вообще есть похожие:
+// Яндекс → rotor `track:<id>`, SoundCloud → наш движок с сидами из очереди, как
+// у кнопки. YTM/локальные сидами не служат. Тихо, без toast'ов — это не нажатие.
+async function waveContinueQueue(isValid: () => boolean): Promise<boolean> {
+  const q = host.queue;
+  for (let i = q.length - 1; i >= 0; i--) {
+    const t = host.trackById(q[i]!);
+    if (t?._ym && t.ymTrackId) {
+      if (session.isActive()) session.endSession();
+      return ymWave.continueByTrack(t.ymTrackId, waveLabel("queue"), isValid);
+    }
+    if (scIdOf(t)) {
+      if (ymWave.isRunning()) ymWave.end();
+      await resetWaveSourceCache();
+      return continueWave("queue", pickQueueSeeds(q), isValid);
+    }
+  }
+  return false;
 }
 
 // «Волна по артисту». Яндекс-артист → нативный rotor `artist:<id>`; SoundCloud
@@ -230,6 +252,11 @@ function waveTryRestore(): boolean {
           qIdx: state.qIdx,
           savedAt: waveSavedAt || Date.now(),
           state: "paused",
+          // Очередь до очистки и снимки её треков пишет saveResume — их поднимает
+          // карточка «Продолжить»; без переноса старт волны их бы стёр.
+          ...(existingSourceType === WAVE_SOURCE_TYPE
+            ? { fullQueue: existing.fullQueue, tracks: existing.tracks }
+            : {}),
         };
         localStorage.setItem("bloom_resume", JSON.stringify(data));
       }
@@ -248,6 +275,7 @@ interface WaveApi {
   startByTrack: typeof waveStartByTrack;
   startByQueue: typeof waveStartByQueue;
   startByArtist: typeof waveStartByArtist;
+  continueQueue: typeof waveContinueQueue;
   stop: typeof waveStop;
   endSession: typeof waveEndSession;
   feedback: typeof waveFeedback;
@@ -263,6 +291,7 @@ const api: WaveApi = {
   startByTrack: waveStartByTrack,
   startByQueue: waveStartByQueue,
   startByArtist: waveStartByArtist,
+  continueQueue: waveContinueQueue,
   stop: waveStop,
   endSession: waveEndSession,
   feedback: waveFeedback,

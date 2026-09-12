@@ -505,7 +505,7 @@ const QueueHeader = ({
         text={sourceLabel(source, t)}
         style={{
           fontSize: 12,
-          fontWeight: 700,
+          fontWeight: 'var(--fw-bold)',
           color: 'var(--text)',
           lineHeight: 1,
           // lineHeight:1 + overflow:hidden режет нижние выносы («р», «у») —
@@ -538,7 +538,7 @@ const QueueHeader = ({
           display: 'inline-flex',
           alignItems: 'center',
           fontSize: 10,
-          fontWeight: 700,
+          fontWeight: 'var(--fw-bold)',
           color: 'var(--text)',
           padding: '0 6px',
           height: 18,
@@ -609,7 +609,7 @@ const QueueSectionLabel = ({ children, markNow }: { children: ReactNode; markNow
     style={{
       padding: '14px 4px 6px',
       fontSize: 11,
-      fontWeight: 700,
+      fontWeight: 'var(--fw-bold)',
       letterSpacing: '.04em',
       textTransform: 'uppercase',
       color: 'var(--text2)',

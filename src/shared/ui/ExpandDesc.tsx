@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 
 /** Позиция попапа + точка, от которой он растёт (угол, ближайший к курсору). */
 interface Pos {
@@ -8,9 +8,6 @@ interface Pos {
   top: number
   origin: string
 }
-
-/** Длительность exit-анимации, ms — держим попап в DOM ровно столько. */
-const EXIT_MS = 130
 
 /**
  * Описание с line-clamp + попап на весь текст по клику, когда он не влез.
@@ -27,10 +24,10 @@ const EXIT_MS = 130
  * попап «отклеится» от уехавшего текста). Esc слушаем в capture со
  * `stopPropagation`, чтобы не закрыть заодно модалку-хозяина.
  *
- * Анимации — WAAPI, как у остальных попапов: появление общим
- * `usePopupOpenAnimation` (scale .94→1), закрытие — зеркальное, ради него
- * держим узел в DOM ещё EXIT_MS (`closing`). Растём и схлопываемся от угла у
- * курсора (`origin`), поэтому попап «выходит» из текста, а не из своего центра.
+ * Анимации — общий `usePopupPresence` (появление scale .94→1, закрытие
+ * зеркальное). `pos` при закрытии не сбрасываем — узел ещё доигрывает уход.
+ * Растём и схлопываемся от угла у курсора (`origin`), поэтому попап «выходит»
+ * из текста, а не из своего центра.
  *
  * Потребители: описание артиста (герой страницы и профиль в поиске), описание
  * трека в модалке «Инфо о треке».
@@ -44,40 +41,16 @@ export interface ExpandDescProps {
 
 export const ExpandDesc = ({ text, className, id, style }: ExpandDescProps) => {
   const [pos, setPos] = useState<Pos | null>(null)
-  const [closing, setClosing] = useState(false)
+  const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const popupRef = useRef<HTMLDivElement>(null)
 
-  // Появление. Во время закрытия триггер гасим, иначе хук перезапустит enter.
-  usePopupOpenAnimation(popupRef, closing ? null : pos)
-
-  // Закрытие: доигрываем анимацию и только потом снимаем узел.
-  useEffect(() => {
-    if (!closing) return
-    const el = popupRef.current
-    const drop = () => {
-      setPos(null)
-      setClosing(false)
-    }
-    if (!el) {
-      drop()
-      return
-    }
-    el.style.animation = 'none' // как в usePopupOpenAnimation — гасим CSS-keyframe
-    const anim = el.animate(
-      [
-        { opacity: 1, transform: 'scale(1)' },
-        { opacity: 0, transform: 'scale(0.96)' },
-      ],
-      { duration: EXIT_MS, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'both' },
-    )
-    anim.onfinish = drop
-    return () => anim.cancel()
-  }, [closing])
+  // Новый объект pos при каждом открытии перезапускает появление.
+  const { mounted } = usePopupPresence(popupRef, open, pos)
 
   useEffect(() => {
-    if (!pos || closing) return
-    const close = () => setClosing(true)
+    if (!open) return
+    const close = () => setOpen(false)
     // Клик по самому описанию не трогаем — его onClick переключает попап сам
     // (иначе mousedown закрыл бы, а следом click открыл заново).
     const onDown = (e: MouseEvent) => {
@@ -105,11 +78,11 @@ export const ExpandDesc = ({ text, className, id, style }: ExpandDescProps) => {
       window.removeEventListener('keydown', onKey, true)
       window.removeEventListener('scroll', onScroll, true)
     }
-  }, [pos, closing])
+  }, [open])
 
   const onClick = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (pos && !closing) {
-      setClosing(true)
+    if (open) {
+      setOpen(false)
       return
     }
     const el = e.currentTarget
@@ -119,14 +92,13 @@ export const ExpandDesc = ({ text, className, id, style }: ExpandDescProps) => {
     const flipY = e.clientY + 14 + ph > window.innerHeight - 8
     const left = flipX ? e.clientX - pw - 14 : e.clientX + 14
     const top = flipY ? e.clientY - ph - 14 : e.clientY + 14
-    // Клик во время закрытия — открываем заново (новый объект pos перезапустит
-    // enter-хук), поэтому closing снимаем здесь же.
-    setClosing(false)
+    // Клик во время закрытия тоже сюда: хук отменит уход и сыграет появление.
     setPos({
       left: Math.max(8, left),
       top: Math.max(8, top),
       origin: `${flipY ? 'bottom' : 'top'} ${flipX ? 'right' : 'left'}`,
     })
+    setOpen(true)
   }
 
   return (
@@ -134,17 +106,13 @@ export const ExpandDesc = ({ text, className, id, style }: ExpandDescProps) => {
       <div ref={rootRef} id={id} className={className} style={style} onClick={onClick}>
         {text}
       </div>
-      {pos &&
+      {mounted &&
+        pos &&
         createPortal(
           <div
             ref={popupRef}
             className="desc-popup"
-            style={{
-              left: pos.left,
-              top: pos.top,
-              transformOrigin: pos.origin,
-              pointerEvents: closing ? 'none' : undefined,
-            }}
+            style={{ left: pos.left, top: pos.top, transformOrigin: pos.origin }}
             dangerouslySetInnerHTML={{ __html: linkify(text) }}
           />,
           document.body,

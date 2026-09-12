@@ -8,7 +8,7 @@ export type PageId = 'home' | 'player' | 'lib' | 'search' | 'account'
 
 export interface NavState {
   page: PageId
-  /** Открыта ли модалка настроек (#settingsOverlay). */
+  /** Открыта ли панель настроек (SideSheet, #settingsOverlay). */
   settingsOpen: boolean
   goNav: (page: PageId) => void
   openSettings: () => void

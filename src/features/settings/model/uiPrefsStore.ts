@@ -103,6 +103,8 @@ export interface UiPrefs {
   homeCharts: boolean
   /** Витрина «Для вас» — похожие на самое слушаемое. */
   homeForYou: boolean
+  /** Витрина «Похожие на…» — треки и артисты, похожие на один сид из топа. */
+  homeSimilar: boolean
   /** Секция «Недавно слушали». */
   homeRecent: boolean
   /** Секция «Плейлисты». */
@@ -191,6 +193,7 @@ const DEFAULTS: UiPrefs = {
   homeNew: true,
   homeCharts: true,
   homeForYou: true,
+  homeSimilar: true,
   homeRecent: true,
   homePlaylists: true,
   drawerSide: 'right',
@@ -253,6 +256,7 @@ const load = (): UiPrefs => {
       homeNew: p.homeNew !== false,
       homeCharts: p.homeCharts !== false,
       homeForYou: p.homeForYou !== false,
+      homeSimilar: p.homeSimilar !== false,
       homeRecent: p.homeRecent !== false,
       homePlaylists: p.homePlaylists !== false,
       drawerSide: p.drawerSide === 'left' ? 'left' : 'right',
@@ -314,12 +318,6 @@ const applyPinned = (on: boolean): void => {
 interface UiPrefsState extends UiPrefs {
   set: <K extends keyof UiPrefs>(key: K, value: UiPrefs[K]) => void
   reset: () => void
-  /**
-   * Сброс ПОДМНОЖЕСТВА ключей к значениям по умолчанию — для кнопки сброса
-   * раздела: разделы делят один стор, и полный `reset` снёс бы чужие настройки.
-   * Идёт через `set`, чтобы отработали побочные эффекты (zoom, рамки и т.д.).
-   */
-  resetKeys: (...keys: (keyof UiPrefs)[]) => void
 }
 
 const persist = (s: UiPrefs): void => {
@@ -349,6 +347,7 @@ const persist = (s: UiPrefs): void => {
         homeNew: s.homeNew,
         homeCharts: s.homeCharts,
         homeForYou: s.homeForYou,
+        homeSimilar: s.homeSimilar,
         homeRecent: s.homeRecent,
         homePlaylists: s.homePlaylists,
         drawerSide: s.drawerSide,
@@ -399,10 +398,6 @@ export const useUiPrefsStore = create<UiPrefsState>((set, get) => ({
     applyPinned(DEFAULTS.tbPinned)
     applySbFullW(DEFAULTS.sbFullW)
     applyGrpW(DEFAULTS.grpW)
-  },
-  resetKeys: (...keys) => {
-    const { set: setKey } = get()
-    keys.forEach((k) => setKey(k, DEFAULTS[k]))
   },
 }))
 

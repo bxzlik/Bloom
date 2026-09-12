@@ -56,6 +56,13 @@ export interface ResumeData {
   shuffle?: boolean
   smartShuffle?: boolean
   repeat?: 0 | 1 | 2
+  /** Очередь очищена целиком (удалён последний трек): при запуске в плеер не
+   *  поднимаем, но карточка «Продолжить» остаётся. Снимается следующим
+   *  `saveResume` — он пишет объект заново, без флага. */
+  cleared?: boolean
+  /** Очередь до очистки (`queueStore.preClearQueue`) — её поднимает карточка
+   *  «Продолжить». Нет — очередь не очищали, карточка берёт `queue`. */
+  fullQueue?: string[]
 }
 
 const toLegacySource = (s: PlaySource): LegacySource => {
@@ -124,7 +131,7 @@ export const loadResume = (): ResumeData | null => {
 
 /** Сохранить текущее состояние плеера. Вызывается из бриджа (throttled + на pause/play). */
 export const saveResume = (state?: string): void => {
-  const { curId, queue, qIdx, source, shuffle, smartShuffle, repeat, armed } =
+  const { curId, queue, qIdx, source, shuffle, smartShuffle, repeat, armed, preClearQueue } =
     useQueueStore.getState()
   if (!curId) return
   // Восстановленная, но ещё не запущенная сессия (`armed`): движок пуст, поэтому
@@ -133,7 +140,10 @@ export const saveResume = (state?: string): void => {
   // «Только что» вместо реального «N дней назад».
   const ps = usePlayerStore.getState()
   const dur = armed ? ps.duration : audioEngine.duration
-  if (!dur) return
+  // В armed-состоянии позиция берётся из стора (сохранённая), так что пустая
+  // длительность (у трека нет `dur`) не грозит записать pos=0 — сохраняем всё
+  // равно, иначе очистка очереди до первого «плея» не переживала рестарт.
+  if (!dur && !armed) return
   const pos = armed ? ps.position : audioEngine.currentTime
   try {
     const t = findTrack(curId)
@@ -141,9 +151,11 @@ export const saveResume = (state?: string): void => {
     // только в реестре в памяти) — иначе после рестарта очередь показывает
     // пустые строки для всех треков, кроме текущего. Лимит — защита от раздутия
     // localStorage на очень длинных очередях (волна/большие плейлисты).
+    // Очередь до очистки — туда же: её поднимает карточка «Продолжить».
     const libIds = new Set(useLibStore.getState().tracks.map((x) => x.id))
     const tracks: Track[] = []
-    for (const id of queue) {
+    const ids = preClearQueue ? new Set([...queue, ...preClearQueue]) : queue
+    for (const id of ids) {
       if (tracks.length >= 300) break
       if (libIds.has(id)) continue
       const tr = trackRegistry.get(id) ?? (id === curId ? t : undefined)
@@ -166,8 +178,29 @@ export const saveResume = (state?: string): void => {
       shuffle,
       smartShuffle,
       repeat,
+      fullQueue: preClearQueue ?? undefined,
     }
     localStorage.setItem(KEY, JSON.stringify(data))
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Очередь очищена целиком — пометить резюм, чтобы при запуске он не поднимался
+ * в плеер. `saveResume` при пустом curId ничего не пишет, так что без пометки
+ * удалённый трек возвращался после перезапуска. Сам снимок не стираем: из него
+ * рисуется карточка «Продолжить».
+ */
+export const markResumeCleared = (): void => {
+  _boot = null
+  _pendingSeek = null
+  const r = loadResume()
+  if (!r) return
+  // Из стора — снимок мог не успеть записаться после очистки (дебаунс бриджа).
+  const fullQueue = useQueueStore.getState().preClearQueue ?? r.fullQueue
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ ...r, cleared: true, fullQueue }))
   } catch {
     /* ignore */
   }
@@ -211,7 +244,7 @@ const reconstructQueue = (r: ResumeData): string[] => {
  * Восстановить и запустить сохранённую сессию (клик по «Продолжить», когда нет
  * живого трека). Возвращает id трека или null. loadPlay вызывает caller.
  */
-export const restoreResumeQueue = (r: ResumeData): string | null => {
+export const restoreResumeQueue = (r: ResumeData, full = false): string | null => {
   if (!r.id) return null
   // Пере-регистрируем снимки треков очереди — иначе после рестарта SC-треки не
   // зарезолвятся в loadPlay/очереди (реестр площадок живёт только в памяти).
@@ -221,8 +254,11 @@ export const restoreResumeQueue = (r: ResumeData): string | null => {
     for (const tr of r.tracks) if (tr?.id && !findTrack(tr.id)) trackRegistry.put(tr)
   }
   if (r.track && !findTrack(r.id)) trackRegistry.put(r.track)
-  const queue = reconstructQueue(r)
-  let qIdx = typeof r.qIdx === 'number' ? r.qIdx : queue.indexOf(r.id)
+  // `full` — карточка «Продолжить»: очередь целиком, какой она была до очистки.
+  // `qIdx` резюма относится к урезанной очереди — в полной ищем трек по id.
+  const useFull = full && !!r.fullQueue?.length
+  const queue = useFull ? [...r.fullQueue!] : reconstructQueue(r)
+  let qIdx = !useFull && typeof r.qIdx === 'number' ? r.qIdx : queue.indexOf(r.id)
   if (qIdx < 0 || queue[qIdx] !== r.id) qIdx = queue.indexOf(r.id)
   if (qIdx < 0) {
     queue.unshift(r.id)
@@ -232,6 +268,9 @@ export const restoreResumeQueue = (r: ResumeData): string | null => {
   // Одиночный трек: обложку для пилюли подставляем из трека (в legacy её нет).
   if (source?.kind === 'single') source.cover = findTrack(r.id)?.cover ?? null
   useQueueStore.getState().setQueue(queue, qIdx, source)
+  // Урезанная очередь (плеер после перезапуска): полную держим дальше, иначе
+  // первый же saveResume её потеряет и карточка вернёт один трек.
+  if (!useFull && r.fullQueue?.length) useQueueStore.setState({ preClearQueue: r.fullQueue })
   // Режимы очереди (в старых резюмах их нет — тогда оставляем текущие).
   if (typeof r.shuffle === 'boolean') {
     useQueueStore.setState({ shuffle: r.shuffle, smartShuffle: !!r.smartShuffle })
@@ -265,7 +304,7 @@ export const restoreSession = (): boolean => {
   // Уже что-то играет (hot-reload / повторный вызов) — не трогаем живую сессию.
   if (useQueueStore.getState().curId) return false
   const r = loadResume()
-  if (!r?.id) return false
+  if (!r?.id || r.cleared) return false
   // Трек должен резолвиться (снимок в резюме или библиотека) — иначе показывать
   // в плеере нечего. Проверяем ДО restoreResumeQueue, чтобы не оставить
   // наполовину восстановленную очередь без текущего трека: в этом случае

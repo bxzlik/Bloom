@@ -2,7 +2,7 @@
 
 import { host } from "./host";
 import { recentlyPlayed } from "../db/history";
-import { normalizeArtist, trackGenres } from "../db/track-meta";
+import { normalizeArtist } from "../db/track-meta";
 import { wasShown } from "../db/shown";
 import type { Candidate, ScRawTrack, Track, WaveSession } from "./types";
 
@@ -23,14 +23,12 @@ export function candidateFromSc(
 ): Candidate | null {
   if (raw.policy && !ALLOWED_POLICIES.has(raw.policy)) return null;
   const id = "sc_" + raw.id;
-  const genres = [raw.genre, ...tagsOf(raw.tag_list)].filter(Boolean).map(g => (g as string).toLowerCase());
   return {
     id,
     sourceRank: rank,
     origin,
     raw,
     artistKey: normalizeArtist(raw.user?.username),
-    genres,
   };
 }
 
@@ -41,21 +39,10 @@ export function candidateFromLib(t: Track, rank: number): Candidate {
     origin: "library",
     libTrack: t,
     artistKey: normalizeArtist(t.artist),
-    genres: trackGenres(t),
   };
 }
 
-function tagsOf(s: string): string[] {
-  if (!s) return [];
-  const out: string[] = [];
-  const re = /"([^"]+)"|(\S+)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(s)) !== null) out.push((m[1] ?? m[2] ?? "").trim());
-  return out.filter(Boolean);
-}
-
 export interface FilterCtx {
-  seedGenres: Set<string>;
   session: WaveSession;
   dropRecentDays: number;
   curId: string | null;
@@ -106,14 +93,13 @@ export function scoreCandidate(c: Candidate, ctx: ScoreCtx): number {
   // База: чем меньше sourceRank, тем больше очков (20 → 0 для топа, 0 → −20 для хвоста).
   let s = 20 - c.sourceRank;
 
-  // Совпадение жанров с сидом.
-  let genreMatch = 0;
-  for (const g of c.genres) if (ctx.seedGenres.has(g)) { genreMatch++; }
-  s += Math.min(genreMatch, 3) * 4;
+  // Бонуса за совпадение жанров с сидами больше нет: жанр на SoundCloud —
+  // свободный текст загрузчика вместе с тегами, и до +12 очков раздавалось по
+  // случайным совпадениям, перебивая порядок станции/related — сигнал надёжнее.
 
-  // Бонус знакомого артиста: лайк в библиотеке или артист в подписках.
-  const libT = host.trackById(c.id);
-  if (libT?.fav) s += 8;
+  // Бонус залайканному. Лайк — из стора: `t.fav` на треках не ведётся, и по нему
+  // бонус не срабатывал ни разу.
+  if (host.favs.has(c.id)) s += 8;
 
   // Сеансовый бонус (накопился по лайкам/дослушиваниям в этой волне).
   const sb = ctx.bonusArtists[c.artistKey];
@@ -128,33 +114,25 @@ export function scoreCandidate(c: Candidate, ctx: ScoreCtx): number {
   return s;
 }
 
-// Жёсткое разнообразие: максимум 2 трека одного артиста на пачку
-// и максимум ~30% одного жанра. Лишние уходят в хвост (могут попасть в следующую пачку).
+// Жёсткое разнообразие: максимум 2 трека одного артиста на пачку и никогда двух
+// подряд. Лишние уходят в хвост (могут попасть в следующую пачку).
+//
+// Кап «≤30% одного жанра» здесь был и снят: считался от всего пула (~100
+// кандидатов при пачке в 20), поэтому в «Моей волне» не срабатывал никогда, а в
+// «Волне по треку» (пул ~40) резал по шумному SC-жанру — у слушателя одного
+// стиля вытеснял подходящее случайным.
 const MAX_PER_ARTIST = 2;
-const MAX_GENRE_RATIO = 0.3;
 
 export function antiClumpByArtist(ranked: Candidate[]): Candidate[] {
-  const total = ranked.length;
-  const maxPerGenre = Math.max(2, Math.ceil(total * MAX_GENRE_RATIO));
-
   const out: Candidate[] = [];
   const tail: Candidate[] = [];
   const artistCount = new Map<string, number>();
-  const genreCount = new Map<string, number>();
   let lastArtist = "";
 
   for (const c of ranked) {
     const ac = c.artistKey ? (artistCount.get(c.artistKey) ?? 0) : 0;
     if (c.artistKey && ac >= MAX_PER_ARTIST) { tail.push(c); continue; }
     if (c.artistKey && c.artistKey === lastArtist) { tail.push(c); continue; }
-
-    // Доминирующий жанр кандидата (первый из списка).
-    const primaryGenre = c.genres[0] ?? "";
-    if (primaryGenre) {
-      const gc = genreCount.get(primaryGenre) ?? 0;
-      if (gc >= maxPerGenre) { tail.push(c); continue; }
-      genreCount.set(primaryGenre, gc + 1);
-    }
 
     out.push(c);
     if (c.artistKey) artistCount.set(c.artistKey, ac + 1);

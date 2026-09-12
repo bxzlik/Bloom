@@ -8,13 +8,16 @@
    затемняет его полосу. Место под тайтлбар — в padding-top (--tb-h, 0 в
    фуллскрине/при автоскрытии), а не в top, иначе полоса оставалась светлой. */
 .logs-backdrop{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:calc(var(--tb-h,32px) + 24px) 24px 24px;opacity:0;pointer-events:none;transition:opacity .22s}
-.logs-backdrop.open{opacity:1;pointer-events:all}
+/* padding-top едет за --tb-h при выезде авто-скрытого тайтлбара (.22s, как его
+   margin-top). Только в .open — закрытая подложка смонтирована и иначе
+   перекладывалась бы на каждом наведении. Так же у pedit/spanel/smodal. */
+.logs-backdrop.open{opacity:1;pointer-events:all;transition:opacity .22s,padding-top .22s ease}
 .logs-modal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.09);border-radius:var(--radius);width:min(900px,100%);height:min(640px,100%);display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.95);overflow:hidden;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1)}
 .logs-backdrop.open .logs-modal{transform:translateY(0)}
 
 /* ===== PROFILE EDIT DRAWER ===== */
 #peditBackdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.55);display:flex;align-items:stretch;justify-content:flex-end;padding:calc(var(--tb-h,32px) + 16px) 16px 16px;opacity:0;pointer-events:none;transition:opacity .22s}
-#peditBackdrop.open{opacity:1;pointer-events:all}
+#peditBackdrop.open{opacity:1;pointer-events:all;transition:opacity .22s,padding-top .22s ease}
 #peditModal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.09);border-radius:var(--radius);width:min(420px,calc(100vw - 32px));display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.95);overflow:hidden;transform:translateX(calc(100% + 24px));will-change:auto;transition:transform .42s cubic-bezier(.22,1,.36,1)}
 #peditBackdrop.open #peditModal{transform:translateX(0)}
 
@@ -39,7 +42,7 @@
 .pedit-ava-cam{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
 .pedit-hero-ava-wrap:hover .pedit-ava-cam,
 .pedit-hero-ava-wrap.active .pedit-ava-cam{opacity:1}
-.pedit-hero-name{margin-top:11px;font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--text);max-width:calc(100% - 32px);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 16px}
+.pedit-hero-name{margin-top:11px;font-size:17px;font-weight:var(--fw-bold);letter-spacing:-.02em;color:var(--text);max-width:calc(100% - 32px);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 16px}
 .pedit-hero-name.empty{color:var(--muted)}
 
 /* панель картинок: вкладки-миниатюры + превью + (для обложки) её цвет */
@@ -61,13 +64,13 @@
 .pedit-img-tab-ava img,.pedit-img-tab-banner img,
 .pedit-img-prev-ava img,.pedit-img-prev-banner img,
 .pedit-hero-banner-fill img{width:100%;height:100%;object-fit:cover;display:block}
-.pedit-img-upload{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:10px;border:none;border-radius:calc(var(--radius)*0.6);background:var(--accent);color:var(--accent-text);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.pedit-img-upload{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:10px;border:none;border-radius:calc(var(--radius)*0.6);background:var(--accent);color:var(--accent-text);font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s}
 .pedit-img-upload:hover{background:var(--accent2)}
 /* «Удалить…» — голый красный текст: подложки нет даже на наведении (розовая
    плашка --sys-fav-tint светилась ярче самой кнопки «Загрузить»), ховер только
    подсвечивает буквы. Красный тут смысловой — --danger, а не «избранное»
    --sys-fav-ico: цвета близкие, но это разные роли. */
-.pedit-img-drop{width:100%;padding:6px;margin-top:-4px;background:none;border:none;color:var(--danger,#e5484d);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:.15s}
+.pedit-img-drop{width:100%;padding:6px;margin-top:-4px;background:none;border:none;color:var(--danger,#e5484d);font-family:var(--font);font-size:12.5px;font-weight:var(--fw-bold);cursor:pointer;border-radius:calc(var(--radius)*0.5);transition:.15s}
 .pedit-img-drop:hover{background:none;color:color-mix(in srgb,var(--danger,#e5484d),#fff 22%)}
 
 /* тело: карточки-секции */
@@ -78,7 +81,7 @@
 .pedit-eg{display:flex;flex-direction:column;gap:7px}
 .pedit-banner-color-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pedit-mode-toggle{display:flex;border-radius:calc(var(--radius)*0.45);overflow:hidden;border:1px solid rgba(var(--ovl-rgb),.1);flex-shrink:0}
-.pedit-mode-btn{padding:4px 11px;font-size:11px;font-weight:600;font-family:var(--font);background:none;border:none;color:var(--text2);cursor:pointer;transition:.15s}
+.pedit-mode-btn{padding:4px 11px;font-size:11px;font-weight:var(--fw-bold);font-family:var(--font);background:none;border:none;color:var(--text2);cursor:pointer;transition:.15s}
 .pedit-mode-btn.active{background:var(--accent);color:var(--accent-text)}
 .pedit-banner-swatches{display:flex;align-items:center;gap:8px}
 .pedit-angle-row{display:flex;gap:4px;flex-wrap:wrap}
@@ -89,7 +92,7 @@
 .acc-bio-box{display:none;margin-top:7px;border:1px solid rgba(var(--ovl-rgb),.13);border-radius:calc(var(--radius)*0.85);padding:8px 11px;max-width:360px;background:rgba(0,0,0,.25)}
 .acc-bio-box-text{font-size:12px;color:rgba(var(--ovl-rgb),.65);line-height:1.45;white-space:pre-wrap;word-break:break-word}
 .acc-bio-box-status{font-size:12px;color:rgba(var(--ovl-rgb),.4);margin-top:4px;font-style:italic}
-.pedit-bio-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.pedit-bio-label{font-size:10px;font-weight:var(--fw-bold);color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
 .pedit-bio-inp{width:100%;box-sizing:border-box;background:rgba(0,0,0,.35);border:1.5px solid rgba(var(--ovl-rgb),.1);border-radius:calc(var(--radius)*0.6);color:var(--text);padding:9px 12px;font-size:13px;outline:none;transition:.2s;font-family:var(--font);resize:none;line-height:1.5;min-height:80px}
 .pedit-bio-inp:focus{border-color:rgba(var(--ovl-rgb),.22);background:rgba(var(--ovl-rgb),.10);box-shadow:0 0 0 3px rgba(var(--ovl-rgb),.05)}
 .pedit-bio-inp::placeholder{color:var(--muted)}
@@ -107,9 +110,9 @@
    акцентной пары, — рамки нет, иначе кнопка была бы ниже. Тем же правилом
    живут .crop-btn-back (ниже), .mpl-btn.ghost, .ob-btn-ghost — каждое лежит
    рядом со своим компонентом. */
-.pedit-btn-cancel{padding:10px 18px;border-radius:calc(var(--radius)*0.6);background:rgba(var(--ovl-rgb),.05);border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font)}
+.pedit-btn-cancel{padding:10px 18px;border-radius:calc(var(--radius)*0.6);background:rgba(var(--ovl-rgb),.05);border:none;color:var(--text2);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s;font-family:var(--font)}
 .pedit-btn-cancel:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
-.pedit-btn-save{padding:9px 22px;border-radius:calc(var(--radius)*0.6);background:var(--accent);border:none;color:var(--accent-text);font-size:13px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
+.pedit-btn-save{padding:9px 22px;border-radius:calc(var(--radius)*0.6);background:var(--accent);border:none;color:var(--accent-text);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s;font-family:var(--font)}
 .pedit-btn-save:hover{background:var(--accent2)}
 #peditCropView{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0}
 #peditCropView.active{display:flex}
@@ -152,7 +155,7 @@
 /* Общий каркас, как у редактирования профиля (#peditModal): затемнение + панель,
    выезжающая справа на всю высоту. Тело/футер/поля переиспользуют .pedit-*. */
 .spanel-backdrop{position:fixed;inset:0;z-index:995;background:rgba(0,0,0,.55);display:flex;align-items:stretch;justify-content:flex-end;padding:calc(var(--tb-h,32px) + 16px) 16px 16px;opacity:0;pointer-events:none;transition:opacity .22s}
-.spanel-backdrop.open{opacity:1;pointer-events:all}
+.spanel-backdrop.open{opacity:1;pointer-events:all;transition:opacity .22s,padding-top .22s ease}
 /* Ни рамки, ни тени: карточка отделяется от приложения только затемнением
    подложки — светлая нитка по краю и тяжёлый ореол читались как обводка. */
 .spanel{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:none;border-radius:var(--radius);width:min(420px,calc(100vw - 32px));display:flex;flex-direction:column;box-shadow:none;overflow:hidden;transform:translateX(calc(100% + 24px));will-change:auto;transition:transform .42s cubic-bezier(.22,1,.36,1)}
@@ -174,9 +177,9 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .spanel-cover img{width:100%;height:100%;object-fit:cover;display:block}
 .spanel-cover-cam{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;color:#fff}
 .spanel-cover:hover .spanel-cover-cam{opacity:1}
-.spanel-hero-name{margin-top:12px;font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--text);max-width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spanel-hero-name{margin-top:12px;font-size:16px;font-weight:var(--fw-bold);letter-spacing:-.02em;color:var(--text);max-width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .spanel-hero-name.empty{color:var(--muted)}
-.spanel-hero-sub{margin-top:3px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.spanel-hero-sub{margin-top:3px;font-size:11px;font-weight:var(--fw-bold);color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
 /* строка из нескольких полей в карточке */
 .spanel-row{display:flex;gap:8px}
 
@@ -205,9 +208,9 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .crop-zoom-slider{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer}
 .crop-zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
 .crop-actions{display:flex;gap:8px;justify-content:flex-end}
-.crop-btn-back{padding:9px 16px;border-radius:calc(var(--radius)*0.6);background:rgba(var(--ovl-rgb),.05);border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--font)}
+.crop-btn-back{padding:9px 16px;border-radius:calc(var(--radius)*0.6);background:rgba(var(--ovl-rgb),.05);border:none;color:var(--text2);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s;font-family:var(--font)}
 .crop-btn-back:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
-.crop-btn-apply{padding:8px 18px;border-radius:calc(var(--radius)*0.6);background:var(--accent);border:none;color:var(--accent-text);font-size:13px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
+.crop-btn-apply{padding:8px 18px;border-radius:calc(var(--radius)*0.6);background:var(--accent);border:none;color:var(--accent-text);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s;font-family:var(--font)}
 .crop-btn-apply:hover{background:var(--accent2)}
 
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;color:var(--muted);text-align:center;gap:10px}
@@ -231,14 +234,14 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 #shareCardModal{background:color-mix(in srgb,var(--block-color),var(--text) var(--ov-lift));border:1px solid rgba(var(--ovl-rgb),.08);border-radius:22px;width:360px;max-width:95vw;transform:translateY(14px);will-change:auto;transition:.32s cubic-bezier(.34,1.38,.64,1);box-shadow:0 40px 120px rgba(0,0,0,.98),0 0 0 1px rgba(var(--ovl-rgb),.04) inset;overflow:hidden}
 #shareCardMover.open #shareCardModal{transform:translateY(0)}
 .sc-card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 14px;border-bottom:1px solid rgba(var(--ovl-rgb),.07)}
-.sc-card-title{font-size:14px;font-weight:700;color:var(--text)}
+.sc-card-title{font-size:14px;font-weight:var(--fw-bold);color:var(--text)}
 .sc-card-close{width:26px;height:26px;border-radius:8px;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .sc-card-close:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
 .sc-card-preview-wrap{padding:14px 14px 10px}
 .sc-card-preview{border-radius:14px;overflow:hidden;background:#0a0a0a;min-height:80px;display:flex;align-items:center;justify-content:center}
 .sc-card-preview canvas{display:block;width:100%;height:auto;border-radius:12px}
 .sc-card-actions{display:flex;gap:8px;padding:10px 14px 14px}
-.sc-card-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border-radius:12px;border:1px solid rgba(var(--ovl-rgb),.1);background:rgba(var(--ovl-rgb),.06);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit}
+.sc-card-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border-radius:12px;border:1px solid rgba(var(--ovl-rgb),.1);background:rgba(var(--ovl-rgb),.06);color:var(--text);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit}
 .sc-card-btn:hover{background:rgba(var(--ovl-rgb),.1);border-color:rgba(var(--ovl-rgb),.18)}
 .sc-card-btn:active{transform:scale(.97)}
 .sc-card-btn-primary{background:rgba(var(--ovl-rgb),.11);border-color:rgba(var(--ovl-rgb),.2)}
@@ -248,7 +251,7 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .dlink-cov{width:52px;height:52px;border-radius:10px;background:rgba(var(--ovl-rgb),.07);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .dlink-cov img{width:100%;height:100%;object-fit:cover;display:block}
 .dlink-info{flex:1;min-width:0}
-.dlink-title{font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+.dlink-title{font-size:14px;font-weight:var(--fw-bold);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
 .dlink-artist{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Футер = футер модалки «Инфо о треке» (.ti-foot): та же кнопка
    (.stats-tool-btn), растянутая на всю ширину. Крестика в шапке нет. */
@@ -263,13 +266,13 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 /* Плашки под иконкой нет — иконка лежит прямо на фоне модалки и потому крупнее
    (бокс 22px, svg 18px). Бокс оставлен для выравнивания подписей в колонку. */
 .dlink-act-icon{width:22px;height:22px;background:none;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.dlink-act-label{flex:1;font-weight:500}
+.dlink-act-label{flex:1;font-weight:var(--fw-bold)}
 .dlink-act-chevron{opacity:.3;flex-shrink:0}
 .dlink-pl-list{display:none}
 .dlink-pl-header{display:flex;align-items:center;gap:8px;padding:11px 14px 10px;border-bottom:1px solid rgba(var(--ovl-rgb),.07)}
 .dlink-pl-back-btn{width:28px;height:28px;border-radius:8px;background:rgba(var(--ovl-rgb),.07);border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
 .dlink-pl-back-btn:hover{background:rgba(var(--ovl-rgb),.13);color:var(--text)}
-.dlink-pl-header-title{font-size:13px;font-weight:600;color:var(--text)}
+.dlink-pl-header-title{font-size:13px;font-weight:var(--fw-bold);color:var(--text)}
 .dlink-pl-scroll{padding:6px 8px 8px;max-height:192px;overflow-y:auto}
 .dlink-pl-empty{padding:14px 12px;font-size:12px;color:var(--text2);opacity:.5;text-align:center}
 .dlink-pl-item{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;cursor:pointer;font-size:13px;color:var(--text);transition:.12s}
@@ -277,7 +280,7 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .dlink-pl-item:active{background:rgba(var(--ovl-rgb),.11);transform:scale(.98)}
 .dlink-pl-item-cov{width:32px;height:32px;border-radius:7px;background:rgba(var(--ovl-rgb),.08);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(var(--ovl-rgb),.06)}
 .dlink-pl-item-cov img{width:100%;height:100%;object-fit:cover;display:block}
-.dlink-pl-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.dlink-pl-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:var(--fw-bold)}
 .dlink-pl-item-count{font-size:11px;color:var(--text2);flex-shrink:0}
 .dlink-sep{height:1px;background:rgba(var(--ovl-rgb),.07);margin:4px 8px}
 /* .pl-cov-* переиспользует inline-редактор плейлиста в шапке
@@ -290,7 +293,7 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .pl-cov-hint{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);pointer-events:none;transition:.2s}
 .pl-cov-zone:hover .pl-cov-hint{color:var(--accent)}
 .pl-cov-hint svg{opacity:.7}
-.pl-cov-hint span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;line-height:1.3}
+.pl-cov-hint span{font-size:10px;font-weight:var(--fw-bold);text-transform:uppercase;letter-spacing:.04em;text-align:center;line-height:1.3}
 /* Кнопка удаления обложки: стекло по теме вместо жёсткого серого #333 —
    подложка размывает то, что под ней (обложка/фон шапки), цвет иконки идёт от
    темы. На hover — красная заливка, как у остальных деструктивных действий. */
@@ -352,7 +355,7 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
 .unm-ghost{
   font-family:var(--font);
   font-size:13px;
-  font-weight:600;
+  font-weight:var(--fw-bold);
   color:var(--text2);
   background:none;
   border:none;
@@ -425,10 +428,10 @@ body.drawer-left .spanel{transform:translateX(calc(-100% - 24px))}
   transition:.15s;
 }
 .unm-history-item:hover{background:rgba(var(--ovl-rgb),.08)}
-.unm-history-ver{font-size:13px;font-weight:700;flex-shrink:0}
+.unm-history-ver{font-size:13px;font-weight:var(--fw-bold);flex-shrink:0}
 .unm-history-title{
   font-size:13px;
-  font-weight:500;
+  font-weight:var(--fw-bold);
   color:var(--text2);
   min-width:0;
   flex:1;

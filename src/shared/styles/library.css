@@ -20,7 +20,7 @@
 #plMenuHeader[class*="sys-"] #plMenuHeaderCov{background:var(--sys-cov-bg);box-shadow:inset 0 0 0 1px var(--sys-cov-bd)}
 #plMenuHeaderCov{width:38px;height:38px;border-radius:calc(var(--radius)*0.6);background:var(--bg2,var(--card));display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
 #plMenuHeaderCov img{width:100%;height:100%;object-fit:cover}
-#plMenuHeaderName{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff}
+#plMenuHeaderName{font-size:13px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:135px;line-height:1.3;color:#fff}
 #plMenuHeaderSub{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px}
 /* Верхняя строка меню плейлиста: одна пилюля с широкой «Воспроизвести» и
    секцией перемешивания справа (собственных рамок у секций нет, они отделены
@@ -28,7 +28,7 @@
    «прозрачность рамок» (borderAlpha → --wb/--wb2), как у .tr и блоков. */
 .plmenu-playrow{display:flex;align-items:stretch;margin:2px 0 3px;border:1px solid var(--ovl-line);border-radius:999px;overflow:hidden;transition:border-color .12s}
 .plmenu-playrow:hover{border-color:var(--ovl-line2)}
-.plmenu-play,.plmenu-shuffle{display:flex;align-items:center;justify-content:center;gap:7px;height:30px;padding:0 12px;border:0;background:transparent;color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:color .12s}
+.plmenu-play,.plmenu-shuffle{display:flex;align-items:center;justify-content:center;gap:7px;height:30px;padding:0 12px;border:0;background:transparent;color:var(--text);font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:color .12s}
 .plmenu-play{flex:1;min-width:0}
 .plmenu-play span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Разделитель — псевдоэлемент, а не border-left: линия короче пилюли и не
@@ -102,7 +102,7 @@
    Рамкой служит inset box-shadow — border съел бы 2px из фиксированной стороны
    (--lh-cov) и квадрат перестал бы совпадать с обложкой плейлиста рядом. */
 .lib-hero-icon.off-icon,.lib-hero-icon.fav-icon,.lib-hero-icon.hist-icon{background:var(--sys-cov-bg);box-shadow:inset 0 0 0 1px var(--sys-cov-bd)}
-.lib-hero-icon.folder-icon{background:var(--folder-tint)}.lib-hero-name{font-size:30px;font-weight:800}
+.lib-hero-icon.folder-icon{background:var(--folder-tint)}.lib-hero-name{font-size:30px;font-weight:var(--fw-bold)}
 /* Флекс, а не строка текста: в подписи соседствуют обычный текст и офлайн-тег
    (inline-flex с иконкой). В инлайн-потоке он вставал по vertical-align, а текст
    — по базовой линии, и куски подписи оказывались на разной высоте. Флекс с
@@ -122,7 +122,7 @@
 /* В шапках меню (поверх размытой обложки) подпись и так белёсая — там дату
    поднимаем весом, а не цветом, иначе она сливается с «12 треков». */
 #plMenuHeaderMeta,#cxPreviewMeta{font-size:11px;color:rgba(var(--ovl-rgb),.8);margin-top:2px;max-width:135px;overflow:hidden;text-overflow:ellipsis}
-#plMenuHeaderMeta .meta-date,#cxPreviewMeta .meta-date{font-weight:600;color:rgba(var(--ovl-rgb),.95)}
+#plMenuHeaderMeta .meta-date,#cxPreviewMeta .meta-date{font-weight:var(--fw-bold);color:rgba(var(--ovl-rgb),.95)}
 #plMenuHeaderMeta .meta-date-lbl,#cxPreviewMeta .meta-date-lbl{font-weight:400;opacity:.75}
 /* Шапки меню (плейлист/трек) состоят из двух рядов. Верхний — обложка и текст,
    нижний — дата во всю ширину шапки, отделённая ВОЛОСЯНОЙ линией: ручка силы —
@@ -148,7 +148,7 @@
    шапки, кликнул и печатаешь. Метрики совпадают с .lib-hero-name/.lib-hero-desc,
    иначе при входе в редактор строки бы прыгали. */
 .lib-hero-name-inp,.lib-hero-desc-inp{width:100%;box-sizing:border-box;font-family:var(--font);background:transparent;border:none;border-radius:0;padding:0;color:var(--text);outline:none}
-.lib-hero-name-inp{font-size:30px;font-weight:800;line-height:normal}
+.lib-hero-name-inp{font-size:30px;font-weight:var(--fw-bold);line-height:normal}
 .lib-hero-desc-inp{font-size:14px;font-weight:400;line-height:1.45;margin-top:5px;max-width:480px;color:var(--text2);opacity:.8}
 .lib-hero-name-inp::placeholder,.lib-hero-desc-inp::placeholder{color:rgba(var(--ovl-rgb),.35);font-weight:inherit}
 /* Большой редактор плейлиста — на месте трек-листа, пока идёт редактирование.
@@ -159,13 +159,13 @@
 .pl-edit-body{flex:1;overflow-y:auto;padding:22px 24px 80px;scrollbar-width:none;background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:var(--radius);animation:plEditIn .22s ease}
 .pl-edit-body.is-closing{animation:plEditOut .18s ease forwards;pointer-events:none}
 .pl-edit-body::-webkit-scrollbar{display:none}
-.pl-src-head{font-size:13px;font-weight:800;letter-spacing:.02em}
+.pl-src-head{font-size:13px;font-weight:var(--fw-bold);letter-spacing:.02em}
 .pl-src-hint{font-size:12px;color:var(--text2);margin-top:5px;max-width:520px;line-height:1.5}
 .pl-src-list{display:flex;flex-direction:column;gap:6px;margin-top:16px;max-width:640px}
 .pl-src-row{display:flex;align-items:center;gap:11px;padding:9px 12px;border:1px solid var(--border);border-radius:calc(var(--radius) * 0.7);background:var(--ovl-bg)}
 .pl-src-logo{display:flex;align-items:center;justify-content:center;width:22px;height:22px;flex-shrink:0}
 .pl-src-txt{flex:1;min-width:0}
-.pl-src-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-src-title{font-size:13px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-src-sub{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-src-rmv{width:26px;height:26px;flex-shrink:0;border-radius:50%;background:none;border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .pl-src-rmv:hover{background:rgba(var(--ovl-rgb),.08);color:var(--text)}
@@ -175,7 +175,7 @@
 .pl-src-inp::placeholder{color:var(--text2);opacity:.75}
 .pl-src-inp:focus{border-color:var(--border-focus);background:rgba(var(--ovl-rgb),.06)}
 .pl-src-inp-wrap .pl-src-logo{position:absolute;right:9px}
-.pl-src-add-btn{display:flex;align-items:center;gap:6px;padding:0 15px;border-radius:calc(var(--radius) * 0.7);background:none;border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:.15s;flex-shrink:0}
+.pl-src-add-btn{display:flex;align-items:center;gap:6px;padding:0 15px;border-radius:calc(var(--radius) * 0.7);background:none;border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:var(--fw-bold);font-family:var(--font);cursor:pointer;transition:.15s;flex-shrink:0}
 .pl-src-add-btn:hover:not(:disabled){border-color:var(--text2);color:var(--text)}
 .pl-src-add-btn:disabled{opacity:.45;cursor:default}
 .pl-src-spinner{width:12px;height:12px;border:2px solid rgba(var(--ovl-rgb),.25);border-top-color:var(--text);border-radius:50%;animation:plSrcSpin .7s linear infinite}
@@ -184,7 +184,7 @@
 .lib-hero-btns .btn-icon.is-save:hover{background:var(--accent2);border-color:var(--accent2)}
 .lib-hero-btns .btn-icon.is-save:disabled{opacity:.45;cursor:default}
 .lib-hero-btns .btn-icon.is-save:disabled:hover{background:var(--text);border-color:var(--text)}
-.btn-play-all{display:flex;align-items:center;gap:6px;height:34px;padding:0 18px;white-space:nowrap;flex-shrink:0;border-radius:calc(var(--radius) * 0.72);background:var(--accent);color:var(--accent-text);border:none;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;font-family:var(--font)}
+.btn-play-all{display:flex;align-items:center;gap:6px;height:34px;padding:0 18px;white-space:nowrap;flex-shrink:0;border-radius:calc(var(--radius) * 0.72);background:var(--accent);color:var(--accent-text);border:none;font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:.15s;font-family:var(--font)}
 .btn-play-all:hover{background:var(--accent-hover)}
 .btn-icon{width:34px;height:34px;border-radius:calc(var(--radius) * 0.72);background:var(--icon-bg);border:1px solid transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
 .btn-icon:hover{background:rgba(var(--ovl-rgb),.13);color:var(--text)}
@@ -211,7 +211,7 @@
    Обводка — общие токены рамки (--ovl-line / --ovl-line2 на ховере), как у
    блоков приложения: своя альфа делала пилюлю ярче остальной обводки.
    Ручка: --lib-jump-h — высота пилюли. */
-.lib-jump{--lib-jump-h:36px;position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:9px;height:var(--lib-jump-h);padding:0 11px 0 13px;border-radius:999px;border:1px solid var(--ovl-line);background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));color:var(--text);font-family:var(--font);font-size:13px;font-weight:700;line-height:1;white-space:nowrap;cursor:pointer;box-shadow:none;animation:libJumpIn .2s ease;transition:border-color .15s ease}
+.lib-jump{--lib-jump-h:36px;position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:9px;height:var(--lib-jump-h);padding:0 11px 0 13px;border-radius:999px;border:1px solid var(--ovl-line);background:color-mix(in srgb,var(--block-color,#0a0a0a),var(--text) var(--ov-lift));color:var(--text);font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);line-height:1;white-space:nowrap;cursor:pointer;box-shadow:none;animation:libJumpIn .2s ease;transition:border-color .15s ease}
 .lib-jump:hover{border-color:var(--ovl-line2)}
 .lib-jump .bars{flex-shrink:0}
 .lib-jump-txt{flex-shrink:0}
@@ -238,12 +238,12 @@
 #libGridOverview.active{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start}
 #libGridOverview .home-pl-card{width:100%}
 #libGridOverview .hpc-cover{width:100%;height:auto;aspect-ratio:1}
-.lib-grid-section{grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;padding:6px 2px 2px;margin-top:4px}
+.lib-grid-section{grid-column:1/-1;font-size:11px;font-weight:var(--fw-bold);letter-spacing:.08em;color:var(--text2);text-transform:uppercase;padding:6px 2px 2px;margin-top:4px}
 .lib-grid-sys-row{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .lib-grid-sys-card{background:var(--ovl-bg);border:1px solid var(--ovl-line);border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s;min-height:78px}
 .lib-grid-sys-card:hover{background:rgba(var(--ovl-rgb),.06);border-color:var(--ovl-line2)}
 .lib-grid-sys-card-info{display:flex;flex-direction:column;gap:3px;min-width:0}
-.lib-grid-sys-card-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-grid-sys-card-name{font-size:15px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-grid-sys-card-sub{font-size:11px;color:var(--text2)}
 .lib-grid-sys-card-icon{flex-shrink:0;margin-left:12px;opacity:.8}
 /* Карточки обзора-сетки живут по своим правилам (цветной радиальный градиент
@@ -254,7 +254,7 @@
 .lib-grid-sys-card-all::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#1a5fb4 0%,transparent 100%);pointer-events:none;z-index:0}
 .lib-grid-sys-card-all .lib-grid-sys-card-icon,.lib-grid-sys-card-all .lib-grid-sys-card-info{position:relative;z-index:1}
 .lib-grid-sys-card-all .lib-grid-sys-card-icon{margin-left:0;opacity:1}
-.lib-grid-sys-card-all .lib-grid-sys-card-name{font-size:13px;font-weight:800;color:var(--text)}
+.lib-grid-sys-card-all .lib-grid-sys-card-name{font-size:13px;font-weight:var(--fw-bold);color:var(--text)}
 .lib-grid-sys-card-all .lib-grid-sys-card-sub{font-size:11px;color:rgba(var(--ovl-rgb),.45)}
 .lib-grid-sys-card-all:hover{background:var(--block-bg,#2a2a2a);filter:brightness(1.15)}
 .lib-grid-sys-card-fav{background:var(--block-bg,#2a2a2a)}
@@ -263,7 +263,7 @@
 .lib-grid-sys-card-hist::before{content:'';position:absolute;inset:0;border-radius:calc(var(--radius) - 1px);background:radial-gradient(ellipse 65% 65% at 0% 0%,#b8860b 0%,transparent 100%);pointer-events:none;z-index:0}
 .lib-grid-sys-card-fav .lib-grid-sys-card-icon,.lib-grid-sys-card-fav .lib-grid-sys-card-info,.lib-grid-sys-card-hist .lib-grid-sys-card-icon,.lib-grid-sys-card-hist .lib-grid-sys-card-info{position:relative;z-index:1}
 .lib-grid-sys-card-fav .lib-grid-sys-card-icon,.lib-grid-sys-card-hist .lib-grid-sys-card-icon{margin-left:0;opacity:1}
-.lib-grid-sys-card-fav .lib-grid-sys-card-name,.lib-grid-sys-card-hist .lib-grid-sys-card-name{font-size:13px;font-weight:800;color:var(--text)}
+.lib-grid-sys-card-fav .lib-grid-sys-card-name,.lib-grid-sys-card-hist .lib-grid-sys-card-name{font-size:13px;font-weight:var(--fw-bold);color:var(--text)}
 .lib-grid-sys-card-fav .lib-grid-sys-card-sub,.lib-grid-sys-card-hist .lib-grid-sys-card-sub{font-size:11px;color:rgba(var(--ovl-rgb),.45)}
 .lib-grid-sys-card-fav:hover,.lib-grid-sys-card-hist:hover{background:var(--block-bg,#2a2a2a);filter:brightness(1.15)}
 /* Видимостью #libBackToGrid в bloom управляет условный рендер React
@@ -292,7 +292,7 @@
    При наведении на строку номер сменяется иконкой play. */
 .trnum{position:relative;width:50px;height:50px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
 .trnum-i,.trnum-p{position:absolute;display:flex;align-items:center;justify-content:center;transition:opacity .12s ease}
-.trnum-i{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+.trnum-i{font-size:15px;font-weight:var(--fw-bold);font-variant-numeric:tabular-nums}
 .trnum-p{opacity:0;color:var(--text)}
 .tr:hover .trnum-i{opacity:0}
 .tr:hover .trnum-p{opacity:1}
@@ -302,7 +302,7 @@
    .trnum): номер, под ним динамика за сутки. Ширина фиксированная и цифры
    табличные, иначе трёхзначные места сдвигают всю строку. */
 .trrank{width:34px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text2)}
-.trrank-n{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.trrank-n{font-size:15px;font-weight:var(--fw-bold);font-variant-numeric:tabular-nums;line-height:1}
 .tr.playing .trrank{color:var(--accent)}
 
 /* Бейдж площадки поверх обложки (нижний-правый угол), прячется при наведении на
@@ -317,7 +317,7 @@
    строках; крупнее их делают ручки --bars-* из [PlayStateOverlay] (не
    transform:scale — масштаб мылил бы торцы). */
 .tri{flex:1;min-width:0}
-.trn{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trn{font-size:15px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tra{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .tra-link{cursor:pointer;transition:color .1s}
 .tra-link:hover{color:var(--text);text-decoration:underline}
@@ -327,16 +327,16 @@
 .tri:hover .trn,.tri:hover .tra{overflow:visible;text-overflow:clip}
 /* Высота пилюли — 28px, как у кнопок действий в строке (.tr .ib), чтобы
    длительность и соседние кнопки читались одним размером. */
-.trd{font-size:13px;color:var(--text2);display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:0 7px;height:26px;font-weight:600;min-width:46px;box-sizing:border-box;text-align:center;transition:.15s}
+.trd{font-size:13px;color:var(--text2);display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:0 7px;height:26px;font-weight:var(--fw-bold);min-width:46px;box-sizing:border-box;text-align:center;transition:.15s}
 /* Слот справа: длительность трека, а при наведении на строку — кнопка «…». */
 /* Кнопки «⋯» в строке больше нет — меню трека открывается только по ПКМ на
    строке, поэтому длительность видна и при наведении (раньше она гасилась,
    уступая место кебабу в том же слоте). */
 .trtime{position:relative;display:flex;align-items:center;justify-content:center;min-width:46px;flex-shrink:0}
 .tr-offline{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
-.trplays{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);flex-shrink:0;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:600}
+.trplays{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);flex-shrink:0;background:transparent;border:1px solid var(--ovl-line);border-radius:calc(var(--radius) * 0.45);padding:2px 7px;font-weight:var(--fw-bold)}
 .trplays svg{opacity:.7}
-.tr-repost{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap}
+.tr-repost{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;font-size:12px;font-weight:var(--fw-bold);color:var(--text2);white-space:nowrap}
 .tr-repost svg{opacity:.8}
 .trac{display:flex;gap:2px;opacity:0;transition:.15s;flex-shrink:0}
 /* У играющей строки кнопки видны всегда, а не только под курсором — она и так

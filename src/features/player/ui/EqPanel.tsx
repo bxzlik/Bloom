@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { useT } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import { EQ_LABELS, EQ_MAX_DB, EQ_PRESETS, EQ_PRESET_LABELS, useEqStore } from '../model/eqStore'
@@ -97,10 +97,7 @@ export const EqPanel = ({
 
   // Позиционирование над анкором (центр), flip вниз при нехватке места.
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null)
-      return
-    }
+    if (!open) return // позицию не сбрасываем — уходящая панель стоит на месте
     const btn = anchorRef.current
     const p = ref.current
     if (!btn || !p) return
@@ -112,7 +109,7 @@ export const EqPanel = ({
     setPos({ left, top })
   }, [open, anchorRef])
 
-  usePopupOpenAnimation(ref, pos)
+  const { mounted } = usePopupPresence(ref, open, pos)
 
   // Click outside / Escape.
   useEffect(() => {
@@ -155,7 +152,7 @@ export const EqPanel = ({
     window.addEventListener('pointerup', up)
   }
 
-  if (!open) return null
+  if (!mounted) return null
 
   const xs = gains.map((_, i) => bandX(i, n))
   const ys = gains.map((g) => gainToY(g))

@@ -1,4 +1,3 @@
-import { CatReset } from '../controls/SectionReset'
 import { useEffect, useState } from 'react'
 import { useAudioStore, type NormStatus } from '../../model/audioStore'
 import { useSettingsStore } from '../../model/settingsStore'
@@ -57,12 +56,13 @@ export const AudioSection = () => {
   const setNormEnabled = useAudioStore((s) => s.setNormEnabled)
   const setNormTargetDb = useAudioStore((s) => s.setNormTargetDb)
   const setDeviceId = useAudioStore((s) => s.setDeviceId)
+  const autoSimilar = useAudioStore((s) => s.autoSimilar)
+  const setAutoSimilar = useAudioStore((s) => s.setAutoSimilar)
   const settingsLoaded = useSettingsStore((s) => s.loaded)
   const restoreQueue = useSettingsStore((s) => s.restore_queue)
   const autoplay = useSettingsStore((s) => s.autoplay)
   const setRestoreQueue = useSettingsStore((s) => s.setRestoreQueue)
   const setAutoplay = useSettingsStore((s) => s.setAutoplay)
-  const resetAudioKeys = useAudioStore((s) => s.resetKeys)
 
   const [devices, setDevices] = useState<DeviceOpt[] | null>(null)
   const [devSupported, setDevSupported] = useState(true)
@@ -127,10 +127,7 @@ export const AudioSection = () => {
           появляется только при включённом восстановлении, а его выключение
           гасит и её (см. `setRestoreQueue`): скрытый флаг не должен остаться
           поднятым, иначе возврат восстановления дал бы играющий с порога плеер. */}
-      <div className="s-cat-label">
-        {t('settings.system.startup')}
-        <CatReset onReset={() => { void setRestoreQueue(true); void setAutoplay(false) }} />
-      </div>
+      <div className="s-cat-label">{t('settings.system.startup')}</div>
       <div className="sc">
         <div className="sr" style={restoreQueue ? undefined : { borderBottom: 'none', paddingBottom: 0 }}>
           <div>
@@ -158,11 +155,22 @@ export const AudioSection = () => {
         )}
       </div>
 
-      {/* Кроссфейд */}
-      <div className="s-cat-label">
-        {t('settings.audio.crossfade')}
-        <CatReset onReset={() => resetAudioKeys('xfadeEnabled', 'xfadeDur')} />
+      {/* Очередь: «Авто похожие» — доигравшая очередь продолжается похожими
+          (Яндекс/SC), дописанными в хвост. Кнопка «Похожие на очередь» в
+          панели очереди — другое: она заменяет очередь волной сразу. */}
+      <div className="s-cat-label">{t('settings.audio.queueCat')}</div>
+      <div className="sc">
+        <div className="sr" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+          <div>
+            <div className="sl2">{t('settings.audio.autoSimilar.title')}</div>
+            <div className="ssub">{t('settings.audio.autoSimilar.sub')}</div>
+          </div>
+          <Toggle checked={autoSimilar} onChange={setAutoSimilar} />
+        </div>
       </div>
+
+      {/* Кроссфейд */}
+      <div className="s-cat-label">{t('settings.audio.crossfade')}</div>
       <div className="sc">
         <div className="sr">
           <div>
@@ -183,10 +191,7 @@ export const AudioSection = () => {
       </div>
 
       {/* Нормализация */}
-      <div className="s-cat-label">
-        {t('settings.audio.norm')}
-        <CatReset onReset={() => resetAudioKeys('normEnabled', 'normTargetDb')} />
-      </div>
+      <div className="s-cat-label">{t('settings.audio.norm')}</div>
       <div className="sc">
         <div className="sr">
           <div>
@@ -215,10 +220,7 @@ export const AudioSection = () => {
       </div>
 
       {/* Устройство вывода — сетка карточек вместо <select> */}
-      <div className="s-cat-label">
-        {t('settings.audio.output')}
-        <CatReset onReset={() => resetAudioKeys('deviceId')} />
-      </div>
+      <div className="s-cat-label">{t('settings.audio.output')}</div>
       <div className="sc">
         <div className="sr sr-block">
           <div className="sc-title">{t('settings.audio.output.title')}</div>

@@ -792,6 +792,16 @@ pub fn file_remove(path: String) -> Result<(), String> {
     folder_watcher::remove_file(Path::new(&path)).map_err(|e| e.to_string())
 }
 
+/// Все одиночные треки из files.json — включая те, чей файл сейчас недоступен
+/// (в отличие от `file_scan_all`). Нужен полному сбросу: трек с вынутой флешки
+/// иначе остался бы в списке и вернулся в библиотеку при её подключении.
+#[tauri::command]
+pub fn file_get() -> Result<Vec<String>, String> {
+    config::load_files()
+        .map(|files| files.into_iter().map(|p| p.to_string_lossy().to_string()).collect())
+        .map_err(|e| e.to_string())
+}
+
 /// Первичная загрузка одиночных треков — ответом, а не событием (см. folder_scan_all).
 #[tauri::command]
 pub async fn file_scan_all() -> Result<Vec<events::LocalTrackInfo>, String> {
@@ -1711,6 +1721,13 @@ pub async fn ym_album(id: String) -> Result<yandex::YmEntity, String> {
 pub async fn ym_artist(id: String) -> Result<yandex::YmEntity, String> {
     let token = ym_token()?;
     yandex::artist(&token, &id).await.map_err(|e| e.to_string())
+}
+
+/// Артист: следующая страница «Треков» (кнопка «Загрузить ещё»).
+#[tauri::command]
+pub async fn ym_artist_tracks(id: String, page: u32) -> Result<yandex::YmTracksPage, String> {
+    let token = ym_token()?;
+    yandex::artist_tracks(&token, &id, page).await.map_err(|e| e.to_string())
 }
 
 /// Плейлист с треками.

@@ -193,12 +193,7 @@ export interface PlayerViewPrefs {
   overlayPerf: boolean
 }
 
-/**
- * Значения по умолчанию. Экспортируются ради точечного сброса карточек, где
- * настройка — это объект по «поверхностям» (анимация смены трека, оформление
- * текста): такой карточке нужно вернуть к умолчанию ОДНУ свою поверхность, а
- * `resetKeys` умеет только ключ целиком.
- */
+/** Значения по умолчанию. */
 const DEFAULTS: PlayerViewPrefs = {
   titleAlign: 'center',
   playerStyle: 'standard',
@@ -483,12 +478,6 @@ interface PlayerViewState extends PlayerViewPrefs {
   /** Применить пресет мини-плеера. */
   applyMpPreset: (name: string) => void
   reset: () => void
-  /**
-   * Сброс ПОДМНОЖЕСТВА ключей — для кнопки сброса на карточке настройки.
-   * Идёт через `set`, чтобы отработали инварианты (взаимоисключающие режимы
-   * бара, побочные классы), иначе сброс мог бы оставить противоречивую пару.
-   */
-  resetKeys: (...keys: (keyof PlayerViewPrefs)[]) => void
 }
 
 export const usePlayerViewStore = create<PlayerViewState>((set, get) => ({
@@ -530,10 +519,6 @@ export const usePlayerViewStore = create<PlayerViewState>((set, get) => ({
     set({ ...DEFAULTS })
     persist({ ...DEFAULTS })
   },
-  resetKeys: (...keys) => {
-    const { set: setKey } = get()
-    keys.forEach((k) => setKey(k, DEFAULTS[k]))
-  },
 }))
 
 /** Классы для `.app` из view-префов (навешивает App.tsx). */
@@ -549,6 +534,3 @@ export const BODY_SLIDER_CLASSES = ['slider-thin', 'slider-ios', 'slider-wave', 
 /** Body-класс для текущего типа слайдера (default → нет класса). */
 export const bodySliderClass = (t: SliderType): string | null =>
   t === 'default' ? null : `slider-${t}`
-
-/** Значения по умолчанию — нужны точечному сбросу карточек настроек. */
-export { DEFAULTS as PLAYER_VIEW_DEFAULTS }

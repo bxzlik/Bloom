@@ -75,6 +75,11 @@ export interface ArtistPageData {
   similarArtists?: Artist[]
   /** Непрозрачный курсор следующей страницы треков (null/undefined — больше нет). */
   tracksCursor?: string | null
+  /**
+   * Сколько всего треков у артиста по данным площадки (счётчик в hero, пока
+   * догружено не всё). Нет — считаем по загруженным.
+   */
+  tracksTotal?: number
   /** Непрозрачный курсор следующей страницы репостов. */
   repostsCursor?: string | null
 }

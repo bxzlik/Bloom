@@ -29,6 +29,8 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none}
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:#000;color:var(--text);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
 input,button,select,textarea{font-family:var(--font)}
+/* preflight Tailwind даёт им bolder — от 400 это 700, мимо шкалы --fw-* */
+b,strong{font-weight:var(--fw-bold)}
 input,textarea{user-select:text;-webkit-user-select:text}
 *:focus,*:focus-visible{outline:none!important}
 #bgl{position:fixed;inset:0;background-size:cover;background-position:center;z-index:0;pointer-events:none;transform:scale(1.1);will-change:transform;transition:opacity .4s ease}
@@ -132,7 +134,7 @@ input,textarea{user-select:text;-webkit-user-select:text}
 /* Цвет НЕ задаём — подпись наследует его у `.sni` и подсвечивается ровно так же,
    как иконка (hover → --text, active → --accent). Фона у строки нет: в иконочном
    режиме его тоже нет, подсветка только цветом. */
-.app.sidebar-full .sni-lbl{display:block;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app.sidebar-full .sni-lbl{display:block;min-width:0;font-size:13px;font-weight:var(--fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Компактный — та же строка, только без вертикального запаса. */
 .app.sidebar-compact.sidebar-full .sidebar{padding:6px 8px!important}
 /* Плавающий — капсула по ширине контента; круглые торцы на широком блоке
@@ -273,7 +275,7 @@ body.play-flat #miniPlayer .cc-play:hover{background:none!important;color:var(--
    Раскладку ряда (центрирование, отступы, скролл) задаёт класс-компаньон
    вызывающего места, здесь только сама «механика» вкладок. */
 .pill-tabs{position:relative;display:flex;gap:2px}
-.pill-tab{position:relative;z-index:1;flex:0 0 auto;display:flex;align-items:center;gap:8px;max-width:190px;padding:8px 14px;border:none;border-radius:999px;background:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:color .18s}
+.pill-tab{position:relative;z-index:1;flex:0 0 auto;display:flex;align-items:center;gap:8px;max-width:190px;padding:8px 14px;border:none;border-radius:999px;background:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:var(--fw-bold);cursor:pointer;transition:color .18s}
 .pill-tab:hover{color:var(--text)}
 .pill-tab.active{color:var(--text)}
 .pill-tab-ico{display:flex;align-items:center;justify-content:center;flex-shrink:0}

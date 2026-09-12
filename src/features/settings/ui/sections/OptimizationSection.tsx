@@ -1,4 +1,3 @@
-import { CatReset } from '../controls/SectionReset'
 import { useOptStore, type OptMode, type OptEffects } from '../../model/optStore'
 import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
@@ -17,16 +16,6 @@ export const OptimizationSection = () => {
   const setSimplify = useOptStore((s) => s.setUnfocusSimplify)
   const smart = useOptStore((s) => s.minimizedSmart)
   const setSmart = useOptStore((s) => s.setMinimizedSmart)
-  const resetOptKeys = useOptStore((s) => s.resetKeys)
-  const resetEffects = useOptStore((s) => s.resetEffects)
-
-  // Единица настройки здесь — РЕЖИМ целиком: переключатель + его сетка
-  // эффектов. Поэтому кнопка одна на группу, в её заголовке, а не на строке:
-  // строчная сбросила бы тумблер, оставив сетку нетронутой.
-  const resetMode = (mode: OptMode) => () => {
-    resetOptKeys(mode === 'unfocus' ? 'unfocusSimplify' : 'minimizedSmart')
-    resetEffects(mode)
-  }
 
   return (
     <div className="s-section active" id="ssec-unfocus">
@@ -38,15 +27,12 @@ export const OptimizationSection = () => {
       </div>
 
       {/* ── Анфокус ── */}
-      <div className="s-cat-label">
-        {t('settings.efficiency.unfocus')}
-        <CatReset onReset={resetMode('unfocus')} />
-      </div>
+      <div className="s-cat-label">{t('settings.efficiency.unfocus')}</div>
 
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>
+            <div className="sl2" style={{ fontSize: 13, fontWeight: 'var(--fw-bold)' }}>
               {t('settings.efficiency.simplify')}
             </div>
             <div className="ssub">{t('settings.efficiency.simplify.sub')}</div>
@@ -58,15 +44,12 @@ export const OptimizationSection = () => {
       <OptGrid mode="unfocus" />
 
       {/* ── Свёрнутое состояние ── */}
-      <div className="s-cat-label" style={{ marginTop: 16 }}>
-        {t('settings.efficiency.minimized')}
-        <CatReset onReset={resetMode('minimized')} />
-      </div>
+      <div className="s-cat-label" style={{ marginTop: 16 }}>{t('settings.efficiency.minimized')}</div>
 
       <div className="sc">
         <div className="sr">
           <div>
-            <div className="sl2" style={{ fontSize: 13, fontWeight: 700 }}>
+            <div className="sl2" style={{ fontSize: 13, fontWeight: 'var(--fw-bold)' }}>
               {t('settings.efficiency.smart')}
             </div>
             <div className="ssub">{t('settings.efficiency.smart.sub')}</div>

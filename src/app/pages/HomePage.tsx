@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { WaveCard } from '@features/wave'
 import { useT, t as tt } from '@shared/i18n'
 import {
@@ -38,6 +38,7 @@ import { Ico } from '@shared/ui/icons/solar'
 import { useNavStore } from '../navigationStore'
 import { DiscoverSections } from './DiscoverSections'
 import { ForYouSection } from './ForYouSection'
+import { SimilarToSection } from './SimilarToSection'
 
 /**
  * Главная страница
@@ -85,20 +86,19 @@ export const HomePage = ({ active }: { active: boolean }) => {
           </div>
         )}
         <QuickGrid />
-        {/* «Для вас» идёт впереди витрин площадок: она про самого слушателя,
-            а «Релизы» и «Чарт» — общие для всех. */}
-        <ForYouSection active={active} onTrackCtx={onTrackCtx} />
-        <DiscoverSections active={active} onTrackCtx={onTrackCtx} />
-        {showRecent && <RecentSection onTrackCtx={onTrackCtx} />}
-        {showPlaylists && (
-          <PlaylistsSection
-            onPlCtx={onPlCtx}
-            onNewPl={() => {
-              goNav('lib')
-              createPlaylistInline()
-            }}
-          />
+        {/* «Недавно слушали» и «Плейлисты» — пара в полширины под плитками
+            «Любимые / История». Одна выключена или пуста — вторая на всю ширину. */}
+        {(showRecent || showPlaylists) && (
+          <div className="home-duo">
+            {showRecent && <RecentSection onTrackCtx={onTrackCtx} />}
+            {showPlaylists && <PlaylistsSection onPlCtx={onPlCtx} />}
+          </div>
         )}
+        {/* «Для вас» и «Похожие на» идут впереди витрин площадок: они про
+            самого слушателя, а «Релизы» и «Чарт» — общие для всех. */}
+        <ForYouSection active={active} onTrackCtx={onTrackCtx} />
+        <SimilarToSection active={active} onTrackCtx={onTrackCtx} />
+        <DiscoverSections active={active} onTrackCtx={onTrackCtx} />
       </div>
 
       {/* ПКМ-меню трека (продолжить / трек дня / недавнее) */}
@@ -248,6 +248,16 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
     const liveTrack = findTrack(curId, libTracks)
     const li = srcIconKindLive(source)
     const boot = armed ? armedResume() : null
+    // Восстановленная сессия с урезанной (очищенной) очередью: карточка
+    // «Продолжить» поднимает очередь целиком, какой она была до очистки, — с
+    // текущей позиции (её могли перемотать до первого «плея»).
+    const expandQueue = boot?.fullQueue?.length
+      ? (): boolean => {
+          const id = restoreResumeQueue({ ...boot, pos: position }, true)
+          if (id) void loadPlay(id)
+          return !!id
+        }
+      : null
     return (
       <ContinueView
         cover={artwork}
@@ -269,10 +279,15 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
         stateActive={playing}
         isFav={favs.has(curId)}
         onToggleFav={() => useFavStore.getState().toggleFav(curId)}
-        onTogglePlay={() => togglePlay()}
+        onTogglePlay={() => {
+          if (!expandQueue?.()) togglePlay()
+        }}
         onSeekLive={seekLive}
         onSeekCommit={seek}
-        onResume={() => goNav('player')}
+        onResume={() => {
+          expandQueue?.()
+          goNav('player')
+        }}
         onContextMenu={liveTrack ? (e) => onTrackCtx(e, liveTrack) : undefined}
       />
     )
@@ -308,11 +323,12 @@ const ContinueCard = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Trac
       onToggleFav={() => useFavStore.getState().toggleFav(t.id)}
       onTogglePlay={() => {
         // Ещё не играет (восстановление после рестарта) — запускаем, без перехода.
-        const id = restoreResumeQueue(r)
+        // Очередь — целиком, какой была до очистки (`fullQueue`).
+        const id = restoreResumeQueue(r, true)
         if (id) void loadPlay(id)
       }}
       onResume={() => {
-        const id = restoreResumeQueue(r)
+        const id = restoreResumeQueue(r, true)
         if (id) {
           void loadPlay(id)
           goNav('player')
@@ -398,31 +414,34 @@ const ContinueView = ({
   // Попап кнопки «!» — источник + активность. Fixed-портал у кнопки (как в
   // WaveCard): попап рендерится в body, иначе overflow:hidden карточки/скролл
   // главной его обрежут. `cx` — центр кнопки, попап центрируется translateX(-50%).
+  // Позицию при закрытии не сбрасываем — уходящий попап доигрывает на месте.
+  const [infoOpen, setInfoOpen] = useState(false)
   const [infoPos, setInfoPos] = useState<{ top: number; cx: number } | null>(null)
   const infoBtnRef = useRef<HTMLButtonElement>(null)
   const infoRef = useRef<HTMLDivElement>(null)
-  usePopupOpenAnimation(infoRef, infoPos)
+  const { mounted: infoShown } = usePopupPresence(infoRef, infoOpen, infoPos)
   const toggleInfo = () => {
-    if (infoPos) {
-      setInfoPos(null)
+    if (infoOpen) {
+      setInfoOpen(false)
       return
     }
     const r = infoBtnRef.current?.getBoundingClientRect()
     if (!r) return
     // Открываем НАД кнопкой: якорим низ попапа к верху кнопки (translateY(-100%)).
     setInfoPos({ top: r.top - 8, cx: r.left + r.width / 2 })
+    setInfoOpen(true)
   }
   // Ресайз/скролл → координаты fixed-попапа устаревают, закрываем.
   useLayoutEffect(() => {
-    if (!infoPos) return
-    const close = () => setInfoPos(null)
+    if (!infoOpen) return
+    const close = () => setInfoOpen(false)
     window.addEventListener('resize', close)
     window.addEventListener('scroll', close, true)
     return () => {
       window.removeEventListener('resize', close)
       window.removeEventListener('scroll', close, true)
     }
-  }, [infoPos])
+  }, [infoOpen])
   const pct = dragFrac != null ? dragFrac * 100 : dur > 0 ? Math.min(100, (pos / dur) * 100) : 0
   const shownPos = dragFrac != null ? dragFrac * dur : pos
 
@@ -518,7 +537,7 @@ const ContinueView = ({
               полосы, поэтому глушим pointerdown/click, чтобы не перематывать. */}
           <button
             ref={infoBtnRef}
-            className={`hcc-seek-info${infoPos ? ' active' : ''}`}
+            className={`hcc-seek-info${infoOpen ? ' active' : ''}`}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation()
@@ -526,7 +545,7 @@ const ContinueView = ({
             }}
             aria-label={t('home.info')}
             aria-haspopup="menu"
-            aria-expanded={infoPos !== null}
+            aria-expanded={infoOpen}
           >
             <Ico name="info" width={16} height={16} />
           </button>
@@ -552,11 +571,14 @@ const ContinueView = ({
           <Ico name="kebab" width={16} height={16} />
         </button>
       </div>
-      {infoPos &&
+      {infoShown &&
+        infoPos &&
         createPortal(
           <>
-            {/* клик мимо — закрыть */}
-            <div onClick={() => setInfoPos(null)} style={{ position: 'fixed', inset: 0, zIndex: 8000 }} />
+            {/* клик мимо — закрыть; уходящий попап клики уже не ловит */}
+            {infoOpen && (
+              <div onClick={() => setInfoOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 8000 }} />
+            )}
             <div style={{ position: 'fixed', top: infoPos.top, left: infoPos.cx, zIndex: 8001, transform: 'translate(-50%, -100%)' }}>
               <div ref={infoRef} className="hcc-info-pop" role="menu">
                 <div className="hcc-info-item">
@@ -780,13 +802,7 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
 
 // ── Плейлисты ──────────────────────────────────────────────────────────────
 
-const PlaylistsSection = ({
-  onPlCtx,
-  onNewPl,
-}: {
-  onPlCtx: (e: ReactMouseEvent, pl: Playlist) => void
-  onNewPl: () => void
-}) => {
+const PlaylistsSection = ({ onPlCtx }: { onPlCtx: (e: ReactMouseEvent, pl: Playlist) => void }) => {
   const t = useT()
   const playlists = usePlaylistStore((s) => s.playlists)
   const libTracks = useLibStore((s) => s.tracks)
@@ -797,9 +813,11 @@ const PlaylistsSection = ({
     goNav('lib')
     selectPlaylist(id)
   }
+  // Кнопки «Новый» тут больше нет — без плейлистов секция была бы голым заголовком.
+  if (!playlists.length) return null
   return (
     <div className="home-section">
-      <div className="home-section-hdr">{t('search.tab.playlists')}</div>
+      <div className="home-section-hdr">{t('home.playlists')}</div>
       <div className="home-pl-grid" id="homePlGrid">
         {playlists.map((pl) => (
           <div className="home-pl-card mqh" key={pl.id} onClick={() => openPl(pl.id)} onContextMenu={(e) => onPlCtx(e, pl)}>
@@ -817,16 +835,6 @@ const PlaylistsSection = ({
             <div className="hpc-sub">{tt('lib.grid.tracks', { n: pl.trs.length })}</div>
           </div>
         ))}
-        <button
-          className="home-pl-new"
-          onClick={() => {
-            goNav('lib')
-            onNewPl()
-          }}
-        >
-          <Ico name="add" width={22} height={22} />
-          {t('common.new')}
-        </button>
       </div>
     </div>
   )

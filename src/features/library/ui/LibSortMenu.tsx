@@ -6,7 +6,7 @@ import {
   type RefObject,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { usePopupOpenAnimation } from '@shared/hooks'
+import { usePopupPresence } from '@shared/hooks'
 import { useT, type TranslationKey } from '@shared/i18n'
 import { Ico } from '@shared/ui/icons/solar'
 import type { LibSidebarSort } from '../lib'
@@ -41,14 +41,12 @@ export const LibSortMenu = ({
   const menuRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
 
-  // Плавная open-анимация (вместо ctxIn).
-  usePopupOpenAnimation(menuRef, pos)
+  // Появление и закрытие (вместо ctxIn). pos при закрытии не сбрасываем —
+  // уходящее меню доигрывает на прежнем месте.
+  const { mounted } = usePopupPresence(menuRef, open, pos)
 
   useLayoutEffect(() => {
-    if (!open || !anchorRef.current) {
-      setPos(null)
-      return
-    }
+    if (!open || !anchorRef.current) return
     const recalc = () => {
       const a = anchorRef.current
       if (!a) return
@@ -80,7 +78,7 @@ export const LibSortMenu = ({
     return () => window.removeEventListener('mousedown', onDown)
   }, [open, onClose, anchorRef])
 
-  if (!open || !pos) return null
+  if (!mounted || !pos) return null
 
   return createPortal(
     <div

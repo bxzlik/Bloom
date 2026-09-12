@@ -6,6 +6,9 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
 :root{
+  /* Вес шрифта — копия --fw-bold из src/shared/styles/root.css
+     (окно отдельное, стили главного окна сюда не попадают). Меняешь там — меняй тут. */
+  --fw-bold:500;
   --ovl-rgb:255,255,255;
   --bg:#1b1b1d;--bg2:#262628;--accent:#fff;--accent-rgb:255,255,255;
   --text:#fff;--text2:#9a9a9a;--muted:#5a5a5a;--radius:14px;
@@ -70,7 +73,7 @@ body.nohit .island{pointer-events:none}
 /* ── Текст ───────────────────────────────────────────── */
 .info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
 .title-wrap{max-width:100%;width:100%;overflow:hidden}
-.title{font-size:14px;font-weight:700;color:var(--text);
+.title{font-size:14px;font-weight:var(--fw-bold);color:var(--text);
   white-space:nowrap;line-height:1.2;display:inline-block}
 @keyframes ov-marquee{0%{transform:translateX(0)}100%{transform:translateX(var(--ov-off,0))}}
 .title-wrap.scrolling .title{animation:ov-marquee linear infinite;will-change:transform}
@@ -191,7 +194,7 @@ body.placing .bcenter,body.placing .bcircle-play{pointer-events:none}
 /* Живой бейдж с координатами (доли %) во время ручного размещения. */
 .place-coords{position:absolute;top:3px;left:50%;transform:translateX(-50%);
   display:none;white-space:nowrap;padding:2px 9px;border-radius:9px;
-  font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.2px;
+  font-size:11px;font-weight:var(--fw-bold);font-variant-numeric:tabular-nums;letter-spacing:.2px;
   background:rgba(0,0,0,.72);color:#fff;border:1px solid rgba(var(--ovl-rgb),.14);
   pointer-events:none;z-index:10}
 body.placing .place-coords{display:block}
@@ -237,7 +240,7 @@ body.bar .bar-wrap{display:flex;align-items:center;gap:8px;width:100%;height:100
 .bcenter-fill{position:absolute;inset:0;transform:translateX(-100%);
   background:var(--accent);opacity:.18;pointer-events:none;will-change:transform}
 .bcenter-title{position:relative;z-index:1;padding:0 16px;max-width:100%;
-  font-size:14px;font-weight:700;color:var(--text);text-align:center;
+  font-size:14px;font-weight:var(--fw-bold);color:var(--text);text-align:center;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Визуализатор в правом круге — тот же `.bars`, только крупнее: увеличиваем

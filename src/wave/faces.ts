@@ -35,6 +35,12 @@ const SC_SEEDS = 3;
 // никуда (клик по плитке → «Не нашёл трек для волны»).
 const cache = new Map<string, { at: number; faces: WaveFace[] }>();
 const inflight = new Map<string, Promise<WaveFace[]>>();
+/**
+ * Поколение кэша: растёт на каждый сброс. Запрос, начатый ДО сброса, по
+ * возвращении не должен лечь в кэш — его сиды взяты из уже стёртой статистики.
+ */
+let gen = 0;
+const resetListeners = new Set<() => void>();
 
 /**
  * Обложки выбранной площадки. Пустой массив = не удалось получить (нет сети /
@@ -47,6 +53,7 @@ export function fetchWaveFaces(source: "sc" | "ym", limit = 8): Promise<WaveFace
   const cur = inflight.get(source);
   if (cur) return cur;
 
+  const g = gen;
   const p = (source === "ym" ? ymFaces(limit) : scFaces(limit))
     .catch((e) => {
       console.warn("[wave] faces failed:", e);
@@ -55,17 +62,33 @@ export function fetchWaveFaces(source: "sc" | "ym", limit = 8): Promise<WaveFace
     .then((faces) => {
       // Пустой результат не кэшируем: почти всегда это транзиентный сбой сети,
       // иначе коллаж застрял бы пустым на весь TTL.
-      if (faces.length) cache.set(source, { at: Date.now(), faces });
-      inflight.delete(source);
+      if (faces.length && g === gen) cache.set(source, { at: Date.now(), faces });
+      // После сброса на этом месте может стоять уже новый запрос — его не трогаем.
+      if (inflight.get(source) === p) inflight.delete(source);
       return faces;
     });
   inflight.set(source, p);
   return p;
 }
 
-/** Сбросить кэш (например, после смены аккаунта Яндекса). */
+/**
+ * Сбросить кэш и попросить коллаж собраться заново. Зовётся из «Очистить
+ * статистику»: SC-лица строятся от топа прослушиваний, а коллаж сам
+ * перезапрашивает их только при смене площадки — главная-то смонтирована.
+ */
 export function resetWaveFaces(): void {
+  gen++;
   cache.clear();
+  inflight.clear();
+  for (const fn of resetListeners) fn();
+}
+
+/** Подписка на `resetWaveFaces` (для смонтированного коллажа). */
+export function onWaveFacesReset(fn: () => void): () => void {
+  resetListeners.add(fn);
+  return () => {
+    resetListeners.delete(fn);
+  };
 }
 
 // ── SoundCloud ──────────────────────────────────────────────────────────────
@@ -110,18 +133,36 @@ async function scFaces(limit: number): Promise<WaveFace[]> {
 
 // ── Яндекс ──────────────────────────────────────────────────────────────────
 
+/**
+ * Потолок батчей на один коллаж. Rotor отдаёт ~5 треков за раз — одного батча
+ * не хватает даже на плитки (7), не то что на запас (14): справа оставались
+ * пустые плитки. Цепочку продолжаем `queue=<последний id>` — это тот же GET,
+ * которым драйвер волны тянет следующий батч; фидбек не шлём, станцию не учим.
+ */
+const YM_BATCHES = 4;
+
 async function ymFaces(limit: number): Promise<WaveFace[]> {
   if (!(await ymIsAuthed().catch(() => false))) return [];
-  const batch = await ymWaveTracks("user:onyourwave");
   const out: WaveFace[] = [];
   const seen = new Set<string>();
-  for (const raw of batch?.tracks ?? []) {
-    const t = ymToTrack(raw);
-    host.pushTempTrack(t);
-    if (!t.cover || seen.has(t.id)) continue;
-    seen.add(t.id);
-    out.push({ id: t.id, cover: t.cover, name: t.name });
-    if (out.length >= limit) break;
+  let lastId = "";
+  for (let b = 0; b < YM_BATCHES && out.length < limit; b++) {
+    // Упавший дозапрос не роняет уже собранное: коллаж добьёт библиотекой.
+    const batch = await ymWaveTracks("user:onyourwave", lastId).catch(() => null);
+    const raws = batch?.tracks ?? [];
+    if (!raws.length) break;
+    const before = out.length;
+    for (const raw of raws) {
+      const t = ymToTrack(raw);
+      host.pushTempTrack(t);
+      if (!t.cover || seen.has(t.id)) continue;
+      seen.add(t.id);
+      out.push({ id: t.id, cover: t.cover, name: t.name });
+      if (out.length >= limit) break;
+    }
+    // Станция пошла по кругу — дальше будут те же треки.
+    if (out.length === before) break;
+    lastId = String(raws[raws.length - 1]!.id);
   }
   return out;
 }

@@ -41,12 +41,12 @@
 }
 .tele-gauge-val {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: var(--fw-bold);
   color: var(--text);
 }
 .tele-gauge-label {
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.7px;
   text-transform: uppercase;
   color: var(--text2);
@@ -66,7 +66,7 @@
 }
 .tele-data-head-title {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.7px;
   text-transform: uppercase;
   color: var(--text2);
@@ -87,7 +87,7 @@
   border-radius: 6px;
   transition: 0.15s;
 }
-/* Без подложки на ховере (как .s-sec-reset) — отзыв даёт только яркость иконки */
+/* Без подложки на ховере — отзыв даёт только яркость иконки */
 .tele-clear-all:hover {
   color: #ff4d4d;
 }
@@ -128,7 +128,7 @@
 }
 .tele-data-name {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: var(--fw-bold);
   color: var(--text);
 }
 .tele-data-meta {
@@ -151,14 +151,13 @@
   font-size: 12px;
   color: var(--text);
   background: rgba(var(--ovl-rgb), 0.04);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: calc(var(--radius) * 0.5);
-  padding: 5px 10px;
+  padding: 6px 11px;
   cursor: pointer;
   transition: 0.15s;
 }
 .tele-ttl-btn:hover {
-  border-color: rgba(var(--ovl-rgb), 0.2);
   background: var(--hover);
 }
 .tele-ttl-btn svg {
@@ -177,6 +176,8 @@
   box-shadow: none;
   display: flex;
   flex-direction: column;
+  /* Появление/закрытие — WAAPI usePopupPresence; растём от кнопки (она справа). */
+  transform-origin: top right;
 }
 .tele-ttl-opt {
   text-align: left;
@@ -195,7 +196,7 @@
 .tele-ttl-opt.active {
   background: rgba(var(--accent-rgb), 0.16);
   color: var(--accent);
-  font-weight: 600;
+  font-weight: var(--fw-bold);
 }
 
 /* Корзина */
@@ -213,9 +214,9 @@
   cursor: pointer;
   transition: 0.15s;
 }
+/* Без подложки: на наведение краснеет только сама иконка. */
 .tele-trash:hover {
   color: #e03030;
-  background: rgba(224, 48, 48, 0.1);
 }
 .tele-trash:disabled {
   opacity: 0.35;
@@ -223,5 +224,4 @@
 }
 .tele-trash:disabled:hover {
   color: var(--muted);
-  background: none;
 }

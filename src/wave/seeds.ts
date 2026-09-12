@@ -58,6 +58,16 @@ export function pickQueueSeeds(queueIds: string[]): string[] {
   return out;
 }
 
+// Залайканные треки библиотеки, свежие лайки первыми. Лайки берём из стора
+// (`host.favs`), а не из `t.fav`/`t.favAt`: эти поля на треках не ведутся, и
+// фильтр по ним всегда был пуст — лайки не попадали ни в сиды, ни в коллаж.
+function likedByDate(lib: Track[]): Track[] {
+  const favs = host.favs;
+  return lib
+    .filter(t => favs.has(t.id))
+    .sort((a, b) => (favs.get(b.id) ?? 0) - (favs.get(a.id) ?? 0));
+}
+
 const ROTATION_KEY = "bloom_wave_seed_rotation";
 
 function getRotation(): number {
@@ -89,9 +99,7 @@ export function pickPersonalSeeds(): string[] {
   }
 
   // 2) Лайки — тоже с ротацией. Сортировка по дате лайка.
-  const favs = lib
-    .filter(t => t.fav)
-    .sort((a, b) => (b.favAt ?? 0) - (a.favAt ?? 0));
+  const favs = likedByDate(lib);
   if (favs.length) {
     const f1 = favs[(rot * 2) % favs.length];
     const f2 = favs[(rot * 2 + 1) % favs.length];
@@ -99,27 +107,16 @@ export function pickPersonalSeeds(): string[] {
     if (f2 && f2.id !== f1?.id) seeds.add(f2.id);
   }
 
-  // 3) Случайный из топ-жанров (на каждом запуске — тоже разный).
-  const genreScore = new Map<string, number>();
-  for (const t of lib) {
-    const plays = playCountAll(t.id);
-    if (plays <= 0) continue;
-    for (const g of (t.genres ?? [])) {
-      if (!g) continue;
-      genreScore.set(g.toLowerCase(), (genreScore.get(g.toLowerCase()) ?? 0) + plays);
-    }
-  }
-  const topGenres = [...genreScore.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([g]) => g);
-  if (topGenres.length) {
-    const g = topGenres[(rot + Math.floor(Math.random() * 2)) % topGenres.length];
-    const candidates = lib.filter(t =>
-      (t.genres ?? []).some(x => x.toLowerCase() === g) &&
-      !seeds.has(t.id) &&
-      !recentlyPlayed(t.id, 2),
-    );
-    if (candidates.length) {
-      const pick = candidates[Math.floor(Math.random() * candidates.length)];
-      seeds.add(pick.id);
+  // 3) Ещё один: следующий из топа, а если его нет или он уже взят — следующий
+  // лайк. Раньше здесь был случайный трек из «топ-жанров», но жанр на SoundCloud
+  // — свободный текст загрузчика вперемешку с тегами («rap», «Hip-hop & Rap»,
+  // «type beat»), и такой сид по сути был случайным треком библиотеки.
+  const nextTop = byPlays.length ? byPlays[(rot * 2 + 2) % byPlays.length]!.t : undefined;
+  const nextFav = favs.length ? favs[(rot * 2 + 2) % favs.length] : undefined;
+  for (const t of [nextTop, nextFav]) {
+    if (t && !seeds.has(t.id)) {
+      seeds.add(t.id);
+      break;
     }
   }
 
@@ -134,7 +131,7 @@ export function pickPersonalSeeds(): string[] {
 
 // Витрина «Моей волны» (коллаж-фон баннера на главной): кандидаты в обложки.
 // Чистый близнец pickPersonalSeeds — те же источники в том же порядке (топ по
-// прослушиваниям → свежие лайки → жанровые → добивка), но БЕЗ bumpRotation:
+// прослушиваниям → свежие лайки → добивка), но БЕЗ bumpRotation:
 // рендер главной не должен прокручивать карусель сидов реальной волны. Текущий
 // rot читаем, чтобы коллаж примерно совпадал с тем, на чём построится волна.
 // Отдаём с запасом: у части треков не резолвится обложка, финальный отбор — в UI.
@@ -165,7 +162,7 @@ export function pickDisplaySeeds(limit = 24): string[] {
   for (const x of rotate(byPlays, rot * 2).slice(0, 4)) push(x.t.id);
 
   // 2) Свежие лайки.
-  const favs = lib.filter(t => t.fav).sort((a, b) => (b.favAt ?? 0) - (a.favAt ?? 0));
+  const favs = likedByDate(lib);
   for (const t of rotate(favs, rot * 2).slice(0, 4)) push(t.id);
 
   // 3) Добивка: остаток топа → остаток лайков → недавно слушанное → свежее в библиотеке.

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { usePopupPresence } from '@shared/hooks'
 import { toast } from '@shared/ui'
 import {
   clearLyricsCache,
@@ -63,6 +64,10 @@ export const TelemetrySection = () => {
   const [quota, setQuota] = useState(0)
   const [ttlOpen, setTtlOpen] = useState(false)
   const ttlRef = useRef<HTMLDivElement>(null)
+  const ttlPopRef = useRef<HTMLDivElement>(null)
+
+  // Появление как у меню «+» в библиотеке (scale .94→1) + зеркальное закрытие.
+  const { mounted: ttlShown } = usePopupPresence(ttlPopRef, ttlOpen)
 
   const ttl = useTelemetryStore((s) => s.ttl.lyrics)
   const setTtl = useTelemetryStore((s) => s.setTtl)
@@ -123,7 +128,6 @@ export const TelemetrySection = () => {
 
   const clearLyrics = () => {
     if (lyrics.count === 0) return
-    if (!confirm(t('settings.storage.confirm.clearLyrics'))) return
     void clearLyricsCache().then(() => {
       toast(t('settings.storage.toast.lyricsCleared'))
       refresh()
@@ -132,7 +136,6 @@ export const TelemetrySection = () => {
 
   const clearCustom = () => {
     if (custom.count === 0) return
-    if (!confirm(t('settings.storage.confirm.clearCustom'))) return
     clearMediaLib()
     toast(t('settings.storage.toast.customCleared'))
     refresh()
@@ -140,7 +143,6 @@ export const TelemetrySection = () => {
 
   const clearOffline = () => {
     if (offline.count === 0) return
-    if (!confirm(t('settings.storage.confirm.clearOffline'))) return
     void offlineClearAll().then(() => {
       toast(t('settings.storage.toast.offlineCleared'))
       refresh()
@@ -148,7 +150,6 @@ export const TelemetrySection = () => {
   }
 
   const clearAll = () => {
-    if (!confirm(t('settings.storage.confirm.clearAll'))) return
     clearMediaLib()
     void Promise.all([clearLyricsCache(), offlineClearAll()]).then(() => {
       toast(t('settings.storage.toast.dataCleared'))
@@ -230,8 +231,8 @@ export const TelemetrySection = () => {
             {t(TTL_KEY[ttl])}
             <Ico name="arrowDown" width={11} height={11} />
           </button>
-          {ttlOpen && (
-            <div className="tele-ttl-pop">
+          {ttlShown && (
+            <div ref={ttlPopRef} className="tele-ttl-pop">
               {TTL_OPTIONS.map((o) => (
                 <button
                   key={o.id}

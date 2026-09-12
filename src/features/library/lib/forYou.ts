@@ -16,6 +16,7 @@ import { getProviders } from '@features/providers'
 import { normalizeArtist } from '@/db/track-meta'
 import { DupGuard } from '@shared/lib/trackDedup'
 import { useLibStore } from '../model/store'
+import { useFavStore } from '../model/favStore'
 import { useHistoryStore } from '../model/historyStore'
 
 /**
@@ -61,7 +62,11 @@ export const pickForYouSeeds = (limit = SEED_LIMIT): string[] => {
   // Добивка из библиотеки: свежие лайки, затем недавно добавленное.
   if (out.length < limit) {
     const lib = useLibStore.getState().tracks.filter((t) => !t.disliked)
-    const favs = lib.filter((t) => t.fav).sort((a, b) => (b.favAt ?? 0) - (a.favAt ?? 0))
+    // Лайки — из стора: `t.fav`/`t.favAt` на треках не ведутся.
+    const favAt = useFavStore.getState().favs
+    const favs = lib
+      .filter((t) => favAt.has(t.id))
+      .sort((a, b) => (favAt.get(b.id) ?? 0) - (favAt.get(a.id) ?? 0))
     for (const t of favs) push(t.id)
     const fresh = [...lib].sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0))
     for (const t of fresh) push(t.id)
@@ -169,8 +174,9 @@ export const buildForYou = async (): Promise<Track[]> => {
  * оставалась бы выдача, собранная по старым — с теми самыми дублями, ради
  * которых правку и делали. Меняешь отбор — поднимай версию.
  *   v2 — дедуп реаплоадов (shared/lib/trackDedup)
+ *   v3 — лайки в добивке сидов (раньше фильтр по мёртвому `t.fav` был пуст)
  */
-const CACHE_KEY = 'bloom_for_you_v2'
+const CACHE_KEY = 'bloom_for_you_v3'
 
 interface ForYouCache {
   day: string
@@ -203,4 +209,28 @@ export const writeForYouCache = (tracks: Track[]): void => {
   } catch {
     // localStorage переполнен — переживём, просто пересоберём в следующий заход.
   }
+}
+
+/* ── Сброс ───────────────────────────────────────────────────────────────
+ * Часть «Очистить статистику»: подборка собрана по сидам из удалённого топа, и
+ * жить ей до полуночи незачем. Одного удаления ключа мало — главная держится
+ * смонтированной, и секция хранит треки у себя в состоянии. Поэтому ещё сигнал:
+ * секция на него забывает подборку и собирает заново.
+ */
+const resetListeners = new Set<() => void>()
+
+export const onForYouReset = (fn: () => void): (() => void) => {
+  resetListeners.add(fn)
+  return () => {
+    resetListeners.delete(fn)
+  }
+}
+
+export const clearForYouCache = (): void => {
+  try {
+    localStorage.removeItem(CACHE_KEY)
+  } catch {
+    // Хранилище недоступно — секцию всё равно пересоберём по сигналу.
+  }
+  for (const fn of resetListeners) fn()
 }

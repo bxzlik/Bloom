@@ -66,28 +66,33 @@ body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glas
 .tele-stat-card{background:var(--card-solid,var(--card));border:none;border-radius:calc(var(--radius)*0.8);padding:13px 15px}
 .tele-toggle-row{display:flex;align-items:center;gap:12px;background:var(--card-solid,var(--card));border:1px solid var(--border);border-radius:calc(var(--radius)*0.8);padding:12px 14px;transition:.15s}
 .tele-toggle-info{flex:1;min-width:0}
-.tele-toggle-title{font-size:13px;font-weight:600}
+.tele-toggle-title{font-size:13px;font-weight:var(--fw-bold)}
 .tele-toggle-sub{font-size:11px;color:var(--text2);margin-top:2px}
 .tele-sw{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
 .tele-sw input{opacity:0;width:0;height:0;position:absolute}
-.tele-sw-track{position:absolute;inset:0;border-radius:12px;background:var(--border);cursor:pointer;transition:.2s}
+/* Выключенная дорожка — rgba(ovl,.12), а не var(--border): на сплошном блоке это
+   тот же цвет (--border = color-mix(block, ovl 12%)), но в режиме прозрачности
+   сквозь неё просвечивает стекло, а не висит серая плашка. */
+.tele-sw-track{position:absolute;inset:0;border-radius:12px;background:rgba(var(--ovl-rgb),.12);cursor:pointer;transition:.2s}
 .tele-sw-track::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:50%;left:3px;transform:translateY(-50%);transition:.2s}
 .tele-sw input:checked+.tele-sw-track{background:var(--accent)}
 .tele-sw input:checked+.tele-sw-track::after{transform:translateX(20px) translateY(-50%);background:var(--accent-text,#fff)}
 /* Недоступный тумблер: нейтральный (не акцентный) даже во включённом состоянии —
    правило идёт ПОСЛЕ :checked, поэтому перебивает его без !important. */
-.tele-sw input:disabled+.tele-sw-track{background:var(--border);cursor:not-allowed;opacity:.45}
+.tele-sw input:disabled+.tele-sw-track{background:rgba(var(--ovl-rgb),.12);cursor:not-allowed;opacity:.45}
 .tele-sw input:disabled:checked+.tele-sw-track::after{background:#fff}
 
 /* Optimization effect cards */
 .opt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
 .opt-card{background:var(--card-solid,var(--card));border:none;border-radius:calc(var(--radius)*0.8);padding:13px 15px;display:flex;align-items:center;gap:10px;transition:.15s;cursor:pointer;user-select:none}
-.opt-card:hover{background:var(--hover)}
+/* Состояния — плёнка ПОВЕРХ цвета карточки (color-mix), а не вместо него:
+   карточки стоят прямо в шторке без фона, голая плёнка просвечивала обоями. */
+.opt-card:hover{background:color-mix(in srgb,var(--card-solid,var(--card)),rgb(var(--ovl-rgb)) 5%)}
 .opt-card:active{transform:scale(.98)}
-.opt-card.opt-active{background:rgba(var(--accent-rgb),.06)}
+.opt-card.opt-active{background:color-mix(in srgb,var(--card-solid,var(--card)),rgb(var(--accent-rgb)) 6%)}
 .opt-card-icon{width:32px;height:32px;border-radius:8px;background:rgba(var(--ovl-rgb),.06);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
 .opt-card-info{flex:1;min-width:0}
-.opt-card-name{font-size:12px;font-weight:600;color:var(--text)}
+.opt-card-name{font-size:12px;font-weight:var(--fw-bold);color:var(--text)}
 .opt-card-state{font-size:10px;color:var(--text2);margin-top:2px}
 .opt-card-state.frozen{color:#5b9bd5}
 .opt-card-state.disabled{color:var(--muted)}
@@ -114,20 +119,23 @@ body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glas
 #cpPreview{width:28px;height:28px;border-radius:7px;flex-shrink:0;border:1px solid rgba(var(--ovl-rgb),.12)}
 #cpHexInput{flex:1;background:rgba(var(--ovl-rgb),.06);border:1px solid rgba(var(--ovl-rgb),.1);border-radius:7px;padding:5px 9px;color:var(--text);font-size:12px;font-family:monospace;outline:none;transition:.15s;user-select:text;-webkit-user-select:text}
 #cpHexInput:focus{border-color:rgba(var(--ovl-rgb),.2)}
-.srange{width:88px;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;transition:background .15s}
-.srange:hover{background:var(--accent2)}
-.srange::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 5px rgba(var(--accent-rgb),.5);transition:transform .1s,box-shadow .1s}
-.srange::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 0 9px rgba(var(--accent-rgb),.8)}
-.srange::-moz-range-track{height:4px;background:var(--border);border-radius:2px}
-.srange::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:calc(var(--radius) * 0.8);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.15s;font-family:var(--font)}
-.bta{background:var(--accent);color:var(--accent-text)}
-.bta:hover{background:var(--accent2)}
+/* Как громкость плеера (.vol-sl) — см. .srange-full в settings.css. */
+.srange{width:88px;-webkit-appearance:none;height:4px;border-radius:99px;background:var(--track);outline:none;cursor:pointer;overflow:hidden}
+.srange::-webkit-slider-thumb{-webkit-appearance:none;width:4px;height:4px;border-radius:99px;background:var(--accent);box-shadow:calc(-100vw - 2px) 0 0 100vw var(--accent);cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:calc(var(--radius) * 0.8);font-size:12px;font-weight:var(--fw-bold);cursor:pointer;border:none;transition:.15s;font-family:var(--font)}
+/* Пара состояний строчной кнопки. Селекторы обязаны держать `.btn`: классы
+   bta/btg висят ещё и на блок-опциях настроек (.s-opt-btn, .s-zoom-tile), у
+   которых свой padding. Безусловный `.btg{padding:…}` перебивал их (та же
+   специфичность, но этот файл идёт после settings.css в index.css), и выбранная
+   опция получалась выше невыбранной — на клике transition гнал padding в обе
+   стороны, ряд проседал и вся страница настроек дёргалась. */
+.btn.bta{background:var(--accent);color:var(--accent-text)}
+.btn.bta:hover{background:var(--accent2)}
 /* Второстепенная кнопка в паре с .bta — заливкой, без обводки
    (общее правило — .pedit-btn-cancel в modals.css). padding на 1px больше
    базового .btn: рамки нет, иначе кнопка была бы ниже акцентной пары. */
-.btg{padding:7px 13px;background:rgba(var(--ovl-rgb),.05);color:var(--text2);border:none}
-.btg:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
+.btn.btg{padding:7px 13px;background:rgba(var(--ovl-rgb),.05);color:var(--text2);border:none}
+.btn.btg:hover{background:rgba(var(--ovl-rgb),.09);color:var(--text)}
 #page-account{overflow-y:auto;padding:0;flex-direction:column}
 #page-account::-webkit-scrollbar{width:2px}
 #page-account::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -136,4 +144,4 @@ body.glass-mode .lib-grid-sys-card,body.glass-mode .home-continue-card,body.glas
 .acc-banner-empty{width:100%;height:100%;background:linear-gradient(135deg,#1a1a1a 0%,#0d0d0d 100%)}
 .acc-ava{width:164px;height:164px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:44px;overflow:hidden;border:none}
 .acc-ava img{width:100%;height:100%;object-fit:cover}
-.acc-name{font-size:25px;font-weight:700}
+.acc-name{font-size:25px;font-weight:var(--fw-bold)}

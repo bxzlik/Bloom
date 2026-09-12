@@ -117,6 +117,25 @@ body.glass-mode #lyricsQueueBlock {
    а color-mix без цвета — невалидное значение (фон схлопнулся бы в никуда). */
 body.glass-mode {
   --pl-ctrl-bg: color-mix(in srgb, var(--block-color, #0a0a0a) var(--pl-film-ctrl), transparent);
+  /* Обложки системных разделов (Все треки / Любимые / История) — в сайдбаре,
+     шапке библиотеки, очереди и меню. Штатно это сплошной --card, и на стекле
+     они оставались глухими чёрными квадратами. Даём плёнку цвета темы: обои
+     просвечивают, а вместе с рамкой --sys-cov-bd квадрат всё ещё читается
+     обложкой (в полный transparent осталась бы одна рамка). Плотность —
+     --sys-cov-film в root.css. Токен общий, поэтому правим его, а не семь
+     селекторов. */
+  --sys-cov-bg: color-mix(in srgb, var(--block-color, #0a0a0a) var(--sys-cov-film), transparent);
+}
+
+/* Плейлист без обложки и без обложек треков (EmptyCover внутри PlaylistCover)
+   в сайдбаре и шапке библиотеки — стоит рядом с системными обложками и тоже
+   был глухим квадратом. Берём ту же плёнку и рамку, что у них. Только здесь:
+   в списках треков и карточках заглушка намеренно сплошная (см. --cover-empty
+   в root.css — полупрозрачная читалась там дыркой в списке). */
+body.glass-mode .lib-icon.pl-icon .cover-empty,
+body.glass-mode #libHeroIcon .cover-empty {
+  background: var(--sys-cov-bg);
+  box-shadow: inset 0 0 0 1px var(--sys-cov-bd);
 }
 
 /* И убираем инлайновый blur(12px) очереди (QueueBlock.tsx/LyricsQueueBlock.tsx)
@@ -129,6 +148,81 @@ body.glass-mode #playerContent #playerQueueBlock,
 body.glass-mode #playerContent #lyricsQueueBlock {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* ── Сквозные зазоры между блоками (плеер, библиотека) ───────────────────────
+   Зазоры между блоками — сквозные, как зазор между сайдбаром и .main.
+   Раньше блоки стояли на общем стекле .main (у .main-flush снята лишь рамка),
+   и 10px между ними показывали это стекло — тонированную полосу вместо обоев.
+   Теперь на этих страницах .main без стекла, а стекло переезжает на сами блоки.
+   Условия:
+     - плеер — есть #playerContent (пустой плеер с каомодзи своих блоков не
+       имеет и остаётся на стекле .main);
+     - библиотека — есть шапка .lib-content-head, т.е. открыт раздел/плейлист.
+       Сетка-обзор (#libGridOverview) подложки не имеет — карточки лежат прямо
+       на стекле .main, её не трогаем;
+     - не открыт детальный вид — он оверлей внутри .main и живёт на её стекле. */
+body.glass-mode:not(.detail-open) .main:has(> #page-player.active > #playerContent),
+body.glass-mode:not(.detail-open) .main:has(> #page-lib.active > .lib-content > .lib-content-head) {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* ВАЖНО: fade — на блоках, а не на странице. Пока у предка opacity < 1 (page-in
+   .55→1 при входе на вкладку, возврат из детального вида 0→1), он — backdrop
+   root: backdrop-filter блоков внутри не видит обои, и размытие «выщёлкивает»
+   только в конце анимации. Раньше стекло было на .main (снаружи .page), и fade
+   страницы ему не мешал. Поэтому здесь сама страница без fade, а тот же page-in
+   играет каждый блок: opacity на самом элементе со стеклом backdrop не изолирует.
+   Анимация стартует, когда селектор начинает матчиться, — и при входе на вкладку
+   (display:none → flex), и при возврате из детального вида. Уход в детальный вид
+   по-прежнему плавный: правила в этот момент уже не матчатся, а блоки сразу
+   возвращаются на стекло .main. Редактор плейлиста (.pl-edit-body) не трогаем:
+   у него свои plEditIn/plEditOut (forwards), и они и так играют при показе. */
+body.glass-mode:not(.detail-open) #page-player.active:has(> #playerContent),
+body.glass-mode:not(.detail-open) #page-lib.active:has(> .lib-content > .lib-content-head) {
+  animation: none;
+  transition: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  body.glass-mode:not(.detail-open) #page-player.active :is(.player-section, #playerQueueBlock, #lyricsQueueBlock),
+  body.glass-mode:not(.detail-open) #page-player.active #playerContent > :is(.sl-cover-wrap, .sl-bottom),
+  body.glass-mode:not(.detail-open) #page-lib.active:has(> .lib-content > .lib-content-head)
+    :is(.lib-block, .lib-content-head, .lib-tracklist) {
+    animation: page-in 0.2s ease-out;
+  }
+}
+/* Фильтр блоков — через свою переменную, чтобы «Оптимизация» в анфокусе
+   (html.opt-unfocused, optEngine.ts) снижала им размытие так же, как .sidebar/.main
+   в sliders-telemetry.css. */
+:root {
+  --flush-glass-filter: var(--glass-filter);
+}
+html.opt-unfocused {
+  --flush-glass-filter: blur(var(--opt-blur, 4px));
+}
+/* Карточка плеера и очередь: плёнка --pl-film поверх стекла — как было над .main. */
+body.glass-mode:not(.detail-open) #page-player.active .player-section,
+body.glass-mode:not(.detail-open) #page-player.active #playerQueueBlock,
+body.glass-mode:not(.detail-open) #page-player.active #lyricsQueueBlock {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--block-color, #0a0a0a) var(--pl-film), transparent),
+      color-mix(in srgb, var(--block-color, #0a0a0a) var(--pl-film), transparent)
+    ),
+    var(--glass-block-bg) !important;
+  backdrop-filter: var(--flush-glass-filter) !important;
+  -webkit-backdrop-filter: var(--flush-glass-filter) !important;
+}
+/* Нижний бар большого плеера и блоки библиотеки плёнки не имели (прозрачны над
+   стеклом .main) — даём им только стекло. Обложка (.sl-cover-wrap) закрыта
+   картинкой. .lib-block покрывает и .lib-toolbar-block/.lib-block-combined. */
+body.glass-mode:not(.detail-open) #page-player.active #playerContent > .sl-bottom,
+body.glass-mode:not(.detail-open) #page-lib.active:has(> .lib-content > .lib-content-head)
+  :is(.lib-block, .lib-content-head, .lib-tracklist, .pl-edit-body) {
+  background: var(--glass-block-bg) !important;
+  backdrop-filter: var(--flush-glass-filter) !important;
+  -webkit-backdrop-filter: var(--flush-glass-filter) !important;
 }
 
 /* Визуализатор в стандартном плеере следует настройке прозрачности — в стекле
@@ -164,7 +258,6 @@ body.glass-overlays #toast,
 body.glass-overlays #dltoast,
 body.glass-overlays #cxPlFlyout,
 body.glass-overlays #plMenu,
-body.glass-overlays #libAddMenu,
 body.glass-overlays #libSortMenu,
 body.glass-overlays #speedPicker,
 body.glass-overlays #cpPopup,
@@ -182,10 +275,14 @@ body.glass-overlays #peditModal,
 body.glass-overlays .spanel,
 body.glass-overlays .smodal,
 body.glass-overlays .ti-modal,
-/* Модалка с нестандартным фоном (не color-mix): настройки красятся из
-   overrides-main.css. */
-body.glass-overlays .settings-modal,
-body.glass-overlays #settingsOverlay .settings-modal,
+body.glass-overlays .lam-modal,
+body.glass-overlays .wave-menu,
+/* Панель колокольчика красится не из --ov-lift, а из --card-solid
+   (notifications.css) — глобально это чистый цвет блоков, и панель оставалась
+   сплошной. Перебиваем так же, как остальные попапы. */
+body.glass-overlays .notif-panel,
+/* Настроек здесь нет: они не модалка, а шторка SideSheet без своей поверхности
+   (см. блок про --card-solid ниже, гейт glass-mode). */
 body.glass-overlays .desc-popup {
   background: var(--glass-block-bg) !important;
   backdrop-filter: var(--glass-filter) !important;
@@ -199,9 +296,9 @@ body.glass-overlays .desc-popup {
    основного стекла (.main/.sidebar над обоями). Так ВСЕ модалки прозрачнеют
    одинаково. Насыщенность самой поверхности регулируется слайдером «Прозрачность
    блоков» (blockOpacity). */
-body.glass-overlays #settingsOverlay,
 body.glass-overlays .mover,
 body.glass-overlays .ti-overlay,
+body.glass-overlays .lam-overlay,
 body.glass-overlays .logs-backdrop,
 body.glass-overlays #peditBackdrop,
 body.glass-overlays .spanel-backdrop,
@@ -220,21 +317,36 @@ body.glass-overlays .unm-mover {
 /* Внутренние карточки настроек (`.sc`, строки-тогглы `.sr`)
    красятся из `var(--card-solid)` правилами с высокой специфичностью + !important
    (settings.css) — точечный `background:transparent` их не перебивал. Надёжнее
-   переопределить саму переменную внутри стеклянного оверлея: тогда ВСЕ карточки
-   разом становятся полупрозрачным стеклом, независимо от специфичности правил.
-   Не полный transparent (иначе карточки «пропадают»), а лёгкая матовая подложка —
-   читаемо и явно прозрачно; бордеры карточек остаются (var(--border)). */
-body.glass-overlays #settingsOverlay {
-  --card-solid: rgba(var(--ovl-rgb), 0.05) !important;
-  --card: rgba(var(--ovl-rgb), 0.05) !important;
+   переопределить саму переменную: тогда ВСЕ карточки разом становятся
+   полупрозрачными, независимо от специфичности правил.
+   Гейт — `glass-mode`, а НЕ `glass-overlays`: настройки больше не модалка, а
+   шторка SideSheet прямо на окне (без своего фона), то есть часть интерфейса,
+   как .main/.sidebar. На `glass-overlays` карточки оставались сплошными, пока не
+   включишь «Прозрачность оверлеев».
+   Цвет — --glass-block-bg (цвет блоков с альфой blockOpacity), как у остальных
+   блоков: слайдер «Прозрачность блоков» управляет и карточками настроек. */
+/* Та же формула, что без стекла (block + --ov-card, overrides-main.css), только
+   основа полупрозрачная. Без подъёма --ov-card карточка = чистый цвет блоков, и
+   на однотонном фоне (без картинки: фон ≈ цвет блоков) она сливалась с ним. */
+body.glass-mode #settingsOverlay {
+  --card-solid: color-mix(in srgb, var(--glass-block-bg), var(--text) var(--ov-card)) !important;
+  --card: color-mix(in srgb, var(--glass-block-bg), var(--text) var(--ov-card)) !important;
 }
-/* Правая контент-панель настроек (#smContent) имеет СВОЙ непрозрачный фон
-   (overrides-main.css) — гасим, чтобы стекло модалки просвечивало, как левая
-   нав-колонка. */
-body.glass-overlays #settingsOverlay #smContent {
-  background: transparent !important;
+/* Наведение на опции/чипы штатно красится СПЛОШНЫМ color-mix от block-color
+   (overrides-main.css) — в стекле кнопка под курсором становилась непрозрачной
+   плашкой. Здесь та же доля подсветки, но плёнкой поверх карточки. */
+body.glass-mode #settingsOverlay .s-opt-btn.btg:hover,
+body.glass-mode #settingsOverlay .s-chip:not(.active):hover {
+  background: rgba(var(--ovl-rgb), 0.08) !important;
 }
-
+/* Плашки прямо в разделе (.s-lang-card, .opt-card, .mls-card, .cz-tools/
+   .cz-field/.cz-btn) сюда НЕ нужны: их фон — color-mix от --card-solid
+   (settings.css / sliders-telemetry.css), и в стекле он следует слайдеру сам. */
+/* Всплывающая подсказка опции (.s-opt-tip) тоже красится из --card-solid —
+   ей подложка .05 не годится (текст висит над чужими карточками). */
+body.glass-mode #settingsOverlay .s-opt-tip {
+  background: color-mix(in srgb, var(--block-color), var(--text) var(--ov-lift));
+}
 /* Инфо-трека гасить нечего: ячейки, сетка и коробка описания там теперь сами по
    себе прозрачные (одни рамки `--ovl-line`), а заливка капсул жанра — лёгкий
    акцентный тон, который стекло не перекрывает; гасить его нельзя, иначе без

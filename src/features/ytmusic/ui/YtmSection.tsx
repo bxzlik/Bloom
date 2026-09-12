@@ -32,7 +32,7 @@ export const YtmSection = () => {
             <Ico name="check" width={26} height={26} />
           </span>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{t('settings.ytm.status')}</div>
+            <div style={{ fontSize: 13, fontWeight: 'var(--fw-bold)', color: 'var(--text)' }}>{t('settings.ytm.status')}</div>
             <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>{t('settings.ytm.noAuth')}</div>
           </div>
         </div>
