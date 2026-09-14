@@ -935,7 +935,8 @@ const SortPage = ({ onBack }: { onBack: () => void }) => {
         </span>
         <span style={{ flex: 1 }}>{t('lib.sort.default')}</span>
       </div>
-      {/* Не сортировка, а отбор — поэтому без стрелки и рядом с «По умолчанию». */}
+      {/* Не сортировка, а отбор — поэтому без стрелки и рядом с «По умолчанию».
+          Повторное нажатие переключает сторону: скачанные ↔ нескачанные. */}
       <div
         className={`ci${sortMode === 'downloaded' ? ' sort-active' : ''}`}
         onClick={() => setSort('downloaded')}
@@ -943,7 +944,11 @@ const SortPage = ({ onBack }: { onBack: () => void }) => {
         <span className="ci-icon" style={{ color: sortMode === 'downloaded' ? 'var(--accent)' : undefined }}>
           <DiskIcon />
         </span>
-        <span style={{ flex: 1 }}>{t('lib.sort.downloaded')}</span>
+        <span style={{ flex: 1 }}>
+          {sortMode === 'downloaded' && sortDir === 'desc'
+            ? t('lib.sort.notDownloaded')
+            : t('lib.sort.downloaded')}
+        </span>
       </div>
       <div className="pl-menu-back" onClick={onBack}>
         <Ico name="arrowLeft" width={12} height={12} />{' '}

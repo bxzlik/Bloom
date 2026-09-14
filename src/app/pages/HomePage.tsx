@@ -15,6 +15,9 @@ import {
   createPlaylistInline,
   tracksLabel,
   resolveHistoryTrack,
+  useUnifiedOrderStore,
+  useLibSidebarSort,
+  buildOrderedUnifiedEntries,
   type Playlist,
 } from '@features/library'
 import {
@@ -804,7 +807,23 @@ const RecentSection = ({ onTrackCtx }: { onTrackCtx: (e: ReactMouseEvent, t: Tra
 
 const PlaylistsSection = ({ onPlCtx }: { onPlCtx: (e: ReactMouseEvent, pl: Playlist) => void }) => {
   const t = useT()
-  const playlists = usePlaylistStore((s) => s.playlists)
+  const allPlaylists = usePlaylistStore((s) => s.playlists)
+  const order = useUnifiedOrderStore((s) => s.order)
+  const applyOrder = useUnifiedOrderStore((s) => s.applyOrder)
+  const [sortMode] = useLibSidebarSort()
+  // Порядок — тот же, что в библиотеке: её сортировка, ручной порядок и закреплённые сверху.
+  const playlists = useMemo(() => {
+    const byId = new Map(allPlaylists.map((p) => [p.id, p]))
+    const { entries } = buildOrderedUnifiedEntries({
+      playlists: allPlaylists.map((p) => ({ id: p.id, name: p.name })),
+      folders: [],
+      artists: [],
+      order,
+      applyOrder,
+      sortMode,
+    })
+    return entries.flatMap((e) => byId.get(e.id) ?? [])
+  }, [allPlaylists, order, applyOrder, sortMode])
   const libTracks = useLibStore((s) => s.tracks)
   const libById = useMemo(() => new Map(libTracks.map((tr) => [tr.id, tr])), [libTracks])
   const goNav = useNavStore((s) => s.goNav)

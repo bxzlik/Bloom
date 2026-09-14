@@ -64,6 +64,11 @@ interface HistoryState {
   /** Очистить список (статистика и «Итоги» не трогаются). */
   clear: () => void
   /**
+   * «Сменить площадку»: отметка скрытия переезжает вместе с прослушиваниями,
+   * иначе спрятанный трек вернулся бы в список под новым id.
+   */
+  renameTrack: (oldId: string, newId: string) => void
+  /**
    * Пересобрать из журнала. Зовётся по подписке на `playStats` — то есть на
    * каждое зачтённое прослушивание и после прогрева журнала на старте.
    */
@@ -87,6 +92,17 @@ export const useHistoryStore = create<HistoryState>((set, get) => {
     clear: () => {
       // Точечные отметки больше не нужны — общий рубеж их перекрывает.
       hide = { before: Date.now(), byId: {} }
+      saveHide(hide)
+      set({ entries: rows() })
+    },
+
+    renameTrack: (oldId, newId) => {
+      const at = hide.byId[oldId]
+      if (at === undefined || oldId === newId) return
+      const byId = { ...hide.byId }
+      delete byId[oldId]
+      byId[newId] = Math.max(at, byId[newId] ?? 0)
+      hide = { ...hide, byId }
       saveHide(hide)
       set({ entries: rows() })
     },

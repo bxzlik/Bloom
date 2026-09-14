@@ -92,7 +92,10 @@ export const LibTracklist = () => {
           (t.album || '').toLowerCase().includes(q),
       )
     }
-    if (offlinePaths) base = base.filter((t) => isOnDisk(t, (id) => offlinePaths.has(id)))
+    if (offlinePaths) {
+      const want = sortDir === 'asc'
+      base = base.filter((t) => isOnDisk(t, (id) => offlinePaths.has(id)) === want)
+    }
     else if (sortMode !== 'default') base = applySort(base, sortMode, sortDir, mode)
     return base
   }, [tracks, mode, folderPath, playlistTrs, favs, historyEntries, searchQuery, sortMode, sortDir, offlinePaths])
@@ -368,7 +371,10 @@ export const LibTracklist = () => {
   if (viewTracks.length === 0) {
     return (
       <div className={listCls} id="libTracklist">
-        <EmptyState mode={mode} downloaded={sortMode === 'downloaded'} />
+        <EmptyState
+          mode={mode}
+          downloaded={sortMode === 'downloaded' ? (sortDir === 'asc' ? 'yes' : 'no') : null}
+        />
       </div>
     )
   }
@@ -903,18 +909,23 @@ const MusicNoteIcon = () => <EmptyCover />
 
 // ── Пустые состояния ─────────────────
 
-const EmptyState = ({ mode, downloaded }: { mode: string; downloaded: boolean }) => {
+const EmptyState = ({ mode, downloaded }: { mode: string; downloaded: 'yes' | 'no' | null }) => {
   const t = useT()
   let icon: React.ReactNode = null
   let title = ''
   let sub = ''
   // Список не пуст — просто под отбором показать нечего. Без этой ветки
   // «Плейлист пуст» на полном плейлисте выглядел бы поломкой.
-  switch (downloaded ? 'downloaded' : mode) {
-    case 'downloaded':
+  switch (downloaded ? `downloaded-${downloaded}` : mode) {
+    case 'downloaded-yes':
       icon = <Ico name="save" width={48} height={48} style={{ opacity: 0.3 }} />
       title = t('lib.empty.downloadedTitle')
       sub = t('lib.empty.downloadedSub')
+      break
+    case 'downloaded-no':
+      icon = <Ico name="save" width={48} height={48} style={{ opacity: 0.3 }} />
+      title = t('lib.empty.notDownloadedTitle')
+      sub = ''
       break
     case 'fav':
       // Единственная цветная заглушка: пустое «Любимое» — про сердечко, и оно

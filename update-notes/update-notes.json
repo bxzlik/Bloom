@@ -1,4 +1,17 @@
 {
+  "3.1.1": {
+    "title": { "ru": "Что нового в 3.1.1", "en": "What's new in 3.1.1" },
+    "date": "2026-09-14",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
   "3.1.0": {
     "title": { "ru": "Что нового в 3.1.0", "en": "What's new in 3.1.0" },
     "date": "2026-09-12",

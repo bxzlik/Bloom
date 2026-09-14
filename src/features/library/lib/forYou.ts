@@ -10,7 +10,7 @@
 // `trackRegistry` (он живёт в памяти). Локальные файлы отсеиваются тем же
 // шагом: у них префикса нет, похожих спросить не у кого.
 
-import { topPlayed } from '@/db/playStats'
+import { allPlayed, playMeta, topPlayed } from '@/db/playStats'
 import { trackRegistry, type Track } from '@entities/track'
 import { getProviders } from '@features/providers'
 import { normalizeArtist } from '@/db/track-meta'
@@ -82,7 +82,7 @@ export const pickForYouSeeds = (limit = SEED_LIMIT): string[] => {
  * первый же сид с длинным related забивает всю полосу и подборка выглядит как
  * похожие на один трек.
  */
-export const buildForYou = async (): Promise<Track[]> => {
+const assembleForYou = async (): Promise<Track[]> => {
   const seeds = pickForYouSeeds()
   const all = getProviders()
   const provs = all.filter((p) => !!p.getSimilarTracks)
@@ -131,8 +131,7 @@ export const buildForYou = async (): Promise<Track[]> => {
   for (const e of useHistoryStore.getState().entries) knownIds.add(e.id)
   for (const seed of seeds) knownIds.add(seed)
 
-  const dup = new DupGuard()
-  for (const t of lib) dup.add(t)
+  const dup = knownDups(lib)
 
   const out: Track[] = []
   const perArtist = new Map<string, number>()
@@ -162,6 +161,50 @@ export const buildForYou = async (): Promise<Track[]> => {
   return out
 }
 
+/**
+ * Отсев перезаливов по всему знакомому: библиотека и всё слышанное. Сверки по
+ * id мало — копия того же трека от другого загрузчика приходит под своим id.
+ * Слышанное, но не сохранённое, сверяем по снимку из журнала (название, артист,
+ * длительность). Каждый раз новый: накопитель запоминает принятое.
+ */
+export const knownDups = (lib: Track[]): DupGuard => {
+  const dup = new DupGuard()
+  const inLib = new Set<string>()
+  for (const t of lib) {
+    dup.add(t)
+    inLib.add(t.id)
+  }
+  for (const r of allPlayed()) {
+    if (inLib.has(r.id)) continue
+    const m = playMeta(r.id)
+    if (m) dup.add({ name: m.name, artist: m.artist, sec: m.sec })
+  }
+  return dup
+}
+
+/** Идущая сборка — её ждёт «Похожие на»: утром обе витрины стартуют разом. */
+let pending: Promise<Track[]> | null = null
+
+export const buildForYou = (): Promise<Track[]> => {
+  const job = assembleForYou()
+  pending = job
+  const clear = (): void => {
+    if (pending === job) pending = null
+  }
+  job.then(clear, clear)
+  return job
+}
+
+/**
+ * Треки «Для вас» на сегодня: кэш, а пока его нет — результат идущей сборки.
+ * Без ожидания соседняя витрина утром сверялась бы с пустотой.
+ */
+export const forYouTracks = async (): Promise<Track[]> => {
+  const cached = readForYouCache()
+  if (cached) return cached
+  return pending ? pending.catch(() => []) : []
+}
+
 /* ── Суточный кэш ────────────────────────────────────────────────────────
  * Храним не id, а сами треки: площадочные живут только в `trackRegistry`, а он
  * в памяти — после рестарта по одним id плеер бы их не нашёл и полоса стала бы
@@ -175,8 +218,9 @@ export const buildForYou = async (): Promise<Track[]> => {
  * которых правку и делали. Меняешь отбор — поднимай версию.
  *   v2 — дедуп реаплоадов (shared/lib/trackDedup)
  *   v3 — лайки в добивке сидов (раньше фильтр по мёртвому `t.fav` был пуст)
+ *   v4 — перезаливы сверяются и со слышанным, не только с библиотекой
  */
-const CACHE_KEY = 'bloom_for_you_v3'
+const CACHE_KEY = 'bloom_for_you_v4'
 
 interface ForYouCache {
   day: string

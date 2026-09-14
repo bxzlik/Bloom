@@ -24,10 +24,9 @@ import type { Artist } from '@entities/artist'
 import { getProvider } from '@features/providers'
 import { t as tt } from '@shared/i18n'
 import { parseArtists } from '@shared/lib/parseArtists'
-import { DupGuard } from '@shared/lib/trackDedup'
 import { useLibStore } from '../model/store'
 import { useHistoryStore } from '../model/historyStore'
-import { readForYouCache } from './forYou'
+import { forYouTracks, knownDups } from './forYou'
 
 /** Окно «текущего вкуса» — то же, что у «Для вас». */
 const WINDOW_DAYS = 90
@@ -153,14 +152,17 @@ const similarTracksOf = async (seedId: string): Promise<Track[]> => {
  * соседней «Для вас»), без реаплоадов и не больше двух от одного артиста.
  * `excludeArtist` — ключ артиста-сида: его треки в «похожих на него» лишние.
  */
-const pickTracks = (batch: Track[], skipIds: string[], excludeArtist: string | null): Track[] => {
+const pickTracks = async (batch: Track[], skipIds: string[], excludeArtist: string | null): Promise<Track[]> => {
   const lib = useLibStore.getState().tracks
+  const forYou = await forYouTracks()
   const known = new Set<string>(lib.map((t) => t.id))
   for (const e of useHistoryStore.getState().entries) known.add(e.id)
-  for (const t of readForYouCache() ?? []) known.add(t.id)
+  for (const t of forYou) known.add(t.id)
   for (const id of skipIds) known.add(id)
-  const dup = new DupGuard()
-  for (const t of lib) dup.add(t)
+  // Перезаливы сверяем и с соседней «Для вас»: под другим id та же песня
+  // стояла бы в двух витринах одна под другой.
+  const dup = knownDups(lib)
+  for (const t of forYou) dup.add(t)
 
   const out: Track[] = []
   const perArtist = new Map<string, number>()
@@ -222,7 +224,7 @@ const fromTrack = async (turn: number): Promise<SimilarTo | null> => {
     const meta = metaOf(id)
     if (!meta) continue
 
-    const tracks = pickTracks(await similarTracksOf(id), [id], null)
+    const tracks = await pickTracks(await similarTracksOf(id), [id], null)
     const first = parseArtists(meta.artist)[0] ?? ''
     const ref = isRealArtist(first) ? await resolveArtist(first, id) : null
     const artists = ref ? pickArtists((await artistPageOf(ref)).similar, normalizeArtist(first)) : []
@@ -288,7 +290,7 @@ const fromArtist = async (turn: number): Promise<SimilarTo | null> => {
     let tracks: Track[] = []
     for (const id of cand.ids.slice(0, 2)) {
       batch.push(...(await similarTracksOf(id)))
-      tracks = pickTracks(batch, cand.ids, cand.key)
+      tracks = await pickTracks(batch, cand.ids, cand.key)
       if (tracks.length >= TRACKS_MAX) break
     }
     const items = mix(tracks, artists, ref.providerId)
@@ -332,8 +334,9 @@ export const buildSimilarTo = async (): Promise<SimilarTo | null> => {
  *
  * Версия в ключе — про ЛОГИКУ отбора: меняешь правила — поднимай, иначе до
  * полуночи висит выдача, собранная по старым.
+ *   v2 — перезаливы сверяются со слышанным и с треками «Для вас»
  */
-const CACHE_KEY = 'bloom_similar_to_v1'
+const CACHE_KEY = 'bloom_similar_to_v2'
 
 interface SimilarToCache {
   day: string

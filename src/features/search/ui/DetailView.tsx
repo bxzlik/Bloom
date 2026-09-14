@@ -546,6 +546,7 @@ export const DetailView = () => {
 
   // Скролл-контейнер оверлея — для оконной виртуализации списков треков.
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const barRef = useRef<HTMLDivElement | null>(null)
 
   // Поповер «Добавить в …» по кнопке «+» — список плейлистов + «В библиотеку», НЕ полное ctx-меню.
   const addAnchorRef = useRef<HTMLElement | null>(null)
@@ -685,6 +686,9 @@ export const DetailView = () => {
     [viewKey],
   )
   const onRootScroll = () => {
+    // Липкая строка «назад» получает подложку, только когда под ней уехал контент.
+    // Класс на DOM напрямую — без ре-рендера всей страницы на каждый скролл.
+    if (rootRef.current) barRef.current?.classList.toggle('is-stuck', rootRef.current.scrollTop > 0)
     if (restoringRef.current) return
     if (viewKey && rootRef.current) remember(viewScroll, viewKey, rootRef.current.scrollTop)
   }
@@ -1042,7 +1046,7 @@ export const DetailView = () => {
     <div
       ref={setRoot}
       onScroll={onRootScroll}
-      className={`sp-detail-view ${enterRef.current}`}
+      className={`sp-detail-view ${enterRef.current}${bareHero ? ' is-bare' : ''}`}
       style={{
         position: 'absolute',
         inset: 0,
@@ -1052,38 +1056,39 @@ export const DetailView = () => {
         overflowX: 'hidden',
         zIndex: 20,
         padding: '12px 12px 12px',
-      }}
+        // Тон hero нужен и липкой строке «назад» — поэтому на корне.
+        ...(heroTint && !bareHero ? { ['--hero-tint' as string]: heroTint } : null),
+      } as CSSProperties}
     >
-      <div
-        className={`sp-dv-hero${bareHero ? ' is-bare' : ''}`}
-        style={heroTint && !bareHero ? ({ ['--hero-tint' as string]: heroTint } as CSSProperties) : undefined}
-      >
+      {/* «Назад» — стрелка + название страницы; липкая, остаётся сверху при скролле. */}
+      <div ref={barRef} className="sp-dv-bar">
+        <div className="sp-am-back-row">
+          <button
+            className="sp-am-back"
+            onClick={stack.length > 1 ? back : close}
+            aria-label={t('common.back')}
+          >
+            <Ico name="arrowLeftStraight" width={20} height={20} />
+            <span>{heroName}</span>
+          </button>
+          {/* Без hero кнопку «Воспроизвести всё» ставить некуда — оставляем
+              компактную пару play/шафл прямо в строке заголовка. */}
+          {isChart && loaded && (
+            <div className="sp-am-back-actions">
+              <HeroPlayBtn srcKey={srcKey} onPlay={onPlayAll} compact />
+              <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
+                <Ico name="shuffle" width={15} height={15} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className={`sp-dv-hero${bareHero ? ' is-bare' : ''}`}>
         {/* Фон hero — нейтральный тёмный цвет, вытянутый из аватарки/обложки
             (--hero-tint), плавно растворяется в фон страницы (не floating).
             У чарта плёнки нет: красить нечего, шапка — одна строка. */}
         {!bareHero && <div className="sp-am-bg" />}
         <div className="sp-am-hero-content">
-          {/* «Назад» — стрелка + название страницы, слева сверху. */}
-          <div className="sp-am-back-row">
-            <button
-              className="sp-am-back"
-              onClick={stack.length > 1 ? back : close}
-              aria-label={t('common.back')}
-            >
-              <Ico name="arrowLeftStraight" width={20} height={20} />
-              <span>{heroName}</span>
-            </button>
-            {/* Без hero кнопку «Воспроизвести всё» ставить некуда — оставляем
-                компактную пару play/шафл прямо в строке заголовка. */}
-            {isChart && loaded && (
-              <div className="sp-am-back-actions">
-                <HeroPlayBtn srcKey={srcKey} onPlay={onPlayAll} compact />
-                <button className="sp-am-icon-btn" onClick={onShuffle} aria-label={t('player.aria.shuffle')}>
-                  <Ico name="shuffle" width={15} height={15} />
-                </button>
-              </div>
-            )}
-          </div>
           {!bareHero && (
           <div className="sp-am-hero-info">
             <div className={`sp-am-avatar${square ? ' square' : ''}`}>
@@ -1510,7 +1515,7 @@ const ArtistBody = ({
   // Сколько превью-строк раскрыто на вкладке «Все» (старт 15 / 5). «Загрузить
   // ещё» наращивает лимит и подтягивает следующую страницу из сети, когда
   // загруженного перестаёт хватать.
-  const [allTracksLimit, setAllTracksLimit] = useState(saved?.tracks ?? 15)
+  const [allTracksLimit, setAllTracksLimit] = useState(saved?.tracks ?? 10)
   const [allRepostsLimit, setAllRepostsLimit] = useState(saved?.reposts ?? 5)
   useEffect(() => {
     remember(viewTabs, viewKey, { tab, tracks: allTracksLimit, reposts: allRepostsLimit })
@@ -1539,7 +1544,7 @@ const ArtistBody = ({
   const allTracksMore = tracks.length > allTracksLimit || tracksHasMore
   const allRepostsMore = reposts.length > allRepostsLimit || repostsHasMore
   const moreAllTracks = () => {
-    const next = allTracksLimit + 15
+    const next = allTracksLimit + 10
     setAllTracksLimit(next)
     if (next >= tracks.length && tracksHasMore) onLoadMoreTracks()
   }

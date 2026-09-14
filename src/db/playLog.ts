@@ -197,6 +197,36 @@ export const playLogSize = async (): Promise<number> => {
   }
 }
 
+/**
+ * Перенести прослушивания трека на новый id в IndexedDB — «Сменить площадку».
+ * Память правит `renamePlayStatsTrack`; зачем это вообще — см. там.
+ *
+ * Индекса по id у событий нет, поэтому один проход по всем записям: действие
+ * редкое и ручное, а 60k записей это доли секунды. Уже лежащий снимок нового id
+ * не переписываем — он записан в момент его собственного прослушивания.
+ */
+export const renamePlayLogTrack = async (oldId: string, newId: string): Promise<void> => {
+  if (!oldId || !newId || oldId === newId) return
+  try {
+    const db = await getDb()
+    const tx = db.transaction(['plays', 'meta'], 'readwrite')
+    let cursor = await tx.objectStore('plays').openCursor()
+    while (cursor) {
+      if (cursor.value.id === oldId) await cursor.update({ ...cursor.value, id: newId })
+      cursor = await cursor.continue()
+    }
+    const meta = tx.objectStore('meta')
+    const old = await meta.get(oldId)
+    if (old) {
+      if (!(await meta.get(newId))) await meta.put({ ...old, id: newId, src: srcFromId(newId) })
+      await meta.delete(oldId)
+    }
+    await tx.done
+  } catch (e) {
+    console.warn('[wrapped] renamePlayLogTrack failed', e)
+  }
+}
+
 /** Очистить журнал — часть «Очистить статистику» в профиле. */
 export const clearPlayLog = async (): Promise<void> => {
   try {

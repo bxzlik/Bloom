@@ -1,6 +1,9 @@
 import type { Track } from '@entities/track'
 import { trackRegistry } from '@entities/track'
+import { renamePlayLogTrack } from '@/db/playLog'
+import { renamePlayStatsTrack } from '@/db/playStats'
 import { useLibStore, usePlaylistStore, useFavStore } from '../model'
+import { useHistoryStore } from '../model/historyStore'
 import { idbSaveMeta, idbDeleteTrack } from './idb'
 
 /**
@@ -9,11 +12,14 @@ import { idbSaveMeta, idbDeleteTrack } from './idb'
  * - `useLibStore.tracks` — замена на той же позиции + сохранённый tracksOrder;
  * - плейлисты (`remapTrack`) и лайки (`remap`, favAt переносится);
  * - IDB — кладём meta нового, удаляем запись старого;
- * - реестр треков — регистрируем новый как постоянный.
+ * - реестр треков — регистрируем новый как постоянный;
+ * - прослушивания — журнал, старую историю и отметки скрытия «Истории».
  *
- * Историю/статистику/очередь не трогаем: висячий старый id там безвреден
- * (пропускается при resolve), как и в `cascadePurgeTrackRefs`. Очередь при
- * необходимости ремапит вызывающая сторона (`switchTrackPlatform`).
+ * Прослушивания переносим, потому что трек тот же: без этого они делились бы
+ * между двумя id — счётчик новой версии с нуля (сиды волны, умная перемешка,
+ * «Для вас»), в «Итогах» два трека, а строка «Истории» так и играла бы старую
+ * площадку, собранная из снимка журнала. Очередь при необходимости ремапит
+ * вызывающая сторона (`switchTrackPlatform`).
  */
 export const replaceLibTrack = (oldId: string, next: Track): void => {
   if (oldId === next.id) return
@@ -24,4 +30,9 @@ export const replaceLibTrack = (oldId: string, next: Track): void => {
   trackRegistry.promote(next.id)
   void idbSaveMeta(next).catch((e) => console.warn('idbSaveMeta failed', e))
   void idbDeleteTrack(oldId).catch((e) => console.warn('idbDeleteTrack failed', e))
+  // Отметку скрытия — до пересчёта статистики: иначе подписка «Истории» на
+  // `playStats` успела бы показать спрятанный трек под новым id.
+  useHistoryStore.getState().renameTrack(oldId, next.id)
+  renamePlayStatsTrack(oldId, next.id)
+  void renamePlayLogTrack(oldId, next.id)
 }

@@ -104,8 +104,8 @@ export function playStatsVersion(): number {
  * повторный вызов во время загрузки ждёт ту же промису.
  *
  * Вызывается один раз на старте приложения. Пока не разрешилась, статистика
- * отвечает по `useHistoryStore` — цифры будут занижены, но UI не мигает и
- * ничего не падает.
+ * отвечает по старой истории — цифры будут занижены, но UI не мигает и ничего
+ * не падает.
  */
 export function warmPlayStats(): Promise<void> {
   if (warmed) return Promise.resolve();
@@ -146,64 +146,32 @@ export function notePlay(id: string, ts = Date.now()): void {
 }
 
 /**
- * Свёртка старых записей в карты — строится один раз при первом обращении.
- * Раньше это были линейные проходы по массиву на КАЖДЫЙ вызов, что незаметно
- * для одиночной проверки, но не для сортировки библиотеки «по прослушиваниям»:
- * там `playCount` зовётся на каждое сравнение.
+ * Старая история, свёрнутая в карту `id → {ts, count}` — строится один раз при
+ * первом обращении. Не линейный проход на каждый вызов: при сортировке
+ * библиотеки «по прослушиваниям» `playCount` зовётся на каждое сравнение.
  */
-let legacyMaps: { count: Map<string, number>; lastTs: Map<string, number> } | null = null;
+let legacyMap: Map<string, { ts: number; count: number }> | null = null;
 
-function legacyIndex(): { count: Map<string, number>; lastTs: Map<string, number> } {
-  if (legacyMaps) return legacyMaps;
-  const count = new Map<string, number>();
-  const lastTs = new Map<string, number>();
+function legacyIndex(): Map<string, { ts: number; count: number }> {
+  if (legacyMap) return legacyMap;
+  const map = new Map<string, { ts: number; count: number }>();
   for (const e of legacyEntries()) {
-    count.set(e.id, (count.get(e.id) ?? 0) + (e.count ?? 1));
-    if (e.ts > (lastTs.get(e.id) ?? 0)) lastTs.set(e.id, e.ts);
+    const was = map.get(e.id);
+    map.set(e.id, {
+      ts: Math.max(was?.ts ?? 0, e.ts),
+      count: (was?.count ?? 0) + (e.count ?? 1),
+    });
   }
-  legacyMaps = { count, lastTs };
-  return legacyMaps;
-}
-
-/** Сколько записей в старой истории приходится на трек (фолбэк). */
-function legacyCount(id: string): number {
-  return legacyIndex().count.get(id) ?? 0;
-}
-
-/** Когда трек звучал в последний раз по старой истории (0 — не звучал). */
-function legacyLastTs(id: string): number {
-  return legacyIndex().lastTs.get(id) ?? 0;
+  legacyMap = map;
+  return legacyMap;
 }
 
 /**
- * Совместимость со старыми установками. Журнал появился позже истории, поэтому
- * у давнего пользователя часть треков есть в истории, но не в журнале. Правило:
- * есть хоть одно событие в журнале — верим журналу целиком (он точнее и полнее);
- * нет ни одного — берём, что помнит история. Складывать нельзя: период у них
- * пересекается, и общие треки посчитались бы дважды.
+ * Зазор между записью истории и событием журнала об ОДНОМ прослушивании: с 2.0
+ * по 3.0 `creditPlay` писал оба подряд, каждое своим `Date.now()`. Два
+ * настоящих прослушивания одного трека за столько не случаются.
  */
-function tsOf(id: string): number[] | null {
-  const arr = byTrack.get(id);
-  return arr && arr.length ? arr : null;
-}
-
-/** Сколько всего раз слушали трек. */
-export function playCount(id: string): number {
-  const arr = tsOf(id);
-  return arr ? arr.length : legacyCount(id);
-}
-
-/** Когда трек звучал в последний раз (0 — не звучал ни разу). */
-export function lastPlayedAt(id: string): number {
-  const arr = tsOf(id);
-  return arr ? arr[arr.length - 1]! : legacyLastTs(id);
-}
-
-/** Звучал ли трек за последние `days` дней. */
-export function recentlyPlayed(id: string, days = 7): boolean {
-  const last = lastPlayedAt(id);
-  return last > 0 && last >= Date.now() - days * 86_400_000;
-}
+const LEGACY_SLACK_MS = 5000;
 
 /**
  * Индекс первого элемента `arr` со значением >= `x` (бинарный поиск).
@@ -221,11 +189,96 @@ function lowerBound(arr: number[], x: number): number {
   return lo;
 }
 
+/** Индекс первого элемента `arr` со значением > `x`. */
+function upperBound(arr: number[], x: number): number {
+  let lo = 0;
+  let hi = arr.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (arr[mid]! <= x) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+const NO_EVENTS: number[] = [];
+
+/**
+ * Прослушивания одного трека: события журнала плюс то, чего в журнале нет, но
+ * помнит старая история.
+ *
+ * Совместимость со старыми установками. Журнал появился в 2.0, история — раньше,
+ * и с 2.0 по 3.0 прослушивание писалось в ОБА места. Складывать их в лоб нельзя
+ * — общий период посчитался бы дважды. Но пересечение известно точно: `ts`
+ * записи истории — момент её последнего прослушивания, значит всё, что в журнале
+ * до этого момента, в её `count` уже учтено. От истории берём только
+ * недостающее (`extra`) — прослушивания до появления журнала.
+ *
+ * Прежнее правило «есть хоть одно событие в журнале — верим только журналу»
+ * теряло именно их: трек, послушанный сотню раз до 2.0 и раз после, считался
+ * послушанным один раз, а треки, звучавшие только до 2.0, после прогрева журнала
+ * выпадали из статистики профиля и из топа вовсе.
+ *
+ * Та же формула работает и до прогрева: событий ещё нет, и `extra` — это весь
+ * счётчик истории.
+ */
+interface TrackPlays {
+  ts: number[];
+  /** Когда трек последний раз попал в старую историю (0 — не попадал). */
+  legacyTs: number;
+  /** Прослушивания из старой истории, которых нет в журнале; отнесены к `legacyTs`. */
+  extra: number;
+}
+
+function playsOf(id: string): TrackPlays | null {
+  const ts = byTrack.get(id) ?? NO_EVENTS;
+  const legacy = legacyIndex().get(id);
+  if (!ts.length && !legacy) return null;
+  const extra = legacy
+    ? Math.max(0, legacy.count - upperBound(ts, legacy.ts + LEGACY_SLACK_MS))
+    : 0;
+  return { ts, legacyTs: legacy?.ts ?? 0, extra };
+}
+
+const countOf = (p: TrackPlays): number => p.ts.length + p.extra;
+
+const lastOf = (p: TrackPlays): number =>
+  Math.max(p.ts.length ? p.ts[p.ts.length - 1]! : 0, p.legacyTs);
+
+const firstOf = (p: TrackPlays): number => {
+  const fromLog = p.ts.length ? p.ts[0]! : 0;
+  if (!p.extra || !p.legacyTs) return fromLog;
+  return fromLog ? Math.min(fromLog, p.legacyTs) : p.legacyTs;
+};
+
+/** Все id, о которых есть хоть что-то: журнал и старая история. */
+function knownIds(): Set<string> {
+  return new Set([...byTrack.keys(), ...legacyIndex().keys()]);
+}
+
+/** Сколько всего раз слушали трек. */
+export function playCount(id: string): number {
+  const p = playsOf(id);
+  return p ? countOf(p) : 0;
+}
+
+/** Когда трек звучал в последний раз (0 — не звучал ни разу). */
+export function lastPlayedAt(id: string): number {
+  const p = playsOf(id);
+  return p ? lastOf(p) : 0;
+}
+
+/** Звучал ли трек за последние `days` дней. */
+export function recentlyPlayed(id: string, days = 7): boolean {
+  const last = lastPlayedAt(id);
+  return last > 0 && last >= Date.now() - days * 86_400_000;
+}
+
 /** Сколько раз трек звучал начиная с момента `sinceTs`. */
 export function playsSince(id: string, sinceTs: number): number {
-  const arr = tsOf(id);
-  if (!arr) return legacyLastTs(id) >= sinceTs ? legacyCount(id) : 0;
-  return arr.length - lowerBound(arr, sinceTs);
+  const p = playsOf(id);
+  if (!p) return 0;
+  return p.ts.length - lowerBound(p.ts, sinceTs) + (p.legacyTs >= sinceTs ? p.extra : 0);
 }
 
 export interface TopPlayed {
@@ -242,17 +295,13 @@ export interface TopPlayed {
  * а не по верхушке.
  */
 export function allPlayed(): TopPlayed[] {
-  if (!warmed) {
-    return legacyEntries().map(e => ({
-      id: e.id,
-      plays: e.count ?? 1,
-      lastTs: e.ts,
-      firstTs: e.ts,
-    }));
-  }
   const rows: TopPlayed[] = [];
-  for (const [id, arr] of byTrack) {
-    rows.push({ id, plays: arr.length, lastTs: arr[arr.length - 1]!, firstTs: arr[0]! });
+  for (const id of knownIds()) {
+    const p = playsOf(id);
+    if (!p) continue;
+    const plays = countOf(p);
+    if (plays <= 0) continue;
+    rows.push({ id, plays, lastTs: lastOf(p), firstTs: firstOf(p) });
   }
   return rows;
 }
@@ -271,21 +320,14 @@ export function topPlayed(
   const since = sinceDays ? Date.now() - sinceDays * 86_400_000 : 0;
 
   const rows: TopPlayed[] = [];
-  if (warmed) {
-    for (const [id, arr] of byTrack) {
-      const plays = since ? arr.length - lowerBound(arr, since) : arr.length;
-      if (plays < minPlays) continue;
-      rows.push({ id, plays, lastTs: arr[arr.length - 1]!, firstTs: arr[0]! });
-    }
-  } else {
-    // Фолбэк до прогрева: история знает только суммарный count и последний ts,
-    // так что окно приблизительное — по дате последнего прослушивания.
-    for (const e of legacyEntries()) {
-      if (since && e.ts < since) continue;
-      const plays = e.count ?? 1;
-      if (plays < minPlays) continue;
-      rows.push({ id: e.id, plays, lastTs: e.ts, firstTs: e.ts });
-    }
+  for (const id of knownIds()) {
+    const p = playsOf(id);
+    if (!p) continue;
+    const plays = since
+      ? p.ts.length - lowerBound(p.ts, since) + (p.legacyTs >= since ? p.extra : 0)
+      : countOf(p);
+    if (plays < minPlays) continue;
+    rows.push({ id, plays, lastTs: lastOf(p), firstTs: firstOf(p) });
   }
 
   rows.sort((a, b) => b.plays - a.plays || b.lastTs - a.lastTs);
@@ -319,23 +361,17 @@ export function historyRows(
   const byId = hide.byId ?? {};
   const rows: HistoryRow[] = [];
 
-  const cut = (id: string): number => Math.max(before, byId[id] ?? 0);
-
-  for (const [id, arr] of byTrack) {
-    const from = cut(id);
-    const i = from ? lowerBound(arr, from) : 0;
-    const count = arr.length - i;
+  for (const id of knownIds()) {
+    const p = playsOf(id);
+    if (!p) continue;
+    const from = Math.max(before, byId[id] ?? 0);
+    // Видимые события журнала — с момента отметки; прослушивания из старой
+    // истории — если сама запись свежее отметки.
+    const count = from
+      ? p.ts.length - lowerBound(p.ts, from) + (p.legacyTs > from ? p.extra : 0)
+      : countOf(p);
     if (count <= 0) continue;
-    rows.push({ id, ts: arr[arr.length - 1]!, count });
-  }
-
-  // Хвост из старых записей: журнал появился позже истории, и у давнего
-  // пользователя часть треков есть только в ней. Без этого переход на журнал
-  // молча обрубил бы историю по дате появления «Итогов».
-  for (const e of legacyEntries()) {
-    if (byTrack.has(e.id)) continue;
-    if (e.ts <= cut(e.id)) continue;
-    rows.push({ id: e.id, ts: e.ts, count: e.count ?? 1 });
+    rows.push({ id, ts: lastOf(p), count });
   }
 
   rows.sort((a, b) => b.ts - a.ts);
@@ -343,16 +379,59 @@ export function historyRows(
 }
 
 /**
+ * Перенести прослушивания трека на новый id — «Сменить площадку»
+ * (`replaceLibTrack`). Трек тот же, меняется только площадка: без переноса
+ * счётчик новой версии начинался бы с нуля, «Итоги» показывали бы два трека, а
+ * строка «Истории» так и играла бы старую площадку, от которой ушли.
+ *
+ * Здесь — память и старая история; сами события в IndexedDB переносит
+ * `renamePlayLogTrack`.
+ */
+export function renamePlayStatsTrack(oldId: string, newId: string): void {
+  if (!oldId || !newId || oldId === newId) return;
+  let changed = false;
+
+  const moved = byTrack.get(oldId);
+  if (moved) {
+    const into = byTrack.get(newId);
+    byTrack.set(newId, into ? [...into, ...moved].sort((a, b) => a - b) : moved);
+    byTrack.delete(oldId);
+    changed = true;
+  }
+
+  const meta = metaById.get(oldId);
+  if (meta) {
+    if (!metaById.has(newId)) metaById.set(newId, { ...meta, id: newId });
+    metaById.delete(oldId);
+    changed = true;
+  }
+
+  const legacy = legacyEntries();
+  if (legacy.some((e) => e.id === oldId)) {
+    legacyCache = legacy.map((e) => (e.id === oldId ? { ...e, id: newId } : e));
+    legacyMap = null;
+    try {
+      localStorage.setItem(LEGACY_KEY, JSON.stringify(legacyCache));
+    } catch {
+      // Хранилище недоступно — в памяти перенос уже есть, до перезапуска хватит.
+    }
+    changed = true;
+  }
+
+  if (changed) bump();
+}
+
+/**
  * Забыть накопленное — часть «Очистить статистику» рядом с `clearPlayLog`.
  * `warmed` намеренно НЕ сбрасываем: после очистки пустая карта — это правда, а
  * не «ещё не прочитали», и падать на старую историю тут нельзя.
  *
- * Старую историю стираем тоже. Фолбэк в `tsOf` включается у трека без событий в
- * журнале — а после очистки таких ВСЕ, и без этого `playCount`/`recentlyPlayed`
- * отвечали бы по допотопным записям: сиды волны, её фильтр «недавно слушал» и
- * умная перемешка жили бы на статистике, которую пользователь только что
- * удалил. Список «История» от этого не меняется — после очистки её рубеж и так
- * прячет старые записи. Кэши — модульные, их тоже в ноль, иначе ключ ушёл бы из
+ * Старую историю стираем тоже. Она дополняет журнал (`playsOf`) — а после
+ * очистки дополнять нечего, и без этого `playCount`/`recentlyPlayed` отвечали
+ * бы по допотопным записям: сиды волны, её фильтр «недавно слушал» и умная
+ * перемешка жили бы на статистике, которую пользователь только что удалил.
+ * Список «История» от этого не меняется — после очистки её рубеж и так прячет
+ * старые записи. Кэши — модульные, их тоже в ноль, иначе ключ ушёл бы из
  * хранилища, а цифры остались в памяти до перезапуска.
  */
 export function resetPlayStats(): void {
@@ -364,6 +443,6 @@ export function resetPlayStats(): void {
     // Хранилище недоступно — хотя бы в памяти забудем.
   }
   legacyCache = [];
-  legacyMaps = null;
+  legacyMap = null;
   bump();
 }

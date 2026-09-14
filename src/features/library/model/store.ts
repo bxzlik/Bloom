@@ -6,7 +6,8 @@ import { applyTracksOrder, loadTracksOrder, saveTracksOrder } from '../lib/track
 /**
  * Режимы сортировки tracklist'а `libSortMode`. `downloaded` не сортирует, а
  * отбирает: порядок остаётся своим, в списке только то, что есть на диске
- * (как «Только скачанные» в мобилке).
+ * (как «Только скачанные» в мобилке). `sortDir` у него значит сторону отбора:
+ * asc — скачанные, desc — нескачанные (повторное нажатие переключает).
  */
 export type TrackSortMode =
   | 'default'
@@ -261,8 +262,9 @@ export const useLibStore = create<LibState>((set, get) => ({
   sortDir: 'asc',
   setSort: (mode) =>
     set((s) => {
-      // У «По умолчанию» и «Только скачанные» своего направления нет.
-      if (mode === s.sortMode && mode !== 'default' && mode !== 'downloaded') {
+      // У «По умолчанию» своего направления нет. У `downloaded` направление —
+      // сторона отбора: asc = скачанные, desc = нескачанные.
+      if (mode === s.sortMode && mode !== 'default') {
         // Toggle direction.
         return { sortDir: s.sortDir === 'asc' ? 'desc' : 'asc' }
       }

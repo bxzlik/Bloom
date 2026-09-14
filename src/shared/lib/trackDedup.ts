@@ -162,18 +162,20 @@ export const sameTrack = (a: TrackFingerprint, b: TrackFingerprint): boolean => 
 
 /**
  * Накопитель уникальных треков: `accept` возвращает false, если такой трек уже
- * принимали. Точные ключи лежат в Set (дёшево), нечёткое сравнение идёт только
- * по уже принятым — списки здесь короткие (десятки), это не горячий путь.
+ * принимали или заранее пометили через `add`.
+ *
+ * Помеченного бывает много — вся библиотека и всё слышанное, тысячи треков, —
+ * поэтому нечёткое сравнение идёт не перебором, а только по отпечаткам с общим
+ * словом. Это не приближение: каждый путь `sameTrack` требует хотя бы одного
+ * общего токена в мешке, остальные совпасть не могут в принципе.
  */
 export class DupGuard {
   private keys = new Set<string>()
-  private prints: TrackFingerprint[] = []
+  private byToken = new Map<string, TrackFingerprint[]>()
 
-  /** Заранее пометить трек как «уже есть» (очередь, библиотека) без выдачи. */
+  /** Заранее пометить трек как «уже есть» (очередь, библиотека, журнал) без выдачи. */
   add(t: DedupInput): void {
-    const fp = fingerprint(t)
-    if (fp.key) this.keys.add(fp.key)
-    this.prints.push(fp)
+    this.remember(fingerprint(t))
   }
 
   /** Принять трек, если он новый. */
@@ -181,11 +183,25 @@ export class DupGuard {
     const fp = fingerprint(t)
     if (!fp.key) return true // нечего сравнивать (пустые поля) — пропускаем
     if (this.keys.has(fp.key)) return false
-    for (const p of this.prints) {
-      if (sameTrack(fp, p)) return false
+    const checked = new Set<TrackFingerprint>()
+    for (const w of fp.core) {
+      for (const p of this.byToken.get(w) ?? []) {
+        if (checked.has(p)) continue
+        checked.add(p)
+        if (sameTrack(fp, p)) return false
+      }
     }
-    this.keys.add(fp.key)
-    this.prints.push(fp)
+    this.remember(fp)
     return true
+  }
+
+  private remember(fp: TrackFingerprint): void {
+    if (!fp.key) return // пустой мешок ни с чем не совпадёт
+    this.keys.add(fp.key)
+    for (const w of fp.core) {
+      const bucket = this.byToken.get(w)
+      if (bucket) bucket.push(fp)
+      else this.byToken.set(w, [fp])
+    }
   }
 }

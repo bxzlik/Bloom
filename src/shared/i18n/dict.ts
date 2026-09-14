@@ -787,6 +787,7 @@ export const ru = {
   'lib.sort.plays': 'По прослушиваниям',
   'lib.sort.album': 'По альбому',
   'lib.sort.downloaded': 'Только скачанные',
+  'lib.sort.notDownloaded': 'Только нескачанные',
   'lib.sortMenu.nameAsc': 'По имени A–Z',
   'lib.sortMenu.nameDesc': 'По имени Z–A',
   'lib.sortMenu.type': 'По типу',
@@ -939,6 +940,7 @@ export const ru = {
   'lib.empty.noTracksSub': 'Добавьте папку с музыкой в настройках',
   'lib.empty.downloadedTitle': 'Скачанных треков тут нет',
   'lib.empty.downloadedSub': 'Отметьте треки «Слушать офлайн» в меню «Скачать»',
+  'lib.empty.notDownloadedTitle': 'Здесь всё скачано',
 
   // LibGridOverview
   'lib.grid.tracks': '{n} тр.',
@@ -2357,6 +2359,7 @@ export const en: Record<TranslationKey, string> = {
   'lib.sort.plays': 'By plays',
   'lib.sort.album': 'By album',
   'lib.sort.downloaded': 'Downloaded only',
+  'lib.sort.notDownloaded': 'Not downloaded only',
   'lib.sortMenu.nameAsc': 'Name A–Z',
   'lib.sortMenu.nameDesc': 'Name Z–A',
   'lib.sortMenu.type': 'By type',
@@ -2509,6 +2512,7 @@ export const en: Record<TranslationKey, string> = {
   'lib.empty.noTracksSub': 'Add a music folder in settings',
   'lib.empty.downloadedTitle': 'Nothing downloaded here',
   'lib.empty.downloadedSub': 'Mark tracks “Listen offline” in the Download menu',
+  'lib.empty.notDownloadedTitle': 'Everything here is downloaded',
 
   // LibGridOverview
   'lib.grid.tracks': '{n} tracks',

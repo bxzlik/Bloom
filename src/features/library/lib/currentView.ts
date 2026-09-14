@@ -148,7 +148,10 @@ export const getCurrentView = (): { tracks: Track[]; source: PlaySource } => {
   }
 
   // Тот же порядок, что на экране: иначе очередь шла бы мимо видимого списка.
-  if (lib.sortMode === 'downloaded') base = base.filter((t) => isOnDisk(t, offline.isOffline))
+  if (lib.sortMode === 'downloaded') {
+    const want = lib.sortDir === 'asc'
+    base = base.filter((t) => isOnDisk(t, offline.isOffline) === want)
+  }
   else if (lib.sortMode !== 'default') base = applySort(base, lib.sortMode, lib.sortDir, mode)
 
   return { tracks: base, source }
