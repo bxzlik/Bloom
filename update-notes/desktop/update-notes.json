@@ -1,0 +1,672 @@
+{
+  "3.1.4": {
+    "title": { "ru": "Что нового в 3.1.4", "en": "What's new in 3.1.4" },
+    "date": "2026-09-20",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "3.1.3": {
+    "title": { "ru": "Что нового в 3.1.3", "en": "What's new in 3.1.3" },
+    "date": "2026-09-19",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "3.1.2": {
+    "title": { "ru": "Что нового в 3.1.2", "en": "What's new in 3.1.2" },
+    "date": "2026-09-18",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "3.1.1": {
+    "title": { "ru": "Что нового в 3.1.1", "en": "What's new in 3.1.1" },
+    "date": "2026-09-14",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "3.1.0": {
+    "title": { "ru": "Что нового в 3.1.0", "en": "What's new in 3.1.0" },
+    "date": "2026-09-12",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "3.0.0": {
+    "title": { "ru": "Что нового в 3.0.0", "en": "What's new in 3.0.0" },
+    "date": "2026-09-10",
+    "pages": [
+      {
+        "title": { "ru": "Главная", "en": "Home" },
+        "body": {
+          "ru": "- Новый вид «Моей волны»\n- Новая витрина «Для вас»\n- Новые витрины «Чарт» и «Релизы»",
+          "en": "- A new look for My Wave\n- New \"For you\" section\n- New \"Chart\" and \"Releases\" sections"
+        }
+      },
+      {
+        "title": { "ru": "История и статистика", "en": "History and stats" },
+        "body": {
+          "ru": "- Глобально обновлены история и статистика прослушиваний\n- История больше не ограничена 200 треками\n- Благодаря этому «Моя волна», умная перемешка и статистика профиля учитывают все ваши прослушивания, а не только последние 200 треков",
+          "en": "- History and listening stats have been globally reworked\n- History is no longer limited to 200 tracks\n- Thanks to this, My Wave, smart shuffle and profile stats take all your plays into account, not just the last 200 tracks"
+        }
+      },
+      {
+        "title": { "ru": "Настройки и оформление", "en": "Settings and appearance" },
+        "body": {
+          "ru": "- Обновлены настройки\n- Добавлена «Авто тема» под обложку трека\n- Новый вид сайдбара",
+          "en": "- Updated settings\n- Added an \"Auto theme\" that matches the track cover\n- New sidebar look"
+        }
+      },
+      {
+        "title": { "ru": "Плеер, PiP, трей и оверлей", "en": "Player, PiP, tray and overlay" },
+        "body": {
+          "ru": "- Аватарки артистов в плеере\n- Обновлён PiP\n- Обновлён попап в трее\n- Улучшен оверлей",
+          "en": "- Artist avatars in the player\n- Updated PiP\n- Updated the tray popup\n- Improved the overlay"
+        }
+      }
+    ]
+  },
+  "2.0.2": {
+    "title": { "ru": "Что нового в 2.0.2", "en": "What's new in 2.0.2" },
+    "date": "2026-09-01",
+    "pages": [
+      {
+        "title": { "ru": "Быстрый фикс", "en": "Quick fix" },
+        "body": {
+          "ru": "- Починили воспроизведение с YouTube Music\n- Починили импорт лайков из SoundCloud",
+          "en": "- Fixed YouTube Music playback\n- Fixed importing likes from SoundCloud"
+        }
+      }
+    ]
+  },
+  "2.0.1": {
+    "title": { "ru": "Что нового в 2.0.1", "en": "What's new in 2.0.1" },
+    "date": "2026-08-31",
+    "pages": [
+      {
+        "title": { "ru": "Итоги", "en": "Wrapped" },
+        "body": {
+          "ru": "- Обновлены «Итоги»",
+          "en": "- Wrapped has been updated"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
+  "2.0.0": {
+    "title": { "ru": "Что нового в 2.0.0", "en": "What's new in 2.0.0" },
+    "date": "2026-08-06",
+    "pages": [
+      {
+        "title": { "ru": "Большая визуальная переработка", "en": "A big visual overhaul" },
+        "body": {
+          "ru": "- Обновлён почти весь интерфейс: плеер, библиотека, поиск, настройки, модалки, онбординг и уведомления\n- Переработаны отступы, скругления, рамки и ховеры — всё приведено к единой системе\n- Аккуратнее ведут себя блоки в режиме прозрачности: плеер и очередь больше не «растворяются» на обоях",
+          "en": "- Almost the entire interface has been reworked: player, library, search, settings, modals, onboarding and notifications\n- Spacing, corners, borders and hovers were redone and brought into one consistent system\n- Blocks behave better in transparency mode: the player and the queue no longer dissolve into the wallpaper"
+        }
+      },
+      {
+        "title": { "ru": "Светлая тема", "en": "Light theme" },
+        "body": {
+          "ru": "- Светлая тема теперь полноценный режим оформления, а не просто другая палитра\n- Полупрозрачные слои, иконки и рамки сами подстраиваются под светлый фон — работает и для ваших кастомных светлых тем\n- Обновлён набор готовых тем",
+          "en": "- The light theme is now a full display mode, not just a different palette\n- Translucent layers, icons and borders adapt to a light background — this also works for your own custom light themes\n- The set of built-in themes has been refreshed"
+        }
+      },
+      {
+        "title": { "ru": "Новый вид поиска", "en": "New search view" },
+        "body": {
+          "ru": "- Появился всплывающий поиск: строка ввода поверх текущей страницы с недавними запросами и живыми подсказками\n- Открывается по Ctrl+T на любой странице, Enter уводит на страницу поиска с полной выдачей\n- Вид поиска переключается в Настройки → Страницы: «Страница» или «Всплывающий»",
+          "en": "- Added a popup search: an input over the current page with recent searches and live suggestions\n- Opens with Ctrl+T on any page; Enter takes you to the search page with full results\n- The search view is switched in Settings → Pages: \"Page\" or \"Popup\""
+        }
+      },
+      {
+        "title": { "ru": "Обновлённые настройки", "en": "Updated settings" },
+        "body": {
+          "ru": "- Секции настроек переработаны и разложены по группам: «Основное», «Оформление» и «Интеграции»\n- Новая секция «Страницы» — всё про главную, поиск и библиотеку в одном месте\n- Поиск по настройкам ищет не только по названиям вкладок, но и по подписям настроек внутри\n- У подключённых интеграций появился зелёный индикатор прямо в списке",
+          "en": "- Settings sections were reworked and split into groups: \"General\", \"Appearance\" and \"Integrations\"\n- New \"Pages\" section — home, search and library settings in one place\n- Settings search now looks inside sections, not just at tab names\n- Connected integrations now show a green indicator right in the list"
+        }
+      },
+      {
+        "title": { "ru": "Главная под себя", "en": "Home your way" },
+        "body": {
+          "ru": "- Главную теперь можно настраивать: любую секцию — «Моя волна», «Продолжить», любимые, историю, новинки, чарты, недавние и плейлисты — можно скрыть\n- Выключенная секция пропадает со страницы целиком и возвращается одним кликом\n- Всё в Настройки → Страницы → Главная",
+          "en": "- The home page is now configurable: any section — My Wave, Continue, favorites, history, new releases, charts, recents and playlists — can be hidden\n- A disabled section disappears from the page entirely and comes back with one click\n- All of it lives in Settings → Pages → Home"
+        }
+      },
+      {
+        "title": { "ru": "Новый вид «Моей волны»", "en": "A new look for My Wave" },
+        "body": {
+          "ru": "- У блока волны на главной появился второй вид — «Кольцо»: обложки, на которых строится волна, кружат вокруг кнопки запуска\n- Клик по обложке включает её трек и продолжает волну по нему\n- Прежний «Огонь» никуда не делся — вид переключается в Настройки → Страницы → Главная",
+          "en": "- The wave block on the home page got a second look — \"Ring\": the covers the wave is built from orbit around the play button\n- Clicking a cover starts that track and continues the wave from it\n- The old \"Fire\" look is still there — switch between them in Settings → Pages → Home"
+        }
+      },
+      {
+        "title": { "ru": "Итоги: неделя, месяц и год", "en": "Wrapped: week, month and year" },
+        "body": {
+          "ru": "- Появились «Итоги» — ваша статистика прослушиваний в виде листаемых историй\n- Топ-треки и артисты, время прослушивания, площадки и находки периода\n- Итоги недели, месяца и года; показываются по расписанию, а в настройках можно включить показ в любой день",
+          "en": "- Added \"Wrapped\" — your listening stats as swipeable stories\n- Top tracks and artists, listening time, sources and the discoveries of the period\n- Weekly, monthly and yearly recaps; they appear on schedule, and in settings you can turn on showing them any day"
+        }
+      },
+      {
+        "title": { "ru": "Оформление текста песни", "en": "Lyrics styling" },
+        "body": {
+          "ru": "- Текст песни стал точнее и плавнее — подсветка идёт ровно за музыкой\n- Появился выбор оформления: заливка по строкам, словам, буквам или плавная, плюс эффект — мягко, свечение или пружина\n- Настраивается отдельно для плеера, боковой панели и полноэкранного режима",
+          "en": "- Lyrics are more precise and smoother — the highlight now follows the music exactly\n- Added styling options: fill by line, word, letter or smooth, plus an effect — soft, glow or bounce\n- Configured separately for the player, the side panel and the full-screen view"
+        }
+      },
+      {
+        "title": { "ru": "Полноэкранный режим", "en": "Full-screen view" },
+        "body": {
+          "ru": "- Переработан полноэкранный режим: обложка крупнее и точнее центрируется, подписи стали спокойнее\n- Обновлены текст песни, очередь и эквалайзер",
+          "en": "- The full-screen view was redesigned: the artwork is bigger and better centered, the captions are calmer\n- Lyrics, the queue and the equalizer were refreshed as well"
+        }
+      },
+      {
+        "title": { "ru": "Анимация смены трека", "en": "Track change animation" },
+        "body": {
+          "ru": "- Появилась анимация смены трека — обложка и подписи плавно сменяют друг друга\n- Настраивается отдельно для плеера, полноэкранного режима и миниплеера",
+          "en": "- Added a track change animation — artwork and captions now smoothly replace each other\n- Configured separately for the player, the full-screen view and the mini player"
+        }
+      },
+      {
+        "title": { "ru": "YouTube Music", "en": "YouTube Music" },
+        "body": {
+          "ru": "- Улучшена работа с YouTube Music: поиск, импорт и воспроизведение стали стабильнее",
+          "en": "- Improved YouTube Music support: search, import and playback are more reliable"
+        }
+      },
+      {
+        "title": { "ru": "Похожие исполнители", "en": "Similar artists" },
+        "icons": ["soundcloud", "yandex", "ytmusic"],
+        "body": {
+          "ru": "- На страницах артистов появился блок «Похожие исполнители»\n- Работает для SoundCloud, Яндекс Музыки и YouTube Music\n- Удобный способ уйти вглубь по любимому жанру, не выходя из приложения",
+          "en": "- Artist pages now have a \"Similar artists\" block\n- Works for SoundCloud, Yandex Music and YouTube Music\n- An easy way to dig deeper into a genre without leaving the app"
+        }
+      },
+      {
+        "title": { "ru": "Перенос плейлистов на другую площадку", "en": "Move playlists to another source" },
+        "body": {
+          "ru": "- Любой плейлист можно перенести на другую площадку — треки ищутся там автоматически\n- Спорные совпадения не подставляются молча: вы сами выбираете нужный вариант, а трек можно оставить как есть или пропустить\n- Оригинал не меняется — создаётся новый плейлист",
+          "en": "- Any playlist can be moved to another source — its tracks are matched there automatically\n- Ambiguous matches aren't picked silently: you choose the right one, or keep the original track as is, or skip it\n- The original playlist stays untouched — a new one is created"
+        }
+      },
+      {
+        "title": { "ru": "Скорость воспроизведения", "en": "Playback speed" },
+        "body": {
+          "ru": "- Переработан пикер скорости в плеере: пресеты, плавная полоса с засечками и тумблер «Nightcore»",
+          "en": "- Reworked the speed picker in the player: presets, a smooth slider with ticks and a \"Nightcore\" toggle"
+        }
+      },
+      {
+        "title": { "ru": "И по мелочам", "en": "Small things" },
+        "body": {
+          "ru": "- В плейлистах появилась кнопка «Перейти к играющему треку» — один клик, и список прокручен к тому, что играет сейчас\n- Кнопки управления в панели задач Windows получили новые иконки\n- Аккуратнее выглядят карточки интеграций, бейджи площадок и страницы артистов/альбомов\n- Множество мелких правок читаемости и контраста",
+          "en": "- Playlists got a \"Jump to the playing track\" button — one click and the list scrolls to what's playing right now\n- The Windows taskbar controls got new icons\n- Integration cards, source badges and artist/album pages look tidier\n- Many small readability and contrast fixes"
+        }
+      }
+    ]
+  },
+  "1.8.4": {
+    "title": { "ru": "Что нового в 1.8.4", "en": "What's new in 1.8.4" },
+    "date": "2026-07-22",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
+  "1.8.3": {
+    "title": { "ru": "Что нового в 1.8.3", "en": "What's new in 1.8.3" },
+    "date": "2026-07-22",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
+  "1.8.2": {
+    "title": { "ru": "Что нового в 1.8.2", "en": "What's new in 1.8.2" },
+    "date": "2026-07-21",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
+  "1.8.1": {
+    "title": { "ru": "Что нового в 1.8.1", "en": "What's new in 1.8.1" },
+    "date": "2026-07-21",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
+  "1.8.0": {
+    "title": { "ru": "Что нового в 1.8.0", "en": "What's new in 1.8.0" },
+    "date": "2026-07-20",
+    "pages": [
+      {
+        "title": { "ru": "Миниплеер", "en": "Mini player" },
+        "body": {
+          "ru": "- Обновлён миниплеер\n- Добавлен новый стиль миниплеера",
+          "en": "- Updated the mini player\n- Added a new mini player style"
+        }
+      },
+      {
+        "title": { "ru": "Библиотека", "en": "Library" },
+        "body": {
+          "ru": "- Обновлена библиотека\n- Добавлены новые настройки библиотеки\n- Новый фильтр: все, плейлисты, папки, артисты",
+          "en": "- Updated the library\n- Added new library settings\n- New filter: all, playlists, folders, artists"
+        }
+      },
+      {
+        "title": { "ru": "Сайт", "en": "Website" },
+        "body": {
+          "ru": "- Обновлён сайт — bloom-site-x.vercel.app",
+          "en": "- Updated the website — bloom-site-x.vercel.app"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
+  "1.7.2": {
+    "title": { "ru": "Что нового в 1.7.2", "en": "What's new in 1.7.2" },
+    "date": "2026-07-12",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Добавлены ещё кнопки в строках треков\n- Обновлено хранилище",
+          "en": "- Minor improvements\n- Added more buttons in track rows\n- Updated storage"
+        }
+      }
+    ]
+  },
+  "1.7.1": {
+    "title": { "ru": "Что нового в 1.7.1", "en": "What's new in 1.7.1" },
+    "date": "2026-07-11",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "1.7.0": {
+    "title": { "ru": "Что нового в 1.7.0", "en": "What's new in 1.7.0" },
+    "date": "2026-07-11",
+    "pages": [
+      {
+        "title": { "ru": "Главное", "en": "Highlights" },
+        "body": {
+          "ru": "- Обновлена стартовая страница\n- Новый стиль оверлея\n- Переработана система локальных файлов",
+          "en": "- Redesigned the start page\n- New overlay style\n- Reworked the local files system"
+        }
+      },
+      {
+        "title": { "ru": "Оффлайн скачивание", "en": "Offline downloads" },
+        "body": {
+          "ru": "- Теперь можно скачивать треки и слушать оффлайн одной кнопкой",
+          "en": "- Now you can download tracks and listen offline with a single button"
+        }
+      }
+    ]
+  },
+  "1.6.1": {
+    "title": { "ru": "Что нового в 1.6.1", "en": "What's new in 1.6.1" },
+    "date": "2026-07-09",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения\n- Исправления багов",
+          "en": "- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "1.6.0": {
+    "title": { "ru": "Что нового в 1.6.0", "en": "What's new in 1.6.0" },
+    "date": "2026-07-06",
+    "pages": [
+      {
+        "title": { "ru": "Оптимизировано приложение", "en": "App optimized" },
+        "body": {
+          "ru": "- Переписан SoundCloud на бэкенд\n- Добавлена виртуализация списков\n- Проделана оптимизация в оверлее, PiP и трее",
+          "en": "- Moved SoundCloud to the backend\n- Added list virtualization\n- Optimized the overlay, PiP and tray"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Обновлён редактор плейлистов — добавлена привязка нескольких плейлистов в одном\n- Плюсик добавления в плейлист в миниплеере\n- Добавлены анимации приложения",
+          "en": "- Reworked the playlist editor — link several playlists into one\n- Add-to-playlist button in the mini player\n- Added app animations"
+        }
+      }
+    ]
+  },
+  "1.5.0": {
+    "title": { "ru": "Что нового в 1.5.0", "en": "What's new in 1.5.0" },
+    "date": "2026-07-05",
+    "pages": [
+      {
+        "title": { "ru": "Библиотека", "en": "Library" },
+        "body": {
+          "ru": "- Мозаика обложек — прогрессивная (1→1, 2→2, 3→3, 4→2×2), везде: сайдбар, сетка, hero, главная, меню, попапы, очередь\n- Плотность треклиста — просторно/компактно, переключатель в Настройки → Интерфейс → Библиотека\n- Колонки Альбом + Дата — как в Spotify, по центру, с тумблерами и авто-скрытием на узком окне\n- Кликабельный альбом — открывает страницу альбома (стриминг) со строгим резолвом, локальные → фильтр\n- Настройки переставлены — бейджи к авто-акценту, вид библиотеки к «Библиотеке»",
+          "en": "- Cover mosaic — progressive (1→1, 2→2, 3→3, 4→2×2), everywhere: sidebar, grid, hero, home, menus, popups, queue\n- Tracklist density — comfortable/compact, toggle in Settings → Interface → Library\n- Album + Date columns — Spotify-style, centered, with toggles and auto-hide on a narrow window\n- Clickable album — opens the album page (streaming) with strict resolution, local → filter\n- Rearranged settings — badges moved to auto-accent, library view moved to \"Library\""
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Переключатель трека на другую площадку в контекстном меню\n- Обновлён Picture-in-Picture\n- Нативная прозрачность\n- Топ результат в поиске\n- Мелкие улучшения",
+          "en": "- Switch a track to another platform from the context menu\n- Updated Picture-in-Picture\n- Native transparency\n- Top result in search\n- Minor improvements"
+        }
+      }
+    ]
+  },
+  "1.4.2": {
+    "title": { "ru": "Что нового в 1.4.2", "en": "What's new in 1.4.2" },
+    "date": "2026-07-03",
+    "pages": [
+      {
+        "title": { "ru": "Страницы", "en": "Pages" },
+        "body": {
+          "ru": "- Обновлены страницы артистов, плейлистов и альбомов\n- Добавлена волна по артистам",
+          "en": "- Redesigned artist, playlist and album pages\n- Added a wave based on an artist"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
+  "1.4.1": {
+    "title": { "ru": "Что нового в 1.4.1", "en": "What's new in 1.4.1" },
+    "date": "2026-07-03",
+    "pages": [
+      {
+        "title": { "ru": "Яндекс", "en": "Yandex" },
+        "body": {
+          "ru": "Обновлена поддержка Яндекса:\n- Добавлены новинки и чарты\n- Добавлена волна по треку",
+          "en": "Updated Yandex support:\n- Added new releases and charts\n- Added a wave based on a track"
+        }
+      }
+    ]
+  },
+  "1.4.0": {
+    "title": { "ru": "Что нового в 1.4.0", "en": "What's new in 1.4.0" },
+    "date": "2026-07-02",
+    "pages": [
+      {
+        "title": { "ru": "Главное", "en": "Highlights" },
+        "body": {
+          "ru": "- Обновлена главная страница\n- Новый вид сайдбара в библиотеке\n- Новая перемешка треков — умная перемешка\n- Переделана настройка горячих клавиш",
+          "en": "- Redesigned home page\n- New library sidebar look\n- New track shuffle — smart shuffle\n- Reworked hotkey settings"
+        }
+      },
+      {
+        "title": { "ru": "Кастомизация", "en": "Customization" },
+        "body": {
+          "ru": "- Слайдер скругления\n- Тоггл прозрачности для контекстных меню, попапов, модалов и т.д.\n- Новые шрифты: Comfortaa, Sora, Unbounded",
+          "en": "- Corner rounding slider\n- Transparency toggle for context menus, popups, modals, etc.\n- New fonts: Comfortaa, Sora, Unbounded"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Добавлена подсказка времени в миниплеере при наведении\n- Улучшен поиск в настройках",
+          "en": "- Added a time tooltip in the mini player on hover\n- Improved search in settings"
+        }
+      }
+    ]
+  },
+  "1.3.7": {
+    "title": { "ru": "Что нового в 1.3.7", "en": "What's new in 1.3.7" },
+    "date": "2026-06-29",
+    "pages": [
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      }
+    ]
+  },
+  "1.3.6": {
+    "title": { "ru": "Что нового в 1.3.6", "en": "What's new in 1.3.6" },
+    "date": "2026-06-28",
+    "pages": [
+      {
+        "title": { "ru": "Что нового", "en": "What's new" },
+        "body": {
+          "ru": "- Улучшена кастомизация\n- Мелкие улучшения\n- Исправлены баги",
+          "en": "- Improved customization\n- Minor improvements\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "1.3.5": {
+    "title": { "ru": "Что нового в 1.3.5", "en": "What's new in 1.3.5" },
+    "date": "2026-06-28",
+    "pages": [
+      {
+        "title": { "ru": "Что нового", "en": "What's new" },
+        "body": {
+          "ru": "- Обновлён эквалайзер\n- Добавлен новый вид оверлея\n- Добавлены анимации\n- Исправлены баги",
+          "en": "- Reworked the equalizer\n- Added a new overlay style\n- Added animations\n- Bug fixes"
+        }
+      }
+    ]
+  },
+  "1.3.4": {
+    "title": { "ru": "Что нового в 1.3.4", "en": "What's new in 1.3.4" },
+    "date": "2026-06-27",
+    "pages": [
+      {
+        "title": { "ru": "Артисты", "en": "Artists" },
+        "body": {
+          "ru": "- Улучшены страницы артистов",
+          "en": "- Improved artist pages"
+        }
+      },
+      {
+        "title": { "ru": "Обновления", "en": "Updates" },
+        "body": {
+          "ru": "- Добавлены даты обновлений",
+          "en": "- Added update dates"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      },
+      {
+        "title": { "ru": "Исправления", "en": "Fixes" },
+        "body": {
+          "ru": "- Исправления багов",
+          "en": "- Bug fixes"
+        }
+      }
+    ]
+  },
+  "1.3.3": {
+    "title": { "ru": "Что нового в 1.3.3", "en": "What's new in 1.3.3" },
+    "date": "2026-06-26",
+    "pages": [
+      {
+        "title": { "ru": "История версий", "en": "Version history" },
+        "body": {
+          "ru": "- Добавлен просмотр старых версий",
+          "en": "- Added viewing of older versions"
+        }
+      },
+      {
+        "title": { "ru": "Улучшения", "en": "Improvements" },
+        "body": {
+          "ru": "- Мелкие улучшения",
+          "en": "- Minor improvements"
+        }
+      },
+      {
+        "title": { "ru": "Исправления", "en": "Fixes" },
+        "body": {
+          "ru": "- Исправлены различные баги",
+          "en": "- Fixed various bugs"
+        }
+      }
+    ]
+  },
+  "1.3.2": {
+    "title": { "ru": "Что нового в 1.3.2", "en": "What's new in 1.3.2" },
+    "date": "2026-06-26",
+    "pages": [
+      {
+        "title": { "ru": "Иконки", "en": "Icons" },
+        "body": {
+          "ru": "- Обновлены иконки в приложении",
+          "en": "- Updated the app icons"
+        }
+      },
+      {
+        "title": { "ru": "Исправления", "en": "Fixes" },
+        "body": {
+          "ru": "- Исправлены различные баги",
+          "en": "- Fixed various bugs"
+        }
+      }
+    ]
+  },
+  "1.3.1": {
+    "title": { "ru": "Что нового в 1.3.1", "en": "What's new in 1.3.1" },
+    "date": "2026-06-25",
+    "pages": [
+      {
+        "title": { "ru": "Профиль", "en": "Profile" },
+        "body": {
+          "ru": "- Переработано редактирование профиля",
+          "en": "- Reworked profile editing"
+        }
+      },
+      {
+        "title": { "ru": "Теги", "en": "Tags" },
+        "body": {
+          "ru": "- Переработано редактирование тегов\n- Переработан массовый редактор тегов",
+          "en": "- Reworked tag editing\n- Reworked bulk tag editing"
+        }
+      },
+      {
+        "title": { "ru": "Плейлисты", "en": "Playlists" },
+        "body": {
+          "ru": "- Переработано объединение плейлистов\n- Переработан модал добавления в плейлист\n- Переработан поиск дублей",
+          "en": "- Reworked merging playlists\n- Updated the add-to-playlist modal\n- Updated duplicate search"
+        }
+      }
+    ]
+  },
+  "1.3.0": {
+    "title": { "ru": "Что нового в 1.3.0", "en": "What's new in 1.3.0" },
+    "date": "2026-06-25",
+    "pages": [
+      {
+        "title": { "ru": "Уведомления", "en": "Notifications" },
+        "body": {
+          "ru": "- Обновлены тосты\n- Обновлено уведомление об обновлении",
+          "en": "- Redesigned toasts\n- Redesigned update notification"
+        }
+      },
+      {
+        "title": { "ru": "Профиль", "en": "Profile" },
+        "body": {
+          "ru": "- Новые статистики\n- Новая вкладка «Достижения»",
+          "en": "- New statistics\n- New \"Achievements\" tab"
+        }
+      },
+      {
+        "title": { "ru": "Библиотека", "en": "Library" },
+        "body": {
+          "ru": "- Создание и редактирование плейлистов\n- Плейлисты без обложек теперь рисуют винил вместо обложки\n- В шапках плейлистов теперь замазанные обложки\n- Мощно обновлена кнопка «+» в сайдбаре",
+          "en": "- Create and edit playlists\n- Playlists without covers now show a vinyl instead of a cover\n- Playlist headers now use blurred covers\n- Heavily reworked the \"+\" button in the sidebar"
+        }
+      },
+      {
+        "title": { "ru": "Оверлей", "en": "Overlay" },
+        "body": {
+          "ru": "- Новые настройки оверлея",
+          "en": "- New overlay settings"
+        }
+      }
+    ]
+  }
+}
