@@ -6,7 +6,7 @@
 
 **Music from every source in one player.**
 
-[**🖥 Desktop releases**](https://github.com/bxzlik/Bloom-releases/releases?q=desktop&expanded=true) · [**📱 Mobile releases**](https://github.com/bxzlik/Bloom-releases/releases?q=mobile&expanded=true)
+[**🖥 Desktop releases**](https://github.com/bxzlik/Bloom/releases?q=desktop&expanded=true) · [**📱 Mobile releases**](https://github.com/bxzlik/Bloom/releases?q=mobile&expanded=true)
 
 **English** · [Русский](README.ru.md)
 
@@ -14,7 +14,7 @@
 
 ## 📥 Downloads
 
-Everything lives on the [Releases](https://github.com/bxzlik/Bloom-releases/releases) page.
+Everything lives on the [Releases](https://github.com/bxzlik/Bloom/releases) page.
 
 | Platform | File | Notes |
 | --- | --- | --- |

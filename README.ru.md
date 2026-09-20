@@ -6,7 +6,7 @@
 
 **Музыка из всех источников в одном плеере.**
 
-[**🖥 Релизы для ПК**](https://github.com/bxzlik/Bloom-releases/releases?q=desktop&expanded=true) · [**📱 Релизы для телефона**](https://github.com/bxzlik/Bloom-releases/releases?q=mobile&expanded=true)
+[**🖥 Релизы для ПК**](https://github.com/bxzlik/Bloom/releases?q=desktop&expanded=true) · [**📱 Релизы для телефона**](https://github.com/bxzlik/Bloom/releases?q=mobile&expanded=true)
 
 [English](README.md) · **Русский**
 
@@ -14,7 +14,7 @@
 
 ## 📥 Скачать
 
-Всё лежит на странице [Releases](https://github.com/bxzlik/Bloom-releases/releases).
+Всё лежит на странице [Releases](https://github.com/bxzlik/Bloom/releases).
 
 | Платформа | Файл | Примечания |
 | --- | --- | --- |
